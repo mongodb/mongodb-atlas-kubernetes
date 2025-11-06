@@ -30,8 +30,7 @@ import (
 
 type AWS struct{}
 
-func (a *AWS) DeleteVpc(ID, region string) error {
-	ctx := context.TODO()
+func (a *AWS) DeleteVpc(ctx context.Context, ID, region string) error {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS config: %w", err)
@@ -53,7 +52,7 @@ func (a *AWS) DeleteVpc(ID, region string) error {
 		return nil
 	}
 
-	err = a.deletePeeringConnection(client, ID)
+	err = a.deletePeeringConnection(ctx, client, ID)
 	if err != nil {
 		return err
 	}
@@ -63,8 +62,7 @@ func (a *AWS) DeleteVpc(ID, region string) error {
 	return err
 }
 
-func (a *AWS) DeleteEndpoint(ID, region string) error {
-	ctx := context.TODO()
+func (a *AWS) DeleteEndpoint(ctx context.Context, ID, region string) error {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS config: %w", err)
@@ -101,8 +99,7 @@ func (a *AWS) DeleteEndpoint(ID, region string) error {
 	return err
 }
 
-func (a *AWS) DeleteKMS(ID, region string) error {
-	ctx := context.TODO()
+func (a *AWS) DeleteKMS(ctx context.Context, ID, region string) error {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create AWS config: %w", err)
@@ -133,8 +130,7 @@ func (a *AWS) DeleteKMS(ID, region string) error {
 	return nil
 }
 
-func (a *AWS) deletePeeringConnection(ec2Client *ec2.Client, vpcID string) error {
-	ctx := context.TODO()
+func (a *AWS) deletePeeringConnection(ctx context.Context, ec2Client *ec2.Client, vpcID string) error {
 	input := ec2.DescribeVpcPeeringConnectionsInput{
 		Filters: []ec2types.Filter{
 			{

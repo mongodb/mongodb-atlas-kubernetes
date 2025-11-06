@@ -39,14 +39,13 @@ const defaultRegion = "us-east-1"
 
 type IAMPolicy *string
 
-func NewAwsResourcesGenerator(t ginkgo.GinkgoTInterface, region *string) *AwsResourcesGenerator {
+func NewAwsResourcesGenerator(ctx context.Context, t ginkgo.GinkgoTInterface, region *string) *AwsResourcesGenerator {
 	t.Helper()
 
 	if region == nil {
 		region = aws.String(defaultRegion)
 	}
 
-	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx, func(lo *config.LoadOptions) error {
 		lo.Region = *region
 		return nil
@@ -63,8 +62,7 @@ func NewAwsResourcesGenerator(t ginkgo.GinkgoTInterface, region *string) *AwsRes
 	}
 }
 
-func (g *AwsResourcesGenerator) GetIAMRole(name string) (string, error) {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) GetIAMRole(ctx context.Context, name string) (string, error) {
 	input := &iam.GetRoleInput{
 		RoleName: aws.String(name),
 	}
@@ -82,8 +80,7 @@ func (g *AwsResourcesGenerator) GetIAMRole(name string) (string, error) {
 	return string(b), nil
 }
 
-func (g *AwsResourcesGenerator) CreateIAMRole(name string, policy func() IAMPolicy) (string, error) {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) CreateIAMRole(ctx context.Context, name string, policy func() IAMPolicy) (string, error) {
 	input := &iam.CreateRoleInput{
 		RoleName:                 aws.String(name),
 		AssumeRolePolicyDocument: policy(),
@@ -97,8 +94,7 @@ func (g *AwsResourcesGenerator) CreateIAMRole(name string, policy func() IAMPoli
 	return *role.Role.Arn, nil
 }
 
-func (g *AwsResourcesGenerator) DeleteIAMRole(name string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) DeleteIAMRole(ctx context.Context, name string) error {
 	input := &iam.DeleteRoleInput{
 		RoleName: aws.String(name),
 	}
@@ -111,8 +107,7 @@ func (g *AwsResourcesGenerator) DeleteIAMRole(name string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolicy) (string, error) {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) CreatePolicy(ctx context.Context, name string, policy func() IAMPolicy) (string, error) {
 	input := &iam.CreatePolicyInput{
 		PolicyDocument: policy(),
 		PolicyName:     aws.String(name),
@@ -132,8 +127,7 @@ func (g *AwsResourcesGenerator) CreatePolicy(name string, policy func() IAMPolic
 	return *r.Policy.Arn, nil
 }
 
-func (g *AwsResourcesGenerator) DeletePolicy(arn string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) DeletePolicy(ctx context.Context, arn string) error {
 	input := &iam.DeletePolicyInput{
 		PolicyArn: aws.String(arn),
 	}
@@ -146,8 +140,7 @@ func (g *AwsResourcesGenerator) DeletePolicy(arn string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) AttachRolePolicy(roleName, policyArn string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) AttachRolePolicy(ctx context.Context, roleName, policyArn string) error {
 	input := &iam.AttachRolePolicyInput{
 		PolicyArn: aws.String(policyArn),
 		RoleName:  aws.String(roleName),
@@ -161,8 +154,7 @@ func (g *AwsResourcesGenerator) AttachRolePolicy(roleName, policyArn string) err
 	return nil
 }
 
-func (g *AwsResourcesGenerator) DetachRolePolicy(roleName, policyArn string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) DetachRolePolicy(ctx context.Context, roleName, policyArn string) error {
 	input := &iam.DetachRolePolicyInput{
 		PolicyArn: aws.String(policyArn),
 		RoleName:  aws.String(roleName),
@@ -176,8 +168,7 @@ func (g *AwsResourcesGenerator) DetachRolePolicy(roleName, policyArn string) err
 	return nil
 }
 
-func (g *AwsResourcesGenerator) ListAttachedRolePolicy(roleName string) (string, error) {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) ListAttachedRolePolicy(ctx context.Context, roleName string) (string, error) {
 	input := &iam.ListAttachedRolePoliciesInput{
 		RoleName: aws.String(roleName),
 	}
@@ -195,8 +186,7 @@ func (g *AwsResourcesGenerator) ListAttachedRolePolicy(roleName string) (string,
 	return string(b), nil
 }
 
-func (g *AwsResourcesGenerator) CreateBucket(name string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) CreateBucket(ctx context.Context, name string) error {
 	input := &s3.CreateBucketInput{
 		Bucket: aws.String(name),
 	}
@@ -227,8 +217,7 @@ func (g *AwsResourcesGenerator) CreateBucket(name string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) DeleteBucket(name string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) DeleteBucket(ctx context.Context, name string) error {
 	input := &s3.DeleteBucketInput{
 		Bucket: aws.String(name),
 	}
@@ -241,14 +230,14 @@ func (g *AwsResourcesGenerator) DeleteBucket(name string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) EmptyBucket(name string) error {
-	objs, err := g.ListObjects(name)
+func (g *AwsResourcesGenerator) EmptyBucket(ctx context.Context, name string) error {
+	objs, err := g.ListObjects(ctx, name)
 	if err != nil {
 		return err
 	}
 
 	for _, obj := range objs {
-		err = g.DeleteObject(name, *obj.Key)
+		err = g.DeleteObject(ctx, name, *obj.Key)
 		if err != nil {
 			return err
 		}
@@ -257,8 +246,7 @@ func (g *AwsResourcesGenerator) EmptyBucket(name string) error {
 	return nil
 }
 
-func (g *AwsResourcesGenerator) ListObjects(name string) ([]s3types.Object, error) {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) ListObjects(ctx context.Context, name string) ([]s3types.Object, error) {
 	input := &s3.ListObjectsInput{
 		Bucket: aws.String(name),
 	}
@@ -271,8 +259,7 @@ func (g *AwsResourcesGenerator) ListObjects(name string) ([]s3types.Object, erro
 	return objs.Contents, nil
 }
 
-func (g *AwsResourcesGenerator) DeleteObject(bucketName, objectKey string) error {
-	ctx := context.TODO()
+func (g *AwsResourcesGenerator) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),

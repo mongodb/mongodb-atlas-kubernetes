@@ -62,7 +62,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 		Expect(k8s.DeleteNamespace(testData.Context, testData.K8SClient, secondNamespace)).Should(Succeed())
 	})
 
-	It("Operator run on global namespace", func() {
+	It("Operator run on global namespace", func(ctx SpecContext) {
 		By("Setting up test data", func() {
 			project := data.DefaultProject()
 			project.Namespace = config.DefaultOperatorNS
@@ -70,12 +70,7 @@ var _ = Describe("Operator watch all namespace should create connection secrets 
 			deployment := data.CreateBasicDeployment("dbusers-operator-global")
 			deployment.Namespace = config.DefaultOperatorNS
 
-			testData = model.DataProvider(
-				"dbusers-operator-global",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30008,
-				[]func(*model.TestDataProvider){},
-			).WithProject(project).
+			testData = model.DataProvider(ctx, "dbusers-operator-global", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30008, []func(*model.TestDataProvider){}).WithProject(project).
 				WithInitialDeployments(deployment).
 				WithUsers(
 					data.BasicUser(
@@ -189,17 +184,12 @@ var _ = Describe("Operator fails if local credentials is mentioned but unavailab
 		Expect(k8s.DeleteNamespace(testData.Context, testData.K8SClient, namespace)).Should(Succeed())
 	})
 
-	It("Operator run on global namespace to test bogus local credential", func() {
+	It("Operator run on global namespace to test bogus local credential", func(ctx SpecContext) {
 		By("Setting up test data", func() {
 			project := data.DefaultProject()
 			project.Namespace = namespace
 
-			testData = model.DataProvider(
-				"dbusers-operator-global",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30008,
-				[]func(*model.TestDataProvider){},
-			).WithProject(project).
+			testData = model.DataProvider(ctx, "dbusers-operator-global", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30008, []func(*model.TestDataProvider){}).WithProject(project).
 				WithUsers(
 					data.BasicUser(
 						"reader1",

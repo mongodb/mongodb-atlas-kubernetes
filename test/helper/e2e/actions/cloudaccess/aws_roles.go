@@ -98,12 +98,11 @@ func PolicyWithAtlasArn(atlasAWSAccountArn, atlasAssumedRoleExternalId string) (
 	return string(byteStr), nil
 }
 
-func CreateAWSIAMRole(roleName string) (string, error) {
+func CreateAWSIAMRole(ctx context.Context, roleName string) (string, error) {
 	policy, err := EC2RolePolicyString()
 	if err != nil {
 		return "", err
 	}
-	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to create an AWS config: %w", err)
@@ -126,12 +125,11 @@ func CreateAWSIAMRole(roleName string) (string, error) {
 	return *role.Role.Arn, nil
 }
 
-func AddAtlasStatementToAWSIAMRole(atlasAWSAccountArn, atlasAssumedRoleExternalId, roleName string) error {
+func AddAtlasStatementToAWSIAMRole(ctx context.Context, atlasAWSAccountArn, atlasAssumedRoleExternalId, roleName string) error {
 	updatedPolicy, err := PolicyWithAtlasArn(atlasAWSAccountArn, atlasAssumedRoleExternalId)
 	if err != nil {
 		return err
 	}
-	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create an AWS config: %w", err)
@@ -153,8 +151,7 @@ func NameFromArn(arn string) string {
 	return arn[strings.LastIndex(arn, "/")+1:]
 }
 
-func DeleteAWSIAMRoleByArn(arn string) error {
-	ctx := context.TODO()
+func DeleteAWSIAMRoleByArn(ctx context.Context, arn string) error {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create an AWS config: %w", err)

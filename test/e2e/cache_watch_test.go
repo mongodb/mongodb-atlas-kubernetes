@@ -47,12 +47,7 @@ type tc struct {
 var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 	DescribeTable("Cache gets", Label("focus-watch-gets"),
 		func(ctx context.Context, testCase *tc) {
-			testData := model.DataProvider(
-				fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]),
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30008,
-				[]func(*model.TestDataProvider){},
-			)
+			testData := model.DataProvider(ctx, fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]), model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30008, []func(*model.TestDataProvider){})
 			namespaces := setupNamespaces(ctx, testData, testCase.namespaces...)
 			defer clearNamespaces(ctx, testData, namespaces)
 			setupSecrets(ctx, testData, namespaces)
@@ -98,12 +93,7 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 
 	DescribeTable("Cache lists", Label("focus-watch-lists"),
 		func(ctx context.Context, testCase *tc) {
-			testData := model.DataProvider(
-				fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]),
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30009,
-				[]func(*model.TestDataProvider){},
-			)
+			testData := model.DataProvider(ctx, fmt.Sprintf("cache-%s", CurrentSpecReport().LeafNodeLabels[0]), model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30009, []func(*model.TestDataProvider){})
 
 			namespaces := setupNamespaces(ctx, testData, testCase.namespaces...)
 			defer clearNamespaces(ctx, testData, namespaces)
@@ -160,12 +150,7 @@ var _ = Describe("Kubernetes cache watch test:", Label("cache-watch"), func() {
 var _ = Describe("Reconciles test:", func() {
 	DescribeTable("Reconciles", Ordered,
 		func(ctx context.Context, testCase *tc) {
-			testData := model.DataProvider(
-				fmt.Sprintf("reconcile-%s", CurrentSpecReport().LeafNodeLabels[0]),
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30010,
-				[]func(*model.TestDataProvider){},
-			)
+			testData := model.DataProvider(ctx, fmt.Sprintf("reconcile-%s", CurrentSpecReport().LeafNodeLabels[0]), model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30010, []func(*model.TestDataProvider){})
 			namespaces := setupNamespaces(ctx, testData, testCase.namespaces...)
 			defer clearNamespaces(ctx, testData, namespaces)
 			setupSecrets(ctx, testData, namespaces)

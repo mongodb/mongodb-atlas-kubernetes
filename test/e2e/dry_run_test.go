@@ -84,14 +84,9 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 		})
 	})
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx SpecContext) {
 		By("setting up secrets and a namespace", func() {
-			testData = model.DataProvider(
-				"dry-run",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				nil,
-			)
+			testData = model.DataProvider(ctx, "dry-run", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, nil)
 			actions.CreateNamespaceAndSecrets(testData)
 		})
 	})

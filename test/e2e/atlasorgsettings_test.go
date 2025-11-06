@@ -51,13 +51,8 @@ var _ = Describe("AtlasOrgSettings", Label("atlas-org-settings"), func() {
 		})
 	})
 
-	It("Should create AtlasOrgSettings with strict configuration and verify its status", func() {
-		testData = model.DataProvider(
-			"atlas-org-settings",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject())
+	It("Should create AtlasOrgSettings with strict configuration and verify its status", func(ctx SpecContext) {
+		testData = model.DataProvider(ctx, "atlas-org-settings", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 		actions.ProjectCreationFlow(testData)
 

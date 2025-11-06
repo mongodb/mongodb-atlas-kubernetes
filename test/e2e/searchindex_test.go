@@ -62,13 +62,8 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 	})
 
-	It("Create and delete SEARCH and VECTOR SEARCH indexes", func() {
-		testData = model.DataProvider(
-			"atlas-search-nodes",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-nodes-test"))
+	It("Create and delete SEARCH and VECTOR SEARCH indexes", func(ctx SpecContext) {
+		testData = model.DataProvider(ctx, "atlas-search-nodes", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-nodes-test"))
 		atlasClient = atlas.GetClientOrFail()
 
 		By("Setting up project", func() {

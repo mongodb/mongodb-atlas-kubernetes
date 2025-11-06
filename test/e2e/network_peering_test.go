@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -57,19 +58,16 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 	})
 
 	DescribeTable("NetworkPeering",
-		func(test *model.TestDataProvider, networkPeers []akov2.NetworkPeer) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			networkPeerFlow(test, networkPeers)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, networkPeers []akov2.NetworkPeer) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			networkPeerFlow(ctx, testData, networkPeers)
 		},
 		Entry("Test[networkpeering-aws-1]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-1"),
-			model.DataProvider(
-				"networkpeering-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "networkpeering-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.NetworkPeer{
 				{
 					ProviderName: provider.ProviderAWS,
@@ -84,12 +82,9 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-aws-2]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-2"),
-			model.DataProvider(
-				"networkpeering-aws-2",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "networkpeering-aws-2", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.NetworkPeer{
 				{
 					ProviderName: provider.ProviderAWS,
@@ -104,12 +99,9 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-aws-3]: User has project which was updated with AWS PrivateEndpoint",
 			Label("focus-network-peering-aws-3"),
-			model.DataProvider(
-				"networkpeering-aws-3",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "networkpeering-aws-3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.NetworkPeer{
 				{
 					ProviderName: provider.ProviderAWS,
@@ -133,12 +125,9 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-gcp-1]: User has project which was updated with GCP PrivateEndpoint",
 			Label("focus-network-peering-gcp-1"),
-			model.DataProvider(
-				"networkpeering-gcp-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "networkpeering-gcp-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.NetworkPeer{
 				{
 					ProviderName: provider.ProviderGCP,
@@ -152,12 +141,9 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 		),
 		Entry("Test[networkpeering-azure-1]: User has project which was updated with Azure PrivateEndpoint",
 			Label("focus-network-peering-azure-1"),
-			model.DataProvider(
-				"networkpeering-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "networkpeering-azure-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.NetworkPeer{
 				{
 					ProviderName: provider.ProviderAzure,
@@ -175,18 +161,18 @@ var _ = Describe("NetworkPeering", Label("networkpeering"), FlakeAttempts(2), fu
 	)
 })
 
-func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer) {
+func networkPeerFlow(ctx context.Context, userData *model.TestDataProvider, peers []akov2.NetworkPeer) {
 	providerActions := make([]cloud.Provider, len(peers))
 
 	By("Prepare network peers cloud infrastructure", func() {
 		for ix, peer := range peers {
-			providerAction, err := prepareProviderAction()
+			providerAction, err := prepareProviderAction(ctx)
 			Expect(err).To(BeNil())
 			providerActions[ix] = providerAction
 
 			switch peer.ProviderName {
 			case provider.ProviderAWS:
-				peers[ix].AWSAccountID = providerActions[ix].GetAWSAccountID()
+				peers[ix].AWSAccountID = providerActions[ix].GetAWSAccountID(ctx)
 				cfg := &cloud.AWSConfig{
 					Region:        peer.AccepterRegionName,
 					VPC:           newRandomName("ao-vpc-peering-e2e"),
@@ -194,20 +180,20 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer
 					Subnets:       map[string]string{"ao-peering-e2e-subnet": peer.RouteTableCIDRBlock},
 					EnableCleanup: true,
 				}
-				peers[ix].VpcID = providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithAWSConfig(cfg))
+				peers[ix].VpcID = providerActions[ix].SetupNetwork(ctx, peer.ProviderName, cloud.WithAWSConfig(cfg))
 			case provider.ProviderGCP:
 				cfg := &cloud.GCPConfig{
 					Region:        peer.AccepterRegionName,
 					VPC:           peer.NetworkName,
 					EnableCleanup: true,
 				}
-				providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithGCPConfig(cfg))
+				providerActions[ix].SetupNetwork(ctx, peer.ProviderName, cloud.WithGCPConfig(cfg))
 			case provider.ProviderAzure:
 				cfg := &cloud.AzureConfig{
 					VPC:           peer.VNetName,
 					EnableCleanup: true,
 				}
-				providerActions[ix].SetupNetwork(peer.ProviderName, cloud.WithAzureConfig(cfg))
+				providerActions[ix].SetupNetwork(ctx, peer.ProviderName, cloud.WithAzureConfig(cfg))
 			}
 		}
 	})
@@ -230,9 +216,9 @@ func networkPeerFlow(userData *model.TestDataProvider, peers []akov2.NetworkPeer
 		for ix, peer := range userData.Project.Status.NetworkPeers {
 			switch peer.ProviderName {
 			case provider.ProviderAWS:
-				providerActions[ix].SetupNetworkPeering(peer.ProviderName, peer.ConnectionID, "")
+				providerActions[ix].SetupNetworkPeering(ctx, peer.ProviderName, peer.ConnectionID, "")
 			case provider.ProviderGCP:
-				providerActions[ix].SetupNetworkPeering(peer.ProviderName, peer.AtlasGCPProjectID, peer.AtlasNetworkName)
+				providerActions[ix].SetupNetworkPeering(ctx, peer.ProviderName, peer.AtlasGCPProjectID, peer.AtlasNetworkName)
 			}
 		}
 		actions.WaitForConditionsToBecomeTrue(userData, api.NetworkPeerReadyType, api.ReadyType)

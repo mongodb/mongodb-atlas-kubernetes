@@ -49,13 +49,8 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 		})
 	})
 
-	It("Creates, upgrades, and deletes search nodes", func() {
-		testData = model.DataProvider(
-			"atlas-search-nodes",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-nodes-test"))
+	It("Creates, upgrades, and deletes search nodes", func(ctx SpecContext) {
+		testData = model.DataProvider(ctx, "atlas-search-nodes", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedDeployment("search-nodes-test"))
 		atlasClient = atlas.GetClientOrFail()
 		By("Setting up project", func() {
 			actions.ProjectCreationFlow(testData)

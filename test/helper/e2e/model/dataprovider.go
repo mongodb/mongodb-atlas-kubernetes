@@ -53,7 +53,7 @@ type TestDataProvider struct {
 	SubObjectDeletionProtection bool
 }
 
-func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasKeyType, initDeploymentConfigs []string, updateDeploymentConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
+func DataProviderWithResources(ctx context.Context, keyTestPrefix string, project AProject, r *AtlasKeyType, initDeploymentConfigs []string, updateDeploymentConfig []string, users []DBUser, portGroup int, actions []func(*TestDataProvider)) TestDataProvider {
 	var data TestDataProvider
 	data.Prefix = keyTestPrefix
 	data.ConfPaths = initDeploymentConfigs
@@ -69,7 +69,7 @@ func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasK
 	Expect(err).NotTo(HaveOccurred(), "Failed to create k8s client")
 	data.K8SClient = k8sClient
 
-	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(GinkgoT(), nil)
+	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(ctx, GinkgoT(), nil)
 
 	data.ObjectDeletionProtection = defaultE2EObjectProtectionDeletion
 	data.SubObjectDeletionProtection = defaultE2ESubObjectProtectionDeletion
@@ -77,7 +77,7 @@ func DataProviderWithResources(keyTestPrefix string, project AProject, r *AtlasK
 	return data
 }
 
-func DataProvider(keyTestPrefix string, r *AtlasKeyType, portGroup int, actions []func(*TestDataProvider)) *TestDataProvider {
+func DataProvider(ctx context.Context, keyTestPrefix string, r *AtlasKeyType, portGroup int, actions []func(*TestDataProvider)) *TestDataProvider {
 	var data TestDataProvider
 	data.Prefix = keyTestPrefix
 	data.Resources = NewSimpleUserInputs(keyTestPrefix, r)
@@ -88,7 +88,7 @@ func DataProvider(keyTestPrefix string, r *AtlasKeyType, portGroup int, actions 
 	Expect(err).NotTo(HaveOccurred(), "Failed to create k8s client")
 	data.K8SClient = k8sClient
 
-	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(GinkgoT(), nil)
+	data.AWSResourcesGenerator = helper.NewAwsResourcesGenerator(ctx, GinkgoT(), nil)
 
 	data.ObjectDeletionProtection = defaultE2EObjectProtectionDeletion
 	data.SubObjectDeletionProtection = defaultE2ESubObjectProtectionDeletion

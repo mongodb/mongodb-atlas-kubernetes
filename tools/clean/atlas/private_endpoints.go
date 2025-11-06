@@ -42,7 +42,7 @@ func (c *Cleaner) deletePrivateEndpoints(ctx context.Context, projectID, provide
 		switch provider {
 		case CloudProviderAWS:
 			if endpointService.GetEndpointServiceName() != "" {
-				err := c.aws.DeleteEndpoint(endpointService.GetEndpointServiceName(), endpointService.GetRegionName())
+				err := c.aws.DeleteEndpoint(ctx, endpointService.GetEndpointServiceName(), endpointService.GetRegionName())
 				if err != nil {
 					fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to delete VPC Endpoint %s at region %s from AWS: %s", endpointService.GetEndpointServiceName(), endpointService.GetRegionName(), err))
 

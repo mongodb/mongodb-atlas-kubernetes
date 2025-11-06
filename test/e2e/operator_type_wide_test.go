@@ -40,7 +40,6 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 	commonDeploymentName := "megadeployment"
 	k8sClient, err := k8s.CreateNewClient()
 	Expect(err).To(BeNil())
-	ctx := context.Background()
 
 	_ = AfterEach(func() {
 		By("AfterEach. clean-up", func() {
@@ -63,18 +62,14 @@ var _ = Describe("Deployment wide operator can work with resources in different 
 		})
 	})
 
-	It("Deploy deployment wide operator and create resources in each of them", func() {
+	It("Deploy deployment wide operator and create resources in each of them", func(ctx SpecContext) {
 		By("Users can create deployments with the same name", func() {
-			NortonData = model.DataProvider(
-				"norton-wide",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30008,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).
+			NortonData = model.DataProvider(ctx, "norton-wide", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30008, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).
 				WithInitialDeployments(data.CreateDeploymentWithBackup(commonDeploymentName)).
 				WithUsers(data.BasicUser("reader2", "reader2", data.WithSecretRef("dbuser-secret-u2"), data.WithReadWriteRole()))
 
 			NimnulData = model.DataProvider(
+				ctx,
 				"nimnul-wide",
 				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
 				30008,

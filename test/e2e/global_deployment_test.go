@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -51,18 +52,15 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, mapping []akov2.CustomZoneMapping, ns []akov2.ManagedNamespace) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			globalClusterFlow(test, mapping, ns)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, mapping []akov2.CustomZoneMapping, ns []akov2.ManagedNamespace) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			globalClusterFlow(testData, mapping, ns)
 		},
 		Entry("Test[gc-advanced-deployment]: Advanced", Label("focus-gc-advanced-deployment"),
-			model.DataProvider(
-				"gc-advanced-deployment",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedGeoshardedDeployment("gc-advanced-deployment")),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "gc-advanced-deployment", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateAdvancedGeoshardedDeployment("gc-advanced-deployment"))
+			},
 			[]akov2.CustomZoneMapping{
 				{
 					Zone:     "Zone 1",

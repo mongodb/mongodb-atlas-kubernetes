@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -52,19 +53,16 @@ var _ = Describe("Teams", Label("teams"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, teams []akov2.Team) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			actions.AddTeamResourcesWithNUsers(test, teams, 1)
-			projectTeamsFlow(test, teams)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, teams []akov2.Team) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			actions.AddTeamResourcesWithNUsers(testData, teams, 1)
+			projectTeamsFlow(testData, teams)
 		},
 		Entry("Test[teams-1]: User has project to which a team was added",
-			model.DataProvider(
-				"teams-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "teams-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.Team{
 				{
 					TeamRef: common.ResourceRefNamespaced{

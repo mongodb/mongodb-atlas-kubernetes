@@ -60,7 +60,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 		checkNSetUpGCPEnvironment()
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
@@ -69,7 +69,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Cloud", func() {
-			DeleteAllRoles(testData)
+			DeleteAllRoles(ctx, testData)
 		})
 
 		By("Delete Resources, Project with Encryption at rest", func() {
@@ -79,23 +79,20 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 	})
 
 	DescribeTable("Encryption at rest for AWS, GCP, Azure",
-		func(test *model.TestDataProvider, encAtRest akov2.EncryptionAtRest, roles []cloudaccess.Role) {
-			testData = test
-			actions.ProjectCreationFlow(test)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, encAtRest akov2.EncryptionAtRest, roles []cloudaccess.Role) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
 
 			if roles != nil {
-				cloudAccessRolesFlow(test, roles)
+				cloudAccessRolesFlow(ctx, testData, roles)
 			}
 
-			encryptionAtRestFlow(test, encAtRest)
+			encryptionAtRestFlow(ctx, testData, encAtRest)
 		},
 		Entry("Test[encryption-at-rest-aws]: Can add Encryption at Rest to AWS project", Label("focus-encryption-at-rest-aws"),
-			model.DataProvider(
-				"encryption-at-rest-aws",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "encryption-at-rest-aws", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			akov2.EncryptionAtRest{
 				AwsKms: akov2.AwsKms{
 					Enabled: pointer.MakePtr(true),
@@ -112,12 +109,9 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			},
 		),
 		Entry("Test[encryption-at-rest-azure]: Can add Encryption at Rest to Azure project", Label("focus-encryption-at-rest-azure"),
-			model.DataProvider(
-				"encryption-at-rest-azure",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "encryption-at-rest-azure", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			akov2.EncryptionAtRest{
 				AzureKeyVault: akov2.AzureKeyVault{
 					AzureEnvironment:  AzureEnvironment,
@@ -130,12 +124,9 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			nil,
 		),
 		Entry("Test[encryption-at-rest-gcp]: Can add Encryption at Rest to GCP project", Label("focus-encryption-at-rest-gcp"),
-			model.DataProvider(
-				"encryption-at-rest-gcp",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "encryption-at-rest-gcp", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			akov2.EncryptionAtRest{
 				GoogleCloudKms: akov2.GoogleCloudKms{
 					Enabled: pointer.MakePtr(true),
@@ -146,7 +137,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 	)
 })
 
-func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.EncryptionAtRest) {
+func encryptionAtRestFlow(ctx context.Context, userData *model.TestDataProvider, encAtRest akov2.EncryptionAtRest) {
 	By("Create KMS", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 			Name:      userData.Project.Name,
@@ -158,7 +149,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 			aRole = userData.Project.Status.CloudProviderIntegrations[0]
 		}
 
-		fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+		fillKMSforAWS(ctx, userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(userData, &encAtRest)
 		fillKMSforGCP(userData, &encAtRest)
 
@@ -199,7 +190,7 @@ func encryptionAtRestFlow(userData *model.TestDataProvider, encAtRest akov2.Encr
 	})
 }
 
-func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
+func fillKMSforAWS(ctx context.Context, userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest, atlasAccountArn, assumedRoleArn string) {
 	if (encAtRest.AwsKms == akov2.AwsKms{}) {
 		return
 	}
@@ -207,9 +198,9 @@ func fillKMSforAWS(userData *model.TestDataProvider, encAtRest *akov2.Encryption
 	alias := fmt.Sprintf("%s-kms", userData.Project.Spec.Name)
 
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-	awsAction, err := cloud.NewAWSAction(GinkgoT())
+	awsAction, err := cloud.NewAWSAction(ctx, GinkgoT())
 	Expect(err).ToNot(HaveOccurred())
-	CustomerMasterKeyID, err := awsAction.CreateKMS(alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
+	CustomerMasterKeyID, err := awsAction.CreateKMS(ctx, alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
 
@@ -349,7 +340,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 		checkUpAWSEnvironment()
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
@@ -358,7 +349,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Roles", func() {
-			DeleteAllRoles(testData)
+			DeleteAllRoles(ctx, testData)
 		})
 		By("Delete Resources, Project with Cloud provider access roles", func() {
 			actions.DeleteTestDataProject(testData)
@@ -366,13 +357,8 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 		})
 	})
 
-	It("Should be able to create Encryption at REST on AWS with RoleID equal to AWS ARN", func() {
-		testData = model.DataProvider(
-			"encryption-at-rest-aws",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject())
+	It("Should be able to create Encryption at REST on AWS with RoleID equal to AWS ARN", func(ctx SpecContext) {
+		testData = model.DataProvider(ctx, "encryption-at-rest-aws", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 		roles := []cloudaccess.Role{
 			{
@@ -410,7 +396,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 
 		var atlasRoles *admin.CloudProviderAccessRoles
 		By("Add cloud access role (AWS only)", func() {
-			cloudAccessRolesFlow(userData, roles)
+			cloudAccessRolesFlow(ctx, userData, roles)
 		})
 
 		By("Fetching project CPAs", func() {
@@ -432,7 +418,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 			Expect(len(userData.Project.Status.CloudProviderIntegrations)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderIntegrations[0]
 
-			fillKMSforAWS(userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+			fillKMSforAWS(nil, userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 				Name:      userData.Project.Name,

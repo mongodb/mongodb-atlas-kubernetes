@@ -26,9 +26,7 @@ import (
 	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
-func CreateVPC(name, cidr, region string) (string, error) {
-	ctx := context.TODO()
-
+func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to create an AWS config: %w", err)
@@ -70,9 +68,7 @@ func CreateVPC(name, cidr, region string) (string, error) {
 	return *result.Vpc.VpcId, nil
 }
 
-func DeleteVPC(vpcID, region string) error {
-	ctx := context.TODO()
-
+func DeleteVPC(ctx context.Context, vpcID, region string) error {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create an AWS config: %w", err)

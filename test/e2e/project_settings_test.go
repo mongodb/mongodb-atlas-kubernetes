@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -45,18 +46,15 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, settings akov2.ProjectSettings) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			projectSettingsFlow(test, &settings)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, settings akov2.ProjectSettings) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			projectSettingsFlow(testData, &settings)
 		},
 		Entry("Test[project-settings]: User has project to which Project Settings was added", Label("focus-project-settings"),
-			model.DataProvider(
-				"project-settings",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "project-settings", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			akov2.ProjectSettings{
 				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
 				IsDataExplorerEnabled:                       pointer.MakePtr(false),

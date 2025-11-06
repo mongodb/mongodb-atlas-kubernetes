@@ -78,7 +78,7 @@ func CreateNamespaceAndSecrets(userData *model.TestDataProvider) {
 	}
 }
 
-func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atlasIAMRoleName string) {
+func CreateProjectWithCloudProviderAccess(ctx context.Context, testData *model.TestDataProvider, atlasIAMRoleName string) {
 	ProjectCreationFlow(testData)
 
 	By("Configure cloud provider access", func() {
@@ -100,7 +100,7 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 			return testData.Project.Status.CloudProviderIntegrations[0].Status == status.CloudProviderIntegrationStatusCreated
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 
-		roleArn, err := testData.AWSResourcesGenerator.CreateIAMRole(atlasIAMRoleName, func() helper.IAMPolicy {
+		roleArn, err := testData.AWSResourcesGenerator.CreateIAMRole(ctx, atlasIAMRoleName, func() helper.IAMPolicy {
 			cloudProviderAccess := testData.Project.Status.CloudProviderIntegrations[0]
 			return helper.CloudProviderAccessPolicy(cloudProviderAccess.AtlasAWSAccountArn, cloudProviderAccess.AtlasAssumedRoleExternalID)
 		})
@@ -109,7 +109,7 @@ func CreateProjectWithCloudProviderAccess(testData *model.TestDataProvider, atla
 		Expect(roleArn).ShouldNot(BeEmpty())
 
 		testData.AWSResourcesGenerator.Cleanup(func() {
-			Expect(testData.AWSResourcesGenerator.DeleteIAMRole(atlasIAMRoleName)).To(Succeed())
+			Expect(testData.AWSResourcesGenerator.DeleteIAMRole(ctx, atlasIAMRoleName)).To(Succeed())
 		})
 
 		testData.Project.Spec.CloudProviderIntegrations[0].IamAssumedRoleArn = roleArn

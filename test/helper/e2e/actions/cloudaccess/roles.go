@@ -15,6 +15,7 @@
 package cloudaccess
 
 import (
+	"context"
 	"fmt"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -27,11 +28,11 @@ type Role struct {
 	AccessRole akov2.CloudProviderIntegration
 }
 
-func CreateRoles(roles []Role) error {
+func CreateRoles(ctx context.Context, roles []Role) error {
 	for i, role := range roles {
 		switch role.AccessRole.ProviderName {
 		case string(provider.ProviderAWS):
-			arn, err := CreateAWSIAMRole(role.Name)
+			arn, err := CreateAWSIAMRole(ctx, role.Name)
 			if err != nil {
 				return err
 			}
@@ -43,14 +44,14 @@ func CreateRoles(roles []Role) error {
 	return nil
 }
 
-func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderIntegration) error {
+func AddAtlasStatementToRole(ctx context.Context, roles []Role, roleStatuses []status.CloudProviderIntegration) error {
 	if len(roles) != len(roleStatuses) {
 		return fmt.Errorf("number of roles %d does not match number of statuses %d", len(roles), len(roleStatuses))
 	}
 	for _, role := range roles {
 		for _, roleStatus := range roleStatuses {
 			if role.AccessRole.ProviderName == roleStatus.ProviderName && role.AccessRole.IamAssumedRoleArn == roleStatus.IamAssumedRoleArn {
-				if err := AddAtlasStatementToAWSIAMRole(roleStatus.AtlasAWSAccountArn, roleStatus.AtlasAssumedRoleExternalID, role.Name); err != nil {
+				if err := AddAtlasStatementToAWSIAMRole(ctx, roleStatus.AtlasAWSAccountArn, roleStatus.AtlasAssumedRoleExternalID, role.Name); err != nil {
 					return err
 				}
 			}
@@ -59,12 +60,12 @@ func AddAtlasStatementToRole(roles []Role, roleStatuses []status.CloudProviderIn
 	return nil
 }
 
-func DeleteCloudProviderIntegrations(roles []akov2.CloudProviderIntegration) []error {
+func DeleteCloudProviderIntegrations(ctx context.Context, roles []akov2.CloudProviderIntegration) []error {
 	var errorList []error
 	for _, role := range roles {
 		switch role.ProviderName {
 		case string(provider.ProviderAWS):
-			if err := DeleteAWSIAMRoleByArn(role.IamAssumedRoleArn); err != nil {
+			if err := DeleteAWSIAMRoleByArn(ctx, role.IamAssumedRoleArn); err != nil {
 				errorList = append(errorList, err)
 			}
 		default:

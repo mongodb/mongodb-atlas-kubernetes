@@ -39,17 +39,12 @@ import (
 var _ = Describe("Operator to run db-user with the OIDC feature flags disabled", Ordered, Label("users-oidc"), func() {
 	var testData *model.TestDataProvider
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(func(ctx SpecContext) {
 		project := data.DefaultProject()
 
 		deployment := data.CreateBasicDeployment("dbusers-operator-global")
 
-		testData = model.DataProvider(
-			"dbusers-operator-global",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			30008,
-			[]func(*model.TestDataProvider){},
-		).WithProject(project).
+		testData = model.DataProvider(ctx, "dbusers-operator-global", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30008, []func(*model.TestDataProvider){}).WithProject(project).
 			WithInitialDeployments(deployment).
 			WithUsers(
 				data.BasicUser(

@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -41,23 +42,20 @@ var _ = Describe("Annotations base test.", Label("deployment-annotations-ns"), f
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider) {
-			testData = test
-			mainCycle(test)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider) {
+			testData = test(ctx)
+			mainCycle(testData)
 		},
 		// TODO: fix test for deletion protection on, as it would fail to re-take the cluster after deletion
 		Entry("Simple configuration with keep resource policy annotation on deployment", Label("focus-ns-crd"),
-			model.DataProvider(
-				"operator-ns-crd",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30000,
-				[]func(*model.TestDataProvider){
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "operator-ns-crd", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30000, []func(*model.TestDataProvider){
 					actions.DeleteDeploymentCRWithKeepAnnotation,
 					actions.RedeployDeployment,
 					actions.RemoveKeepAnnotation,
-				},
-			).WithInitialDeployments(data.CreateDeploymentWithKeepPolicy("atlascluster-annotation")).
-				WithProject(data.DefaultProject()),
+				}).WithInitialDeployments(data.CreateDeploymentWithKeepPolicy("atlascluster-annotation")).
+					WithProject(data.DefaultProject())
+			},
 		),
 	)
 })

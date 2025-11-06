@@ -73,14 +73,9 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 		})
 	})
 
-	It("Should migrate one CustomRole from existing AtlasProject to dedicated AtlasCustomRole resource", func() {
+	It("Should migrate one CustomRole from existing AtlasProject to dedicated AtlasCustomRole resource", func(ctx SpecContext) {
 		By("Creating AtlasProject", func() {
-			testData = model.DataProvider(
-				"project-custom-role",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
+			testData = model.DataProvider(ctx, "project-custom-role", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 			actions.ProjectCreationFlow(testData)
 		})

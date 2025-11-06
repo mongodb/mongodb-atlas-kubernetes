@@ -66,7 +66,7 @@ type statement struct {
 	Resource  string    `json:"Resource"`
 }
 
-func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn string) (string, error) {
+func (a *AwsAction) CreateKMS(ctx context.Context, alias, region, atlasAccountArn, assumedRoleArn string) (string, error) {
 	a.t.Helper()
 
 	//kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(region))
@@ -84,7 +84,6 @@ func (a *AwsAction) CreateKMS(alias, region, atlasAccountArn, assumedRoleArn str
 		return "", err
 	}
 
-	ctx := context.TODO()
 	key, err := kmsClient.CreateKey(ctx,
 		&kms.CreateKeyInput{
 			Description: aws.String("Key for E2E test"),
@@ -206,10 +205,8 @@ func defaultKMSPolicy(atlasAccountArn, assumedRoleArn string, adminARNs []string
 	}
 }
 
-func (a *AwsAction) GetAccountID() (string, error) {
+func (a *AwsAction) GetAccountID(ctx context.Context) (string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	stsClient := sts.NewFromConfig(a.cfg)
 	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
@@ -220,16 +217,16 @@ func (a *AwsAction) GetAccountID() (string, error) {
 	return *identity.Account, nil
 }
 
-func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
+func (a *AwsAction) InitNetwork(ctx context.Context, vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
 	a.t.Helper()
 
-	vpc, err := a.findVPC(vpcName, region)
+	vpc, err := a.findVPC(ctx, vpcName, region)
 	if err != nil {
 		return "", err
 	}
 
 	if vpc == "" {
-		vpc, err = a.createVPC(vpcName, cidr, region)
+		vpc, err = a.createVPC(ctx, vpcName, cidr, region)
 		if err != nil {
 			return "", err
 		}
@@ -237,14 +234,14 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 
 	if cleanup {
 		a.t.Cleanup(func() {
-			err = a.deleteVPC(vpc, region)
+			err = a.deleteVPC(ctx, vpc, region)
 			if err != nil {
 				a.t.Error(err)
 			}
 		})
 	}
 
-	subnetsMap, err := a.getSubnets(vpc, region)
+	subnetsMap, err := a.getSubnets(ctx, vpc, region)
 	if err != nil {
 		return "", err
 	}
@@ -256,14 +253,14 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 	for subnetName, subnetCidr := range subnets {
 		subnetID, ok := subnetsMap[subnetCidr]
 		if !ok {
-			subnetID, err = a.createSubnet(vpc, subnetName, subnetCidr, region, azs[counter%len(azs)])
+			subnetID, err = a.createSubnet(ctx, vpc, subnetName, subnetCidr, region, azs[counter%len(azs)])
 			if err != nil {
 				return "", err
 			}
 
 			if cleanup {
 				a.t.Cleanup(func() {
-					err = a.deleteSubnet(subnetID, region)
+					err = a.deleteSubnet(ctx, subnetID, region)
 					if err != nil {
 						a.t.Error(err)
 					}
@@ -283,10 +280,8 @@ func (a *AwsAction) InitNetwork(vpcName, cidr, region string, subnets map[string
 	return vpc, nil
 }
 
-func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, region string) (string, error) {
+func (a *AwsAction) CreatePrivateEndpoint(ctx context.Context, serviceName, privateEndpointName, region string) (string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -355,10 +350,8 @@ func (a *AwsAction) CreatePrivateEndpoint(serviceName, privateEndpointName, regi
 	return *result.VpcEndpoint.VpcEndpointId, nil
 }
 
-func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (ec2types.VpcEndpoint, error) {
+func (a *AwsAction) GetPrivateEndpoint(ctx context.Context, endpointID, region string) (ec2types.VpcEndpoint, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -376,10 +369,8 @@ func (a *AwsAction) GetPrivateEndpoint(endpointID, region string) (ec2types.VpcE
 	return result.VpcEndpoints[0], nil
 }
 
-func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) error {
+func (a *AwsAction) AcceptVpcPeeringConnection(ctx context.Context, connectionID, region string) error {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -407,10 +398,8 @@ func (a *AwsAction) AcceptVpcPeeringConnection(connectionID, region string) erro
 	return err
 }
 
-func (a *AwsAction) findVPC(name, region string) (string, error) {
+func (a *AwsAction) findVPC(ctx context.Context, name, region string) (string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -434,10 +423,8 @@ func (a *AwsAction) findVPC(name, region string) (string, error) {
 	return *result.Vpcs[0].VpcId, nil
 }
 
-func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
+func (a *AwsAction) createVPC(ctx context.Context, name, cidr, region string) (string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -476,10 +463,8 @@ func (a *AwsAction) createVPC(name, cidr, region string) (string, error) {
 	return *result.Vpc.VpcId, nil
 }
 
-func (a *AwsAction) deleteVPC(id, region string) error {
+func (a *AwsAction) deleteVPC(ctx context.Context, id, region string) error {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -495,10 +480,8 @@ func (a *AwsAction) deleteVPC(id, region string) error {
 	return err
 }
 
-func (a *AwsAction) getSubnets(vpcID, region string) (map[string]string, error) {
+func (a *AwsAction) getSubnets(ctx context.Context, vpcID, region string) (map[string]string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -527,10 +510,8 @@ func (a *AwsAction) getSubnets(vpcID, region string) (map[string]string, error) 
 	return subnetsMap, nil
 }
 
-func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (string, error) {
+func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region, az string) (string, error) {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -559,10 +540,8 @@ func (a *AwsAction) createSubnet(vpcID, name, cidr, region, az string) (string, 
 	return aws.ToString(result.Subnet.SubnetId), nil
 }
 
-func (a *AwsAction) deleteSubnet(subnetID, region string) error {
+func (a *AwsAction) deleteSubnet(ctx context.Context, subnetID string, region string) error {
 	a.t.Helper()
-
-	ctx := context.TODO()
 
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
@@ -579,10 +558,9 @@ func (a *AwsAction) deleteSubnet(subnetID, region string) error {
 	return nil
 }
 
-func NewAWSAction(t core.GinkgoTInterface) (*AwsAction, error) {
+func NewAWSAction(ctx context.Context, t core.GinkgoTInterface) (*AwsAction, error) {
 	t.Helper()
 
-	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err

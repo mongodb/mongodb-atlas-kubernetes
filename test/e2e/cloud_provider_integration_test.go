@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -40,7 +41,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 		checkUpAWSEnvironment()
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		GinkgoWriter.Write([]byte("\n"))
 		GinkgoWriter.Write([]byte("===============================================\n"))
 		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
@@ -49,7 +50,7 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
 		By("Clean Roles", func() {
-			DeleteAllRoles(testData)
+			DeleteAllRoles(ctx, testData)
 		})
 		By("Delete Resources, Project with Cloud provider access roles", func() {
 			actions.DeleteTestDataProject(testData)
@@ -58,18 +59,15 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, roles []cloudaccess.Role) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			cloudAccessRolesFlow(test, roles)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, roles []cloudaccess.Role) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			cloudAccessRolesFlow(ctx, testData, roles)
 		},
 		Entry("Test[cloud-access-role-aws-1]: User has project which was updated with AWS custom role", Label("focus-cloud-access-role-aws-1"),
-			model.DataProvider(
-				"cloud-access-role-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx SpecContext) *model.TestDataProvider {
+				return model.DataProvider(ctx, "cloud-access-role-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]cloudaccess.Role{
 				{
 					Name: utils.RandomName(awsRoleNameBase),
@@ -90,15 +88,15 @@ var _ = Describe("UserLogin", Label("cloud-access-role"), func() {
 	)
 })
 
-func DeleteAllRoles(testData *model.TestDataProvider) {
+func DeleteAllRoles(ctx context.Context, testData *model.TestDataProvider) {
 	Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name, Namespace: testData.Project.Namespace}, testData.Project)).Should(Succeed())
-	errorList := cloudaccess.DeleteCloudProviderIntegrations(testData.Project.Spec.CloudProviderIntegrations)
+	errorList := cloudaccess.DeleteCloudProviderIntegrations(ctx, testData.Project.Spec.CloudProviderIntegrations)
 	Expect(len(errorList)).Should(Equal(0), errorList)
 }
 
-func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.Role) {
+func cloudAccessRolesFlow(ctx context.Context, userData *model.TestDataProvider, roles []cloudaccess.Role) {
 	By("Create AWS role", func() {
-		err := cloudaccess.CreateRoles(roles)
+		err := cloudaccess.CreateRoles(ctx, roles)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
@@ -121,7 +119,7 @@ func cloudAccessRolesFlow(userData *model.TestDataProvider, roles []cloudaccess.
 		project := &akov2.AtlasProject{}
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: userData.Project.Name, Namespace: userData.Project.Namespace}, project)).Should(Succeed())
 
-		err := cloudaccess.AddAtlasStatementToRole(roles, project.Status.CloudProviderIntegrations)
+		err := cloudaccess.AddAtlasStatementToRole(ctx, roles, project.Status.CloudProviderIntegrations)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		actions.WaitForConditionsToBecomeTrue(userData, api.CloudProviderIntegrationReadyType, api.ReadyType)
