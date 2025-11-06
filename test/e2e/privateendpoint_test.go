@@ -106,7 +106,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(nil, &cloud.AWSPrivateEndpointRequest{
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
 						ID:          fmt.Sprintf("aws-e2e-pe-%s", testData.Resources.TestID),
 						Region:      awsConfig.Region,
 						ServiceName: pe.Status.ServiceName,
@@ -116,7 +116,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(nil, &cloud.AzurePrivateEndpointRequest{
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.AzurePrivateEndpointRequest{
 						ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 						Region:            azureConfig.Region,
 						ServiceResourceID: pe.Status.ResourceID,
@@ -127,7 +127,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(nil, &cloud.GCPPrivateEndpointRequest{
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.GCPPrivateEndpointRequest{
 						ID:         fmt.Sprintf("gcp-e2e-pe-%s", testData.Resources.TestID),
 						Region:     gcpConfig.Region,
 						Targets:    pe.Status.ServiceAttachmentNames,
@@ -330,7 +330,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(nil, &cloud.AWSPrivateEndpointRequest{
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
 							ID:          fmt.Sprintf("aws-e2e-pe-%s", testData.Resources.TestID),
 							Region:      awsConfig.Region,
 							ServiceName: peStatus.ServiceName,
@@ -340,7 +340,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(nil, &cloud.AzurePrivateEndpointRequest{
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.AzurePrivateEndpointRequest{
 							ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 							Region:            azureConfig.Region,
 							ServiceResourceID: peStatus.ServiceResourceID,
@@ -351,7 +351,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(nil, &cloud.GCPPrivateEndpointRequest{
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.GCPPrivateEndpointRequest{
 							ID:         fmt.Sprintf("pe-migration-gcp--%s-%s", pe.EndpointGroupName, testData.Resources.TestID),
 							Region:     gcpConfig.Region,
 							Targets:    peStatus.ServiceAttachmentNames,

@@ -418,7 +418,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 			Expect(len(userData.Project.Status.CloudProviderIntegrations)).NotTo(Equal(0))
 			aRole := userData.Project.Status.CloudProviderIntegrations[0]
 
-			fillKMSforAWS(nil, userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
+			fillKMSforAWS(ctx, userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 				Name:      userData.Project.Name,
