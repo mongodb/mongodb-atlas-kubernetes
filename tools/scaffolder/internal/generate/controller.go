@@ -267,6 +267,17 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 		"HandleDeletionRequested",
 		"HandleDeleting",
 	}
+	startStateMap := map[string]string{
+		"HandleInitial":           "StateInitial",
+		"HandleImportRequested":   "StateImportRequested",
+		"HandleImported":          "StateImported",
+		"HandleCreating":          "StateCreating",
+		"HandleCreated":           "StateCreated",
+		"HandleUpdating":          "StateUpdating",
+		"HandleUpdated":           "StateUpdated",
+		"HandleDeletionRequested": "StateDeletionRequested",
+		"HandleDeleting":          "StateDeleting",
+	}
 
 	for _, handlerName := range handlers {
 		f.Comment(fmt.Sprintf("%s delegates to the version-specific handler", handlerName))
@@ -280,7 +291,7 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 			jen.List(jen.Id("handler"), jen.Id("err")).Op(":=").Id("h").Dot("getHandlerForResource").Call(jen.Id(strings.ToLower(resourceName))),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateInitial"),
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", startStateMap[handlerName]),
 					jen.Id("err"),
 				)),
 			),
@@ -299,7 +310,7 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 	)
 
 	generateMapperFunctions(f, controllerName, resourceName, apiPkg, refsByKind)
-	
+
 	generateSetupWithManager(f, controllerName, resourceName, refsByKind)
 }
 
