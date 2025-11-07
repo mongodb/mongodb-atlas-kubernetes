@@ -29,8 +29,6 @@ import (
 )
 
 type AwsResourcesGenerator struct {
-	t ginkgo.GinkgoTInterface
-
 	iamClient *iam.Client
 	s3Client  *s3.Client
 }
@@ -55,8 +53,6 @@ func NewAwsResourcesGenerator(ctx context.Context, t ginkgo.GinkgoTInterface, re
 	}
 
 	return &AwsResourcesGenerator{
-		t: t,
-
 		iamClient: iam.NewFromConfig(cfg),
 		s3Client:  s3.NewFromConfig(cfg),
 	}
@@ -271,10 +267,6 @@ func (g *AwsResourcesGenerator) DeleteObject(ctx context.Context, bucketName, ob
 	}
 
 	return nil
-}
-
-func (g *AwsResourcesGenerator) Cleanup(task func()) {
-	g.t.Cleanup(task)
 }
 
 func CloudProviderAccessPolicy(atlasAWSAccountArn, atlasAssumedRoleExternalID string) IAMPolicy {

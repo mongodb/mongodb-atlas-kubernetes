@@ -31,14 +31,14 @@ import (
 	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
-	"github.com/onsi/ginkgo/v2/dsl/core"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
 type AwsAction struct {
-	t       core.GinkgoTInterface
 	network *awsNetwork
 
 	cfg aws.Config
@@ -67,8 +67,6 @@ type statement struct {
 }
 
 func (a *AwsAction) CreateKMS(ctx context.Context, alias, region, atlasAccountArn, assumedRoleArn string) (string, error) {
-	a.t.Helper()
-
 	//kmsClient := kms.New(a.session, aws.NewConfig().WithRegion(region))
 	kmsClient := kms.NewFromConfig(a.cfg, func(o *kms.Options) {
 		o.Region = region
@@ -109,18 +107,14 @@ func (a *AwsAction) CreateKMS(ctx context.Context, alias, region, atlasAccountAr
 		TargetKeyId: key.KeyMetadata.KeyId,
 	})
 
-	if err != nil {
-		a.t.Log(fmt.Sprintf("failed to create alias to key %s(%s): %s", alias, *key.KeyMetadata.KeyId, err))
-	}
+	Expect(err).NotTo(HaveOccurred())
 
-	a.t.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) error {
 		_, err = kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               key.KeyMetadata.KeyId,
 			PendingWindowInDays: aws.Int32(7), // this is the minimum possible and can be up to 24h longer than value set
 		})
-		if err != nil {
-			a.t.Error(err)
-		}
+		return err
 	})
 
 	return *key.KeyMetadata.KeyId, nil
@@ -206,8 +200,6 @@ func defaultKMSPolicy(atlasAccountArn, assumedRoleArn string, adminARNs []string
 }
 
 func (a *AwsAction) GetAccountID(ctx context.Context) (string, error) {
-	a.t.Helper()
-
 	stsClient := sts.NewFromConfig(a.cfg)
 	identity, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -218,8 +210,6 @@ func (a *AwsAction) GetAccountID(ctx context.Context) (string, error) {
 }
 
 func (a *AwsAction) InitNetwork(ctx context.Context, vpcName, cidr, region string, subnets map[string]string, cleanup bool) (string, error) {
-	a.t.Helper()
-
 	vpc, err := a.findVPC(ctx, vpcName, region)
 	if err != nil {
 		return "", err
@@ -233,11 +223,8 @@ func (a *AwsAction) InitNetwork(ctx context.Context, vpcName, cidr, region strin
 	}
 
 	if cleanup {
-		a.t.Cleanup(func() {
-			err = a.deleteVPC(ctx, vpc, region)
-			if err != nil {
-				a.t.Error(err)
-			}
+		DeferCleanup(func(ctx SpecContext) error {
+			return a.deleteVPC(ctx, vpc, region)
 		})
 	}
 
@@ -259,11 +246,8 @@ func (a *AwsAction) InitNetwork(ctx context.Context, vpcName, cidr, region strin
 			}
 
 			if cleanup {
-				a.t.Cleanup(func() {
-					err = a.deleteSubnet(ctx, subnetID, region)
-					if err != nil {
-						a.t.Error(err)
-					}
+				DeferCleanup(func(ctx SpecContext) error {
+					return a.deleteSubnet(ctx, subnetID, region)
 				})
 			}
 		}
@@ -281,8 +265,6 @@ func (a *AwsAction) InitNetwork(ctx context.Context, vpcName, cidr, region strin
 }
 
 func (a *AwsAction) CreatePrivateEndpoint(ctx context.Context, serviceName, privateEndpointName, region string) (string, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -305,19 +287,19 @@ func (a *AwsAction) CreatePrivateEndpoint(ctx context.Context, serviceName, priv
 	}
 	vpcEndpointId := aws.ToString(result.VpcEndpoint.VpcEndpointId)
 
-	a.t.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) error {
 		deleteInput := &ec2.DeleteVpcEndpointsInput{
 			VpcEndpointIds: []string{vpcEndpointId},
 		}
 		_, err = ec2Client.DeleteVpcEndpoints(ctx, deleteInput)
 		if err != nil {
-			a.t.Error(err)
+			return err
 		}
 
 		timeout := 10 * time.Minute
 		start := time.Now()
 		for {
-			a.t.Log(fmt.Sprintf("deleting VPC ID %q since %v", vpcEndpointId, time.Since(start)))
+			fmt.Fprintf(GinkgoWriter, "deleting VPC ID %q since %v\n", vpcEndpointId, time.Since(start))
 
 			output, err := ec2Client.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
 				VpcEndpointIds: []string{vpcEndpointId},
@@ -326,20 +308,17 @@ func (a *AwsAction) CreatePrivateEndpoint(ctx context.Context, serviceName, priv
 			if err != nil {
 				var apiErr *smithy.GenericAPIError
 				if errors.As(err, &apiErr) && apiErr.Code == "InvalidVpcEndpointId.NotFound" {
-					return
+					return nil
 				}
-
-				a.t.Error(err)
-				return
+				return err
 			}
 
 			if len(output.VpcEndpoints) == 0 {
-				return
+				return nil
 			}
 
 			if time.Since(start) > timeout {
-				a.t.Error(errors.New("timeout waiting for deletion of vpc endpoints"))
-				return
+				return errors.New("timeout waiting for deletion of vpc endpoints")
 			}
 
 			// we do know that deletion of VPC endpoints takes time
@@ -351,8 +330,6 @@ func (a *AwsAction) CreatePrivateEndpoint(ctx context.Context, serviceName, priv
 }
 
 func (a *AwsAction) GetPrivateEndpoint(ctx context.Context, endpointID, region string) (ec2types.VpcEndpoint, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -370,8 +347,6 @@ func (a *AwsAction) GetPrivateEndpoint(ctx context.Context, endpointID, region s
 }
 
 func (a *AwsAction) AcceptVpcPeeringConnection(ctx context.Context, connectionID, region string) error {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -383,24 +358,20 @@ func (a *AwsAction) AcceptVpcPeeringConnection(ctx context.Context, connectionID
 		},
 	)
 
-	a.t.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) error {
 		_, err = ec2Client.DeleteVpcPeeringConnection(
 			ctx,
 			&ec2.DeleteVpcPeeringConnectionInput{
 				VpcPeeringConnectionId: aws.String(connectionID),
 			},
 		)
-		if err != nil {
-			a.t.Error(err)
-		}
+		return err
 	})
 
 	return err
 }
 
 func (a *AwsAction) findVPC(ctx context.Context, name, region string) (string, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -424,8 +395,6 @@ func (a *AwsAction) findVPC(ctx context.Context, name, region string) (string, e
 }
 
 func (a *AwsAction) createVPC(ctx context.Context, name, cidr, region string) (string, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -464,8 +433,6 @@ func (a *AwsAction) createVPC(ctx context.Context, name, cidr, region string) (s
 }
 
 func (a *AwsAction) deleteVPC(ctx context.Context, id, region string) error {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -481,8 +448,6 @@ func (a *AwsAction) deleteVPC(ctx context.Context, id, region string) error {
 }
 
 func (a *AwsAction) getSubnets(ctx context.Context, vpcID, region string) (map[string]string, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -511,8 +476,6 @@ func (a *AwsAction) getSubnets(ctx context.Context, vpcID, region string) (map[s
 }
 
 func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region, az string) (string, error) {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -541,8 +504,6 @@ func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region,
 }
 
 func (a *AwsAction) deleteSubnet(ctx context.Context, subnetID string, region string) error {
-	a.t.Helper()
-
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region
 	})
@@ -558,16 +519,12 @@ func (a *AwsAction) deleteSubnet(ctx context.Context, subnetID string, region st
 	return nil
 }
 
-func NewAWSAction(ctx context.Context, t core.GinkgoTInterface) (*AwsAction, error) {
-	t.Helper()
-
+func NewAWSAction(ctx context.Context) (*AwsAction, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &AwsAction{
-		t: t,
-
 		cfg: cfg,
 	}, nil
 }

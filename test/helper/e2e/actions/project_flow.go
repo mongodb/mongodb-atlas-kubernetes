@@ -108,7 +108,7 @@ func CreateProjectWithCloudProviderAccess(ctx context.Context, testData *model.T
 		Expect(err).Should(BeNil())
 		Expect(roleArn).ShouldNot(BeEmpty())
 
-		testData.AWSResourcesGenerator.Cleanup(func() {
+		DeferCleanup(func(ctx SpecContext) {
 			Expect(testData.AWSResourcesGenerator.DeleteIAMRole(ctx, atlasIAMRoleName)).To(Succeed())
 		})
 

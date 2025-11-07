@@ -222,7 +222,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 
 func setupAWSResource(ctx context.Context, gen *helper.AwsResourcesGenerator, bucket, bucketPolicy, role string) {
 	Expect(gen.CreateBucket(ctx, bucket)).To(Succeed())
-	gen.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) {
 		Expect(gen.EmptyBucket(ctx, bucket)).To(Succeed())
 		Expect(gen.DeleteBucket(ctx, bucket)).To(Succeed())
 	})
@@ -232,12 +232,12 @@ func setupAWSResource(ctx context.Context, gen *helper.AwsResourcesGenerator, bu
 	})
 	Expect(err).Should(BeNil())
 	Expect(policyArn).ShouldNot(BeEmpty())
-	gen.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) {
 		Expect(gen.DeletePolicy(ctx, policyArn)).To(Succeed())
 	})
 
 	Expect(gen.AttachRolePolicy(ctx, role, policyArn)).To(Succeed())
-	gen.Cleanup(func() {
+	DeferCleanup(func(ctx SpecContext) {
 		Expect(gen.DetachRolePolicy(ctx, role, policyArn)).To(Succeed())
 	})
 }

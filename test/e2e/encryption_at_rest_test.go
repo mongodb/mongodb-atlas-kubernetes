@@ -198,7 +198,7 @@ func fillKMSforAWS(ctx context.Context, userData *model.TestDataProvider, encAtR
 	alias := fmt.Sprintf("%s-kms", userData.Project.Spec.Name)
 
 	Expect(encAtRest.AwsKms.Region).NotTo(Equal(""))
-	awsAction, err := cloud.NewAWSAction(ctx, GinkgoT())
+	awsAction, err := cloud.NewAWSAction(ctx)
 	Expect(err).ToNot(HaveOccurred())
 	CustomerMasterKeyID, err := awsAction.CreateKMS(ctx, alias, config.AWSRegionUS, atlasAccountArn, assumedRoleArn)
 	Expect(err).ToNot(HaveOccurred())

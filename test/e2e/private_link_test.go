@@ -287,7 +287,7 @@ func getPrivateLinkName(privateEndpointID string, providerName provider.Provider
 func prepareProviderAction(ctx context.Context) (*cloud.ProviderAction, error) {
 	t := GinkgoT()
 
-	aws, err := cloud.NewAWSAction(ctx, t)
+	aws, err := cloud.NewAWSAction(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		By("Setting up cloud environment", func() {
 			checkUpAWSEnvironment()
 
-			aws, err := cloud.NewAWSAction(ctx, GinkgoT())
+			aws, err := cloud.NewAWSAction(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			awsHelper = aws
 		})
