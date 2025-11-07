@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -141,6 +142,11 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 					},
 				},
 			},
+			Tags: map[string]*string{
+				taghelper.OwnerEmailTag:  pointer.MakePtr(taghelper.AKOEmail),
+				taghelper.CostCenterTag:  pointer.MakePtr(taghelper.AKOCostCenter),
+				taghelper.EnvironmentTag: pointer.MakePtr(taghelper.AKOEnvTest),
+			},
 		},
 		nil,
 	)
@@ -246,7 +252,10 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 				Subnets: subnetsSpec,
 			},
 			Tags: map[string]*string{
-				"Name": pointer.MakePtr(vpcName),
+				"Name":                   pointer.MakePtr(vpcName),
+				taghelper.OwnerEmailTag:  pointer.MakePtr(taghelper.AKOEmail),
+				taghelper.CostCenterTag:  pointer.MakePtr(taghelper.AKOCostCenter),
+				taghelper.EnvironmentTag: pointer.MakePtr(taghelper.AKOEnvTest),
 			},
 		},
 		nil,
@@ -420,6 +429,11 @@ func (a *AzureAction) CreateKeyVault(keyName string) (string, error) {
 	params := armkeyvault.KeyCreateParameters{
 		Properties: &armkeyvault.KeyProperties{
 			Kty: pointer.MakePtr(armkeyvault.JSONWebKeyTypeRSA),
+		},
+		Tags: map[string]*string{
+			taghelper.OwnerEmailTag:  pointer.MakePtr(taghelper.AKOEmail),
+			taghelper.CostCenterTag:  pointer.MakePtr(taghelper.AKOCostCenter),
+			taghelper.EnvironmentTag: pointer.MakePtr(taghelper.AKOEnvTest),
 		},
 	}
 
