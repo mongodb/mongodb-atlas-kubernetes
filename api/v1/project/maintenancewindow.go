@@ -16,7 +16,7 @@ package project
 
 type MaintenanceWindow struct {
 	// Day of the week when you would like the maintenance window to start as a 1-based integer.
-	// Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7
+	// Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=7

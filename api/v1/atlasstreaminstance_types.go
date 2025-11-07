@@ -25,18 +25,18 @@ import (
 )
 
 type AtlasStreamInstanceSpec struct {
-	// Human-readable label that identifies the stream connection
+	// Human-readable label that identifies the stream connection.
 	Name string `json:"name"`
-	// The configuration to be used to connect to a Atlas Cluster
+	// The configuration to be used to connect to an Atlas Cluster.
 	Config Config `json:"clusterConfig"`
-	// Project which the instance belongs to
+	// Project which the instance belongs to.
 	Project common.ResourceRefNamespaced `json:"projectRef"`
-	// List of connections of the stream instance for the specified project
+	// List of connections of the stream instance for the specified project.
 	ConnectionRegistry []common.ResourceRefNamespaced `json:"connectionRegistry,omitempty"`
 }
 
 type Config struct {
-	// Name of the cluster configured for this connection
+	// Name of the cluster configured for this connection.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT;SERVERLESS
 	// +kubebuilder:default=AWS
 	Provider string `json:"provider"`

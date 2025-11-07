@@ -19,19 +19,34 @@ import (
 )
 
 type CustomZoneMapping struct {
+	// Code that represents a location that maps to a zone in your global cluster.
+	// MongoDB Atlas represents this location with a ISO 3166-2 location and subdivision codes when possible.
 	Location string `json:"location"`
-	Zone     string `json:"zone"`
+	// Human-readable label that identifies the zone in your global cluster. This zone maps to a location code.
+	Zone string `json:"zone"`
 }
 
 // ManagedNamespace represents the information about managed namespace configuration.
 type ManagedNamespace struct {
-	Db                     string `json:"db"` // not changing this as is a breaking change
-	Collection             string `json:"collection"`
-	CustomShardKey         string `json:"customShardKey,omitempty"`
-	NumInitialChunks       int    `json:"numInitialChunks,omitempty"`
-	PresplitHashedZones    *bool  `json:"presplitHashedZones,omitempty"`
-	IsCustomShardKeyHashed *bool  `json:"isCustomShardKeyHashed,omitempty"` // Flag that specifies whether the custom shard key for the collection is hashed.
-	IsShardKeyUnique       *bool  `json:"isShardKeyUnique,omitempty"`       // Flag that specifies whether the underlying index enforces a unique constraint.
+	// Human-readable label of the database to manage for this Global Cluster.
+	Db string `json:"db"` // not changing this as is a breaking change
+	// Human-readable label of the collection to manage for this Global Cluster.
+	Collection string `json:"collection"`
+	// Database parameter used to divide the collection into shards. Global clusters require a compound shard key.
+	// This compound shard key combines the location parameter and the user-selected custom key.
+	CustomShardKey string `json:"customShardKey,omitempty"`
+	// Minimum number of chunks to create initially when sharding an empty collection with a hashed shard key.
+	// Maximum value is 8192.
+	NumInitialChunks int `json:"numInitialChunks,omitempty"`
+	// Flag that indicates whether MongoDB Cloud should create and distribute initial chunks for an empty or non-existing collection.
+	// MongoDB Cloud distributes data based on the defined zones and zone ranges for the collection.
+	PresplitHashedZones *bool `json:"presplitHashedZones,omitempty"`
+	// Flag that indicates whether someone hashed the custom shard key for the specified collection.
+	// If you set this value to false, MongoDB Cloud uses ranged sharding.
+	IsCustomShardKeyHashed *bool `json:"isCustomShardKeyHashed,omitempty"`
+	// Flag that indicates whether someone hashed the custom shard key.
+	// If this parameter returns false, this cluster uses ranged sharding.
+	IsShardKeyUnique *bool `json:"isShardKeyUnique,omitempty"`
 }
 
 func NewFailedToCreateManagedNamespaceStatus(namespace ManagedNamespace, err error) status.ManagedNamespace {

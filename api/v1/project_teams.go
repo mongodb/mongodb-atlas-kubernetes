@@ -34,10 +34,10 @@ const (
 )
 
 type Team struct {
-	// Reference to the team which will assigned to the project
+	// Reference to the AtlasTeam custom resource which will be assigned to the project.
 	TeamRef common.ResourceRefNamespaced `json:"teamRef"`
 	// +kubebuilder:validation:MinItems=1
-	// Roles the users of the team has over the project
+	// Roles the users in the team has within the project.
 	Roles []TeamRole `json:"roles"`
 }
 

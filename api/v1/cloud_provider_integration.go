@@ -24,7 +24,7 @@ type CloudProviderIntegration struct {
 }
 
 // CloudProviderAccessRole define an integration to a cloud provider
-// Deprecated: This type is deprecated in favor of CloudProviderIntegration
+// DEPRECATED: This type is deprecated in favor of CloudProviderIntegration
 type CloudProviderAccessRole struct {
 	// ProviderName is the name of the cloud provider. Currently only AWS is supported.
 	ProviderName string `json:"providerName"`

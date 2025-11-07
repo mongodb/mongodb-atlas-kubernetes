@@ -14,6 +14,10 @@
 
 package v1
 
+// CustomRole lets you create and change a custom role in your cluster.
+// Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+// Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 type CustomRole struct {
 	// Human-readable label that identifies the role. This name must be unique for this custom role in this project.
 	Name string `json:"name"`

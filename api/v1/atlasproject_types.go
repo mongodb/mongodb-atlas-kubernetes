@@ -43,12 +43,13 @@ func init() {
 type AtlasProjectSpec struct {
 
 	// Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
+	// The name length must not exceed 64 characters. The name must contain only letters, numbers, spaces, dashes, and underscores.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Name cannot be modified after project creation"
 	Name string `json:"name"`
 
 	// RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.
 	// This parameter should not be used with commercial Atlas.
-	// In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY
+	// In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY.
 	// +kubebuilder:validation:Enum=NONE;GOV_REGIONS_ONLY;COMMERCIAL_FEDRAMP_REGIONS_ONLY
 	// +kubebuilder:default:=NONE
 	// +optional
@@ -59,8 +60,10 @@ type AtlasProjectSpec struct {
 	// +optional
 	ConnectionSecret *common.ResourceRefNamespaced `json:"connectionSecretRef,omitempty"`
 
-	// ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
+	// ProjectIPAccessList allows the use of the IP Access List for a Project. See more information at
 	// https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+	// Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+	// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 	// +optional
 	ProjectIPAccessList []project.IPAccessList `json:"projectIpAccessList,omitempty"`
 
@@ -70,53 +73,78 @@ type AtlasProjectSpec struct {
 	MaintenanceWindow project.MaintenanceWindow `json:"maintenanceWindow,omitempty"`
 
 	// PrivateEndpoints is a list of Private Endpoints configured for the current Project.
+	// Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+	// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
+	// +optional
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
 
 	// CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
 	// Deprecated: This configuration was deprecated in favor of CloudProviderIntegrations
+	// +optional
 	CloudProviderAccessRoles []CloudProviderAccessRole `json:"cloudProviderAccessRoles,omitempty"`
 
 	// CloudProviderIntegrations is a list of Cloud Provider Integration configured for the current Project.
+	// +optional
 	CloudProviderIntegrations []CloudProviderIntegration `json:"cloudProviderIntegrations,omitempty"`
 
 	// AlertConfiguration is a list of Alert Configurations configured for the current Project.
+	// If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+	// Operator to modify project alert configurations.
+	// If you omit or leave this setting empty, Atlas Kubernetes Operator doesn't alter the project's alert
+	// configurations. If creating a project, Atlas applies the default project alert configurations.
 	AlertConfigurations []AlertConfiguration `json:"alertConfigurations,omitempty"`
 
 	// AlertConfigurationSyncEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
 	// If true - project alert configurations will be synced according to AlertConfigurations.
-	// If not - alert configurations will not be modified by the operator. They can be managed through API, cli, UI.
+	// If not - alert configurations will not be modified by the operator. They can be managed through the API, CLI, and UI.
 	//kubebuilder:default:=false
 	// +optional
 	AlertConfigurationSyncEnabled bool `json:"alertConfigurationSyncEnabled,omitempty"`
 
 	// NetworkPeers is a list of Network Peers configured for the current Project.
+	// Deprecated: Migrate to the AtlasNetworkPeering and AtlasNetworkContainer custom resources in accordance with
+	// the migration guide at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
+	// +optional
 	NetworkPeers []NetworkPeer `json:"networkPeers,omitempty"`
 
-	// Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true
+	// Flag that indicates whether Atlas Kubernetes Operator creates a project with the default alert configurations.
+	// If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+	// Operator to modify project alert configurations.
+	// If you set this parameter to false when you create a project, Atlas doesn't add the default alert configurations
+	// to your project.
+	// This setting has no effect on existing projects.
 	// +kubebuilder:default:=true
 	// +optional
 	WithDefaultAlertsSettings bool `json:"withDefaultAlertsSettings,omitempty"`
 
-	// X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
+	// X509CertRef is a reference to the Kubernetes Secret which contains PEM-encoded CA certificate.
+	// Atlas Kubernetes Operator watches secrets only with the label atlas.mongodb.com/type=credentials to avoid
+	// watching unnecessary secrets.
+	// +optional
 	X509CertRef *common.ResourceRefNamespaced `json:"x509CertRef,omitempty"`
 
-	// Integrations is a list of MongoDB Atlas integrations for the project
+	// Integrations is a list of MongoDB Atlas integrations for the project.
+	// Deprecated: Migrate to the AtlasThirdPartyIntegration custom resource in accordance with the migration guide
+	// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 	// +optional
 	Integrations []project.Integration `json:"integrations,omitempty"`
 
-	// EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers
+	// EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers.
 	// +optional
 	EncryptionAtRest *EncryptionAtRest `json:"encryptionAtRest,omitempty"`
 
-	// Auditing represents MongoDB Maintenance Windows
+	// Auditing represents MongoDB Maintenance Windows.
 	// +optional
 	Auditing *Auditing `json:"auditing,omitempty"`
 
-	// Settings allow to set Project Settings for the project
+	// Settings allows the configuration of the Project Settings.
 	// +optional
 	Settings *ProjectSettings `json:"settings,omitempty"`
 
-	// The customRoles lets you create, and change custom roles in your cluster. Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+	// CustomRoles lets you create and change custom roles in your cluster.
+	// Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+	// Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+	// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 	// +optional
 	CustomRoles []CustomRole `json:"customRoles,omitempty"`
 
@@ -124,7 +152,7 @@ type AtlasProjectSpec struct {
 	// +optional
 	Teams []Team `json:"teams,omitempty"`
 
-	// BackupCompliancePolicyRef is a reference to the backup compliance CR.
+	// BackupCompliancePolicyRef is a reference to the backup compliance custom resource.
 	// +optional
 	BackupCompliancePolicyRef *common.ResourceRefNamespaced `json:"backupCompliancePolicyRef,omitempty"`
 }

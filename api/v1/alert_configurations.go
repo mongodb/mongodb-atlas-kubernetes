@@ -130,9 +130,10 @@ func (in *Matcher) IsEqual(matcher Matcher) bool {
 }
 
 type Threshold struct {
-	// Operator to apply when checking the current metric value against the threshold value. it accepts the following values: GREATER_THAN, LESS_THAN
+	// Operator to apply when checking the current metric value against the threshold value.
+	// It accepts the following values: GREATER_THAN, LESS_THAN.
 	Operator string `json:"operator,omitempty"`
-	// The units for the threshold value
+	// The units for the threshold value.
 	Units string `json:"units,omitempty"`
 	// Threshold value outside which an alert will be triggered.
 	Threshold string `json:"threshold,omitempty"`
@@ -199,7 +200,7 @@ type Notification struct {
 	// Secret containing a Datadog API Key. Found in the Datadog dashboard. Populated for the DATADOG notifications type.
 	// +optional
 	DatadogAPIKeyRef common.ResourceRefNamespaced `json:"datadogAPIKeyRef,omitempty"`
-	// Region that indicates which API URL to use
+	// Region that indicates which API URL to use.
 	DatadogRegion string `json:"datadogRegion,omitempty"`
 	// Number of minutes to wait after an alert condition is detected before sending out the first notification.
 	DelayMin *int `json:"delayMin,omitempty"`

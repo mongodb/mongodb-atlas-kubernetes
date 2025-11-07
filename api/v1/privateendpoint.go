@@ -22,13 +22,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
+// PrivateEndpoint is a list of Private Endpoints configured for the current Project.
+// Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+// at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 type PrivateEndpoint struct {
-	// Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS or AZURE.
+	// Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS, GCP, or AZURE.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE;TENANT
 	Provider provider.ProviderName `json:"provider"`
 	// Cloud provider region for which you want to create the private endpoint service.
 	Region string `json:"region"`
-	// Unique identifier of the private endpoint you created in your AWS VPC or Azure Vnet.
+	// Unique identifier of the private endpoint you created in your AWS VPC or Azure VNet.
 	// +optional
 	ID string `json:"id,omitempty"`
 	// Private IP address of the private endpoint network interface you created in your Azure VNet.
@@ -37,7 +40,7 @@ type PrivateEndpoint struct {
 	// Unique identifier of the Google Cloud project in which you created your endpoints.
 	// +optional
 	GCPProjectID string `json:"gcpProjectId,omitempty"`
-	// Unique identifier of the endpoint group. The endpoint group encompasses all of the endpoints that you created in Google Cloud.
+	// Unique identifier of the endpoint group. The endpoint group encompasses all the endpoints that you created in Google Cloud.
 	// +optional
 	EndpointGroupName string `json:"endpointGroupName,omitempty"`
 	// Collection of individual private endpoints that comprise your endpoint group.

@@ -66,50 +66,50 @@ func (atpi *AtlasThirdPartyIntegration) GetConditions() []metav1.Condition {
 type AtlasThirdPartyIntegrationSpec struct {
 	ProjectDualReference `json:",inline"`
 
-	// Type of the integration
+	// Type of the integration.
 	// +kubebuilder:validation:Enum:=DATADOG;MICROSOFT_TEAMS;NEW_RELIC;OPS_GENIE;PAGER_DUTY;PROMETHEUS;SLACK;VICTOR_OPS;WEBHOOK
 	// +kubebuilder:validation:Required
 	Type string `json:"type"`
 
-	// Datadog contains the config fields for Datadog's Integration
+	// Datadog contains the config fields for Datadog's Integration.
 	// +kubebuilder:validation:Optional
 	Datadog *DatadogIntegration `json:"datadog,omitempty"`
 
-	// MicrosoftTeams contains the config fields for Microsoft Teams's Integration
+	// MicrosoftTeams contains the config fields for Microsoft Teams's Integration.
 	// +kubebuilder:validation:Optional
 	MicrosoftTeams *MicrosoftTeamsIntegration `json:"microsoftTeams,omitempty"`
 
-	// NewRelic contains the config fields for New Relic's Integration
+	// NewRelic contains the config fields for New Relic's Integration.
 	// +kubebuilder:validation:Optional
 	NewRelic *NewRelicIntegration `json:"newRelic,omitempty"`
 
-	// OpsGenie contains the config fields for Ops Genie's Integration
+	// OpsGenie contains the config fields for Ops Genie's Integration.
 	// +kubebuilder:validation:Optional
 	OpsGenie *OpsGenieIntegration `json:"opsGenie,omitempty"`
 
-	// PagerDuty contains the config fields for PagerDuty's Integration
+	// PagerDuty contains the config fields for PagerDuty's Integration.
 	// +kubebuilder:validation:Optional
 	PagerDuty *PagerDutyIntegration `json:"pagerDuty,omitempty"`
 
-	// Prometheus contains the config fields for Prometheus's Integration
+	// Prometheus contains the config fields for Prometheus's Integration.
 	// +kubebuilder:validation:Optional
 	Prometheus *PrometheusIntegration `json:"prometheus,omitempty"`
 
-	// Slack contains the config fields for Slack's Integration
+	// Slack contains the config fields for Slack's Integration.
 	// +kubebuilder:validation:Optional
 	Slack *SlackIntegration `json:"slack,omitempty"`
 
-	// VictorOps contains the config fields for VictorOps's Integration
+	// VictorOps contains the config fields for VictorOps's Integration.
 	// +kubebuilder:validation:Optional
 	VictorOps *VictorOpsIntegration `json:"victorOps,omitempty"`
 
-	// Webhook contains the config fields for Webhook's Integration
+	// Webhook contains the config fields for Webhook's Integration.
 	// +kubebuilder:validation:Optional
 	Webhook *WebhookIntegration `json:"webhook,omitempty"`
 }
 
 type DatadogIntegration struct {
-	// APIKeySecretRef holds the name of a secret containing the datadog api key
+	// APIKeySecretRef holds the name of a secret containing the Datadog API key.
 	// +kubebuilder:validation:Required
 	APIKeySecretRef api.LocalObjectReference `json:"apiKeySecretRef"`
 
@@ -117,7 +117,7 @@ type DatadogIntegration struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 
-	// SendCollectionLatencyMetrics toggles sending collection latency metrics
+	// SendCollectionLatencyMetrics toggles sending collection latency metrics.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=enabled;disabled
 	// +kubebuilder:default:=disabled
@@ -132,79 +132,79 @@ type DatadogIntegration struct {
 }
 
 type MicrosoftTeamsIntegration struct {
-	// URLSecretRef holds the name of a secret containing the microsoft teams secret URL
+	// URLSecretRef holds the name of a secret containing the Microsoft Teams secret URL.
 	// +kubebuilder:validation:Required
 	URLSecretRef api.LocalObjectReference `json:"urlSecretRef"`
 }
 
 type NewRelicIntegration struct {
 	// CredentialsSecretRef holds the name of a secret containing new relic's credentials:
-	// account id, license key, read and write tokens
+	// account id, license key, read and write tokens.
 	// +kubebuilder:validation:Required
 	CredentialsSecretRef api.LocalObjectReference `json:"credentialsSecretRef"`
 }
 
 type OpsGenieIntegration struct {
-	// APIKeySecretRef holds the name of a secret containing Ops Genie's API key
+	// APIKeySecretRef holds the name of a secret containing Ops Genie's API key.
 	// +kubebuilder:validation:Required
 	APIKeySecretRef api.LocalObjectReference `json:"apiKeySecretRef"`
 
-	// Region is the Ops Genie region
+	// Region is the Ops Genie region.
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 }
 
 type PagerDutyIntegration struct {
-	// ServiceKeySecretRef holds the name of a secret containing Pager Duty service key
+	// ServiceKeySecretRef holds the name of a secret containing Pager Duty service key.
 	// +kubebuilder:validation:Required
 	ServiceKeySecretRef api.LocalObjectReference `json:"serviceKeySecretRef"`
 
-	// Region is the Pager Duty region
+	// Region is the Pager Duty region.
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 }
 
 type PrometheusIntegration struct {
-	// Enabled is true when Prometheus integration is enabled
+	// Enabled is true when Prometheus integration is enabled.
 	Enabled *string `json:"enabled"`
 
-	// PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus
+	// PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus.
 	// username & password
 	// +kubebuilder:validation:Required
 	PrometheusCredentialsSecretRef api.LocalObjectReference `json:"prometheusCredentialsSecretRef"`
 
-	// ServiceDiscovery to be used by Prometheus
+	// ServiceDiscovery to be used by Prometheus.
 	// +kubebuilder:validation:Enum:=file;http
 	// +kubebuilder:validation:Required
 	ServiceDiscovery string `json:"serviceDiscovery"`
 }
 
 type SlackIntegration struct {
-	// APITokenSecretRef holds the name of a secret containing the Slack API token
+	// APITokenSecretRef holds the name of a secret containing the Slack API token.
 	// +kubebuilder:validation:Required
 	APITokenSecretRef api.LocalObjectReference `json:"apiTokenSecretRef"`
 
-	// ChannelName to be used by Prometheus
+	// ChannelName to be used by Prometheus.
 	// +kubebuilder:validation:Required
 	ChannelName string `json:"channelName"`
 
-	// TeamName flags whether or not Prometheus integration is enabled
+	// TeamName flags whether Prometheus integration is enabled.
 	// +kubebuilder:validation:Required
 	TeamName string `json:"teamName"`
 }
 
 type VictorOpsIntegration struct {
-	// RoutingKey holds VictorOps routing key
+	// RoutingKey holds VictorOps routing key.
 	// +kubebuilder:validation:Required
 	RoutingKey string `json:"routingKey"`
 
-	// APIKeySecretRef is the name of a secret containing Victor Ops API key
+	// APIKeySecretRef is the name of a secret containing Victor Ops API key.
 	// +kubebuilder:validation:Required
 	APIKeySecretRef api.LocalObjectReference `json:"apiKeySecretRef"`
 }
 
 type WebhookIntegration struct {
-	// URLSecretRef holds the name of a secret containing Webhook URL and secret
+	// URLSecretRef holds the name of a secret containing Webhook URL and secret.
 	// +kubebuilder:validation:Required
 	URLSecretRef api.LocalObjectReference `json:"urlSecretRef"`
 }

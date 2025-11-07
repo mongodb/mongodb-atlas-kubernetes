@@ -165,7 +165,7 @@ AtlasBackupCompliancePolicySpec is the specification of the desired configuratio
         <td><b>overwriteBackupPolicies</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether to overwrite non complying backup policies with the new data protection settings or not.<br/>
+          Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings or not.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -213,7 +213,7 @@ Specifications for on-demand policy.
         <td><b>retentionUnit</b></td>
         <td>enum</td>
         <td>
-          Scope of the backup policy item: days, weeks, or months<br/>
+          Scope of the backup policy item: days, weeks, or months.<br/>
           <br/>
             <i>Enum</i>: days, weeks, months<br/>
         </td>
@@ -222,7 +222,7 @@ Specifications for on-demand policy.
         <td><b>retentionValue</b></td>
         <td>integer</td>
         <td>
-          Value to associate with RetentionUnit<br/>
+          Value to associate with RetentionUnit.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -268,7 +268,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionUnit</b></td>
         <td>enum</td>
         <td>
-          Scope of the backup policy item: days, weeks, or months<br/>
+          Scope of the backup policy item: days, weeks, or months.<br/>
           <br/>
             <i>Enum</i>: days, weeks, months, years<br/>
         </td>
@@ -277,7 +277,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionValue</b></td>
         <td>integer</td>
         <td>
-          Value to associate with RetentionUnit<br/>
+          Value to associate with RetentionUnit.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -451,7 +451,7 @@ AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
         <td><b><a href="#atlasbackuppolicyspecitemsindex">items</a></b></td>
         <td>[]object</td>
         <td>
-          A list of BackupPolicy items<br/>
+          A list of BackupPolicy items.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -497,7 +497,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionUnit</b></td>
         <td>enum</td>
         <td>
-          Scope of the backup policy item: days, weeks, or months<br/>
+          Scope of the backup policy item: days, weeks, or months.<br/>
           <br/>
             <i>Enum</i>: days, weeks, months, years<br/>
         </td>
@@ -506,7 +506,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionValue</b></td>
         <td>integer</td>
         <td>
-          Value to associate with RetentionUnit<br/>
+          Value to associate with RetentionUnit.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -783,14 +783,14 @@ A reference (name & namespace) for backup policy in the desired updated backup p
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -868,14 +868,14 @@ Export policy for automatically exporting cloud backup snapshots to AWS bucket.
         <td><b>exportBucketId</b></td>
         <td>string</td>
         <td>
-          Unique Atlas identifier of the AWS bucket which was granted access to export backup snapshot<br/>
+          Unique Atlas identifier of the AWS bucket which was granted access to export backup snapshot.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>frequencyType</b></td>
         <td>enum</td>
         <td>
-          <br/>
+          Human-readable label that indicates the rate at which the export policy item occurs.<br/>
           <br/>
             <i>Enum</i>: monthly<br/>
             <i>Default</i>: monthly<br/>
@@ -1062,7 +1062,7 @@ AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
         <td><b><a href="#atlascustomrolespecrole">role</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Role represents a Custom Role in Atlas.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1097,7 +1097,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-
+Role represents a Custom Role in Atlas.
 
 <table>
     <thead>
@@ -1291,7 +1291,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -1319,14 +1319,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1515,17 +1515,15 @@ the user to perform particular actions on the specified database.<br/>
 Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
 In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
 In case of OIDC Workload or Workforce: the value should be the Atlas OIDC IdP ID, followed by a '/', followed by the IdP group name;
-In case of Plain text auth: the value can be anything<br/>
+In case of Plain text auth: the value can be anything.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>awsIamType</b></td>
         <td>enum</td>
         <td>
-          Human-readable label that indicates whether the new database
-user authenticates with the Amazon Web Services (AWS)
-Identity and Access Management (IAM) credentials associated with
-the user or the user's role<br/>
+          Human-readable label that indicates whether the new database user authenticates with Amazon Web Services (AWS).
+Identity and Access Management (IAM) credentials associated with the user or the user's role<br/>
           <br/>
             <i>Enum</i>: NONE, USER, ROLE<br/>
             <i>Default</i>: NONE<br/>
@@ -1619,7 +1617,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
         <td><b>x509Type</b></td>
         <td>enum</td>
         <td>
-          X509Type is X.509 method by which the database authenticates the provided username<br/>
+          X509Type is X.509 method by which the database authenticates the provided username.<br/>
           <br/>
             <i>Enum</i>: NONE, MANAGED, CUSTOMER<br/>
             <i>Default</i>: NONE<br/>
@@ -1721,7 +1719,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -1748,14 +1746,14 @@ LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Value set to the Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -1810,14 +1808,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1977,7 +1975,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
 
 
 
-AtlasDataFederation is the Schema for the Atlas Data Federation API
+AtlasDataFederation is the Schema for the Atlas Data Federation API.
 
 <table>
     <thead>
@@ -2043,42 +2041,42 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the Federated Database Instance.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          Project is a reference to AtlasProject resource the deployment belongs to<br/>
+          Project is a reference to AtlasProject resource the deployment belongs to.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspeccloudproviderconfig">cloudProviderConfig</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Configuration for the cloud provider where this Federated Database Instance is hosted.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecdataprocessregion">dataProcessRegion</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Information about the cloud provider region to which the Federated Database Instance routes client connections.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecprivateendpointsindex">privateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Private endpoint for Federated Database Instances and Online Archives to add to the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecstorage">storage</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Configuration information for each data store and its mapping to MongoDB Atlas databases.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2090,7 +2088,7 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API
 
 
 
-Project is a reference to AtlasProject resource the deployment belongs to
+Project is a reference to AtlasProject resource the deployment belongs to.
 
 <table>
     <thead>
@@ -2105,14 +2103,14 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2124,7 +2122,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Configuration for the cloud provider where this Federated Database Instance is hosted.
 
 <table>
     <thead>
@@ -2139,7 +2137,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b><a href="#atlasdatafederationspeccloudproviderconfigaws">aws</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Configuration for running Data Federation in AWS.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2151,7 +2149,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Configuration for running Data Federation in AWS.
 
 <table>
     <thead>
@@ -2166,14 +2164,14 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>roleId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique identifier of the role that the data lake can use to access the data stores.Required if specifying cloudProviderConfig.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>testS3Bucket</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Name of the S3 data bucket that the provided role ID is authorized to access.Required if specifying cloudProviderConfig.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2185,7 +2183,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Information about the cloud provider region to which the Federated Database Instance routes client connections.
 
 <table>
     <thead>
@@ -2200,7 +2198,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>cloudProvider</b></td>
         <td>enum</td>
         <td>
-          <br/>
+          Name of the cloud service that hosts the Federated Database Instance's infrastructure.<br/>
           <br/>
             <i>Enum</i>: AWS<br/>
         </td>
@@ -2209,7 +2207,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>region</b></td>
         <td>enum</td>
         <td>
-          <br/>
+          Name of the region to which the data lake routes client connections.<br/>
           <br/>
             <i>Enum</i>: SYDNEY_AUS, MUMBAI_IND, FRANKFURT_DEU, DUBLIN_IRL, LONDON_GBR, VIRGINIA_USA, OREGON_USA, SAOPAULO_BRA, SINGAPORE_SGP<br/>
         </td>
@@ -2238,21 +2236,21 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>endpointId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 22-character alphanumeric string that identifies the private endpoint.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>provider</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the cloud service provider. Atlas Data Lake supports Amazon Web Services only.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the resource type associated with this private endpoint.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2264,7 +2262,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Configuration information for each data store and its mapping to MongoDB Atlas databases.
 
 <table>
     <thead>
@@ -2279,14 +2277,14 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b><a href="#atlasdatafederationspecstoragedatabasesindex">databases</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Array that contains the queryable databases and collections for this data lake.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecstoragestoresindex">stores</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Array that contains the data stores for the data lake.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2298,7 +2296,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Database associated with this data lake. Databases contain collections and views.
 
 <table>
     <thead>
@@ -2313,28 +2311,29 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b><a href="#atlasdatafederationspecstoragedatabasesindexcollectionsindex">collections</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Array of collections and data sources that map to a stores data store.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>maxWildcardCollections</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Maximum number of wildcard collections in the database. This only applies to S3 data sources.
+Minimum value is 1, maximum value is 1000. Default value is 100.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the database to which the data lake maps data.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationspecstoragedatabasesindexviewsindex">views</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Array of aggregation pipelines that apply to the collection. This only applies to S3 data sources.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2346,7 +2345,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Collection maps to a stores data store.
 
 <table>
     <thead>
@@ -2361,14 +2360,14 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b><a href="#atlasdatafederationspecstoragedatabasesindexcollectionsindexdatasourcesindex">dataSources</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Array that contains the data stores that map to a collection for this data lake.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the collection to which MongoDB Atlas maps the data in the data stores.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2395,42 +2394,44 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>allowInsecure</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that validates the scheme in the specified URLs.
+If true, allows insecure HTTP scheme, doesn't verify the server's certificate chain and hostname, and accepts any certificate with any hostname presented by the server.
+If false, allows secure HTTPS scheme only.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the collection in the database. For creating a wildcard (*) collection, you must omit this parameter.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>collectionRegex</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Regex pattern to use for creating the wildcard (*) collection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>database</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the database, which contains the collection in the cluster. You must omit this parameter to generate wildcard (*) collections for dynamically generated databases.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>databaseRegex</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Regex pattern to use for creating the wildcard (*) database.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>defaultFormat</b></td>
         <td>enum</td>
         <td>
-          <br/>
+          File format that MongoDB Cloud uses if it encounters a file without a file extension while searching storeName.<br/>
           <br/>
             <i>Enum</i>: .avro, .avro.bz2, .avro.gz, .bson, .bson.bz2, .bson.gz, .bsonx, .csv, .csv.bz2, .csv.gz, .json, .json.bz2, .json.gz, .orc, .parquet, .tsv, .tsv.bz2, .tsv.gz<br/>
         </td>
@@ -2439,28 +2440,30 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>path</b></td>
         <td>string</td>
         <td>
-          <br/>
+          File path that controls how MongoDB Cloud searches for and parses files in the storeName before mapping them to a collection.
+Specify / to capture all files and folders from the prefix path.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>provenanceFieldName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Name for the field that includes the provenance of the documents in the results. MongoDB Atlas returns different fields in the results for each supported provider.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>storeName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the data store that MongoDB Cloud maps to the collection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>urls</b></td>
         <td>[]string</td>
         <td>
-          <br/>
+          URLs of the publicly accessible data files. You can't specify URLs that require authentication.
+Atlas Data Lake creates a partition for each URL. If empty or omitted, Data Lake uses the URLs from the store specified in the storeName parameter.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2487,21 +2490,21 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the view, which corresponds to an aggregation pipeline on a collection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>pipeline</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Aggregation pipeline stages to apply to the source collection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>source</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the source collection for the view.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2513,7 +2516,7 @@ Project is a reference to AtlasProject resource the deployment belongs to
 
 
 
-
+Store is a group of settings that define where the data is stored.
 
 <table>
     <thead>
@@ -2528,63 +2531,73 @@ Project is a reference to AtlasProject resource the deployment belongs to
         <td><b>additionalStorageClasses</b></td>
         <td>[]string</td>
         <td>
-          <br/>
+          Collection of AWS S3 storage classes. Atlas Data Lake includes the files in these storage classes in the query results.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>bucket</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the AWS S3 bucket.
+This label must exactly match the name of an S3 bucket that the data lake can access with the configured AWS Identity and Access Management (IAM) credentials.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>delimiter</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The delimiter that separates path segments in the data store.
+MongoDB Atlas uses the delimiter to efficiently traverse S3 buckets with a hierarchical directory structure. You can specify any character supported by the S3 object keys as the delimiter.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>includeTags</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to use S3 tags on the files in the given path as additional partition attributes.
+If set to true, data lake adds the S3 tags as additional partition attributes and adds new top-level BSON elements associating each tag to each document.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the data store. The storeName field references this values as part of the mapping configuration.
+To use MongoDB Atlas as a data store, the data lake requires a serverless instance or an M10 or higher cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>prefix</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Prefix that MongoDB Cloud applies when searching for files in the S3 bucket.
+The data store prepends the value of prefix to the path to create the full path for files to ingest.
+If omitted, MongoDB Cloud searches all files from the root of the S3 bucket.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>provider</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The provider used for data stores.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>public</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether the bucket is public.
+If set to true, MongoDB Cloud doesn't use the configured AWS Identity and Access Management (IAM) role to access the S3 bucket.
+If set to false, the configured AWS IAM role must include permissions to access the S3 bucket.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Physical location where MongoDB Cloud deploys your AWS-hosted MongoDB cluster nodes. The region you choose can affect network latency for clients accessing your databases.
+When MongoDB Atlas deploys a dedicated cluster, it checks if a VPC or VPC connection exists for that provider and region. If not, MongoDB Atlas creates them as part of the deployment.
+To limit a new VPC peering connection to one CIDR block and region, create the connection first. Deploy the cluster after the connection starts.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2731,8 +2744,8 @@ AtlasDeployment is the Schema for the atlasdeployments API
         <td><b><a href="#atlasdeploymentspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasDeploymentSpec defines the desired state of AtlasDeployment
-Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined<br/>
+          AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -2753,8 +2766,8 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
 
 
 
-AtlasDeploymentSpec defines the desired state of AtlasDeployment
-Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined
+AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 
 <table>
     <thead>
@@ -2769,7 +2782,7 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
         <td><b><a href="#atlasdeploymentspecbackupref">backupRef</a></b></td>
         <td>object</td>
         <td>
-          Backup schedule for the AtlasDeployment<br/>
+          Reference to the backup schedule for the AtlasDeployment.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2805,7 +2818,7 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasdeploymentspecprocessargs">processArgs</a></b></td>
         <td>object</td>
         <td>
-          ProcessArgs allows to modify Advanced Configuration Options<br/>
+          ProcessArgs allows modification of Advanced Configuration Options.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2821,7 +2834,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
         <td>object</td>
         <td>
           Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
-DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
+DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2842,7 +2855,7 @@ DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongod
 
 
 
-Backup schedule for the AtlasDeployment
+Reference to the backup schedule for the AtlasDeployment.
 
 <table>
     <thead>
@@ -2857,14 +2870,14 @@ Backup schedule for the AtlasDeployment
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2930,8 +2943,8 @@ Can only contain ASCII letters, numbers, and hyphens.<br/>
         <td><b>backupEnabled</b></td>
         <td>boolean</td>
         <td>
-          Applicable only for M10+ deployments.
-Flag that indicates if the deployment uses Cloud Backups for backups.<br/>
+          Flag that indicates if the deployment uses Cloud Backups for backups.
+Applicable only for M10+ deployments.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2965,7 +2978,7 @@ The parameter is required if replicationSpecs are set or if Global Deployments a
         <td><b><a href="#atlasdeploymentspecdeploymentspeccustomzonemappingindex">customZoneMapping</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains Global Cluster parameters that map zones to geographic regions.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2995,21 +3008,22 @@ The parameter is required if replicationSpecs are configured.<br/>
         <td>[]object</td>
         <td>
           Collection of key-value pairs that tag and categorize the deployment.
-Each key and value has a maximum length of 255 characters.<br/>
+Each key and value has a maximum length of 255 characters.
+DEPRECATED: Cluster labels are deprecated and will be removed in a future release. We strongly recommend that you use Resource Tags instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecmanagednamespacesindex">managedNamespaces</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains information to create a managed namespace in a specified Global Cluster to create.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>mongoDBMajorVersion</b></td>
         <td>string</td>
         <td>
-          Version of the deployment to deploy.<br/>
+          MongoDB major version of the cluster. Set to the binary major version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3044,14 +3058,14 @@ Each key and value has a maximum length of 255 characters.<br/>
         <td><b>rootCertType</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Root Certificate Authority that MongoDB Atlas cluster uses.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindex">searchIndexes</a></b></td>
         <td>[]object</td>
         <td>
-          A list of atlas search indexes configuration for the current deployment<br/>
+          An array of SearchIndex objects with fields that describe the search index.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3081,7 +3095,8 @@ Each key and value has a maximum length of 255 characters.<br/>
         <td><b>versionReleaseSystem</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Method by which the cluster maintains the MongoDB versions.
+If value is CONTINUOUS, you must not specify mongoDBMajorVersion.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3109,7 +3124,7 @@ The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether or not BI Connector for Atlas is enabled on the deployment.<br/>
+          Flag that indicates whether the Business Intelligence Connector for Atlas is enabled on the deployment.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3143,14 +3158,15 @@ The MongoDB Connector for Business Intelligence for Atlas (BI Connector) is only
         <td><b>location</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Code that represents a location that maps to a zone in your global cluster.
+MongoDB Atlas represents this location with a ISO 3166-2 location and subdivision codes when possible.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>zone</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the zone in your global cluster. This zone maps to a location code.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3177,14 +3193,14 @@ LabelSpec contains key-value pairs that tag and categorize the Cluster/DBUser
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Value set to the Key applied to tag and categorize this component.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3211,49 +3227,54 @@ ManagedNamespace represents the information about managed namespace configuratio
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the collection to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>db</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the database to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>customShardKey</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Database parameter used to divide the collection into shards. Global clusters require a compound shard key.
+This compound shard key combines the location parameter and the user-selected custom key.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isCustomShardKeyHashed</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key for the specified collection.
+If you set this value to false, MongoDB Cloud uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isShardKeyUnique</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key.
+If this parameter returns false, this cluster uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>numInitialChunks</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Minimum number of chunks to create initially when sharding an empty collection with a hashed shard key.
+Maximum value is 8192.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>presplitHashedZones</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether MongoDB Cloud should create and distribute initial chunks for an empty or non-existing collection.
+MongoDB Cloud distributes data based on the defined zones and zone ranges for the collection.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3344,7 +3365,7 @@ Every hardware specification must use the same instanceSize.<br/>
         <td>
           Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
-Otherwise it should be equal to "providerName" value<br/>
+Otherwise, it should be equal to the "providerName" value.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE<br/>
         </td>
@@ -3436,7 +3457,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3552,7 +3573,8 @@ Flag that indicates whether disk auto-scaling is enabled. The default is true.
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether this cluster enables disk auto-scaling.
+The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3601,7 +3623,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3657,7 +3679,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size<br/>
+The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3676,7 +3698,7 @@ The instance size you select applies to all the data-bearing hosts in your insta
 
 
 
-SearchIndex is the CRD to configure part of the Atlas Search Index
+SearchIndex is the CRD to configure part of the Atlas Search Index.
 
 <table>
     <thead>
@@ -3691,28 +3713,28 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
         <td><b>DBName</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes<br/>
+          Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>collectionName</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the collection that contains one or more Atlas Search indexes<br/>
+          Human-readable label that identifies the collection that contains one or more Atlas Search indexes.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies this index. Must be unique for a deployment<br/>
+          Human-readable label that identifies this index. Must be unique for a deployment.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the index<br/>
+          Type of the index.<br/>
           <br/>
             <i>Enum</i>: search, vectorSearch<br/>
         </td>
@@ -3721,14 +3743,14 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearch">search</a></b></td>
         <td>object</td>
         <td>
-          Atlas search index configuration<br/>
+          Atlas search index configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexvectorsearch">vectorSearch</a></b></td>
         <td>object</td>
         <td>
-          Atlas vector search index configuration<br/>
+          Atlas vector search index configuration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3740,7 +3762,7 @@ SearchIndex is the CRD to configure part of the Atlas Search Index
 
 
 
-Atlas search index configuration
+Atlas search index configuration.
 
 <table>
     <thead>
@@ -3755,21 +3777,21 @@ Atlas search index configuration
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchmappings">mappings</a></b></td>
         <td>object</td>
         <td>
-          Index specifications for the collection's fields<br/>
+          Index specifications for the collection's fields.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsearchconfigurationref">searchConfigurationRef</a></b></td>
         <td>object</td>
         <td>
-          A reference to the AtlasSearchIndexConfig custom resource<br/>
+          A reference to the AtlasSearchIndexConfig custom resource.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsynonymsindex">synonyms</a></b></td>
         <td>[]object</td>
         <td>
-          Rule sets that map words to their synonyms in this index<br/>
+          Rule sets that map words to their synonyms in this index.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3781,7 +3803,7 @@ Atlas search index configuration
 
 
 
-Index specifications for the collection's fields
+Index specifications for the collection's fields.
 
 <table>
     <thead>
@@ -3815,7 +3837,7 @@ Index specifications for the collection's fields
 
 
 
-A reference to the AtlasSearchIndexConfig custom resource
+A reference to the AtlasSearchIndexConfig custom resource.
 
 <table>
     <thead>
@@ -3830,14 +3852,14 @@ A reference to the AtlasSearchIndexConfig custom resource
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3849,7 +3871,7 @@ A reference to the AtlasSearchIndexConfig custom resource
 
 
 
-Synonym represents "Synonym" type of Atlas Search Index
+Synonym represents "Synonym" type of Atlas Search Index.
 
 <table>
     <thead>
@@ -3864,7 +3886,7 @@ Synonym represents "Synonym" type of Atlas Search Index
         <td><b>analyzer</b></td>
         <td>enum</td>
         <td>
-          Specific pre-defined method chosen to apply to the synonyms to be searched<br/>
+          Specific pre-defined method chosen to apply to the synonyms to be searched.<br/>
           <br/>
             <i>Enum</i>: lucene.standard, lucene.simple, lucene.whitespace, lucene.keyword, lucene.arabic, lucene.armenian, lucene.basque, lucene.bengali, lucene.brazilian, lucene.bulgarian, lucene.catalan, lucene.chinese, lucene.cjk, lucene.czech, lucene.danish, lucene.dutch, lucene.english, lucene.finnish, lucene.french, lucene.galician, lucene.german, lucene.greek, lucene.hindi, lucene.hungarian, lucene.indonesian, lucene.irish, lucene.italian, lucene.japanese, lucene.korean, lucene.kuromoji, lucene.latvian, lucene.lithuanian, lucene.morfologik, lucene.nori, lucene.norwegian, lucene.persian, lucene.portuguese, lucene.romanian, lucene.russian, lucene.smartcn, lucene.sorani, lucene.spanish, lucene.swedish, lucene.thai, lucene.turkish, lucene.ukrainian<br/>
         </td>
@@ -3873,14 +3895,14 @@ Synonym represents "Synonym" type of Atlas Search Index
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition<br/>
+          Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecsearchindexesindexsearchsynonymsindexsource">source</a></b></td>
         <td>object</td>
         <td>
-          Data set that stores the mapping one or more words map to one or more synonyms of those words<br/>
+          Data set that stores the mapping one or more words map to one or more synonyms of those words.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3892,7 +3914,7 @@ Synonym represents "Synonym" type of Atlas Search Index
 
 
 
-Data set that stores the mapping one or more words map to one or more synonyms of those words
+Data set that stores the mapping one or more words map to one or more synonyms of those words.
 
 <table>
     <thead>
@@ -3907,7 +3929,7 @@ Data set that stores the mapping one or more words map to one or more synonyms o
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms<br/>
+          Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -3919,7 +3941,7 @@ Data set that stores the mapping one or more words map to one or more synonyms o
 
 
 
-Atlas vector search index configuration
+Atlas vector search index configuration.
 
 <table>
     <thead>
@@ -4000,14 +4022,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -4035,7 +4057,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -4076,7 +4098,7 @@ Configuration for the Flex cluster API. https://www.mongodb.com/docs/atlas/refer
         <td><b><a href="#atlasdeploymentspecflexspectagsindex">tags</a></b></td>
         <td>[]object</td>
         <td>
-          List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.<br/>
+          List that contains key-value pairs between 1 and 255 characters in length for tagging and categorizing the instance.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4153,14 +4175,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -4172,7 +4194,7 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
 
 
 
-ProcessArgs allows to modify Advanced Configuration Options
+ProcessArgs allows modification of Advanced Configuration Options.
 
 <table>
     <thead>
@@ -4187,56 +4209,59 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>defaultReadConcern</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the default level of acknowledgment requested from MongoDB for read operations set for this cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>defaultWriteConcern</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the default level of acknowledgment requested from MongoDB for write operations set for this cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>failIndexKeyTooLong</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to fail the operation and return an error when you insert or update documents where all indexed entries exceed 1024 bytes.
+If you set this to false, mongod writes documents that exceed this limit, but doesn't index them.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>javascriptEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether the cluster allows execution of operations that perform server-side executions of JavaScript.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>minimumEnabledTlsProtocol</b></td>
         <td>string</td>
         <td>
-          <br/>
+          String that indicates the minimum TLS version that the cluster accepts for incoming connections.
+Clusters using TLS 1.0 or 1.1 should consider setting TLS 1.2 as the minimum TLS protocol version.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>noTableScan</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether the cluster disables executing any query that requires a collection scan to return results.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>oplogMinRetentionHours</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Minimum retention window for cluster's oplog expressed in hours. A value of null indicates that the cluster uses the default minimum oplog window that MongoDB Cloud calculates.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>oplogSizeMB</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the storage limit of a cluster's oplog expressed in megabytes.
+A value of null indicates that the cluster uses the default oplog size that Atlas calculates.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4245,7 +4270,7 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>sampleRefreshIntervalBIConnector</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the documents per database to sample when gathering schema information.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4254,7 +4279,7 @@ ProcessArgs allows to modify Advanced Configuration Options
         <td><b>sampleSizeBIConnector</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Number that indicates the interval in seconds at which the mongosqld process re-samples data to create its relational schema.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4284,14 +4309,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4304,7 +4329,7 @@ Mutually exclusive with the "externalProjectRef" field
 
 
 Configuration for the serverless deployment API. https://www.mongodb.com/docs/atlas/reference/api/serverless-instances/
-DEPRECATED FIELD: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
+DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 
 <table>
     <thead>
@@ -4342,7 +4367,8 @@ Can only contain ASCII letters, numbers, and hyphens.<br/>
         <td><b><a href="#atlasdeploymentspecserverlessspecprivateendpointsindex">privateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains the private endpoint configurations for the Serverless instance.
+DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4394,7 +4420,8 @@ Configuration for the provisioned hosts on which MongoDB runs. The available opt
         <td><b><a href="#atlasdeploymentspecserverlessspecprovidersettingsautoscaling">autoScaling</a></b></td>
         <td>object</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.<br/>
+          Range of instance sizes to which your deployment can scale.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4411,8 +4438,9 @@ This setting only works when "providerSetting.providerName" : "TENANT" and "prov
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
-Set only if you selected AWS as your cloud service provider.<br/>
+          Disk IOPS setting for AWS storage.
+Set only if you selected AWS as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4421,21 +4449,24 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td><b>diskTypeName</b></td>
         <td>string</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Type of disk if you selected Azure as your cloud service provider.<br/>
+          Type of disk if you selected Azure as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>encryptEBSVolume</b></td>
         <td>boolean</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.<br/>
+          Flag that indicates whether the Amazon EBS encryption feature encrypts the host's root volume for both data at rest within the volume and for data moving between the volume and the deployment.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>instanceSizeName</b></td>
         <td>string</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.<br/>
+          Atlas provides different deployment tiers, each with a default storage capacity and RAM size. The deployment you select is used for all the data-bearing hosts in your deployment tier.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4450,8 +4481,9 @@ The region you choose can affect network latency for clients accessing your data
         <td><b>volumeType</b></td>
         <td>enum</td>
         <td>
-          DEPRECATED FIELD. The value of this field doesn't take any effect. Disk IOPS setting for AWS storage.
-Set only if you selected AWS as your cloud service provider.<br/>
+          Disk IOPS setting for AWS storage.
+Set only if you selected AWS as your cloud service provider.
+DEPRECATED: The value of this field doesn't take any effect.<br/>
           <br/>
             <i>Enum</i>: STANDARD, PROVISIONED<br/>
         </td>
@@ -4465,7 +4497,8 @@ Set only if you selected AWS as your cloud service provider.<br/>
 
 
 
-DEPRECATED FIELD. The value of this field doesn't take any effect. Range of instance sizes to which your deployment can scale.
+Range of instance sizes to which your deployment can scale.
+DEPRECATED: The value of this field doesn't take any effect.
 
 <table>
     <thead>
@@ -4480,9 +4513,9 @@ DEPRECATED FIELD. The value of this field doesn't take any effect. Range of inst
         <td><b>autoIndexingEnabled</b></td>
         <td>boolean</td>
         <td>
-          Deprecated: This flag is not supported anymore.
-Flag that indicates whether autopilot mode for Performance Advisor is enabled.
-The default is false.<br/>
+          Flag that indicates whether autopilot mode for Performance Advisor is enabled.
+The default is false.
+DEPRECATED: This flag is no longer supported.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4571,7 +4604,8 @@ Serverless Backup Options
         <td><b>serverlessContinuousBackupEnabled</b></td>
         <td>boolean</td>
         <td>
-          ServerlessContinuousBackupEnabled<br/>
+          ServerlessContinuousBackupEnabled indicates whether the cluster uses continuous cloud backups.
+DEPRECATED: Serverless instances are deprecated, and no longer support continuous backup. See https://dochub.mongodb.org/core/atlas-flex-migration for details.<br/>
           <br/>
             <i>Default</i>: true<br/>
         </td>
@@ -4585,7 +4619,8 @@ Serverless Backup Options
 
 
 
-
+ServerlessPrivateEndpoint configures private endpoints for the Serverless instances.
+DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 
 <table>
     <thead>
@@ -4641,14 +4676,14 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
         <td><b>key</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Constant that defines the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Variable that belongs to the set of the tag.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -5357,7 +5392,7 @@ These credentials must have OrganizationOwner permissions.<br/>
         <td>[]string</td>
         <td>
           The collection of unique ids representing the identity providers that can be used for data access in this organization.
-Currently connected data access identity providers missing from the this field will be disconnected.<br/>
+Currently connected data access identity providers missing from this field will be disconnected.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5371,7 +5406,7 @@ Currently connected data access identity providers missing from the this field w
         <td><b>domainRestrictionEnabled</b></td>
         <td>boolean</td>
         <td>
-          Prevent users in the federation from accessing organizations outside of the federation, and creating new organizations.
+          Prevent users in the federation from accessing organizations outside the federation, and creating new organizations.
 This option applies to the entire federation.
 See more information at https://www.mongodb.com/docs/atlas/security/federation-advanced-options/#restrict-user-membership-to-the-federation<br/>
           <br/>
@@ -5435,14 +5470,14 @@ These credentials must have OrganizationOwner permissions.
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5688,7 +5723,7 @@ AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
         <td><b><a href="#atlasipaccesslistspecentriesindex">entries</a></b></td>
         <td>[]object</td>
         <td>
-          Entries is the list of IP Access to be managed<br/>
+          Entries is the list of IP Access to be managed.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -5824,7 +5859,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -5852,14 +5887,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6077,7 +6112,7 @@ AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer
         <td><b>provider</b></td>
         <td>enum</td>
         <td>
-          Provider is the name of the cloud provider hosting the network container<br/>
+          Provider is the name of the cloud provider hosting the network container.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE<br/>
         </td>
@@ -6183,7 +6218,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -6211,14 +6246,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6411,7 +6446,7 @@ AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
         <td><b><a href="#atlasnetworkpeeringspeccontainerref">containerRef</a></b></td>
         <td>object</td>
         <td>
-          ContainerDualReference refers to an Network Container either by Kubernetes name or Atlas ID<br/>
+          ContainerDualReference refers to a Network Container either by Kubernetes name or Atlas ID.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -6427,14 +6462,14 @@ AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
         <td><b><a href="#atlasnetworkpeeringspecawsconfiguration">awsConfiguration</a></b></td>
         <td>object</td>
         <td>
-          AWSConfiguration is the specific AWS settings for network peering<br/>
+          AWSConfiguration is the specific AWS settings for network peering.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasnetworkpeeringspecazureconfiguration">azureConfiguration</a></b></td>
         <td>object</td>
         <td>
-          AzureConfiguration is the specific Azure settings for network peering<br/>
+          AzureConfiguration is the specific Azure settings for network peering.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6456,7 +6491,7 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasnetworkpeeringspecgcpconfiguration">gcpConfiguration</a></b></td>
         <td>object</td>
         <td>
-          GCPConfiguration is the specific Google Cloud settings for network peering<br/>
+          GCPConfiguration is the specific Google Cloud settings for network peering.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6484,7 +6519,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-ContainerDualReference refers to an Network Container either by Kubernetes name or Atlas ID
+ContainerDualReference refers to a Network Container either by Kubernetes name or Atlas ID.
 
 <table>
     <thead>
@@ -6499,7 +6534,7 @@ ContainerDualReference refers to an Network Container either by Kubernetes name 
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas identifier of the Network Container Atlas resource this Peering Connection relies on
+          ID is the Atlas identifier of the Network Container Atlas resource this Peering Connection relies on.
 Use either name or ID, not both.<br/>
         </td>
         <td>false</td>
@@ -6507,7 +6542,7 @@ Use either name or ID, not both.<br/>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name of the container Kubernetes resource, must be present in the same namespace
+          Name of the container Kubernetes resource, must be present in the same namespace.
 Use either name or ID, not both.<br/>
         </td>
         <td>false</td>
@@ -6520,7 +6555,7 @@ Use either name or ID, not both.<br/>
 
 
 
-AWSConfiguration is the specific AWS settings for network peering
+AWSConfiguration is the specific AWS settings for network peering.
 
 <table>
     <thead>
@@ -6535,7 +6570,7 @@ AWSConfiguration is the specific AWS settings for network peering
         <td><b>accepterRegionName</b></td>
         <td>string</td>
         <td>
-          AccepterRegionName is the provider region name of user's vpc in AWS native region format<br/>
+          AccepterRegionName is the provider region name of user's vpc in AWS native region format.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -6568,7 +6603,7 @@ AWSConfiguration is the specific AWS settings for network peering
 
 
 
-AzureConfiguration is the specific Azure settings for network peering
+AzureConfiguration is the specific Azure settings for network peering.
 
 <table>
     <thead>
@@ -6660,7 +6695,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -6672,7 +6707,7 @@ Mutually exclusive with the "projectRef" field
 
 
 
-GCPConfiguration is the specific Google Cloud settings for network peering
+GCPConfiguration is the specific Google Cloud settings for network peering.
 
 <table>
     <thead>
@@ -6722,14 +6757,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7041,86 +7076,69 @@ GCPStatus contains GCP only related status information
         <td><b>orgID</b></td>
         <td>string</td>
         <td>
-          OrgId Unique 24-hexadecimal digit string that identifies the organization that
-contains your projects<br/>
+          OrgId Unique 24-hexadecimal digit string that identifies the organization that contains your projects.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>apiAccessListRequired</b></td>
         <td>boolean</td>
         <td>
-          ApiAccessListRequired Flag that indicates whether to require API operations to
-originate from an IP Address added to the API access list for the specified
-organization.<br/>
+          ApiAccessListRequired Flag that indicates whether to require API operations to originate from an IP Address added to the API access list for the specified organization.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasorgsettingsspecconnectionsecretref">connectionSecretRef</a></b></td>
         <td>object</td>
         <td>
-          ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to
-Atlas (Public & Private API keys).<br/>
+          ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to Atlas (Public & Private API keys).<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>genAIFeaturesEnabled</b></td>
         <td>boolean</td>
         <td>
-          GenAIFeaturesEnabled Flag that indicates whether this organization has access to
-generative AI features. This setting only applies to Atlas Commercial and is
-enabled by default. Once this setting is turned on, Project Owners may be able
-to enable or disable individual AI features at the project level.<br/>
+          GenAIFeaturesEnabled Flag that indicates whether this organization has access to generative AI features. This setting only applies to Atlas Commercial and is enabled by default.
+Once this setting is turned on, Project Owners may be able to enable or disable individual AI features at the project level.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>maxServiceAccountSecretValidityInHours</b></td>
         <td>integer</td>
         <td>
-          MaxServiceAccountSecretValidityInHours Number that represents the maximum period
-before expiry in hours for new Atlas Admin API Service Account secrets within
-the specified organization.<br/>
+          MaxServiceAccountSecretValidityInHours Number that represents the maximum period before expiry in hours for new Atlas Admin API Service Account secrets within the specified organization.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>multiFactorAuthRequired</b></td>
         <td>boolean</td>
         <td>
-          MultiFactorAuthRequired Flag that indicates whether to require users to set up
-Multi-Factor Authentication (MFA) before accessing the specified organization.
-To learn more, see:
-https://www.mongodb.com/docs/atlas/security-multi-factor-authentication/.<br/>
+          MultiFactorAuthRequired Flag that indicates whether to require users to set up Multi-Factor Authentication (MFA) before accessing the specified organization.
+To learn more, see: https://www.mongodb.com/docs/atlas/security-multi-factor-authentication/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>restrictEmployeeAccess</b></td>
         <td>boolean</td>
         <td>
-          RestrictEmployeeAccess Flag that indicates whether to block MongoDB Support from
-accessing Atlas infrastructure and cluster logs for any deployment in the
-specified organization without explicit permission. Once this setting is turned
-on, you can grant MongoDB Support a 24-hour bypass access to the Atlas
-deployment to resolve support issues. To learn more, see:
-https://www.mongodb.com/docs/atlas/security-restrict-support-access/.<br/>
+          RestrictEmployeeAccess Flag that indicates whether to block MongoDB Support from accessing Atlas infrastructure and cluster logs for any deployment in the specified organization without explicit permission.
+Once this setting is turned on, you can grant MongoDB Support a 24-hour bypass access to the Atlas deployment to resolve support issues.
+To learn more, see: https://www.mongodb.com/docs/atlas/security-restrict-support-access/.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>securityContact</b></td>
         <td>string</td>
         <td>
-          SecurityContact String that specifies a single email address for the specified
-organization to receive security-related notifications. Specifying a security
-contact does not grant them authorization or access to Atlas for security
-decisions or approvals. An empty string is valid and clears the existing
-security contact (if any).<br/>
+          SecurityContact String that specifies a single email address for the specified organization to receive security-related notifications.
+Specifying a security contact does not grant them authorization or access to Atlas for security decisions or approvals.
+An empty string is valid and clears the existing security contact (if any).<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>streamsCrossGroupEnabled</b></td>
         <td>boolean</td>
         <td>
-          StreamsCrossGroupEnabled Flag that indicates whether a group's Atlas Stream
-Processing instances in this organization can create connections to other
-group's clusters in the same organization.<br/>
+          StreamsCrossGroupEnabled Flag that indicates whether a group's Atlas Stream Processing instances in this organization can create connections to other group's clusters in the same organization.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7132,8 +7150,7 @@ group's clusters in the same organization.<br/>
 
 
 
-ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to
-Atlas (Public & Private API keys).
+ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to Atlas (Public & Private API keys).
 
 <table>
     <thead>
@@ -7354,14 +7371,14 @@ AtlasPrivateEndpointSpec is the specification of the desired configuration of a 
         <td><b><a href="#atlasprivateendpointspecawsconfigurationindex">awsConfiguration</a></b></td>
         <td>[]object</td>
         <td>
-          AWSConfiguration is the specific AWS settings for the private endpoint<br/>
+          AWSConfiguration is the specific AWS settings for the private endpoint.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprivateendpointspecazureconfigurationindex">azureConfiguration</a></b></td>
         <td>[]object</td>
         <td>
-          AzureConfiguration is the specific Azure settings for the private endpoint<br/>
+          AzureConfiguration is the specific Azure settings for the private endpoint.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7383,7 +7400,7 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasprivateendpointspecgcpconfigurationindex">gcpConfiguration</a></b></td>
         <td>[]object</td>
         <td>
-          GCPConfiguration is the specific Google Cloud settings for the private endpoint<br/>
+          GCPConfiguration is the specific Google Cloud settings for the private endpoint.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7403,7 +7420,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-AWSPrivateEndpointConfiguration holds the AWS configuration done on customer network
+AWSPrivateEndpointConfiguration holds the AWS configuration done on customer network.
 
 <table>
     <thead>
@@ -7430,7 +7447,7 @@ AWSPrivateEndpointConfiguration holds the AWS configuration done on customer net
 
 
 
-AzurePrivateEndpointConfiguration holds the Azure configuration done on customer network
+AzurePrivateEndpointConfiguration holds the Azure configuration done on customer network.
 
 <table>
     <thead>
@@ -7508,7 +7525,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -7520,7 +7537,7 @@ Mutually exclusive with the "projectRef" field
 
 
 
-GCPPrivateEndpointConfiguration holds the GCP configuration done on customer network
+GCPPrivateEndpointConfiguration holds the GCP configuration done on customer network.
 
 <table>
     <thead>
@@ -7561,7 +7578,7 @@ GCPPrivateEndpointConfiguration holds the GCP configuration done on customer net
 
 
 
-GCPPrivateEndpoint holds the GCP forwarding rules configured on customer network
+GCPPrivateEndpoint holds the GCP forwarding rules configured on customer network.
 
 <table>
     <thead>
@@ -7611,14 +7628,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7930,7 +7947,8 @@ AtlasProjectSpec defines the desired state of Project in Atlas
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.<br/>
+          Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.
+The name length must not exceed 64 characters. The name must contain only letters, numbers, spaces, dashes, and underscores.<br/>
           <br/>
             <i>Validations</i>:<li>self == oldSelf: Name cannot be modified after project creation</li>
         </td>
@@ -7941,28 +7959,32 @@ AtlasProjectSpec defines the desired state of Project in Atlas
         <td>
           AlertConfigurationSyncEnabled is a flag that enables/disables Alert Configurations sync for the current Project.
 If true - project alert configurations will be synced according to AlertConfigurations.
-If not - alert configurations will not be modified by the operator. They can be managed through API, cli, UI.<br/>
+If not - alert configurations will not be modified by the operator. They can be managed through the API, CLI, and UI.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecalertconfigurationsindex">alertConfigurations</a></b></td>
         <td>[]object</td>
         <td>
-          AlertConfiguration is a list of Alert Configurations configured for the current Project.<br/>
+          AlertConfiguration is a list of Alert Configurations configured for the current Project.
+If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+Operator to modify project alert configurations.
+If you omit or leave this setting empty, Atlas Kubernetes Operator doesn't alter the project's alert
+configurations. If creating a project, Atlas applies the default project alert configurations.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecauditing">auditing</a></b></td>
         <td>object</td>
         <td>
-          Auditing represents MongoDB Maintenance Windows<br/>
+          Auditing represents MongoDB Maintenance Windows.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecbackupcompliancepolicyref">backupCompliancePolicyRef</a></b></td>
         <td>object</td>
         <td>
-          BackupCompliancePolicyRef is a reference to the backup compliance CR.<br/>
+          BackupCompliancePolicyRef is a reference to the backup compliance custom resource.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7992,21 +8014,26 @@ Atlas (organization ID, API keys). The default Operator connection configuration
         <td><b><a href="#atlasprojectspeccustomrolesindex">customRoles</a></b></td>
         <td>[]object</td>
         <td>
-          The customRoles lets you create, and change custom roles in your cluster. Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.<br/>
+          CustomRoles lets you create and change custom roles in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecencryptionatrest">encryptionAtRest</a></b></td>
         <td>object</td>
         <td>
-          EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers<br/>
+          EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindex">integrations</a></b></td>
         <td>[]object</td>
         <td>
-          Integrations is a list of MongoDB Atlas integrations for the project<br/>
+          Integrations is a list of MongoDB Atlas integrations for the project.
+Deprecated: Migrate to the AtlasThirdPartyIntegration custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8021,22 +8048,28 @@ information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-wind
         <td><b><a href="#atlasprojectspecnetworkpeersindex">networkPeers</a></b></td>
         <td>[]object</td>
         <td>
-          NetworkPeers is a list of Network Peers configured for the current Project.<br/>
+          NetworkPeers is a list of Network Peers configured for the current Project.
+Deprecated: Migrate to the AtlasNetworkPeering and AtlasNetworkContainer custom resources in accordance with
+the migration guide at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecprivateendpointsindex">privateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          PrivateEndpoints is a list of Private Endpoints configured for the current Project.<br/>
+          PrivateEndpoints is a list of Private Endpoints configured for the current Project.
+Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecprojectipaccesslistindex">projectIpAccessList</a></b></td>
         <td>[]object</td>
         <td>
-          ProjectIPAccessList allows to enable the IP Access List for the Project. See more information at
-https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/<br/>
+          ProjectIPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8045,7 +8078,7 @@ https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-acces
         <td>
           RegionUsageRestrictions designate the project's AWS region when using Atlas for Government.
 This parameter should not be used with commercial Atlas.
-In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY<br/>
+In Atlas for Government, not setting this field (defaulting to NONE) means the project is restricted to COMMERCIAL_FEDRAMP_REGIONS_ONLY.<br/>
           <br/>
             <i>Enum</i>: NONE, GOV_REGIONS_ONLY, COMMERCIAL_FEDRAMP_REGIONS_ONLY<br/>
             <i>Default</i>: NONE<br/>
@@ -8055,7 +8088,7 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b><a href="#atlasprojectspecsettings">settings</a></b></td>
         <td>object</td>
         <td>
-          Settings allow to set Project Settings for the project<br/>
+          Settings allows the configuration of the Project Settings.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8069,7 +8102,12 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b>withDefaultAlertsSettings</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether to create the new project with the default alert settings enabled. This parameter defaults to true<br/>
+          Flag that indicates whether Atlas Kubernetes Operator creates a project with the default alert configurations.
+If you use this setting, you must also set spec.alertConfigurationSyncEnabled to true for Atlas Kubernetes
+Operator to modify project alert configurations.
+If you set this parameter to false when you create a project, Atlas doesn't add the default alert configurations
+to your project.
+This setting has no effect on existing projects.<br/>
           <br/>
             <i>Default</i>: true<br/>
         </td>
@@ -8078,7 +8116,9 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         <td><b><a href="#atlasprojectspecx509certref">x509CertRef</a></b></td>
         <td>object</td>
         <td>
-          X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate<br/>
+          X509CertRef is a reference to the Kubernetes Secret which contains PEM-encoded CA certificate.
+Atlas Kubernetes Operator watches secrets only with the label atlas.mongodb.com/type=credentials to avoid
+watching unnecessary secrets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8293,7 +8333,7 @@ MetricThreshold  causes an alert to be triggered.
         <td><b>datadogRegion</b></td>
         <td>string</td>
         <td>
-          Region that indicates which API URL to use<br/>
+          Region that indicates which API URL to use.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8446,14 +8486,14 @@ Secret containing a Slack API token or Bot token. Populated for the SLACK notifi
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8480,14 +8520,14 @@ Secret containing a Datadog API Key. Found in the Datadog dashboard. Populated f
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8514,14 +8554,14 @@ The Flowdock personal API token. Populated for the FLOWDOCK notifications type. 
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8548,14 +8588,14 @@ OpsGenie API Key. Populated for the OPS_GENIE notifications type. If the key lat
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8582,14 +8622,14 @@ PagerDuty service key. Populated for the PAGER_DUTY notifications type. If the k
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8616,14 +8656,14 @@ Secret containing a VictorOps API key and Routing key. Populated for the VICTOR_
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8650,7 +8690,8 @@ Threshold  causes an alert to be triggered.
         <td><b>operator</b></td>
         <td>string</td>
         <td>
-          Operator to apply when checking the current metric value against the threshold value. it accepts the following values: GREATER_THAN, LESS_THAN<br/>
+          Operator to apply when checking the current metric value against the threshold value.
+It accepts the following values: GREATER_THAN, LESS_THAN.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -8664,7 +8705,7 @@ Threshold  causes an alert to be triggered.
         <td><b>units</b></td>
         <td>string</td>
         <td>
-          The units for the threshold value<br/>
+          The units for the threshold value.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8676,7 +8717,7 @@ Threshold  causes an alert to be triggered.
 
 
 
-Auditing represents MongoDB Maintenance Windows
+Auditing represents MongoDB Maintenance Windows.
 
 <table>
     <thead>
@@ -8691,21 +8732,22 @@ Auditing represents MongoDB Maintenance Windows
         <td><b>auditAuthorizationSuccess</b></td>
         <td>boolean</td>
         <td>
-          Indicates whether the auditing system captures successful authentication attempts for audit filters using the "atype" : "authCheck" auditing event. For more information, see auditAuthorizationSuccess<br/>
+          Indicates whether the auditing system captures successful authentication attempts for audit filters using the "atype" : "authCheck" auditing event.
+For more information, see auditAuthorizationSuccess.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>auditFilter</b></td>
         <td>string</td>
         <td>
-          JSON-formatted audit filter used by the project<br/>
+          JSON-formatted audit filter used by the project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          Denotes whether or not the project associated with the {GROUP-ID} has database auditing enabled.<br/>
+          Denotes whether the project associated with the {GROUP-ID} has database auditing enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8717,7 +8759,7 @@ Auditing represents MongoDB Maintenance Windows
 
 
 
-BackupCompliancePolicyRef is a reference to the backup compliance CR.
+BackupCompliancePolicyRef is a reference to the backup compliance custom resource.
 
 <table>
     <thead>
@@ -8732,14 +8774,14 @@ BackupCompliancePolicyRef is a reference to the backup compliance CR.
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8752,7 +8794,7 @@ BackupCompliancePolicyRef is a reference to the backup compliance CR.
 
 
 CloudProviderAccessRole define an integration to a cloud provider
-Deprecated: This type is deprecated in favor of CloudProviderIntegration
+DEPRECATED: This type is deprecated in favor of CloudProviderIntegration
 
 <table>
     <thead>
@@ -8836,14 +8878,14 @@ Atlas (organization ID, API keys). The default Operator connection configuration
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8855,7 +8897,10 @@ Atlas (organization ID, API keys). The default Operator connection configuration
 
 
 
-
+CustomRole lets you create and change a custom role in your cluster.
+Use custom roles to specify custom sets of actions that the Atlas built-in roles can't describe.
+Deprecated: Migrate to the AtlasCustomRoles custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9005,7 +9050,7 @@ Atlas (organization ID, API keys). The default Operator connection configuration
 
 
 
-EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers
+EncryptionAtRest allows to set encryption for AWS, Azure and GCP providers.
 
 <table>
     <thead>
@@ -9109,14 +9154,14 @@ A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMa
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9205,14 +9250,14 @@ A reference to as Secret containing the SubscriptionID, KeyVaultName, KeyIdentif
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9273,14 +9318,14 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9292,7 +9337,9 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
 
 
 
-
+Integration for the project between Atlas and a third party service.
+Deprecated: Migrate to the AtlasThirdPartyIntegration custom resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9307,28 +9354,28 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>accountId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 40-hexadecimal digit string that identifies your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexapikeyref">apiKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing your API Key for Datadog, OpsGenie or Victor Ops.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexapitokenref">apiTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the Key that allows Atlas to access your Slack account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>channelName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Name of the Slack channel to which Atlas sends alert notifications.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9349,14 +9396,14 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexlicensekeyref">licenseKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing your Unique 40-hexadecimal digit string that identifies your New Relic license.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>microsoftTeamsWebhookUrl</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Endpoint web address of the Microsoft Teams webhook to which Atlas sends notifications.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9377,28 +9424,29 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexpasswordref">passwordRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the password to allow Atlas to access your Prometheus account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexreadtokenref">readTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the query key associated with your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Region code indicating which regional API Atlas uses to access PagerDuty, Datadog, or OpsGenie.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexroutingkeyref">routingKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the Routing key associated with your Splunk On-Call account.
+Used for Victor Ops.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9412,35 +9460,37 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b><a href="#atlasprojectspecintegrationsindexsecretref">secretRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the secret for your Webhook.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>serviceDiscovery</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Desired method to discover the Prometheus service.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexservicekeyref">serviceKeyRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the service key associated with your PagerDuty account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>teamName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies your Slack team.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Third Party Integration type such as Slack, New Relic, etc<br/>
+          Third Party Integration type such as Slack, New Relic, etc.
+Each integration type requires a distinct set of configuration fields.
+For example, if you set type to DATADOG, you must configure only datadog subfields.<br/>
           <br/>
             <i>Enum</i>: PAGER_DUTY, SLACK, DATADOG, NEW_RELIC, OPS_GENIE, VICTOR_OPS, FLOWDOCK, WEBHOOK, MICROSOFT_TEAMS, PROMETHEUS<br/>
         </td>
@@ -9449,21 +9499,22 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
         <td><b>url</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Endpoint web address to which Atlas sends notifications.
+Used for Webhooks.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>username</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies your Prometheus incoming webhook.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectspecintegrationsindexwritetokenref">writeTokenRef</a></b></td>
         <td>object</td>
         <td>
-          ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace<br/>
+          Reference to a Kubernetes Secret containing the insert key associated with your New Relic account.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9475,7 +9526,7 @@ A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID 
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing your API Key for Datadog, OpsGenie or Victor Ops.
 
 <table>
     <thead>
@@ -9490,14 +9541,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9509,7 +9560,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the Key that allows Atlas to access your Slack account.
 
 <table>
     <thead>
@@ -9524,14 +9575,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9543,7 +9594,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing your Unique 40-hexadecimal digit string that identifies your New Relic license.
 
 <table>
     <thead>
@@ -9558,14 +9609,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9577,7 +9628,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the password to allow Atlas to access your Prometheus account.
 
 <table>
     <thead>
@@ -9592,14 +9643,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9611,7 +9662,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the query key associated with your New Relic account.
 
 <table>
     <thead>
@@ -9626,14 +9677,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9645,7 +9696,8 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the Routing key associated with your Splunk On-Call account.
+Used for Victor Ops.
 
 <table>
     <thead>
@@ -9660,14 +9712,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9679,7 +9731,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the secret for your Webhook.
 
 <table>
     <thead>
@@ -9694,14 +9746,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9713,7 +9765,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the service key associated with your PagerDuty account.
 
 <table>
     <thead>
@@ -9728,14 +9780,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9747,7 +9799,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to configure the namespace
+Reference to a Kubernetes Secret containing the insert key associated with your New Relic account.
 
 <table>
     <thead>
@@ -9762,14 +9814,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9805,7 +9857,7 @@ information at https://www.mongodb.com/docs/atlas/reference/api/maintenance-wind
         <td>integer</td>
         <td>
           Day of the week when you would like the maintenance window to start as a 1-based integer.
-Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7<br/>
+Sunday 1, Monday 2, Tuesday 3, Wednesday 4, Thursday 5, Friday 6, Saturday 7.<br/>
           <br/>
             <i>Minimum</i>: 1<br/>
             <i>Maximum</i>: 7<br/>
@@ -9847,7 +9899,9 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+NetworkPeer configured for the current Project.
+Deprecated: Migrate to the AtlasNetworkPeering and AtlasNetworkContainer custom resources in accordance with
+the migration guide at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9862,7 +9916,7 @@ Cannot be specified if defer is true<br/>
         <td><b>accepterRegionName</b></td>
         <td>string</td>
         <td>
-          AccepterRegionName is the provider region name of user's vpc.<br/>
+          AccepterRegionName is the provider region name of user's VPC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9876,7 +9930,7 @@ Cannot be specified if defer is true<br/>
         <td><b>awsAccountId</b></td>
         <td>string</td>
         <td>
-          AccountID of the user's vpc.<br/>
+          AccountID of the user's VPC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9965,7 +10019,9 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+PrivateEndpoint is a list of Private Endpoints configured for the current Project.
+Deprecated: Migrate to the AtlasPrivateEndpoint Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -9980,7 +10036,7 @@ Cannot be specified if defer is true<br/>
         <td><b>provider</b></td>
         <td>enum</td>
         <td>
-          Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS or AZURE.<br/>
+          Cloud provider for which you want to retrieve a private endpoint service. Atlas accepts AWS, GCP, or AZURE.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE, TENANT<br/>
         </td>
@@ -9996,7 +10052,7 @@ Cannot be specified if defer is true<br/>
         <td><b>endpointGroupName</b></td>
         <td>string</td>
         <td>
-          Unique identifier of the endpoint group. The endpoint group encompasses all of the endpoints that you created in Google Cloud.<br/>
+          Unique identifier of the endpoint group. The endpoint group encompasses all the endpoints that you created in Google Cloud.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10017,7 +10073,7 @@ Cannot be specified if defer is true<br/>
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          Unique identifier of the private endpoint you created in your AWS VPC or Azure Vnet.<br/>
+          Unique identifier of the private endpoint you created in your AWS VPC or Azure VNet.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -10070,7 +10126,10 @@ Cannot be specified if defer is true<br/>
 
 
 
-
+IPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -10125,7 +10184,7 @@ Cannot be specified if defer is true<br/>
 
 
 
-Settings allow to set Project Settings for the project
+Settings allows the configuration of the Project Settings.
 
 <table>
     <thead>
@@ -10140,42 +10199,42 @@ Settings allow to set Project Settings for the project
         <td><b>isCollectDatabaseSpecificsStatisticsEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to collect database-specific metrics for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isDataExplorerEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Data Explorer for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isExtendedStorageSizesEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable extended storage sizes for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isPerformanceAdvisorEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Performance Advisor and Profiler for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isRealtimePerformancePanelEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Real Time Performance Panel for the specified project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isSchemaAdvisorEnabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether to enable the Schema Advisor for the specified project.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10202,7 +10261,7 @@ Settings allow to set Project Settings for the project
         <td><b>roles</b></td>
         <td>[]enum</td>
         <td>
-          Roles the users of the team has over the project<br/>
+          Roles the users in the team has within the project.<br/>
           <br/>
             <i>Enum</i>: GROUP_OWNER, GROUP_CLUSTER_MANAGER, GROUP_DATA_ACCESS_ADMIN, GROUP_DATA_ACCESS_READ_WRITE, GROUP_DATA_ACCESS_READ_ONLY, GROUP_READ_ONLY<br/>
         </td>
@@ -10211,7 +10270,7 @@ Settings allow to set Project Settings for the project
         <td><b><a href="#atlasprojectspecteamsindexteamref">teamRef</a></b></td>
         <td>object</td>
         <td>
-          Reference to the team which will assigned to the project<br/>
+          Reference to the AtlasTeam custom resource which will be assigned to the project.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -10223,7 +10282,7 @@ Settings allow to set Project Settings for the project
 
 
 
-Reference to the team which will assigned to the project
+Reference to the AtlasTeam custom resource which will be assigned to the project.
 
 <table>
     <thead>
@@ -10238,14 +10297,14 @@ Reference to the team which will assigned to the project
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10257,7 +10316,9 @@ Reference to the team which will assigned to the project
 
 
 
-X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA certificate
+X509CertRef is a reference to the Kubernetes Secret which contains PEM-encoded CA certificate.
+Atlas Kubernetes Operator watches secrets only with the label atlas.mongodb.com/type=credentials to avoid
+watching unnecessary secrets.
 
 <table>
     <thead>
@@ -10272,14 +10333,14 @@ X509CertRef is the name of the Kubernetes Secret which contains PEM-encoded CA c
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11185,7 +11246,10 @@ Threshold  causes an alert to be triggered.
 
 
 
-
+IPAccessList allows the use of the IP Access List for a Project. See more information at
+https://docs.atlas.mongodb.com/reference/api/ip-access-list/add-entries-to-access-list/
+Deprecated: Migrate to the AtlasIPAccessList Custom Resource in accordance with the migration guide
+at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-resource/#std-label-ak8so-migrate-ptr
 
 <table>
     <thead>
@@ -11560,14 +11624,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11647,7 +11711,8 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
         <td><b>analyzer</b></td>
         <td>enum</td>
         <td>
-          Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:
+          Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text.
+These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:
 - extracting words
 - removing punctuation
 - removing accents
@@ -11663,14 +11728,14 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
         <td><b><a href="#atlassearchindexconfigspecanalyzersindex">analyzers</a></b></td>
         <td>[]object</td>
         <td>
-          List of user-defined methods to convert database field text into searchable words<br/>
+          List of user-defined methods to convert database field text into searchable words.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>searchAnalyzer</b></td>
         <td>enum</td>
         <td>
-          Method applied to identify words when searching this index<br/>
+          Method applied to identify words when searching this index.<br/>
           <br/>
             <i>Enum</i>: lucene.standard, lucene.simple, lucene.whitespace, lucene.keyword, lucene.arabic, lucene.armenian, lucene.basque, lucene.bengali, lucene.brazilian, lucene.bulgarian, lucene.catalan, lucene.chinese, lucene.cjk, lucene.czech, lucene.danish, lucene.dutch, lucene.english, lucene.finnish, lucene.french, lucene.galician, lucene.german, lucene.greek, lucene.hindi, lucene.hungarian, lucene.indonesian, lucene.irish, lucene.italian, lucene.japanese, lucene.korean, lucene.kuromoji, lucene.latvian, lucene.lithuanian, lucene.morfologik, lucene.nori, lucene.norwegian, lucene.persian, lucene.portuguese, lucene.romanian, lucene.russian, lucene.smartcn, lucene.sorani, lucene.spanish, lucene.swedish, lucene.thai, lucene.turkish, lucene.ukrainian<br/>
         </td>
@@ -11679,8 +11744,9 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
         <td><b>storedSource</b></td>
         <td>JSON</td>
         <td>
-          Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search. Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search. To learn more, see documentation:
-https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/<br/>
+          Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search.
+Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search.
+To learn more, see documentation: https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11715,14 +11781,14 @@ https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/<br/>
         <td><b><a href="#atlassearchindexconfigspecanalyzersindextokenizer">tokenizer</a></b></td>
         <td>object</td>
         <td>
-          Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing<br/>
+          Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>charFilters</b></td>
         <td>JSON</td>
         <td>
-          Filters that examine text one character at a time and perform filtering operations<br/>
+          Filters that examine text one character at a time and perform filtering operations.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11743,7 +11809,7 @@ https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/<br/>
 
 
 
-Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing
+Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing.
 
 <table>
     <thead>
@@ -11969,14 +12035,14 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that uniquely identifies the stream connection<br/>
+          Human-readable label that uniquely identifies the stream connection.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the connection. Can be either Cluster or Kafka<br/>
+          Type of the connection. Can be either Cluster or Kafka.<br/>
           <br/>
             <i>Enum</i>: Kafka, Cluster, Sample<br/>
         </td>
@@ -11985,14 +12051,14 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
         <td><b><a href="#atlasstreamconnectionspecclusterconfig">clusterConfig</a></b></td>
         <td>object</td>
         <td>
-          The configuration to be used to connect to a Atlas Cluster<br/>
+          The configuration to be used to connect to an Atlas Cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasstreamconnectionspeckafkaconfig">kafkaConfig</a></b></td>
         <td>object</td>
         <td>
-          The configuration to be used to connect to a Kafka Cluster<br/>
+          The configuration to be used to connect to a Kafka Cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12004,7 +12070,7 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
 
 
 
-The configuration to be used to connect to a Atlas Cluster
+The configuration to be used to connect to an Atlas Cluster.
 
 <table>
     <thead>
@@ -12019,14 +12085,14 @@ The configuration to be used to connect to a Atlas Cluster
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name of the cluster configured for this connection<br/>
+          Name of the cluster configured for this connection.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasstreamconnectionspecclusterconfigrole">role</a></b></td>
         <td>object</td>
         <td>
-          The name of a Built in or Custom DB Role to connect to an Atlas Cluster<br/>
+          The name of a built-in or Custom DB Role to connect to an Atlas Cluster.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -12038,7 +12104,7 @@ The configuration to be used to connect to a Atlas Cluster
 
 
 
-The name of a Built in or Custom DB Role to connect to an Atlas Cluster
+The name of a built-in or Custom DB Role to connect to an Atlas Cluster.
 
 <table>
     <thead>
@@ -12053,14 +12119,14 @@ The name of a Built in or Custom DB Role to connect to an Atlas Cluster
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          The name of the role to use. Can be a built in role or a custom role<br/>
+          The name of the role to use. Can be a built-in role or a custom role.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the DB role. Can be either BuiltIn or Custom<br/>
+          Type of the DB role. Can be either BuiltIn or Custom.<br/>
           <br/>
             <i>Enum</i>: BUILT_IN, CUSTOM<br/>
         </td>
@@ -12074,7 +12140,7 @@ The name of a Built in or Custom DB Role to connect to an Atlas Cluster
 
 
 
-The configuration to be used to connect to a Kafka Cluster
+The configuration to be used to connect to a Kafka Cluster.
 
 <table>
     <thead>
@@ -12089,7 +12155,7 @@ The configuration to be used to connect to a Kafka Cluster
         <td><b><a href="#atlasstreamconnectionspeckafkaconfigauthentication">authentication</a></b></td>
         <td>object</td>
         <td>
-          User credentials required to connect to a Kafka Cluster. Includes the authentication type, as well as the parameters for that authentication mode<br/>
+          User credentials required to connect to a Kafka Cluster. Includes the authentication type, as well as the parameters for that authentication mode.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12103,14 +12169,14 @@ The configuration to be used to connect to a Kafka Cluster
         <td><b><a href="#atlasstreamconnectionspeckafkaconfigsecurity">security</a></b></td>
         <td>object</td>
         <td>
-          Properties for the secure transport connection to Kafka. For SSL, this can include the trusted certificate to use<br/>
+          Properties for the secure transport connection to Kafka. For SSL, this can include the trusted certificate to use.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>config</b></td>
         <td>map[string]string</td>
         <td>
-          A map of Kafka key-value pairs for optional configuration. This is a flat object, and keys can have '.' characters<br/>
+          A map of Kafka key-value pairs for optional configuration. This is a flat object, and keys can have '.' characters.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12122,7 +12188,7 @@ The configuration to be used to connect to a Kafka Cluster
 
 
 
-User credentials required to connect to a Kafka Cluster. Includes the authentication type, as well as the parameters for that authentication mode
+User credentials required to connect to a Kafka Cluster. Includes the authentication type, as well as the parameters for that authentication mode.
 
 <table>
     <thead>
@@ -12144,7 +12210,7 @@ User credentials required to connect to a Kafka Cluster. Includes the authentica
         <td><b>mechanism</b></td>
         <td>enum</td>
         <td>
-          Style of authentication. Can be one of PLAIN, SCRAM-256, or SCRAM-512<br/>
+          Style of authentication. Can be one of PLAIN, SCRAM-256, or SCRAM-512.<br/>
           <br/>
             <i>Enum</i>: PLAIN, SCRAM-256, SCRAM-512<br/>
         </td>
@@ -12173,14 +12239,14 @@ Reference to the secret containing th Username and Password of the account to co
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12192,7 +12258,7 @@ Reference to the secret containing th Username and Password of the account to co
 
 
 
-Properties for the secure transport connection to Kafka. For SSL, this can include the trusted certificate to use
+Properties for the secure transport connection to Kafka. For SSL, this can include the trusted certificate to use.
 
 <table>
     <thead>
@@ -12207,7 +12273,7 @@ Properties for the secure transport connection to Kafka. For SSL, this can inclu
         <td><b>protocol</b></td>
         <td>enum</td>
         <td>
-          Describes the transport type. Can be either PLAINTEXT or SSL<br/>
+          Describes the transport type. Can be either PLAINTEXT or SSL.<br/>
           <br/>
             <i>Enum</i>: PLAINTEXT, SSL<br/>
         </td>
@@ -12216,7 +12282,7 @@ Properties for the secure transport connection to Kafka. For SSL, this can inclu
         <td><b><a href="#atlasstreamconnectionspeckafkaconfigsecuritycertificate">certificate</a></b></td>
         <td>object</td>
         <td>
-          A trusted, public x509 certificate for connecting to Kafka over SSL<br/>
+          A trusted, public x509 certificate for connecting to Kafka over SSL.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12228,7 +12294,7 @@ Properties for the secure transport connection to Kafka. For SSL, this can inclu
 
 
 
-A trusted, public x509 certificate for connecting to Kafka over SSL
+A trusted, public x509 certificate for connecting to Kafka over SSL.
 
 <table>
     <thead>
@@ -12243,14 +12309,14 @@ A trusted, public x509 certificate for connecting to Kafka over SSL
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12378,14 +12444,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12465,28 +12531,28 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
         <td><b><a href="#atlasstreaminstancespecclusterconfig">clusterConfig</a></b></td>
         <td>object</td>
         <td>
-          The configuration to be used to connect to a Atlas Cluster<br/>
+          The configuration to be used to connect to an Atlas Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Human-readable label that identifies the stream connection<br/>
+          Human-readable label that identifies the stream connection.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasstreaminstancespecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          Project which the instance belongs to<br/>
+          Project which the instance belongs to.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasstreaminstancespecconnectionregistryindex">connectionRegistry</a></b></td>
         <td>[]object</td>
         <td>
-          List of connections of the stream instance for the specified project<br/>
+          List of connections of the stream instance for the specified project.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12498,7 +12564,7 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
 
 
 
-The configuration to be used to connect to a Atlas Cluster
+The configuration to be used to connect to an Atlas Cluster.
 
 <table>
     <thead>
@@ -12513,7 +12579,7 @@ The configuration to be used to connect to a Atlas Cluster
         <td><b>provider</b></td>
         <td>enum</td>
         <td>
-          Name of the cluster configured for this connection<br/>
+          Name of the cluster configured for this connection.<br/>
           <br/>
             <i>Enum</i>: AWS, GCP, AZURE, TENANT, SERVERLESS<br/>
             <i>Default</i>: AWS<br/>
@@ -12545,7 +12611,7 @@ The configuration to be used to connect to a Atlas Cluster
 
 
 
-Project which the instance belongs to
+Project which the instance belongs to.
 
 <table>
     <thead>
@@ -12560,14 +12626,14 @@ Project which the instance belongs to
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12594,14 +12660,14 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12777,14 +12843,14 @@ Reference for the resource that contains connection configuration
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12830,7 +12896,7 @@ AtlasTeam is the Schema for the Atlas Teams API
         <td><b><a href="#atlasteamspec">spec</a></b></td>
         <td>object</td>
         <td>
-          TeamSpec defines the desired state of a Team in Atlas<br/>
+          TeamSpec defines the desired state of a Team in Atlas.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12849,7 +12915,7 @@ AtlasTeam is the Schema for the Atlas Teams API
 
 
 
-TeamSpec defines the desired state of a Team in Atlas
+TeamSpec defines the desired state of a Team in Atlas.
 
 <table>
     <thead>
@@ -12871,7 +12937,7 @@ TeamSpec defines the desired state of a Team in Atlas
         <td><b>usernames</b></td>
         <td>[]string</td>
         <td>
-          Valid email addresses of users to add to the new team<br/>
+          Valid email addresses of users to add to the new team.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13095,7 +13161,7 @@ AtlasThirdPartyIntegrationSpec contains the expected configuration for an integr
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the integration<br/>
+          Type of the integration.<br/>
           <br/>
             <i>Enum</i>: DATADOG, MICROSOFT_TEAMS, NEW_RELIC, OPS_GENIE, PAGER_DUTY, PROMETHEUS, SLACK, VICTOR_OPS, WEBHOOK<br/>
         </td>
@@ -13111,7 +13177,7 @@ AtlasThirdPartyIntegrationSpec contains the expected configuration for an integr
         <td><b><a href="#atlasthirdpartyintegrationspecdatadog">datadog</a></b></td>
         <td>object</td>
         <td>
-          Datadog contains the config fields for Datadog's Integration<br/>
+          Datadog contains the config fields for Datadog's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13126,28 +13192,28 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasthirdpartyintegrationspecmicrosoftteams">microsoftTeams</a></b></td>
         <td>object</td>
         <td>
-          MicrosoftTeams contains the config fields for Microsoft Teams's Integration<br/>
+          MicrosoftTeams contains the config fields for Microsoft Teams's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecnewrelic">newRelic</a></b></td>
         <td>object</td>
         <td>
-          NewRelic contains the config fields for New Relic's Integration<br/>
+          NewRelic contains the config fields for New Relic's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecopsgenie">opsGenie</a></b></td>
         <td>object</td>
         <td>
-          OpsGenie contains the config fields for Ops Genie's Integration<br/>
+          OpsGenie contains the config fields for Ops Genie's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecpagerduty">pagerDuty</a></b></td>
         <td>object</td>
         <td>
-          PagerDuty contains the config fields for PagerDuty's Integration<br/>
+          PagerDuty contains the config fields for PagerDuty's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13162,28 +13228,28 @@ Mutually exclusive with the "externalProjectRef" field<br/>
         <td><b><a href="#atlasthirdpartyintegrationspecprometheus">prometheus</a></b></td>
         <td>object</td>
         <td>
-          Prometheus contains the config fields for Prometheus's Integration<br/>
+          Prometheus contains the config fields for Prometheus's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecslack">slack</a></b></td>
         <td>object</td>
         <td>
-          Slack contains the config fields for Slack's Integration<br/>
+          Slack contains the config fields for Slack's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecvictorops">victorOps</a></b></td>
         <td>object</td>
         <td>
-          VictorOps contains the config fields for VictorOps's Integration<br/>
+          VictorOps contains the config fields for VictorOps's Integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecwebhook">webhook</a></b></td>
         <td>object</td>
         <td>
-          Webhook contains the config fields for Webhook's Integration<br/>
+          Webhook contains the config fields for Webhook's Integration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13223,7 +13289,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-Datadog contains the config fields for Datadog's Integration
+Datadog contains the config fields for Datadog's Integration.
 
 <table>
     <thead>
@@ -13238,7 +13304,7 @@ Datadog contains the config fields for Datadog's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecdatadogapikeysecretref">apiKeySecretRef</a></b></td>
         <td>object</td>
         <td>
-          APIKeySecretRef holds the name of a secret containing the datadog api key<br/>
+          APIKeySecretRef holds the name of a secret containing the Datadog API key.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -13252,7 +13318,7 @@ Datadog contains the config fields for Datadog's Integration
         <td><b>sendCollectionLatencyMetrics</b></td>
         <td>enum</td>
         <td>
-          SendCollectionLatencyMetrics toggles sending collection latency metrics<br/>
+          SendCollectionLatencyMetrics toggles sending collection latency metrics.<br/>
           <br/>
             <i>Enum</i>: enabled, disabled<br/>
             <i>Default</i>: disabled<br/>
@@ -13278,7 +13344,7 @@ including database and collection names<br/>
 
 
 
-APIKeySecretRef holds the name of a secret containing the datadog api key
+APIKeySecretRef holds the name of a secret containing the Datadog API key.
 
 <table>
     <thead>
@@ -13322,7 +13388,7 @@ Mutually exclusive with the "projectRef" field
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          ID is the Atlas project ID<br/>
+          ID is the Atlas project ID.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13334,7 +13400,7 @@ Mutually exclusive with the "projectRef" field
 
 
 
-MicrosoftTeams contains the config fields for Microsoft Teams's Integration
+MicrosoftTeams contains the config fields for Microsoft Teams's Integration.
 
 <table>
     <thead>
@@ -13349,7 +13415,7 @@ MicrosoftTeams contains the config fields for Microsoft Teams's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecmicrosoftteamsurlsecretref">urlSecretRef</a></b></td>
         <td>object</td>
         <td>
-          URLSecretRef holds the name of a secret containing the microsoft teams secret URL<br/>
+          URLSecretRef holds the name of a secret containing the Microsoft Teams secret URL.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13361,7 +13427,7 @@ MicrosoftTeams contains the config fields for Microsoft Teams's Integration
 
 
 
-URLSecretRef holds the name of a secret containing the microsoft teams secret URL
+URLSecretRef holds the name of a secret containing the Microsoft Teams secret URL.
 
 <table>
     <thead>
@@ -13389,7 +13455,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-NewRelic contains the config fields for New Relic's Integration
+NewRelic contains the config fields for New Relic's Integration.
 
 <table>
     <thead>
@@ -13405,7 +13471,7 @@ NewRelic contains the config fields for New Relic's Integration
         <td>object</td>
         <td>
           CredentialsSecretRef holds the name of a secret containing new relic's credentials:
-account id, license key, read and write tokens<br/>
+account id, license key, read and write tokens.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13418,7 +13484,7 @@ account id, license key, read and write tokens<br/>
 
 
 CredentialsSecretRef holds the name of a secret containing new relic's credentials:
-account id, license key, read and write tokens
+account id, license key, read and write tokens.
 
 <table>
     <thead>
@@ -13446,7 +13512,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-OpsGenie contains the config fields for Ops Genie's Integration
+OpsGenie contains the config fields for Ops Genie's Integration.
 
 <table>
     <thead>
@@ -13461,14 +13527,14 @@ OpsGenie contains the config fields for Ops Genie's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecopsgenieapikeysecretref">apiKeySecretRef</a></b></td>
         <td>object</td>
         <td>
-          APIKeySecretRef holds the name of a secret containing Ops Genie's API key<br/>
+          APIKeySecretRef holds the name of a secret containing Ops Genie's API key.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          Region is the Ops Genie region<br/>
+          Region is the Ops Genie region.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13480,7 +13546,7 @@ OpsGenie contains the config fields for Ops Genie's Integration
 
 
 
-APIKeySecretRef holds the name of a secret containing Ops Genie's API key
+APIKeySecretRef holds the name of a secret containing Ops Genie's API key.
 
 <table>
     <thead>
@@ -13508,7 +13574,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-PagerDuty contains the config fields for PagerDuty's Integration
+PagerDuty contains the config fields for PagerDuty's Integration.
 
 <table>
     <thead>
@@ -13523,14 +13589,14 @@ PagerDuty contains the config fields for PagerDuty's Integration
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          Region is the Pager Duty region<br/>
+          Region is the Pager Duty region.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecpagerdutyservicekeysecretref">serviceKeySecretRef</a></b></td>
         <td>object</td>
         <td>
-          ServiceKeySecretRef holds the name of a secret containing Pager Duty service key<br/>
+          ServiceKeySecretRef holds the name of a secret containing Pager Duty service key.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13542,7 +13608,7 @@ PagerDuty contains the config fields for PagerDuty's Integration
 
 
 
-ServiceKeySecretRef holds the name of a secret containing Pager Duty service key
+ServiceKeySecretRef holds the name of a secret containing Pager Duty service key.
 
 <table>
     <thead>
@@ -13586,14 +13652,14 @@ Mutually exclusive with the "externalProjectRef" field
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          Name is the name of the Kubernetes Resource<br/>
+          Name of the Kubernetes Resource<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>namespace</b></td>
         <td>string</td>
         <td>
-          Namespace is the namespace of the Kubernetes Resource<br/>
+          Namespace of the Kubernetes Resource<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13605,7 +13671,7 @@ Mutually exclusive with the "externalProjectRef" field
 
 
 
-Prometheus contains the config fields for Prometheus's Integration
+Prometheus contains the config fields for Prometheus's Integration.
 
 <table>
     <thead>
@@ -13620,14 +13686,14 @@ Prometheus contains the config fields for Prometheus's Integration
         <td><b>enabled</b></td>
         <td>string</td>
         <td>
-          Enabled is true when Prometheus integration is enabled<br/>
+          Enabled is true when Prometheus integration is enabled.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#atlasthirdpartyintegrationspecprometheusprometheuscredentialssecretref">prometheusCredentialsSecretRef</a></b></td>
         <td>object</td>
         <td>
-          PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus
+          PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus.
 username & password<br/>
         </td>
         <td>true</td>
@@ -13635,7 +13701,7 @@ username & password<br/>
         <td><b>serviceDiscovery</b></td>
         <td>enum</td>
         <td>
-          ServiceDiscovery to be used by Prometheus<br/>
+          ServiceDiscovery to be used by Prometheus.<br/>
           <br/>
             <i>Enum</i>: file, http<br/>
         </td>
@@ -13649,7 +13715,7 @@ username & password<br/>
 
 
 
-PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus
+PrometheusCredentialsSecretRef holds the name of a secret containing the Prometheus.
 username & password
 
 <table>
@@ -13678,7 +13744,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-Slack contains the config fields for Slack's Integration
+Slack contains the config fields for Slack's Integration.
 
 <table>
     <thead>
@@ -13693,21 +13759,21 @@ Slack contains the config fields for Slack's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecslackapitokensecretref">apiTokenSecretRef</a></b></td>
         <td>object</td>
         <td>
-          APITokenSecretRef holds the name of a secret containing the Slack API token<br/>
+          APITokenSecretRef holds the name of a secret containing the Slack API token.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>channelName</b></td>
         <td>string</td>
         <td>
-          ChannelName to be used by Prometheus<br/>
+          ChannelName to be used by Prometheus.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>teamName</b></td>
         <td>string</td>
         <td>
-          TeamName flags whether or not Prometheus integration is enabled<br/>
+          TeamName flags whether Prometheus integration is enabled.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13719,7 +13785,7 @@ Slack contains the config fields for Slack's Integration
 
 
 
-APITokenSecretRef holds the name of a secret containing the Slack API token
+APITokenSecretRef holds the name of a secret containing the Slack API token.
 
 <table>
     <thead>
@@ -13747,7 +13813,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-VictorOps contains the config fields for VictorOps's Integration
+VictorOps contains the config fields for VictorOps's Integration.
 
 <table>
     <thead>
@@ -13762,14 +13828,14 @@ VictorOps contains the config fields for VictorOps's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecvictoropsapikeysecretref">apiKeySecretRef</a></b></td>
         <td>object</td>
         <td>
-          APIKeySecretRef is the name of a secret containing Victor Ops API key<br/>
+          APIKeySecretRef is the name of a secret containing Victor Ops API key.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>routingKey</b></td>
         <td>string</td>
         <td>
-          RoutingKey holds VictorOps routing key<br/>
+          RoutingKey holds VictorOps routing key.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13781,7 +13847,7 @@ VictorOps contains the config fields for VictorOps's Integration
 
 
 
-APIKeySecretRef is the name of a secret containing Victor Ops API key
+APIKeySecretRef is the name of a secret containing Victor Ops API key.
 
 <table>
     <thead>
@@ -13809,7 +13875,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-Webhook contains the config fields for Webhook's Integration
+Webhook contains the config fields for Webhook's Integration.
 
 <table>
     <thead>
@@ -13824,7 +13890,7 @@ Webhook contains the config fields for Webhook's Integration
         <td><b><a href="#atlasthirdpartyintegrationspecwebhookurlsecretref">urlSecretRef</a></b></td>
         <td>object</td>
         <td>
-          URLSecretRef holds the name of a secret containing Webhook URL and secret<br/>
+          URLSecretRef holds the name of a secret containing Webhook URL and secret.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -13836,7 +13902,7 @@ Webhook contains the config fields for Webhook's Integration
 
 
 
-URLSecretRef holds the name of a secret containing Webhook URL and secret
+URLSecretRef holds the name of a secret containing Webhook URL and secret.
 
 <table>
     <thead>

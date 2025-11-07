@@ -67,14 +67,14 @@ type AtlasNetworkPeeringSpec struct {
 	AtlasNetworkPeeringConfig `json:",inline"`
 }
 
-// ContainerDualReference refers to an Network Container either by Kubernetes name or Atlas ID
+// ContainerDualReference refers to a Network Container either by Kubernetes name or Atlas ID.
 type ContainerDualReference struct {
-	// Name of the container Kubernetes resource, must be present in the same namespace
+	// Name of the container Kubernetes resource, must be present in the same namespace.
 	// Use either name or ID, not both.
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// ID is the Atlas identifier of the Network Container Atlas resource this Peering Connection relies on
+	// ID is the Atlas identifier of the Network Container Atlas resource this Peering Connection relies on.
 	// Use either name or ID, not both.
 	// +optional
 	ID string `json:"id,omitempty"`
@@ -92,20 +92,20 @@ type AtlasNetworkPeeringConfig struct {
 	// +kubebuilder:validation:Required
 	Provider string `json:"provider"`
 
-	// AWSConfiguration is the specific AWS settings for network peering
+	// AWSConfiguration is the specific AWS settings for network peering.
 	// +kubebuilder:validation:Optional
 	AWSConfiguration *AWSNetworkPeeringConfiguration `json:"awsConfiguration,omitempty"`
-	// AzureConfiguration is the specific Azure settings for network peering
+	// AzureConfiguration is the specific Azure settings for network peering.
 	// +kubebuilder:validation:Optional
 	AzureConfiguration *AzureNetworkPeeringConfiguration `json:"azureConfiguration,omitempty"`
-	// GCPConfiguration is the specific Google Cloud settings for network peering
+	// GCPConfiguration is the specific Google Cloud settings for network peering.
 	// +kubebuilder:validation:Optional
 	GCPConfiguration *GCPNetworkPeeringConfiguration `json:"gcpConfiguration,omitempty"`
 }
 
 // AWSNetworkPeeringConfiguration defines tha Atlas desired state for AWS
 type AWSNetworkPeeringConfiguration struct {
-	// AccepterRegionName is the provider region name of user's vpc in AWS native region format
+	// AccepterRegionName is the provider region name of user's vpc in AWS native region format.
 	// +kubebuilder:validation:Required
 	AccepterRegionName string `json:"accepterRegionName"`
 	// AccountID of the user's vpc.

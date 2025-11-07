@@ -20,59 +20,59 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
-// SearchIndex is the CRD to configure part of the Atlas Search Index
+// SearchIndex is the CRD to configure part of the Atlas Search Index.
 type SearchIndex struct {
-	// Human-readable label that identifies this index. Must be unique for a deployment
+	// Human-readable label that identifies this index. Must be unique for a deployment.
 	// +required
 	Name string `json:"name"`
-	// Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes
+	// Human-readable label that identifies the database that contains the collection with one or more Atlas Search indexes.
 	// +required
 	DBName string `json:"DBName"`
-	// Human-readable label that identifies the collection that contains one or more Atlas Search indexes
+	// Human-readable label that identifies the collection that contains one or more Atlas Search indexes.
 	// +required
 	CollectionName string `json:"collectionName"`
-	// Type of the index
+	// Type of the index.
 	// +kubebuilder:validation:Enum:=search;vectorSearch
 	// +required
 	Type string `json:"type,omitempty"`
+	// Atlas search index configuration.
 	// +optional
-	// Atlas search index configuration
 	Search *Search `json:"search,omitempty"`
+	// Atlas vector search index configuration.
 	// +optional
-	// Atlas vector search index configuration
 	VectorSearch *VectorSearch `json:"vectorSearch,omitempty"`
 }
 
-// Search represents "search" type of Atlas Search Index
+// Search represents "search" type of Atlas Search Index.
 type Search struct {
-	// Rule sets that map words to their synonyms in this index
+	// Rule sets that map words to their synonyms in this index.
 	// +optional
 	Synonyms *[]Synonym `json:"synonyms,omitempty"`
-	// Index specifications for the collection's fields
+	// Index specifications for the collection's fields.
 	// +required
 	Mappings *Mappings `json:"mappings,omitempty"`
+	// A reference to the AtlasSearchIndexConfig custom resource.
 	// +required
-	// A reference to the AtlasSearchIndexConfig custom resource
 	SearchConfigurationRef common.ResourceRefNamespaced `json:"searchConfigurationRef"`
 }
 
-// Synonym represents "Synonym" type of Atlas Search Index
+// Synonym represents "Synonym" type of Atlas Search Index.
 type Synonym struct {
-	// Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition
+	// Human-readable label that identifies the synonym definition. Each name must be unique within the same index definition.
 	// +required
 	Name string `json:"name"`
-	// Specific pre-defined method chosen to apply to the synonyms to be searched
+	// Specific pre-defined method chosen to apply to the synonyms to be searched.
 	// +kubebuilder:validation:Enum:=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword;lucene.arabic;lucene.armenian;lucene.basque;lucene.bengali;lucene.brazilian;lucene.bulgarian;lucene.catalan;lucene.chinese;lucene.cjk;lucene.czech;lucene.danish;lucene.dutch;lucene.english;lucene.finnish;lucene.french;lucene.galician;lucene.german;lucene.greek;lucene.hindi;lucene.hungarian;lucene.indonesian;lucene.irish;lucene.italian;lucene.japanese;lucene.korean;lucene.kuromoji;lucene.latvian;lucene.lithuanian;lucene.morfologik;lucene.nori;lucene.norwegian;lucene.persian;lucene.portuguese;lucene.romanian;lucene.russian;lucene.smartcn;lucene.sorani;lucene.spanish;lucene.swedish;lucene.thai;lucene.turkish;lucene.ukrainian
 	// +required
 	Analyzer string `json:"analyzer"`
-	// Data set that stores the mapping one or more words map to one or more synonyms of those words
+	// Data set that stores the mapping one or more words map to one or more synonyms of those words.
 	// +required
 	Source Source `json:"source"`
 }
 
 // Source represents "Source" type of Atlas Search Index
 type Source struct {
-	// Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms
+	// Human-readable label that identifies the MongoDB collection that stores words and their applicable synonyms.
 	Collection string `json:"collection"`
 }
 

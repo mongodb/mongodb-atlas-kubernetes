@@ -23,7 +23,7 @@ import (
 
 // AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
 type AtlasBackupPolicySpec struct {
-	// A list of BackupPolicy items
+	// A list of BackupPolicy items.
 	Items []AtlasBackupPolicyItem `json:"items"`
 }
 
@@ -37,11 +37,11 @@ type AtlasBackupPolicyItem struct {
 	// +kubebuilder:validation:Enum:=1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;40
 	FrequencyInterval int `json:"frequencyInterval"`
 
-	// Scope of the backup policy item: days, weeks, or months
+	// Scope of the backup policy item: days, weeks, or months.
 	// +kubebuilder:validation:Enum:=days;weeks;months;years
 	RetentionUnit string `json:"retentionUnit"`
 
-	// Value to associate with RetentionUnit
+	// Value to associate with RetentionUnit.
 	RetentionValue int `json:"retentionValue"`
 }
 

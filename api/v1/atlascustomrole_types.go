@@ -72,5 +72,6 @@ type AtlasCustomRoleList struct {
 type AtlasCustomRoleSpec struct {
 	// ProjectReference is the dual external or kubernetes reference with access credentials
 	ProjectDualReference `json:",inline"`
-	Role                 CustomRole `json:"role"`
+	// Role represents a Custom Role in Atlas.
+	Role CustomRole `json:"role"`
 }

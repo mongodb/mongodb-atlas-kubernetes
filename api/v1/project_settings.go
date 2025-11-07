@@ -19,12 +19,18 @@ import (
 )
 
 type ProjectSettings struct {
+	// Flag that indicates whether to collect database-specific metrics for the specified project.
 	IsCollectDatabaseSpecificsStatisticsEnabled *bool `json:"isCollectDatabaseSpecificsStatisticsEnabled,omitempty"`
-	IsDataExplorerEnabled                       *bool `json:"isDataExplorerEnabled,omitempty"`
-	IsExtendedStorageSizesEnabled               *bool `json:"isExtendedStorageSizesEnabled,omitempty"`
-	IsPerformanceAdvisorEnabled                 *bool `json:"isPerformanceAdvisorEnabled,omitempty"`
-	IsRealtimePerformancePanelEnabled           *bool `json:"isRealtimePerformancePanelEnabled,omitempty"`
-	IsSchemaAdvisorEnabled                      *bool `json:"isSchemaAdvisorEnabled,omitempty"`
+	// Flag that indicates whether to enable the Data Explorer for the specified project.
+	IsDataExplorerEnabled *bool `json:"isDataExplorerEnabled,omitempty"`
+	// Flag that indicates whether to enable extended storage sizes for the specified project.
+	IsExtendedStorageSizesEnabled *bool `json:"isExtendedStorageSizesEnabled,omitempty"`
+	// Flag that indicates whether to enable the Performance Advisor and Profiler for the specified project.
+	IsPerformanceAdvisorEnabled *bool `json:"isPerformanceAdvisorEnabled,omitempty"`
+	// Flag that indicates whether to enable the Real Time Performance Panel for the specified project.
+	IsRealtimePerformancePanelEnabled *bool `json:"isRealtimePerformancePanelEnabled,omitempty"`
+	// Flag that indicates whether to enable the Schema Advisor for the specified project.
+	IsSchemaAdvisorEnabled *bool `json:"isSchemaAdvisorEnabled,omitempty"`
 }
 
 func (s ProjectSettings) ToAtlas() *admin.GroupSettings {
