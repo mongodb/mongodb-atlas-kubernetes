@@ -17,13 +17,12 @@ package aws
 import (
 	"context"
 	"fmt"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-
-	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
 func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
@@ -43,9 +42,9 @@ func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
 				ResourceType: types.ResourceTypeVpc,
 				Tags: []types.Tag{
 					{Key: aws.String("Name"), Value: aws.String(name)},
-					{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
-					{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
-					{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
+					{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
+					{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
+					{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
 				},
 			}},
 		})
