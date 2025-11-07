@@ -79,7 +79,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 
-			cancelCtx, cancel := context.WithCancel(ctx)
+			// We don't want to inherit the SpecContext from the BeforeEach() ginkgo node
+			// as otherwise the server will be shut down before starting AfterEach.
+			// In fact we don't need anything else other than a context.Background() here.
+			// The server will shut down as soon as the ginkgo process shuts down.
+			cancelCtx, cancel := context.WithCancel(context.Background())
 			managerStop = cancel
 			go func() {
 				err := managerStart(cancelCtx)
