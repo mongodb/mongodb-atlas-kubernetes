@@ -44,7 +44,7 @@ type AtlasNetworkContainer struct {
 
 //+kubebuilder:object:root=true
 
-// AtlasNetworkContainerList contains a list of AtlasNetworkContainer
+// AtlasNetworkContainerList contains a list of AtlasNetworkContainer.
 type AtlasNetworkContainerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -62,7 +62,7 @@ type AtlasNetworkContainerList struct {
 type AtlasNetworkContainerSpec struct {
 	ProjectDualReference `json:",inline"`
 
-	// Provider is the name of the cloud provider hosting the network container
+	// Provider is the name of the cloud provider hosting the network container.
 	// +kubebuilder:validation:Enum=AWS;GCP;AZURE
 	// +kubebuilder:validation:Required
 	Provider string `json:"provider"`

@@ -63,7 +63,7 @@ type AtlasBackupCompliancePolicySpec struct {
 	// Flag that indicates whether Encryption at Rest using Customer Key Management is required for all clusters with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
 	EncryptionAtRestEnabled bool `json:"encryptionAtRestEnabled,omitempty"`
-	// Flag that indicates whether to overwrite non complying backup policies with the new data protection settings or not.
+	// Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings or not.
 	OverwriteBackupPolicies bool `json:"overwriteBackupPolicies,omitempty"`
 	// Flag that indicates whether the cluster uses Continuous Cloud Backups with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
@@ -77,12 +77,12 @@ type AtlasBackupCompliancePolicySpec struct {
 }
 
 type AtlasOnDemandPolicy struct {
-	// Scope of the backup policy item: days, weeks, or months
+	// Scope of the backup policy item: days, weeks, or months.
 	// +kubebuilder:validation:Enum:=days;weeks;months
 	// +kubebuilder:validation:Required
 	RetentionUnit string `json:"retentionUnit"`
 
-	// Value to associate with RetentionUnit
+	// Value to associate with RetentionUnit.
 	// +kubebuilder:validation:Required
 	RetentionValue int `json:"retentionValue"`
 }

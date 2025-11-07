@@ -27,61 +27,44 @@ func init() {
 }
 
 type AtlasOrgSettingsSpec struct {
-	// OrgId Unique 24-hexadecimal digit string that identifies the organization that
-	// contains your projects
+	// OrgId Unique 24-hexadecimal digit string that identifies the organization that contains your projects.
 	// +required
 	OrgID string `json:"orgID"`
 
-	// ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to
-	// Atlas (Public & Private API keys).
+	// ConnectionSecretRef is the name of the Kubernetes Secret which contains the information about the way to connect to Atlas (Public & Private API keys).
 	ConnectionSecretRef *api.LocalObjectReference `json:"connectionSecretRef,omitempty"`
 
-	// ApiAccessListRequired Flag that indicates whether to require API operations to
-	// originate from an IP Address added to the API access list for the specified
-	// organization.
+	// ApiAccessListRequired Flag that indicates whether to require API operations to originate from an IP Address added to the API access list for the specified organization.
 	// +optional
 	ApiAccessListRequired *bool `json:"apiAccessListRequired,omitempty"`
 
-	// GenAIFeaturesEnabled Flag that indicates whether this organization has access to
-	// generative AI features. This setting only applies to Atlas Commercial and is
-	// enabled by default. Once this setting is turned on, Project Owners may be able
-	// to enable or disable individual AI features at the project level.
+	// GenAIFeaturesEnabled Flag that indicates whether this organization has access to generative AI features. This setting only applies to Atlas Commercial and is enabled by default.
+	// Once this setting is turned on, Project Owners may be able to enable or disable individual AI features at the project level.
 	// +optional
 	GenAIFeaturesEnabled *bool `json:"genAIFeaturesEnabled,omitempty"`
 
-	// MaxServiceAccountSecretValidityInHours Number that represents the maximum period
-	// before expiry in hours for new Atlas Admin API Service Account secrets within
-	// the specified organization.
+	// MaxServiceAccountSecretValidityInHours Number that represents the maximum period before expiry in hours for new Atlas Admin API Service Account secrets within the specified organization.
 	// +optional
 	MaxServiceAccountSecretValidityInHours *int `json:"maxServiceAccountSecretValidityInHours,omitempty"`
 
-	// MultiFactorAuthRequired Flag that indicates whether to require users to set up
-	// Multi-Factor Authentication (MFA) before accessing the specified organization.
-	// To learn more, see:
-	// https://www.mongodb.com/docs/atlas/security-multi-factor-authentication/.
+	// MultiFactorAuthRequired Flag that indicates whether to require users to set up Multi-Factor Authentication (MFA) before accessing the specified organization.
+	// To learn more, see: https://www.mongodb.com/docs/atlas/security-multi-factor-authentication/.
 	// +optional
 	MultiFactorAuthRequired *bool `json:"multiFactorAuthRequired,omitempty"`
 
-	// RestrictEmployeeAccess Flag that indicates whether to block MongoDB Support from
-	// accessing Atlas infrastructure and cluster logs for any deployment in the
-	// specified organization without explicit permission. Once this setting is turned
-	// on, you can grant MongoDB Support a 24-hour bypass access to the Atlas
-	// deployment to resolve support issues. To learn more, see:
-	// https://www.mongodb.com/docs/atlas/security-restrict-support-access/.
+	// RestrictEmployeeAccess Flag that indicates whether to block MongoDB Support from accessing Atlas infrastructure and cluster logs for any deployment in the specified organization without explicit permission.
+	// Once this setting is turned on, you can grant MongoDB Support a 24-hour bypass access to the Atlas deployment to resolve support issues.
+	// To learn more, see: https://www.mongodb.com/docs/atlas/security-restrict-support-access/.
 	// +optional
 	RestrictEmployeeAccess *bool `json:"restrictEmployeeAccess,omitempty"`
 
-	// SecurityContact String that specifies a single email address for the specified
-	// organization to receive security-related notifications. Specifying a security
-	// contact does not grant them authorization or access to Atlas for security
-	// decisions or approvals. An empty string is valid and clears the existing
-	// security contact (if any).
+	// SecurityContact String that specifies a single email address for the specified organization to receive security-related notifications.
+	// Specifying a security contact does not grant them authorization or access to Atlas for security decisions or approvals.
+	// An empty string is valid and clears the existing security contact (if any).
 	// +optional
 	SecurityContact *string `json:"securityContact,omitempty"`
 
-	// StreamsCrossGroupEnabled Flag that indicates whether a group's Atlas Stream
-	// Processing instances in this organization can create connections to other
-	// group's clusters in the same organization.
+	// StreamsCrossGroupEnabled Flag that indicates whether a group's Atlas Stream Processing instances in this organization can create connections to other group's clusters in the same organization.
 	// +optional
 	StreamsCrossGroupEnabled *bool `json:"streamsCrossGroupEnabled,omitempty"`
 }

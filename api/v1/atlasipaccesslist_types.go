@@ -30,9 +30,9 @@ func init() {
 
 // AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
 type AtlasIPAccessListSpec struct {
-	// ProjectReference is the dual external or kubernetes reference with access credentials
+	// ProjectReference is the dual external or kubernetes reference with access credentials.
 	ProjectDualReference `json:",inline"`
-	// Entries is the list of IP Access to be managed
+	// Entries is the list of IP Access to be managed.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Entries []IPAccessEntry `json:"entries"`

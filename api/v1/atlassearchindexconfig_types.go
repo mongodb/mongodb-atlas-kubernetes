@@ -50,7 +50,8 @@ type AtlasSearchIndexConfigList struct {
 }
 
 type AtlasSearchIndexConfigSpec struct {
-	// Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text. These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:
+	// Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text.
+	// These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:
 	// - extracting words
 	// - removing punctuation
 	// - removing accents
@@ -61,15 +62,16 @@ type AtlasSearchIndexConfigSpec struct {
 	// +kubebuilder:validation:Enum:=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword;lucene.arabic;lucene.armenian;lucene.basque;lucene.bengali;lucene.brazilian;lucene.bulgarian;lucene.catalan;lucene.chinese;lucene.cjk;lucene.czech;lucene.danish;lucene.dutch;lucene.english;lucene.finnish;lucene.french;lucene.galician;lucene.german;lucene.greek;lucene.hindi;lucene.hungarian;lucene.indonesian;lucene.irish;lucene.italian;lucene.japanese;lucene.korean;lucene.kuromoji;lucene.latvian;lucene.lithuanian;lucene.morfologik;lucene.nori;lucene.norwegian;lucene.persian;lucene.portuguese;lucene.romanian;lucene.russian;lucene.smartcn;lucene.sorani;lucene.spanish;lucene.swedish;lucene.thai;lucene.turkish;lucene.ukrainian
 	// +optional
 	Analyzer *string `json:"analyzer,omitempty"`
-	// List of user-defined methods to convert database field text into searchable words
+	// List of user-defined methods to convert database field text into searchable words.
 	// +optional
 	Analyzers *[]AtlasSearchIndexAnalyzer `json:"analyzers,omitempty"`
-	// Method applied to identify words when searching this index
+	// Method applied to identify words when searching this index.
 	// +optional
 	// +kubebuilder:validation:Enum:=lucene.standard;lucene.simple;lucene.whitespace;lucene.keyword;lucene.arabic;lucene.armenian;lucene.basque;lucene.bengali;lucene.brazilian;lucene.bulgarian;lucene.catalan;lucene.chinese;lucene.cjk;lucene.czech;lucene.danish;lucene.dutch;lucene.english;lucene.finnish;lucene.french;lucene.galician;lucene.german;lucene.greek;lucene.hindi;lucene.hungarian;lucene.indonesian;lucene.irish;lucene.italian;lucene.japanese;lucene.korean;lucene.kuromoji;lucene.latvian;lucene.lithuanian;lucene.morfologik;lucene.nori;lucene.norwegian;lucene.persian;lucene.portuguese;lucene.romanian;lucene.russian;lucene.smartcn;lucene.sorani;lucene.spanish;lucene.swedish;lucene.thai;lucene.turkish;lucene.ukrainian
 	SearchAnalyzer *string `json:"searchAnalyzer,omitempty"`
-	// Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search. Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search. To learn more, see documentation:
-	// https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/
+	// Flag that indicates whether to store all fields (true) on Atlas Search. By default, Atlas doesn't store (false) the fields on Atlas Search.
+	// Alternatively, you can specify an object that only contains the list of fields to store (include) or not store (exclude) on Atlas Search.
+	// To learn more, see documentation: https://www.mongodb.com/docs/atlas/atlas-search/stored-source-definition/
 	// +optional
 	StoredSource *apiextensions.JSON `json:"storedSource,omitempty"`
 	// Synonyms and mappings can be found in the AtlasDeployment resource spec
@@ -85,10 +87,10 @@ type AtlasSearchIndexAnalyzer struct {
 	// - Redaction, the removal of sensitive information from public documents
 	// +optional
 	TokenFilters *apiextensions.JSON `json:"tokenFilters,omitempty"`
-	// Filters that examine text one character at a time and perform filtering operations
+	// Filters that examine text one character at a time and perform filtering operations.
 	// +optional
 	CharFilters *apiextensions.JSON `json:"charFilters,omitempty"`
-	// Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing
+	// Tokenizer that you want to use to create tokens. Tokens determine how Atlas Search splits up text into discrete chunks for indexing.
 	// +required
 	Tokenizer Tokenizer `json:"tokenizer"`
 }
@@ -116,7 +118,7 @@ type Tokenizer struct {
 }
 
 type CharFilter struct {
-	// Human-readable label that identifies this character filter type
+	// Human-readable label that identifies this character filter type.
 	// +kubebuilder:validation:Enum:=htmlStrip;icuNormalize;mapping;persian
 	// +required
 	Type string `json:"type,omitempty"`
@@ -133,17 +135,17 @@ type TokenFilter struct {
 	// +kubebuilder:validation:Enum:=asciiFolding;daitchMokotoffSoundex;edgeGram;icuFolding;icuNormalizer;length;lowercase;nGram;regex;reverse;shingle;snowballStemming;stopword;trim;
 	Type string `json:"type,omitempty"`
 	// Value that indicates whether to include or omit the original tokens in the output of the token filter.
-	// Choose include if you want to support queries on both the original tokens as well as the converted forms.
+	// Choose include if you want to support queries on both the original tokens and the converted forms.
 	// +kubebuilder:validation:Enum:=omit;include;
 	// +optional
 	OriginalTokens string `json:"originalTokens,omitempty"`
-	// Value that specifies the maximum length of generated n-grams. This value must be greater than or equal to minGram
+	// Value that specifies the maximum length of generated n-grams. This value must be greater than or equal to minGram.
 	// +optional
 	MaxGram int `json:"maxGram,omitempty"`
-	// Value that specifies the minimum length of generated n-grams. This value must be less than or equal to maxGram
+	// Value that specifies the minimum length of generated n-grams. This value must be less than or equal to maxGram.
 	// +optional
 	MinGram int `json:"minGram,omitempty"`
-	// Value that indicates whether to index tokens shorter than minGram or longer than maxGram
+	// Value that indicates whether to index tokens shorter than minGram or longer than maxGram.
 	// +kubebuilder:validation:Enum:=omit;include
 	// +optional
 	TermNotInBounds string `json:"termNotInBounds,omitempty"`
@@ -151,36 +153,36 @@ type TokenFilter struct {
 	// +kubebuilder:validation:Enum:=nfc;nfkd;nfkc
 	// +optional
 	NormalizationForm string `json:"normalizationForm,omitempty"`
-	// Number that specifies the maximum length of a token. Value must be greater than or equal to min
+	// Number that specifies the maximum length of a token. Value must be greater than or equal to min.
 	// +optional
 	Max int `json:"max,omitempty"`
-	// Number that specifies the minimum length of a token. This value must be less than or equal to max
+	// Number that specifies the minimum length of a token. This value must be less than or equal to max.
 	// +optional
 	Min int `json:"min,omitempty"`
-	// Value that indicates whether to replace only the first matching pattern or all matching patterns
+	// Value that indicates whether to replace only the first matching pattern or all matching patterns.
 	// +kubebuilder:validation:Enum:=all;first
 	// +optional
 	Matches string `json:"matches,omitempty"`
-	// Regular expression pattern to apply to each token
+	// Regular expression pattern to apply to each token.
 	// +optional
 	Pattern string `json:"pattern,omitempty"`
-	// Replacement string to substitute wherever a matching pattern occurs
+	// Replacement string to substitute wherever a matching pattern occurs.
 	// +optional
 	Replacement string `json:"replacement,omitempty"`
-	// Value that specifies the maximum number of tokens per shingle. This value must be greater than or equal to minShingleSize
+	// Value that specifies the maximum number of tokens per shingle. This value must be greater than or equal to minShingleSize.
 	// +optional
 	MaxShingleSize int `json:"maxShingleSize,omitempty"`
-	// Value that specifies the minimum number of tokens per shingle. This value must be less than or equal to maxShingleSize
+	// Value that specifies the minimum number of tokens per shingle. This value must be less than or equal to maxShingleSize.
 	// +optional
 	MinShingleSize int `json:"minShingleSize,omitempty"`
-	// Snowball-generated stemmer to use
+	// Snowball-generated stemmer to use.
 	// +kubebuilder:validation:Enum:=arabic;armenian;basque;catalan;danish;dutch;english;finnish;french;german;german2;hungarian;irish;italian;kp;lithuanian;lovins;norwegian;porter;portuguese;romanian;russian;spanish;swedish;turkish
 	// +optional
 	StemmerName string `json:"stemmerName,omitempty"`
 	// The stop words that correspond to the tokens to remove. Value must be one or more stop words.
 	// +optional
 	Tokens []string `json:"tokens,omitempty"`
-	// Flag that indicates whether to ignore the case of stop words when filtering the tokens to remove
+	// Flag that indicates whether to ignore the case of stop words when filtering the tokens to remove.
 	// +optional
 	IgnoreCase bool `json:"ignoreCase,omitempty"`
 }

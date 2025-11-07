@@ -32,7 +32,7 @@ func init() {
 
 // AtlasPrivateEndpointSpec is the specification of the desired configuration of a project private endpoint
 type AtlasPrivateEndpointSpec struct {
-	// ProjectReference is the dual external or kubernetes reference with access credentials
+	// ProjectReference is the dual external or kubernetes reference with access credentials.
 	ProjectDualReference `json:",inline"`
 
 	// Name of the cloud service provider for which you want to create the private endpoint service.
@@ -42,31 +42,31 @@ type AtlasPrivateEndpointSpec struct {
 	// Region of the chosen cloud provider in which you want to create the private endpoint service.
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
-	// AWSConfiguration is the specific AWS settings for the private endpoint
+	// AWSConfiguration is the specific AWS settings for the private endpoint.
 	// +listType=map
 	// +listMapKey=id
 	// +kubebuilder:validation:Optional
 	AWSConfiguration []AWSPrivateEndpointConfiguration `json:"awsConfiguration,omitempty"`
-	// AzureConfiguration is the specific Azure settings for the private endpoint
+	// AzureConfiguration is the specific Azure settings for the private endpoint.
 	// +listType=map
 	// +listMapKey=id
 	// +kubebuilder:validation:Optional
 	AzureConfiguration []AzurePrivateEndpointConfiguration `json:"azureConfiguration,omitempty"`
-	// GCPConfiguration is the specific Google Cloud settings for the private endpoint
+	// GCPConfiguration is the specific Google Cloud settings for the private endpoint.
 	// +listType=map
 	// +listMapKey=groupName
 	// +kubebuilder:validation:Optional
 	GCPConfiguration []GCPPrivateEndpointConfiguration `json:"gcpConfiguration,omitempty"`
 }
 
-// AWSPrivateEndpointConfiguration holds the AWS configuration done on customer network
+// AWSPrivateEndpointConfiguration holds the AWS configuration done on customer network.
 type AWSPrivateEndpointConfiguration struct {
 	// ID that identifies the private endpoint's network interface that someone added to this private endpoint service.
 	// +kubebuilder:validation:Required
 	ID string `json:"id"`
 }
 
-// AzurePrivateEndpointConfiguration holds the Azure configuration done on customer network
+// AzurePrivateEndpointConfiguration holds the Azure configuration done on customer network.
 type AzurePrivateEndpointConfiguration struct {
 	// ID that identifies the private endpoint's network interface that someone added to this private endpoint service.
 	// +kubebuilder:validation:Required
@@ -76,7 +76,7 @@ type AzurePrivateEndpointConfiguration struct {
 	IP string `json:"ipAddress"`
 }
 
-// GCPPrivateEndpointConfiguration holds the GCP configuration done on customer network
+// GCPPrivateEndpointConfiguration holds the GCP configuration done on customer network.
 type GCPPrivateEndpointConfiguration struct {
 	// ProjectID that identifies the Google Cloud project in which you created the endpoints.
 	// +kubebuilder:validation:Required
@@ -89,7 +89,7 @@ type GCPPrivateEndpointConfiguration struct {
 	Endpoints []GCPPrivateEndpoint `json:"endpoints"`
 }
 
-// GCPPrivateEndpoint holds the GCP forwarding rules configured on customer network
+// GCPPrivateEndpoint holds the GCP forwarding rules configured on customer network.
 type GCPPrivateEndpoint struct {
 	// Name that identifies the Google Cloud consumer forwarding rule that you created.
 	// +kubebuilder:validation:Required

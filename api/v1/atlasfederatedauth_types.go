@@ -41,7 +41,7 @@ type AtlasFederatedAuthSpec struct {
 	// Approved domains that restrict users who can join the organization based on their email address.
 	// +optional
 	DomainAllowList []string `json:"domainAllowList,omitempty"`
-	// Prevent users in the federation from accessing organizations outside of the federation, and creating new organizations.
+	// Prevent users in the federation from accessing organizations outside the federation, and creating new organizations.
 	// This option applies to the entire federation.
 	// See more information at https://www.mongodb.com/docs/atlas/security/federation-advanced-options/#restrict-user-membership-to-the-federation
 	// +kubebuilder:default:=false
@@ -56,7 +56,7 @@ type AtlasFederatedAuthSpec struct {
 	// +optional
 	RoleMappings []RoleMapping `json:"roleMappings,omitempty"`
 	// The collection of unique ids representing the identity providers that can be used for data access in this organization.
-	// Currently connected data access identity providers missing from the this field will be disconnected.
+	// Currently connected data access identity providers missing from this field will be disconnected.
 	// +optional
 	DataAccessIdentityProviders *[]string `json:"dataAccessIdentityProviders,omitempty"`
 }

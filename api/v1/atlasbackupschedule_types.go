@@ -71,8 +71,9 @@ type AtlasBackupScheduleSpec struct {
 }
 
 type AtlasBackupExportSpec struct {
-	// Unique Atlas identifier of the AWS bucket which was granted access to export backup snapshot
+	// Unique Atlas identifier of the AWS bucket which was granted access to export backup snapshot.
 	ExportBucketID string `json:"exportBucketId"`
+	// Human-readable label that indicates the rate at which the export policy item occurs.
 	// +kubebuilder:validation:Enum:=monthly
 	// +kubebuilder:default:=monthly
 	FrequencyType string `json:"frequencyType"`

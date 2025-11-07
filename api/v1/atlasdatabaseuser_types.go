@@ -52,7 +52,7 @@ const (
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDatabaseUserSpec struct {
-	// ProjectReference is the dual external or kubernetes reference with access credentials
+	// ProjectReference is the dual external or kubernetes reference with access credentials.
 	ProjectDualReference `json:",inline"`
 
 	// DatabaseName is a Database against which Atlas authenticates the user.
@@ -89,7 +89,7 @@ type AtlasDatabaseUserSpec struct {
 	// Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
 	// In case of AWS IAM: the value should be AWS ARN for the IAM User/Role;
 	// In case of OIDC Workload or Workforce: the value should be the Atlas OIDC IdP ID, followed by a '/', followed by the IdP group name;
-	// In case of Plain text auth: the value can be anything
+	// In case of Plain text auth: the value can be anything.
 	// +kubebuilder:validation:MaxLength:=1024
 	Username string `json:"username"`
 
@@ -101,16 +101,14 @@ type AtlasDatabaseUserSpec struct {
 	// +optional
 	OIDCAuthType string `json:"oidcAuthType,omitempty"`
 
-	// Human-readable label that indicates whether the new database
-	// user authenticates with the Amazon Web Services (AWS)
-	// Identity and Access Management (IAM) credentials associated with
-	// the user or the user's role
+	// Human-readable label that indicates whether the new database user authenticates with Amazon Web Services (AWS).
+	// Identity and Access Management (IAM) credentials associated with the user or the user's role
 	// +kubebuilder:default:=NONE
 	// +kubebuilder:validation:Enum:=NONE;USER;ROLE
 	// +optional
 	AWSIAMType string `json:"awsIamType,omitempty"`
 
-	// X509Type is X.509 method by which the database authenticates the provided username
+	// X509Type is X.509 method by which the database authenticates the provided username.
 	// +kubebuilder:default:=NONE
 	// +kubebuilder:validation:Enum:=NONE;MANAGED;CUSTOMER
 	// +optional
