@@ -151,6 +151,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	handlerFields := []jen.Code{
 		jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)),
 		jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler"),
+		jen.Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
 	}
 
 	// Version-specific handler for each version
@@ -168,6 +169,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
 		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
 		jen.Id("reapplySupport").Bool(),
+		jen.Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
 	}
 
 	atlasReconcilerBase := jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler").Values(jen.Dict{
@@ -198,6 +200,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 				versionSuffix := mapping.Version
 				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix)
 			}
+			d[jen.Id("predicates")] = jen.Id("predicates")
 		})),
 		jen.Line(),
 		jen.Return(jen.Qual(pkgCtrlState, "NewStateReconciler").Call(
@@ -305,8 +308,10 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "Predicates"),
 	).Block(
 		jen.Id("obj").Op(":=").Op("&").Qual(apiPkg, resourceName).Values(),
-		jen.Comment("TODO: Add appropriate predicates"),
-		jen.Return(jen.Id("obj"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call()),
+		jen.Return(
+			jen.Id("obj"),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call(jen.Id("h").Dot("predicates").Op("...")),
+		),
 	)
 
 	generateMapperFunctions(f, controllerName, resourceName, apiPkg, refsByKind)
