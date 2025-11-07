@@ -15,43 +15,52 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
 	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
 
-func CreateVPC(name, cidr, region string) (string, error) {
-	awsSession, err := newSession(region)
+func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to create an AWS session: %w", err)
+		return "", fmt.Errorf("failed to create an AWS config: %w", err)
 	}
-	ec2Client := ec2.New(awsSession)
-	result, err := ec2Client.CreateVpc(&ec2.CreateVpcInput{
-		AmazonProvidedIpv6CidrBlock: aws.Bool(false),
-		CidrBlock:                   aws.String(cidr),
-		TagSpecifications: []*ec2.TagSpecification{{
-			ResourceType: aws.String(ec2.ResourceTypeVpc),
-			Tags: []*ec2.Tag{
-				{Key: aws.String("Name"), Value: aws.String(name)},
-				{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
-				{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
-				{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
-			},
-		}},
+	ec2Client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+		o.Region = region
 	})
+	result, err := ec2Client.CreateVpc(
+		ctx,
+		&ec2.CreateVpcInput{
+			AmazonProvidedIpv6CidrBlock: aws.Bool(false),
+			CidrBlock:                   aws.String(cidr),
+			TagSpecifications: []types.TagSpecification{{
+				ResourceType: types.ResourceTypeVpc,
+				Tags: []types.Tag{
+					{Key: aws.String("Name"), Value: aws.String(name)},
+					{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
+					{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
+					{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
+				},
+			}},
+		})
 	if err != nil {
 		return "", fmt.Errorf("failed to create an AWS VPC: %w", err)
 	}
 
-	_, err = ec2Client.ModifyVpcAttribute(&ec2.ModifyVpcAttributeInput{
-		EnableDnsHostnames: &ec2.AttributeBooleanValue{
-			Value: aws.Bool(true),
-		},
-		VpcId: result.Vpc.VpcId,
-	})
+	_, err = ec2Client.ModifyVpcAttribute(
+		ctx,
+		&ec2.ModifyVpcAttributeInput{
+			EnableDnsHostnames: &types.AttributeBooleanValue{
+				Value: aws.Bool(true),
+			},
+			VpcId: result.Vpc.VpcId,
+		})
 	if err != nil {
 		return "", fmt.Errorf("failed to configure AWS VPC: %w", err)
 	}
@@ -59,15 +68,19 @@ func CreateVPC(name, cidr, region string) (string, error) {
 	return *result.Vpc.VpcId, nil
 }
 
-func DeleteVPC(vpcID, region string) error {
-	awsSession, err := newSession(region)
+func DeleteVPC(ctx context.Context, vpcID, region string) error {
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create an AWS session: %w", err)
+		return fmt.Errorf("failed to create an AWS config: %w", err)
 	}
-	ec2Client := ec2.New(awsSession)
-	_, err = ec2Client.DeleteVpc(&ec2.DeleteVpcInput{
-		DryRun: aws.Bool(false),
-		VpcId:  aws.String(vpcID),
+	ec2Client := ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+		o.Region = region
 	})
+	_, err = ec2Client.DeleteVpc(
+		ctx,
+		&ec2.DeleteVpcInput{
+			DryRun: aws.Bool(false),
+			VpcId:  aws.String(vpcID),
+		})
 	return err
 }

@@ -49,21 +49,16 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 	var pe *cloud.PrivateEndpointDetails
 	var secondPE *cloud.PrivateEndpointDetails
 
-	_ = BeforeEach(OncePerOrdered, func() {
+	_ = BeforeEach(OncePerOrdered, func(ctx SpecContext) {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
-		action, err := prepareProviderAction()
+		action, err := prepareProviderAction(ctx)
 		Expect(err).To(BeNil())
 		providerAction = action
 
 		By("Setting up project", func() {
-			testData = model.DataProvider(
-				"privatelink-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
+			testData = model.DataProvider(ctx, "privatelink-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 			actions.ProjectCreationFlow(testData)
 		})
@@ -91,22 +86,17 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
 				Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
 
-			vpcId := providerAction.SetupNetwork(
-				"AWS",
-				cloud.WithAWSConfig(&cloud.AWSConfig{
-					VPC:           utils.RandomName("datafederation-private-endpoint"),
-					Region:        config.AWSRegionEU,
-					EnableCleanup: true,
-				}),
-			)
-			pe = providerAction.SetupPrivateEndpoint(
-				&cloud.AWSPrivateEndpointRequest{
-					ID:     "vpce-" + vpcId,
-					Region: config.AWSRegionEU,
-					// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
-					ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
-				},
-			)
+			vpcId := providerAction.SetupNetwork(ctx, "AWS", cloud.WithAWSConfig(&cloud.AWSConfig{
+				VPC:           utils.RandomName("datafederation-private-endpoint"),
+				Region:        config.AWSRegionEU,
+				EnableCleanup: true,
+			}))
+			pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
+				ID:     "vpce-" + vpcId,
+				Region: config.AWSRegionEU,
+				// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
+				ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
+			})
 		})
 
 		By("Creating DataFederation with a PrivateEndpoint", func() {
@@ -167,22 +157,17 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
 				Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
 
-			vpcId := providerAction.SetupNetwork(
-				"AWS",
-				cloud.WithAWSConfig(&cloud.AWSConfig{
-					VPC:           utils.RandomName("datafederation-private-endpoint2"),
-					Region:        config.AWSRegionEU,
-					EnableCleanup: true,
-				}),
-			)
-			secondPE = providerAction.SetupPrivateEndpoint(
-				&cloud.AWSPrivateEndpointRequest{
-					ID:     "vpce-" + vpcId,
-					Region: config.AWSRegionEU,
-					// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
-					ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
-				},
-			)
+			vpcId := providerAction.SetupNetwork(ctx, "AWS", cloud.WithAWSConfig(&cloud.AWSConfig{
+				VPC:           utils.RandomName("datafederation-private-endpoint2"),
+				Region:        config.AWSRegionEU,
+				EnableCleanup: true,
+			}))
+			secondPE = providerAction.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
+				ID:     "vpce-" + vpcId,
+				Region: config.AWSRegionEU,
+				// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
+				ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
+			})
 		})
 
 		By("Update DataFederation with the new Private Endpoint", func() {

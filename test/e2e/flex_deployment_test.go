@@ -59,14 +59,9 @@ var _ = Describe("Flex", Label("flex"), func() {
 		})
 	})
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx SpecContext) {
 		By("Setting up cloud environment", func() {
-			testData = model.DataProvider(
-				"atlas-flex",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30005,
-				[]func(*model.TestDataProvider){},
-			).
+			testData = model.DataProvider(ctx, "atlas-flex", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30005, []func(*model.TestDataProvider){}).
 				WithProject(data.DefaultProject())
 			actions.ProjectCreationFlow(testData)
 		})

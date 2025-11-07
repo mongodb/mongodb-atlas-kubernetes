@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -65,29 +66,26 @@ var _ = Describe("Deployment Backup Configuration", Label("backup-config"), func
 	})
 
 	DescribeTable("Configure backup for a deployment",
-		func(test *model.TestDataProvider) {
-			testData = test
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider) {
+			testData = test(ctx)
 
 			bucket := fmt.Sprintf("%s-%s", bucketName, testData.Resources.TestID)
 			bucketPolicy := fmt.Sprintf("%s-%s", atlasBucketPolicyName, testData.Resources.TestID)
 			role := fmt.Sprintf("%s-%s", atlasIAMRoleName, testData.Resources.TestID)
 
-			actions.CreateProjectWithCloudProviderAccess(testData, role)
-			setupAWSResource(testData.AWSResourcesGenerator, bucket, bucketPolicy, role)
+			actions.CreateProjectWithCloudProviderAccess(ctx, testData, role)
+			setupAWSResource(ctx, testData.AWSResourcesGenerator, bucket, bucketPolicy, role)
 			deploy.CreateInitialDeployments(testData)
 
-			backupConfigFlow(test, bucket)
+			backupConfigFlow(testData, bucket)
 		},
 		Entry(
 			"Enable backup for a deployment",
-			model.DataProvider(
-				"deployment-backup-enabled",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30001,
-				[]func(*model.TestDataProvider){},
-			).
-				WithProject(data.DefaultProject()).
-				WithInitialDeployments(data.CreateAdvancedDeployment("backup-deployment")),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "deployment-backup-enabled", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30001, []func(*model.TestDataProvider){}).
+					WithProject(data.DefaultProject()).
+					WithInitialDeployments(data.CreateAdvancedDeployment("backup-deployment"))
+			},
 		),
 	)
 })
@@ -222,24 +220,24 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 	})
 }
 
-func setupAWSResource(gen *helper.AwsResourcesGenerator, bucket, bucketPolicy, role string) {
-	Expect(gen.CreateBucket(bucket)).To(Succeed())
-	gen.Cleanup(func() {
-		Expect(gen.EmptyBucket(bucket)).To(Succeed())
-		Expect(gen.DeleteBucket(bucket)).To(Succeed())
+func setupAWSResource(ctx context.Context, gen *helper.AwsResourcesGenerator, bucket, bucketPolicy, role string) {
+	Expect(gen.CreateBucket(ctx, bucket)).To(Succeed())
+	DeferCleanup(func(ctx SpecContext) {
+		Expect(gen.EmptyBucket(ctx, bucket)).To(Succeed())
+		Expect(gen.DeleteBucket(ctx, bucket)).To(Succeed())
 	})
 
-	policyArn, err := gen.CreatePolicy(bucketPolicy, func() helper.IAMPolicy {
+	policyArn, err := gen.CreatePolicy(ctx, bucketPolicy, func() helper.IAMPolicy {
 		return helper.BucketExportPolicy(bucket)
 	})
 	Expect(err).Should(BeNil())
 	Expect(policyArn).ShouldNot(BeEmpty())
-	gen.Cleanup(func() {
-		Expect(gen.DeletePolicy(policyArn)).To(Succeed())
+	DeferCleanup(func(ctx SpecContext) {
+		Expect(gen.DeletePolicy(ctx, policyArn)).To(Succeed())
 	})
 
-	Expect(gen.AttachRolePolicy(role, policyArn)).To(Succeed())
-	gen.Cleanup(func() {
-		Expect(gen.DetachRolePolicy(role, policyArn)).To(Succeed())
+	Expect(gen.AttachRolePolicy(ctx, role, policyArn)).To(Succeed())
+	DeferCleanup(func(ctx SpecContext) {
+		Expect(gen.DetachRolePolicy(ctx, role, policyArn)).To(Succeed())
 	})
 }

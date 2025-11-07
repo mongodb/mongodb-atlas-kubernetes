@@ -63,7 +63,7 @@ func (c *Cleaner) deleteNetworkPeering(ctx context.Context, projectID string, pe
 				continue
 			}
 
-			err := c.aws.DeleteVpc(peer.GetVpcId(), container.GetRegionName())
+			err := c.aws.DeleteVpc(ctx, peer.GetVpcId(), container.GetRegionName())
 			if err != nil {
 				fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to delete VPC %s at region %s from AWS: %s", peer.GetVpcId(), container.GetRegionName(), err))
 

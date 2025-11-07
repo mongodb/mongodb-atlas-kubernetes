@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -53,18 +54,15 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, alertConfigurations []akov2.AlertConfiguration) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			alertConfigFlow(test, alertConfigurations)
+		func(ctx SpecContext, test func(ctx context.Context) *model.TestDataProvider, alertConfigurations []akov2.AlertConfiguration) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			alertConfigFlow(testData, alertConfigurations)
 		},
 		Entry("Test[alert-configs-1]: Project with 2 identical alert configs", Label("focus-alert-configs-1"),
-			model.DataProvider(
-				"alert-configs-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "alert-configs-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.AlertConfiguration{
 				{
 					EventTypeName:    "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
@@ -112,12 +110,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 			},
 		),
 		Entry("Test[alert-configs-2]: Project with 2 different alert configs", Label("focus-alert-configs-2"),
-			model.DataProvider(
-				"alert-configs-2",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "alert-configs-2", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.AlertConfiguration{
 				{
 					EventTypeName: "JOINED_GROUP",
@@ -159,12 +154,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 			},
 		),
 		Entry("Test[alert-configs-3]: Project with an alert config containing a matcher", Label("focus-alert-configs-3"),
-			model.DataProvider(
-				"alert-configs-3",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "alert-configs-3", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.AlertConfiguration{
 				{
 					EventTypeName: "REPLICATION_OPLOG_WINDOW_RUNNING_OUT",
@@ -336,13 +328,8 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config", 
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 
-	It("Should be able to create AtlasProject with Alert Config and secrets", func() {
-		testData = model.DataProvider(
-			"alert-configs-1",
-			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-			40000,
-			[]func(*model.TestDataProvider){},
-		).WithProject(data.DefaultProject())
+	It("Should be able to create AtlasProject with Alert Config and secrets", func(ctx SpecContext) {
+		testData = model.DataProvider(ctx, "alert-configs-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 		By("Creating an AtlasProject", func() {
 			actions.ProjectCreationFlow(testData)

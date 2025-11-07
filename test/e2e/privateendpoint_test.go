@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -64,17 +65,17 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 
 	DescribeTable(
 		"Configure private endpoint for all supported cloud provider",
-		func(test *model.TestDataProvider, pe *akov2.AtlasPrivateEndpoint) {
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, pe *akov2.AtlasPrivateEndpoint) {
 			var privateEndpointDetails *cloud.PrivateEndpointDetails
 
-			testData = test
-			actions.ProjectCreationFlow(test)
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
 
 			By("Preparing private endpoint resource", func() {
-				pe.Namespace = test.Resources.Namespace
+				pe.Namespace = testData.Resources.Namespace
 				pe.Spec.ProjectRef = &common.ResourceRefNamespaced{
-					Name:      test.Project.Name,
-					Namespace: test.Project.Namespace,
+					Name:      testData.Project.Name,
+					Namespace: testData.Project.Namespace,
 				}
 				region, err := cloud.GetAtlasRegionByProvider(pe.Spec.Provider)
 				Expect(err).ToNot(HaveOccurred())
@@ -82,18 +83,18 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 			})
 
 			By("Creating private endpoint", func() {
-				Expect(test.K8SClient.Create(test.Context, pe)).To(Succeed())
+				Expect(testData.K8SClient.Create(testData.Context, pe)).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(testData.K8SClient.Get(test.Context, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
+					g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
 					g.Expect(pe.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					g.Expect(resources.CheckCondition(testData.K8SClient, pe, api.TrueCondition(api.PrivateEndpointServiceReady))).Should(BeTrue())
 				}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 
 			By("Configuring external network", func() {
-				Expect(testData.K8SClient.Get(test.Context, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
-				action, err := prepareProviderAction()
+				Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
+				action, err := prepareProviderAction(ctx)
 				Expect(err).ToNot(HaveOccurred())
 
 				cloudRegion := cloud.MapCloudProviderRegion(pe.Spec.Provider, pe.Spec.Region)
@@ -104,8 +105,8 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					awsConfig, err := cloud.GenerateCloudConfig[cloud.AWSConfig](pe.Spec.Provider, cloudRegion, testData.Resources.KeyName)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.AWSPrivateEndpointRequest{
+					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
 						ID:          fmt.Sprintf("aws-e2e-pe-%s", testData.Resources.TestID),
 						Region:      awsConfig.Region,
 						ServiceName: pe.Status.ServiceName,
@@ -114,8 +115,8 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					azureConfig, err := cloud.GenerateCloudConfig[cloud.AzureConfig](pe.Spec.Provider, cloudRegion, testData.Resources.KeyName)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.AzurePrivateEndpointRequest{
+					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.AzurePrivateEndpointRequest{
 						ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 						Region:            azureConfig.Region,
 						ServiceResourceID: pe.Status.ResourceID,
@@ -125,8 +126,8 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					gcpConfig, err := cloud.GenerateCloudConfig[cloud.GCPConfig](pe.Spec.Provider, cloudRegion, testData.Resources.KeyName)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(action.SetupNetwork(provider.ProviderName(pe.Spec.Provider), cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
-					privateEndpointDetails = action.SetupPrivateEndpoint(&cloud.GCPPrivateEndpointRequest{
+					Expect(action.SetupNetwork(ctx, provider.ProviderName(pe.Spec.Provider), cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
+					privateEndpointDetails = action.SetupPrivateEndpoint(ctx, &cloud.GCPPrivateEndpointRequest{
 						ID:         fmt.Sprintf("gcp-e2e-pe-%s", testData.Resources.TestID),
 						Region:     gcpConfig.Region,
 						Targets:    pe.Status.ServiceAttachmentNames,
@@ -136,7 +137,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 			})
 
 			By("Configuring private endpoint with external network details", func() {
-				Expect(testData.K8SClient.Get(test.Context, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
+				Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
 
 				switch pe.Spec.Provider {
 				case "AWS":
@@ -172,9 +173,9 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 					}
 				}
 
-				Expect(test.K8SClient.Update(test.Context, pe)).To(Succeed())
+				Expect(testData.K8SClient.Update(ctx, pe)).To(Succeed())
 				Eventually(func(g Gomega) { //nolint:dupl
-					g.Expect(testData.K8SClient.Get(test.Context, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
+					g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(pe), pe)).To(Succeed())
 					g.Expect(pe.Status.ServiceStatus).To(Equal("AVAILABLE"))
 					g.Expect(resources.CheckCondition(testData.K8SClient, pe, api.TrueCondition(api.PrivateEndpointServiceReady))).Should(BeTrue())
 					for _, eStatus := range pe.Status.Endpoints {
@@ -186,22 +187,19 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 			})
 
 			By("Removing private endpoint", func() {
-				Expect(test.K8SClient.Delete(test.Context, pe)).To(Succeed())
+				Expect(testData.K8SClient.Delete(ctx, pe)).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(testData.K8SClient.Get(test.Context, client.ObjectKeyFromObject(pe), pe)).ShouldNot(Succeed())
+					g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(pe), pe)).ShouldNot(Succeed())
 				}).WithTimeout(15 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 			})
 		},
 		Entry(
 			"Configure AWS private endpoint",
 			Label("focus-aws-private-endpoint"),
-			model.DataProvider(
-				"aws-pe-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "aws-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			&akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "aws-pe-1",
@@ -214,12 +212,9 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		Entry(
 			"Configure Azure private endpoint",
 			Label("focus-azure-private-endpoint"),
-			model.DataProvider(
-				"azure-pe-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "azure-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			&akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "azure-pe-1",
@@ -232,12 +227,9 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		Entry(
 			"Configure GCP private endpoint",
 			Label("focus-gcp-private-endpoint"),
-			model.DataProvider(
-				"gcp-pe-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "gcp-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			&akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "gcp-pe-1",
@@ -280,14 +272,9 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 		})
 	})
 
-	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func() {
+	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func(ctx SpecContext) {
 		By("Setting up project", func() {
-			testData = model.DataProvider(
-				"migrate-private-endpoint",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
+			testData = model.DataProvider(ctx, "migrate-private-endpoint", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 			actions.ProjectCreationFlow(testData)
 		})
@@ -327,7 +314,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 
 			By("Configuring external network", func() {
 				Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
-				action, err := prepareProviderAction()
+				action, err := prepareProviderAction(ctx)
 				Expect(err).To(BeNil())
 
 				for _, pe := range testData.Project.Spec.PrivateEndpoints {
@@ -342,8 +329,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						awsConfig, err := cloud.GenerateCloudConfig[cloud.AWSConfig](string(pe.Provider), cloudRegion, testData.Resources.KeyName)
 						Expect(err).ToNot(HaveOccurred())
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.AWSPrivateEndpointRequest{
+						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithAWSConfig(awsConfig))).ToNot(BeEmpty())
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
 							ID:          fmt.Sprintf("aws-e2e-pe-%s", testData.Resources.TestID),
 							Region:      awsConfig.Region,
 							ServiceName: peStatus.ServiceName,
@@ -352,8 +339,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						azureConfig, err := cloud.GenerateCloudConfig[cloud.AzureConfig](string(pe.Provider), cloudRegion, testData.Resources.KeyName)
 						Expect(err).ToNot(HaveOccurred())
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.AzurePrivateEndpointRequest{
+						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithAzureConfig(azureConfig))).ToNot(BeEmpty())
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.AzurePrivateEndpointRequest{
 							ID:                fmt.Sprintf("azure-e2e-pe-%s", testData.Resources.TestID),
 							Region:            azureConfig.Region,
 							ServiceResourceID: peStatus.ServiceResourceID,
@@ -363,8 +350,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 						gcpConfig, err := cloud.GenerateCloudConfig[cloud.GCPConfig](string(pe.Provider), cloudRegion, testData.Resources.KeyName)
 						Expect(err).ToNot(HaveOccurred())
 
-						Expect(action.SetupNetwork(pe.Provider, cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
-						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(&cloud.GCPPrivateEndpointRequest{
+						Expect(action.SetupNetwork(ctx, pe.Provider, cloud.WithGCPConfig(gcpConfig))).ToNot(BeEmpty())
+						privateEndpointDetails[string(pe.Provider)] = action.SetupPrivateEndpoint(ctx, &cloud.GCPPrivateEndpointRequest{
 							ID:         fmt.Sprintf("pe-migration-gcp--%s-%s", pe.EndpointGroupName, testData.Resources.TestID),
 							Region:     gcpConfig.Region,
 							Targets:    peStatus.ServiceAttachmentNames,
@@ -652,14 +639,9 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 		})
 	})
 
-	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func() {
+	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func(ctx SpecContext) {
 		By("Setting up project", func() {
-			testData = model.DataProvider(
-				"migrate-private-endpoint",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
+			testData = model.DataProvider(ctx, "migrate-private-endpoint", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 
 			actions.ProjectCreationFlow(testData)
 		})

@@ -29,7 +29,7 @@ func TestCreateUsedVirtualAddress(t *testing.T) {
 	}
 	ctx := context.Background()
 	gt := ginkgo.GinkgoT()
-	ga, err := NewGCPAction(gt, GoogleProjectID)
+	ga, err := NewGCPAction(ctx, gt, GoogleProjectID)
 	require.NoError(t, err)
 
 	err = ga.createVirtualAddress(ctx, "10.0.0.155", "name1", Subnet2Name, GCPRegion)

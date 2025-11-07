@@ -41,7 +41,7 @@ func (c *Cleaner) getEncryptionAtRest(ctx context.Context, projectID string) *ad
 
 func (c *Cleaner) deleteEncryptionAtRest(ctx context.Context, projectID string, ear *admin.EncryptionAtRest) {
 	if config, ok := ear.GetAwsKmsOk(); ok && config.GetEnabled() {
-		err := c.aws.DeleteKMS(config.GetCustomerMasterKeyID(), config.GetRegion())
+		err := c.aws.DeleteKMS(ctx, config.GetCustomerMasterKeyID(), config.GetRegion())
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\tFailed to delete AWS KMS key %s: %s", config.GetCustomerMasterKeyID(), err))
 		}

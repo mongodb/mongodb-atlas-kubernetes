@@ -15,6 +15,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,18 +48,15 @@ var _ = Describe("CustomRoles", Label("custom-roles"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, customRoles []akov2.CustomRole) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			projectCustomRolesFlow(test, customRoles)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, customRoles []akov2.CustomRole) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			projectCustomRolesFlow(testData, customRoles)
 		},
 		Entry("Test[custom-roles-1]: User has project to which custom roles where added",
-			model.DataProvider(
-				"custom-roles-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "custom-roles-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]akov2.CustomRole{
 				{
 					Name: "ShardingAdmin",

@@ -15,6 +15,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,18 +45,15 @@ var _ = Describe("UserLogin", Label("x509auth"), func() {
 		actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
 	})
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, certRef common.ResourceRefNamespaced) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			x509Flow(test, &certRef)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, certRef common.ResourceRefNamespaced) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			x509Flow(testData, &certRef)
 		},
 		Entry("Test[x509auth]: Can create project and add X.509 Auth to that project", Label("focus-x509auth-basic"),
-			model.DataProvider(
-				"x509auth",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "x509auth", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			common.ResourceRefNamespaced{
 				Name: "x509cert",
 			},

@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -100,8 +101,8 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration", Label("helm-ns"),
-		func(test model.TestDataProvider, deploymentType string) { // deploymentType - probably will be moved later ()
-			data = test
+		func(ctx SpecContext, test func(context.Context) model.TestDataProvider, deploymentType string) { // deploymentType - probably will be moved later ()
+			data = test(ctx)
 			GinkgoWriter.Println(data.Resources.KeyName)
 			switch deploymentType {
 			case "flex":
@@ -129,83 +130,53 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 			deleteDeploymentAndOperator(&data)
 		},
 		Entry("Several actions with helm update", Label("focus-helm-ns-flow"),
-			model.DataProviderWithResources(
-				"helm-ns",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
-				[]string{},
-				[]model.DBUser{
+			func(ctx context.Context) model.TestDataProvider {
+				return model.DataProviderWithResources(ctx, "helm-ns", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
 					*model.NewDBUser("reader").
 						WithSecretRef("dbuser-secret-u1").
 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
-				},
-				30006,
-				[]func(*model.TestDataProvider){
+				}, 30006, []func(*model.TestDataProvider){
 					actions.HelmDefaultUpgradeResources,
 					actions.HelmUpgradeUsersRoleAddAdminUser,
 					actions.HelmUpgradeDeleteFirstUser,
-				},
-			),
+				})
+			},
 			"flex",
 		),
 		Entry("Deployment multiregion by helm chart", Label("focus-helm-advanced-multiregion"),
-			model.DataProviderWithResources(
-				"helm-advanced-multiregion",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_advanced_multi_region_helm.yaml"},
-				[]string{},
-				[]model.DBUser{
+			func(ctx context.Context) model.TestDataProvider {
+				return model.DataProviderWithResources(ctx, "helm-advanced-multiregion", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_advanced_multi_region_helm.yaml"}, []string{}, []model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
-				},
-				30015,
-				[]func(*model.TestDataProvider){},
-			),
+				}, 30015, []func(*model.TestDataProvider){})
+			},
 			"advanced",
 		),
 		Entry("Flex deployment by helm chart", Label("focus-helm-flex"),
-			model.DataProviderWithResources(
-				"helm-flex",
-				model.AProject{},
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
-				[]string{},
-				[]model.DBUser{
+			func(ctx context.Context) model.TestDataProvider {
+				return model.DataProviderWithResources(ctx, "helm-flex", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
 					*model.NewDBUser("reader2").
 						WithSecretRef("dbuser-secret-u2").
 						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
 						WithAuthDatabase("admin"),
-				},
-				30016,
-				[]func(*model.TestDataProvider){},
-			),
+				}, 30016, []func(*model.TestDataProvider){})
+			},
 			"flex",
 		),
 	)
 
 	Describe("HELM charts.", Label("helm-wide"), func() {
-		It("User can deploy operator namespaces by using HELM", func() {
+		It("User can deploy operator namespaces by using HELM", func(ctx SpecContext) {
 			By("User creates configuration for a new Project and Deployment", func() {
-				data = model.DataProviderWithResources(
-					"helm-wide",
-					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("reader2").
-							WithSecretRef("dbuser-secret-u2").
-							AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
-							WithAuthDatabase("admin"),
-					},
-					30007,
-					[]func(*model.TestDataProvider){},
-				)
+				data = model.DataProviderWithResources(ctx, "helm-wide", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
+					*model.NewDBUser("reader2").
+						WithSecretRef("dbuser-secret-u2").
+						AddCustomRole(model.RoleCustomReadWrite, "Ships", "").
+						WithAuthDatabase("admin"),
+				}, 30007, []func(*model.TestDataProvider){})
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-wide"
 				data.Resources.Deployments[0].Spec.FlexSpec.Name = "deployment-from-helm-wide"
@@ -222,7 +193,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 	})
 
 	Describe("HELM charts.", Label("helm-update"), func() {
-		It("User deploy operator and later deploy new version of the Atlas operator", func() {
+		It("User deploy operator and later deploy new version of the Atlas operator", func(ctx SpecContext) {
 			By("Check upgrade is actually possible", func() {
 				helm.AddMongoDBRepo()
 				releasedVersion, err := helm.GetReleasedChartVersion()
@@ -237,21 +208,12 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 				}
 			})
 			By("User creates configuration for a new Project, Deployment, DBUser", func() {
-				data = model.DataProviderWithResources(
-					"helm-upgrade",
-					model.AProject{},
-					model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-					[]string{"../helper/e2e/data/atlasdeployment_flex.yaml"},
-					[]string{},
-					[]model.DBUser{
-						*model.NewDBUser("admin").
-							WithSecretRef("dbuser-secret-u2").
-							AddBuildInAdminRole().
-							WithAuthDatabase("admin"),
-					},
-					30010,
-					[]func(*model.TestDataProvider){},
-				)
+				data = model.DataProviderWithResources(ctx, "helm-upgrade", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
+					*model.NewDBUser("admin").
+						WithSecretRef("dbuser-secret-u2").
+						AddBuildInAdminRole().
+						WithAuthDatabase("admin"),
+				}, 30010, []func(*model.TestDataProvider){})
 				// helm template has equal ObjectMeta.Name and Spec.Name
 				data.Resources.Deployments[0].ObjectMeta.Name = "deployment-from-helm-upgrade"
 				data.Resources.Deployments[0].Spec.FlexSpec.Name = "deployment-from-helm-upgrade"

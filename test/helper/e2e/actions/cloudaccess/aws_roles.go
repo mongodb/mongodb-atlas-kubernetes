@@ -15,12 +15,15 @@
 package cloudaccess
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 
 	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
 )
@@ -95,46 +98,48 @@ func PolicyWithAtlasArn(atlasAWSAccountArn, atlasAssumedRoleExternalId string) (
 	return string(byteStr), nil
 }
 
-func CreateAWSIAMRole(roleName string) (string, error) {
+func CreateAWSIAMRole(ctx context.Context, roleName string) (string, error) {
 	policy, err := EC2RolePolicyString()
 	if err != nil {
 		return "", err
 	}
-	IAMClient := iam.New(session.Must(session.NewSession()))
-	roleInput := iam.CreateRoleInput{}
-	roleInput.SetRoleName(roleName)
-	roleInput.SetAssumeRolePolicyDocument(policy)
-	roleInput.Tags = []*iam.Tag{
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to create an AWS config: %w", err)
+	}
+	IAMClient := iam.NewFromConfig(cfg)
+	roleInput := iam.CreateRoleInput{
+		RoleName:                 &roleName,
+		AssumeRolePolicyDocument: &policy,
+	}
+	roleInput.Tags = []types.Tag{
 		{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
 		{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
 		{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
 		{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
 	}
-	//roleInput.SetTags([]*iam.Tag{
-	//	{
-	//		Key:   aws.String(config.TagForTestKey),
-	//		Value: aws.String(config.TagForTestValue),
-	//	},
-	//})
-	role, err := IAMClient.CreateRole(&roleInput)
+	role, err := IAMClient.CreateRole(ctx, &roleInput)
 	if err != nil {
 		return "", err
 	}
 	return *role.Role.Arn, nil
 }
 
-func AddAtlasStatementToAWSIAMRole(atlasAWSAccountArn, atlasAssumedRoleExternalId, roleName string) error {
+func AddAtlasStatementToAWSIAMRole(ctx context.Context, atlasAWSAccountArn, atlasAssumedRoleExternalId, roleName string) error {
 	updatedPolicy, err := PolicyWithAtlasArn(atlasAWSAccountArn, atlasAssumedRoleExternalId)
 	if err != nil {
 		return err
 	}
-	IAMClient := iam.New(session.Must(session.NewSession()))
-	roleUpdate := iam.UpdateAssumeRolePolicyInput{}
-	roleUpdate.SetPolicyDocument(updatedPolicy)
-	roleUpdate.SetRoleName(roleName)
-	req, _ := IAMClient.UpdateAssumeRolePolicyRequest(&roleUpdate)
-	err = req.Send()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
+		return fmt.Errorf("failed to create an AWS config: %w", err)
+	}
+	IAMClient := iam.NewFromConfig(cfg)
+	roleUpdate := iam.UpdateAssumeRolePolicyInput{
+		RoleName:       &roleName,
+		PolicyDocument: &updatedPolicy,
+	}
+	if _, err := IAMClient.UpdateAssumeRolePolicy(ctx, &roleUpdate); err != nil {
 		return err
 	}
 	return nil
@@ -146,9 +151,13 @@ func NameFromArn(arn string) string {
 	return arn[strings.LastIndex(arn, "/")+1:]
 }
 
-func DeleteAWSIAMRoleByArn(arn string) error {
-	IAMClient := iam.New(session.Must(session.NewSession()))
-	_, err := IAMClient.DeleteRole(&iam.DeleteRoleInput{
+func DeleteAWSIAMRoleByArn(ctx context.Context, arn string) error {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create an AWS config: %w", err)
+	}
+	IAMClient := iam.NewFromConfig(cfg)
+	_, err = IAMClient.DeleteRole(ctx, &iam.DeleteRoleInput{
 		RoleName: aws.String(NameFromArn(arn)),
 	})
 	if err != nil {

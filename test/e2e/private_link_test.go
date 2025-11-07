@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -50,12 +51,12 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	var testData *model.TestDataProvider
 	var providerAction cloud.Provider
 
-	_ = BeforeEach(OncePerOrdered, func() {
+	_ = BeforeEach(OncePerOrdered, func(ctx SpecContext) {
 		checkUpAWSEnvironment()
 		checkUpAzureEnvironment()
 		checkNSetUpGCPEnvironment()
 
-		action, err := prepareProviderAction()
+		action, err := prepareProviderAction(ctx)
 		Expect(err).To(BeNil())
 		providerAction = action
 	})
@@ -75,18 +76,15 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, pe []privateEndpoint) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			privateFlow(test, providerAction, pe)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, pe []privateEndpoint) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			privateFlow(ctx, testData, providerAction, pe)
 		},
 		Entry("Test[privatelink-aws-1]: User has project which was updated with AWS PrivateEndpoint", Label("focus-privatelink-aws-1"),
-			model.DataProvider(
-				"privatelink-aws-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "privatelink-aws-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -95,24 +93,18 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			},
 		),
 		Entry("Test[privatelink-azure-1]: User has project which was updated with Azure PrivateEndpoint", Label("focus-privatelink-azure-1"),
-			model.DataProvider(
-				"privatelink-azure-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "privatelink-azure-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]privateEndpoint{{
 				provider: "AZURE",
 				region:   config.AzureRegionEU,
 			}},
 		),
 		Entry("Test[privatelink-two-identical-aws]: User has project which was updated with 2 Identical AWS Private Endpoints", Label("focus-privatelink-aws-2"),
-			model.DataProvider(
-				"privatelink-two-identical-aws",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "privatelink-two-identical-aws", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -125,12 +117,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			},
 		),
 		Entry("Test[privatelink-aws-azure-2]: User has project which was updated with 2 AWS and 1 Azure PrivateEndpoint", Label("focus-privatelink-aws-azure-2"),
-			model.DataProvider(
-				"privatelink-aws-azure",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "privatelink-aws-azure", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]privateEndpoint{
 				{
 					provider: "AWS",
@@ -147,12 +136,9 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 			},
 		),
 		Entry("Test[privatelink-gcp-1]: User has project which was updated with 1 GCP PrivateEndpoint", Label("focus-privatelink-gcp-1"),
-			model.DataProvider(
-				"privatelink-gcp-1",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "privatelink-gcp-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			[]privateEndpoint{
 				{
 					provider: provider.ProviderGCP,
@@ -163,7 +149,7 @@ var _ = Describe("UserLogin", Label("privatelink"), func() {
 	)
 })
 
-func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider, requestedPE []privateEndpoint) {
+func privateFlow(ctx context.Context, userData *model.TestDataProvider, providerAction cloud.Provider, requestedPE []privateEndpoint) {
 	By("Create Private Link and the rest users resources", func() {
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 			Name:      userData.Project.Name,
@@ -202,43 +188,28 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 
 			switch peStatusItem.Provider {
 			case provider.ProviderAWS:
-				providerAction.SetupNetwork(
-					peStatusItem.Provider,
-					cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}),
-				)
-				pe = providerAction.SetupPrivateEndpoint(
-					&cloud.AWSPrivateEndpointRequest{
-						ID:          peName,
-						Region:      peStatusItem.Region,
-						ServiceName: peStatusItem.ServiceName,
-					},
-				)
+				providerAction.SetupNetwork(ctx, peStatusItem.Provider, cloud.WithAWSConfig(&cloud.AWSConfig{Region: peStatusItem.Region}))
+				pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
+					ID:          peName,
+					Region:      peStatusItem.Region,
+					ServiceName: peStatusItem.ServiceName,
+				})
 			case provider.ProviderGCP:
-				providerAction.SetupNetwork(
-					peStatusItem.Provider,
-					cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}),
-				)
-				pe = providerAction.SetupPrivateEndpoint(
-					&cloud.GCPPrivateEndpointRequest{
-						ID:         peName,
-						Region:     peStatusItem.Region,
-						Targets:    peStatusItem.ServiceAttachmentNames,
-						SubnetName: cloud.Subnet1Name,
-					},
-				)
+				providerAction.SetupNetwork(ctx, peStatusItem.Provider, cloud.WithGCPConfig(&cloud.GCPConfig{Region: peStatusItem.Region}))
+				pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.GCPPrivateEndpointRequest{
+					ID:         peName,
+					Region:     peStatusItem.Region,
+					Targets:    peStatusItem.ServiceAttachmentNames,
+					SubnetName: cloud.Subnet1Name,
+				})
 			case provider.ProviderAzure:
-				providerAction.SetupNetwork(
-					peStatusItem.Provider,
-					cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}),
-				)
-				pe = providerAction.SetupPrivateEndpoint(
-					&cloud.AzurePrivateEndpointRequest{
-						ID:                peName,
-						Region:            peStatusItem.Region,
-						ServiceResourceID: peStatusItem.ServiceResourceID,
-						SubnetName:        cloud.Subnet1Name,
-					},
-				)
+				providerAction.SetupNetwork(ctx, peStatusItem.Provider, cloud.WithAzureConfig(&cloud.AzureConfig{Region: peStatusItem.Region}))
+				pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.AzurePrivateEndpointRequest{
+					ID:                peName,
+					Region:            peStatusItem.Region,
+					ServiceResourceID: peStatusItem.ServiceResourceID,
+					SubnetName:        cloud.Subnet1Name,
+				})
 			}
 
 			for i, peItem := range userData.Project.Spec.PrivateEndpoints {
@@ -286,7 +257,7 @@ func privateFlow(userData *model.TestDataProvider, providerAction cloud.Provider
 			privateEndpointID := GetPrivateEndpointID(peStatus)
 			Expect(privateEndpointID).ShouldNot(BeEmpty())
 
-			providerAction.ValidatePrivateEndpointStatus(peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
+			providerAction.ValidatePrivateEndpointStatus(ctx, peStatus.Provider, privateEndpointID, peStatus.Region, len(peStatus.ServiceAttachmentNames))
 		}
 	})
 }
@@ -313,15 +284,15 @@ func getPrivateLinkName(privateEndpointID string, providerName provider.Provider
 	return privateEndpointID
 }
 
-func prepareProviderAction() (*cloud.ProviderAction, error) {
+func prepareProviderAction(ctx context.Context) (*cloud.ProviderAction, error) {
 	t := GinkgoT()
 
-	aws, err := cloud.NewAWSAction(t)
+	aws, err := cloud.NewAWSAction(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	gcp, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
+	gcp, err := cloud.NewGCPAction(ctx, t, cloud.GoogleProjectID)
 	if err != nil {
 		return nil, err
 	}

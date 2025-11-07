@@ -52,14 +52,9 @@ var _ = Describe("User can deploy operator from bundles", Label("focus-quatantin
 		})
 	})
 
-	It("User can install operator with OLM", func() {
+	It("User can install operator with OLM", func(ctx SpecContext) {
 		By("User creates configuration for a new Project and Deployment", func() {
-			testData = model.DataProvider(
-				"bundle-wide",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30005,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).
+			testData = model.DataProvider(ctx, "bundle-wide", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30005, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).
 				WithInitialDeployments(data.CreateBasicDeployment("basic-deployment")).
 				WithUsers(data.BasicUser("user1", "user1",
 					data.WithSecretRef("dbuser-secret-u1"),

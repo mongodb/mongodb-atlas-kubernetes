@@ -39,14 +39,9 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 	var testData *model.TestDataProvider
 	var backupCompliancePolicy *akov2.AtlasBackupCompliancePolicy
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx SpecContext) {
 		By("Setting up cloud environment", func() {
-			testData = model.DataProvider(
-				"atlas-bcp",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				30005,
-				[]func(*model.TestDataProvider){},
-			).
+			testData = model.DataProvider(ctx, "atlas-bcp", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 30005, []func(*model.TestDataProvider){}).
 				WithProject(data.DefaultProject()).
 				WithInitialDeployments(data.CreateAdvancedDeployment("bcp-test-deployment").
 					WithBackupScheduleRef(common.ResourceRefNamespaced{}))

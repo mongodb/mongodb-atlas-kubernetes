@@ -54,22 +54,17 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 	clusterName := fmt.Sprintf("%s-cluster", projectName)
 	ctx := context.Background()
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx SpecContext) {
 		By("Setting up cloud environment", func() {
 			checkUpAWSEnvironment()
 
-			aws, err := cloud.NewAWSAction(GinkgoT())
+			aws, err := cloud.NewAWSAction(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			awsHelper = aws
 		})
 
 		By("Setting up test environment", func() {
-			testData = model.DataProvider(
-				"atlas-gov",
-				model.NewEmptyAtlasKeyType().CreateAsGlobalLevelKey(),
-				30005,
-				[]func(*model.TestDataProvider){},
-			)
+			testData = model.DataProvider(ctx, "atlas-gov", model.NewEmptyAtlasKeyType().CreateAsGlobalLevelKey(), 30005, []func(*model.TestDataProvider){})
 
 			actions.CreateNamespaceAndSecrets(testData)
 		})
@@ -84,7 +79,11 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 
-			cancelCtx, cancel := context.WithCancel(ctx)
+			// We don't want to inherit the SpecContext from the BeforeEach() ginkgo node
+			// as otherwise the server will be shut down before starting AfterEach.
+			// In fact we don't need anything else other than a context.Background() here.
+			// The server will shut down as soon as the ginkgo process shuts down.
+			cancelCtx, cancel := context.WithCancel(context.Background())
 			managerStop = cancel
 			go func() {
 				err := managerStart(cancelCtx)
@@ -96,7 +95,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 	})
 
-	It("Manage all supported Atlas for Government features", Label("focus-atlas-gov-supported"), func() {
+	It("Manage all supported Atlas for Government features", Label("focus-atlas-gov-supported"), func(ctx SpecContext) {
 		By("Preparing API Key for integrations", func() {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -239,7 +238,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Configuring Cloud Provider Access", func() {
-			assumedRoleArn, err := cloudaccess.CreateAWSIAMRole(projectName)
+			assumedRoleArn, err := cloudaccess.CreateAWSIAMRole(ctx, projectName)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -258,11 +257,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}).WithTimeout(time.Minute * 5).WithPolling(time.Second * 20).Should(Succeed())
 
 			Expect(
-				cloudaccess.AddAtlasStatementToAWSIAMRole(
-					testData.Project.Status.CloudProviderIntegrations[0].AtlasAWSAccountArn,
-					testData.Project.Status.CloudProviderIntegrations[0].AtlasAssumedRoleExternalID,
-					projectName,
-				),
+				cloudaccess.AddAtlasStatementToAWSIAMRole(ctx, testData.Project.Status.CloudProviderIntegrations[0].AtlasAWSAccountArn, testData.Project.Status.CloudProviderIntegrations[0].AtlasAssumedRoleExternalID, projectName),
 			).To(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -272,10 +267,10 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		})
 
 		By("Configuring Networking Peering", func() {
-			awsAccountID, err := awsHelper.GetAccountID()
+			awsAccountID, err := awsHelper.GetAccountID(ctx)
 			Expect(err).ToNot(HaveOccurred())
 
-			AwsVpcID, err := awsHelper.InitNetwork(projectName, "10.0.0.0/24", "us-west-1", map[string]string{"subnet-1": "10.0.0.0/24"}, false)
+			AwsVpcID, err := awsHelper.InitNetwork(ctx, projectName, "10.0.0.0/24", "us-west-1", map[string]string{"subnet-1": "10.0.0.0/24"}, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -297,7 +292,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 				g.Expect(testData.Project.Status.NetworkPeers[0].StatusName).Should(Equal("PENDING_ACCEPTANCE"))
 			}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 20).Should(Succeed())
 
-			Expect(awsHelper.AcceptVpcPeeringConnection(testData.Project.Status.NetworkPeers[0].ConnectionID, "us-west-1")).To(Succeed())
+			Expect(awsHelper.AcceptVpcPeeringConnection(ctx, testData.Project.Status.NetworkPeers[0].ConnectionID, "us-west-1")).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
@@ -311,7 +306,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			awsRoleARN := testData.Project.Status.CloudProviderIntegrations[0].IamAssumedRoleArn
 			atlasRoleID := testData.Project.Status.CloudProviderIntegrations[0].RoleID
 
-			customerMasterKeyID, err := awsHelper.CreateKMS(fmt.Sprintf("%s-kms", projectName), "us-west-1", atlasAccountARN, awsRoleARN)
+			customerMasterKeyID, err := awsHelper.CreateKMS(ctx, fmt.Sprintf("%s-kms", projectName), "us-west-1", atlasAccountARN, awsRoleARN)
 			Expect(err).ToNot(HaveOccurred())
 
 			secret := &corev1.Secret{
@@ -376,6 +371,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}).WithTimeout(time.Minute * 15).WithPolling(time.Second * 20).Should(Succeed())
 
 			peID, err := awsHelper.CreatePrivateEndpoint(
+				ctx,
 				testData.Project.Status.PrivateEndpoints[0].ServiceName,
 				fmt.Sprintf("pe-%s-gov", testData.Project.Status.PrivateEndpoints[0].ID),
 				"us-west-1",

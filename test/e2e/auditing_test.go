@@ -15,6 +15,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -44,18 +46,15 @@ var _ = Describe("UserLogin", Label("auditing"), func() {
 	})
 
 	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
-		func(test *model.TestDataProvider, auditing akov2.Auditing) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			auditingFlow(test, &auditing)
+		func(ctx SpecContext, test func(ctx2 context.Context) *model.TestDataProvider, auditing akov2.Auditing) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			auditingFlow(testData, &auditing)
 		},
 		Entry("Test[auditing]: User has project to which Auditing was added", Label("focus-auditing"),
-			model.DataProvider(
-				"auditing",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "auditing", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
 			akov2.Auditing{
 				AuditAuthorizationSuccess: false,
 				AuditFilter:               exampleFilter(),

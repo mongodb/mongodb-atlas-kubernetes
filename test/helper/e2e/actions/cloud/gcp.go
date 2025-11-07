@@ -28,7 +28,9 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	kms "cloud.google.com/go/kms/apiv1"
 	"cloud.google.com/go/kms/apiv1/kmspb"
+	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
+	. "github.com/onsi/gomega"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -37,7 +39,6 @@ import (
 )
 
 type GCPAction struct {
-	t         core.GinkgoTInterface
 	projectID string
 	network   *gcpNetwork
 
@@ -57,14 +58,10 @@ const (
 	// TODO get from GCP
 	GoogleProjectID     = "atlasoperator" // Google Cloud Project ID
 	googleConnectPrefix = "ao"            // Private Service Connect Endpoint Prefix
-	gcpSubnetIPMask     = "10.0.0.%d"
 	googleKeyName       = "projects/atlasoperator/locations/global/keyRings/atlas-operator-test-key-ring/cryptoKeys/encryption-at-rest-test-key"
 )
 
-func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]string, cleanup bool) (string, error) {
-	a.t.Helper()
-	ctx := context.Background()
-
+func (a *GCPAction) InitNetwork(ctx context.Context, vpcName, region string, subnets map[string]string, cleanup bool) (string, error) {
 	vpc, err := a.findVPC(ctx, vpcName)
 	if err != nil {
 		return "", err
@@ -78,11 +75,8 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 	}
 
 	if cleanup {
-		a.t.Cleanup(func() {
-			err = a.deleteVPC(ctx, vpcName)
-			if err != nil {
-				a.t.Error(err)
-			}
+		DeferCleanup(func(ctx SpecContext) error {
+			return a.deleteVPC(ctx, vpcName)
 		})
 	}
 
@@ -98,11 +92,8 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 			}
 
 			if cleanup {
-				a.t.Cleanup(func() {
-					err = a.deleteSubnet(ctx, name, region)
-					if err != nil {
-						a.t.Error(err)
-					}
+				DeferCleanup(func(ctx SpecContext) error {
+					return a.deleteSubnet(ctx, name, region)
 				})
 			}
 		}
@@ -117,8 +108,6 @@ func (a *GCPAction) InitNetwork(vpcName, region string, subnets map[string]strin
 }
 
 func (a *GCPAction) CreatePrivateEndpoint(ctx context.Context, name, region, subnet, target string, index int) (string, string, error) {
-	a.t.Helper()
-
 	address := fmt.Sprintf("%s-%s-ip-%d", googleConnectPrefix, name, index)
 	rule := fmt.Sprintf("%s-%s-fr-%d", googleConnectPrefix, name, index)
 
@@ -127,11 +116,8 @@ func (a *GCPAction) CreatePrivateEndpoint(ctx context.Context, name, region, sub
 		return "", "", err
 	}
 
-	a.t.Cleanup(func() {
-		err := a.deleteVirtualAddress(ctx, address, region)
-		if err != nil {
-			a.t.Error(err)
-		}
+	DeferCleanup(func(ctx SpecContext) error {
+		return a.deleteVirtualAddress(ctx, address, region)
 	})
 
 	err = a.createForwardRule(ctx, rule, address, region, target)
@@ -139,26 +125,21 @@ func (a *GCPAction) CreatePrivateEndpoint(ctx context.Context, name, region, sub
 		return "", "", err
 	}
 
-	a.t.Cleanup(func() {
-		err = a.deleteForwardRule(ctx, rule, region)
-		if err != nil {
-			a.t.Error(err)
-		}
+	DeferCleanup(func(ctx SpecContext) error {
+		return a.deleteForwardRule(ctx, rule, region)
 	})
 
 	return rule, ipAddress, err
 }
 
-func (a *GCPAction) GetForwardingRule(name, region string, suffixIndex int) (*computepb.ForwardingRule, error) {
-	a.t.Helper()
-
+func (a *GCPAction) GetForwardingRule(ctx context.Context, name, region string, suffixIndex int) (*computepb.ForwardingRule, error) {
 	ruleRequest := &computepb.GetForwardingRuleRequest{
 		Project:        a.projectID,
 		ForwardingRule: fmt.Sprintf("%s-%s-fr-%d", googleConnectPrefix, name, suffixIndex),
 		Region:         region,
 	}
 
-	rule, err := a.forwardRuleClient.Get(context.Background(), ruleRequest)
+	rule, err := a.forwardRuleClient.Get(ctx, ruleRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -166,10 +147,7 @@ func (a *GCPAction) GetForwardingRule(name, region string, suffixIndex int) (*co
 	return rule, nil
 }
 
-func (a *GCPAction) CreateNetworkPeering(vpcName, peerProjectID, peerVPCName string) error {
-	a.t.Helper()
-	ctx := context.Background()
-
+func (a *GCPAction) CreateNetworkPeering(ctx context.Context, vpcName, peerProjectID, peerVPCName string) error {
 	peerName := "atlas-networking-peering"
 	peerRequest := &computepb.AddPeeringNetworkRequest{
 		Project: a.projectID,
@@ -193,19 +171,14 @@ func (a *GCPAction) CreateNetworkPeering(vpcName, peerProjectID, peerVPCName str
 		return err
 	}
 
-	a.t.Cleanup(func() {
-		err = a.deleteVPCPeering(ctx, vpcName, peerName)
-		if err != nil {
-			a.t.Error(err)
-		}
+	DeferCleanup(func(ctx SpecContext) error {
+		return a.deleteVPCPeering(ctx, vpcName, peerName)
 	})
 
 	return nil
 }
 
 func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Network, error) {
-	a.t.Helper()
-
 	vpcRequest := &computepb.GetNetworkRequest{
 		Project: a.projectID,
 		Network: vpcName,
@@ -224,8 +197,6 @@ func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Net
 }
 
 func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
-	a.t.Helper()
-
 	vpcRequest := &computepb.InsertNetworkRequest{
 		Project: a.projectID,
 		NetworkResource: &computepb.Network{
@@ -249,8 +220,6 @@ func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 }
 
 func (a *GCPAction) deleteVPC(ctx context.Context, vpcName string) error {
-	a.t.Helper()
-
 	vpcRequest := &computepb.DeleteNetworkRequest{
 		Project: a.projectID,
 		Network: vpcName,
@@ -270,8 +239,6 @@ func (a *GCPAction) deleteVPC(ctx context.Context, vpcName string) error {
 }
 
 func (a *GCPAction) getSubnets(ctx context.Context, region string) (map[string]string, error) {
-	a.t.Helper()
-
 	subnetRequest := &computepb.ListSubnetworksRequest{
 		Project: a.projectID,
 		Region:  region,
@@ -295,8 +262,6 @@ func (a *GCPAction) getSubnets(ctx context.Context, region string) (map[string]s
 }
 
 func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange, region string) error {
-	a.t.Helper()
-
 	subnetRequest := &computepb.InsertSubnetworkRequest{
 		Project: a.projectID,
 		Region:  region,
@@ -321,8 +286,6 @@ func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRan
 }
 
 func (a *GCPAction) deleteSubnet(ctx context.Context, subnetName, region string) error {
-	a.t.Helper()
-
 	subnetRequest := &computepb.DeleteSubnetworkRequest{
 		Subnetwork: subnetName,
 		Project:    a.projectID,
@@ -375,9 +338,7 @@ func (a *GCPAction) randomIP(subnet string) string {
 	const maxRandValue = 256
 	for {
 		randNumberBig, err := rand.Int(rand.Reader, big.NewInt(maxRandValue))
-		if err != nil {
-			a.t.Error(err)
-		}
+		Expect(err).NotTo(HaveOccurred())
 		randNumber := randNumberBig.String()
 		ipParts[3] = randNumber
 		genIP := net.ParseIP(strings.Join(ipParts, "."))
@@ -389,8 +350,6 @@ func (a *GCPAction) randomIP(subnet string) string {
 }
 
 func (a *GCPAction) createVirtualAddress(ctx context.Context, ip, name, subnet, region string) error {
-	a.t.Helper()
-
 	addressRequest := &computepb.InsertAddressRequest{
 		Project: a.projectID,
 		Region:  region,
@@ -423,8 +382,6 @@ func (a *GCPAction) createVirtualAddress(ctx context.Context, ip, name, subnet, 
 }
 
 func (a *GCPAction) deleteVirtualAddress(ctx context.Context, name, region string) error {
-	a.t.Helper()
-
 	addressRequest := &computepb.DeleteAddressRequest{
 		Address: name,
 		Project: a.projectID,
@@ -445,8 +402,6 @@ func (a *GCPAction) deleteVirtualAddress(ctx context.Context, name, region strin
 }
 
 func (a *GCPAction) createForwardRule(ctx context.Context, rule, address, region, target string) error {
-	a.t.Helper()
-
 	ruleRequest := &computepb.InsertForwardingRuleRequest{
 		Project: a.projectID,
 		Region:  region,
@@ -472,8 +427,6 @@ func (a *GCPAction) createForwardRule(ctx context.Context, rule, address, region
 }
 
 func (a *GCPAction) deleteForwardRule(ctx context.Context, rule, region string) error {
-	a.t.Helper()
-
 	addressRequest := &computepb.DeleteForwardingRuleRequest{
 		ForwardingRule: rule,
 		Project:        a.projectID,
@@ -494,8 +447,6 @@ func (a *GCPAction) deleteForwardRule(ctx context.Context, rule, region string) 
 }
 
 func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName string) error {
-	a.t.Helper()
-
 	peerRequest := &computepb.RemovePeeringNetworkRequest{
 		Project: a.projectID,
 		Network: vpcName,
@@ -517,11 +468,7 @@ func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName stri
 	return nil
 }
 
-func (a *GCPAction) CreateKMS() (string, error) {
-	a.t.Helper()
-
-	ctx := context.Background()
-
+func (a *GCPAction) CreateKMS(ctx context.Context) (string, error) {
 	result, err := a.keyManagementClient.CreateCryptoKeyVersion(ctx, &kmspb.CreateCryptoKeyVersionRequest{
 		Parent: googleKeyName,
 	})
@@ -529,11 +476,8 @@ func (a *GCPAction) CreateKMS() (string, error) {
 		return "", err
 	}
 
-	a.t.Cleanup(func() {
-		err = a.deleteKMS(ctx, result.Name)
-		if err != nil {
-			a.t.Error(err)
-		}
+	DeferCleanup(func(ctx SpecContext) error {
+		return a.deleteKMS(ctx, result.Name)
 	})
 
 	ver := strings.Split(result.Name, "/")
@@ -551,8 +495,6 @@ func (a *GCPAction) CreateKMS() (string, error) {
 }
 
 func (a *GCPAction) deleteKMS(ctx context.Context, keyName string) error {
-	a.t.Helper()
-
 	req := &kmspb.DestroyCryptoKeyVersionRequest{
 		Name: keyName,
 	}
@@ -565,10 +507,8 @@ func (a *GCPAction) deleteKMS(ctx context.Context, keyName string) error {
 	return nil
 }
 
-func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error) {
+func NewGCPAction(ctx context.Context, t core.GinkgoTInterface, projectID string) (*GCPAction, error) {
 	t.Helper()
-
-	ctx := context.Background()
 
 	networkClient, err := compute.NewNetworksRESTClient(ctx)
 	if err != nil {
@@ -596,7 +536,6 @@ func NewGCPAction(t core.GinkgoTInterface, projectID string) (*GCPAction, error)
 	}
 
 	return &GCPAction{
-		t:         t,
 		projectID: projectID,
 
 		networkClient:       networkClient,

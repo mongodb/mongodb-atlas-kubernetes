@@ -50,32 +50,12 @@ var _ = Describe("Users can use clusterwide configuration with limitation to wat
 	})
 
 	// (Consider Shared Deployments when E2E tests could conflict with each other)
-	It("Deploy deployment multi-namespaced operator and create resources in each of them", func() {
+	It("Deploy deployment multi-namespaced operator and create resources in each of them", func(ctx SpecContext) {
 		By("Set up test data configuration", func() {
-			watched := model.DataProvider(
-				"multinamespace-watched",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
-			watchedGlobal := model.DataProvider(
-				"multinamespace-watched-global",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
-			notWatched := model.DataProvider(
-				"multinamespace-not-watched",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
-			notWatchedGlobal := model.DataProvider(
-				"multinamespace-not-watched-global",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject())
+			watched := model.DataProvider(ctx, "multinamespace-watched", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			watchedGlobal := model.DataProvider(ctx, "multinamespace-watched-global", model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			notWatched := model.DataProvider(ctx, "multinamespace-not-watched", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			notWatchedGlobal := model.DataProvider(ctx, "multinamespace-not-watched-global", model.NewEmptyAtlasKeyType().UseDefaultFullAccess().CreateAsGlobalLevelKey(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			listData = []*model.TestDataProvider{watched, watchedGlobal, notWatched, notWatchedGlobal}
 			watchedNamespace = []string{watched.Resources.Namespace, watchedGlobal.Resources.Namespace}
 		})

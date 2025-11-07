@@ -52,16 +52,11 @@ var _ = Describe("Migrate ip access list from sub-resources to separate custom r
 		})
 	})
 
-	It("Should migrate a ip access list configured in a project as sub-resource to a separate custom resource", func() {
+	It("Should migrate a ip access list configured in a project as sub-resource to a separate custom resource", func(ctx SpecContext) {
 		By("Setting up project", func() {
 			p := data.DefaultProject()
 			p.Spec.ProjectIPAccessList = nil
-			testData = model.DataProvider(
-				"migrate-ip-access-list",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(p)
+			testData = model.DataProvider(ctx, "migrate-ip-access-list", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(p)
 
 			actions.ProjectCreationFlow(testData)
 		})

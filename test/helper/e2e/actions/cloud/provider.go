@@ -47,11 +47,11 @@ const (
 )
 
 type Provider interface {
-	GetAWSAccountID() string
-	SetupNetwork(providerName provider.ProviderName, configs ProviderConfig) string
-	SetupPrivateEndpoint(request PrivateEndpointRequest) *PrivateEndpointDetails
-	ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int)
-	SetupNetworkPeering(providerName provider.ProviderName, peerID, peerVPC string)
+	GetAWSAccountID(ctx context.Context) string
+	SetupNetwork(ctx context.Context, providerName provider.ProviderName, configs ProviderConfig) string
+	SetupPrivateEndpoint(ctx context.Context, request PrivateEndpointRequest) *PrivateEndpointDetails
+	ValidatePrivateEndpointStatus(ctx context.Context, providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int)
+	SetupNetworkPeering(ctx context.Context, providerName provider.ProviderName, peerID, peerVPC string)
 }
 
 type ProviderAction struct {
@@ -157,14 +157,14 @@ func WithAzureConfig(config *AzureConfig) ProviderConfig {
 	}
 }
 
-func (a *ProviderAction) GetAWSAccountID() string {
-	ID, err := a.awsProvider.GetAccountID()
+func (a *ProviderAction) GetAWSAccountID(ctx context.Context) string {
+	ID, err := a.awsProvider.GetAccountID(ctx)
 	Expect(err).To(BeNil())
 
 	return ID
 }
 
-func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, config ProviderConfig) string {
+func (a *ProviderAction) SetupNetwork(ctx context.Context, providerName provider.ProviderName, config ProviderConfig) string {
 	a.t.Helper()
 
 	if config != nil {
@@ -173,11 +173,11 @@ func (a *ProviderAction) SetupNetwork(providerName provider.ProviderName, config
 
 	switch providerName {
 	case provider.ProviderAWS:
-		id, err := a.awsProvider.InitNetwork(a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets, a.awsConfig.EnableCleanup)
+		id, err := a.awsProvider.InitNetwork(ctx, a.awsConfig.VPC, a.awsConfig.CIDR, a.awsConfig.Region, a.awsConfig.Subnets, a.awsConfig.EnableCleanup)
 		Expect(err).To(BeNil())
 		return id
 	case provider.ProviderGCP:
-		id, err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets, a.gcpConfig.EnableCleanup)
+		id, err := a.gcpProvider.InitNetwork(ctx, a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets, a.gcpConfig.EnableCleanup)
 		Expect(err).To(BeNil())
 		return id
 	case provider.ProviderAzure:
@@ -234,12 +234,12 @@ type GCPPrivateEndpoint struct {
 	IP   string
 }
 
-func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *PrivateEndpointDetails {
+func (a *ProviderAction) SetupPrivateEndpoint(ctx context.Context, request PrivateEndpointRequest) *PrivateEndpointDetails {
 	a.t.Helper()
 
 	switch req := request.(type) {
 	case *AWSPrivateEndpointRequest:
-		ID, err := a.awsProvider.CreatePrivateEndpoint(req.ServiceName, req.ID, req.Region)
+		ID, err := a.awsProvider.CreatePrivateEndpoint(ctx, req.ServiceName, req.ID, req.Region)
 		Expect(err).To(BeNil())
 
 		return &PrivateEndpointDetails{
@@ -250,7 +250,7 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	case *GCPPrivateEndpointRequest:
 		endpoints := make([]GCPPrivateEndpoint, 0, len(req.Targets))
 		for index, target := range req.Targets {
-			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(context.TODO(), req.ID, req.Region, req.SubnetName, target, index)
+			rule, ip, err := a.gcpProvider.CreatePrivateEndpoint(ctx, req.ID, req.Region, req.SubnetName, target, index)
 			Expect(err).To(BeNil())
 
 			endpoints = append(
@@ -301,20 +301,20 @@ func (a *ProviderAction) SetupPrivateEndpoint(request PrivateEndpointRequest) *P
 	return nil
 }
 
-func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
+func (a *ProviderAction) ValidatePrivateEndpointStatus(ctx context.Context, providerName provider.ProviderName, endpoint, region string, gcpNumAttachments int) {
 	a.t.Helper()
 
 	Eventually(func(g Gomega) bool {
 		switch providerName {
 		case provider.ProviderAWS:
-			pe, err := a.awsProvider.GetPrivateEndpoint(endpoint, region)
+			pe, err := a.awsProvider.GetPrivateEndpoint(ctx, endpoint, region)
 			g.Expect(err).To(BeNil())
 
-			return *pe.State == "available"
+			return pe.State == "available"
 		case provider.ProviderGCP:
 			res := true
 			for i := 0; i < gcpNumAttachments; i++ {
-				rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
+				rule, err := a.gcpProvider.GetForwardingRule(ctx, endpoint, region, i)
 				g.Expect(err).To(BeNil())
 
 				res = res && (*rule.PscConnectionStatus == "ACCEPTED")
@@ -332,12 +332,12 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(providerName provider.Pro
 	}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(BeTrue())
 }
 
-func (a *ProviderAction) SetupNetworkPeering(providerName provider.ProviderName, peerID, peerVPC string) {
+func (a *ProviderAction) SetupNetworkPeering(ctx context.Context, providerName provider.ProviderName, peerID, peerVPC string) {
 	switch providerName {
 	case provider.ProviderAWS:
-		Expect(a.awsProvider.AcceptVpcPeeringConnection(peerID, a.awsConfig.Region)).To(Succeed())
+		Expect(a.awsProvider.AcceptVpcPeeringConnection(ctx, peerID, a.awsConfig.Region)).To(Succeed())
 	case provider.ProviderGCP:
-		Expect(a.gcpProvider.CreateNetworkPeering(a.gcpConfig.VPC, peerID, peerVPC)).To(Succeed())
+		Expect(a.gcpProvider.CreateNetworkPeering(ctx, a.gcpConfig.VPC, peerID, peerVPC)).To(Succeed())
 	}
 }
 

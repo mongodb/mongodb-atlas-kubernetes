@@ -15,6 +15,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312006/admin"
@@ -48,26 +50,20 @@ var _ = Describe("Free tier", Label("free-tier"), func() {
 	})
 
 	DescribeTable("Operator should support exported CR for free tier deployments",
-		func(test *model.TestDataProvider) {
-			testData = test
-			actions.ProjectCreationFlow(test)
-			freeTierDeploymentFlow(test)
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			freeTierDeploymentFlow(testData)
 		},
 		Entry("Test free tier deployment",
-			model.DataProvider(
-				"free-tier",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier")),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "free-tier", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier"))
+			},
 		),
 		Entry("Test free tier advanced deployment",
-			model.DataProvider(
-				"free-tier-advanced",
-				model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
-				40000,
-				[]func(*model.TestDataProvider){},
-			).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier")),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "free-tier-advanced", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject()).WithInitialDeployments(data.CreateFreeAdvancedDeployment("free-tier"))
+			},
 		),
 	)
 })
