@@ -292,7 +292,7 @@ func prepareProviderAction(ctx context.Context) (*cloud.ProviderAction, error) {
 		return nil, err
 	}
 
-	gcp, err := cloud.NewGCPAction(t, cloud.GoogleProjectID)
+	gcp, err := cloud.NewGCPAction(ctx, t, cloud.GoogleProjectID)
 	if err != nil {
 		return nil, err
 	}

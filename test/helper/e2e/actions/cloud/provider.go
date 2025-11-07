@@ -177,7 +177,7 @@ func (a *ProviderAction) SetupNetwork(ctx context.Context, providerName provider
 		Expect(err).To(BeNil())
 		return id
 	case provider.ProviderGCP:
-		id, err := a.gcpProvider.InitNetwork(a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets, a.gcpConfig.EnableCleanup)
+		id, err := a.gcpProvider.InitNetwork(ctx, a.gcpConfig.VPC, a.gcpConfig.Region, a.gcpConfig.Subnets, a.gcpConfig.EnableCleanup)
 		Expect(err).To(BeNil())
 		return id
 	case provider.ProviderAzure:
@@ -314,7 +314,7 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(ctx context.Context, prov
 		case provider.ProviderGCP:
 			res := true
 			for i := 0; i < gcpNumAttachments; i++ {
-				rule, err := a.gcpProvider.GetForwardingRule(endpoint, region, i)
+				rule, err := a.gcpProvider.GetForwardingRule(ctx, endpoint, region, i)
 				g.Expect(err).To(BeNil())
 
 				res = res && (*rule.PscConnectionStatus == "ACCEPTED")
@@ -337,7 +337,7 @@ func (a *ProviderAction) SetupNetworkPeering(ctx context.Context, providerName p
 	case provider.ProviderAWS:
 		Expect(a.awsProvider.AcceptVpcPeeringConnection(ctx, peerID, a.awsConfig.Region)).To(Succeed())
 	case provider.ProviderGCP:
-		Expect(a.gcpProvider.CreateNetworkPeering(a.gcpConfig.VPC, peerID, peerVPC)).To(Succeed())
+		Expect(a.gcpProvider.CreateNetworkPeering(ctx, a.gcpConfig.VPC, peerID, peerVPC)).To(Succeed())
 	}
 }
 

@@ -151,7 +151,7 @@ func encryptionAtRestFlow(ctx context.Context, userData *model.TestDataProvider,
 
 		fillKMSforAWS(ctx, userData, &encAtRest, aRole.AtlasAWSAccountArn, aRole.IamAssumedRoleArn)
 		fillVaultforAzure(userData, &encAtRest)
-		fillKMSforGCP(userData, &encAtRest)
+		fillKMSforGCP(ctx, userData, &encAtRest)
 
 		Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{
 			Name:      userData.Project.Name,
@@ -268,15 +268,15 @@ func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *akov2.Encryp
 	}
 }
 
-func fillKMSforGCP(userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest) {
+func fillKMSforGCP(ctx context.Context, userData *model.TestDataProvider, encAtRest *akov2.EncryptionAtRest) {
 	if (encAtRest.GoogleCloudKms == akov2.GoogleCloudKms{}) {
 		return
 	}
 
-	gcpAction, err := cloud.NewGCPAction(GinkgoT(), cloud.GoogleProjectID)
+	gcpAction, err := cloud.NewGCPAction(ctx, GinkgoT(), cloud.GoogleProjectID)
 	Expect(err).ToNot(HaveOccurred())
 
-	keyID, err := gcpAction.CreateKMS()
+	keyID, err := gcpAction.CreateKMS(ctx)
 	Expect(err).ToNot(HaveOccurred())
 
 	secret := &corev1.Secret{
