@@ -1,0 +1,31 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: my-group
+spec:
+  connectionSecretRef:
+    name: atlas-connection-secret
+  v20250312:
+    entry:
+      orgId: 63402b6913a34618ed885c13
+      name: Test Generated Group
+      regionUsageRestrictions: NONE
+      withDefaultAlertsSettings: true
+      tags:
+        - key: team
+          value: mongodb
+        - key: environment
+          value: demo
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    atlas.mongodb.com/type: credentials
+  name: atlas-connection-secret
+  namespace: default
+type: Opaque
+stringData:
+  orgId: "63402b6913a34618ed885c13"
+  privateApiKey: "e11bbd6e-bc0e-4b9a-a3bc-ef82bd44cac0"
+  publicApiKey: "pygbcyah"

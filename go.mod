@@ -30,6 +30,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/yudai/gojsondiff v1.0.0
 	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
+	go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0
 	go.mongodb.org/mongo-driver v1.17.6
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.17.0

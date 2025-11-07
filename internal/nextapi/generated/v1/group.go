@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&Group{})
@@ -23,6 +26,13 @@ type Group struct {
 }
 
 type GroupSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the group resource for version v20250312.
 	V20250312 *GroupSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -36,7 +46,7 @@ type GroupSpecV20250312 struct {
 	// Cloud user to whom to grant the Project Owner role on the specified project. If
 	// you set this parameter, it overrides the default value of the oldest
 	// Organization Owner.
-	ProjectOwnerId string `json:"projectOwnerId"`
+	ProjectOwnerId *string `json:"projectOwnerId,omitempty"`
 }
 
 type V20250312Entry struct {
@@ -66,7 +76,7 @@ type V20250312Entry struct {
 	Tags *[]Tags `json:"tags,omitempty"`
 
 	// WithDefaultAlertsSettings Flag that indicates whether to create the project with
-	// default alert settings.
+	// default alert settings. This setting cannot be updated after project creation.
 	WithDefaultAlertsSettings *bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
@@ -107,4 +117,12 @@ type GroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Group `json:"items"`
+}
+
+func (g *Group) GetConditions() []metav1.Condition {
+	if g.Status.Conditions == nil {
+		return []metav1.Condition{}
+	}
+
+	return *g.Status.Conditions
 }

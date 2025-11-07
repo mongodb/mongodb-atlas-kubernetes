@@ -18,27 +18,40 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
+	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
-func (h *GroupHandler) getHandlerForResource(group *v1.Group) (ctrlstate.StateHandler[v1.Group], error) {
+func (h *GroupHandler) getHandlerForResource(ctx context.Context, group *v1.Group) (ctrlstate.StateHandler[v1.Group], error) {
+	atlasClients, err := h.getSDKClientSet(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+
+	translationReq, err := h.getTranslationRequest(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
 	var selectedHandler ctrlstate.StateHandler[v1.Group]
 
 	if group.Spec.V20250312 != nil {
 		versionCount++
-		selectedHandler = h.handlerv20250312
+		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312008, translationReq)
 	}
 
 	if versionCount == 0 {
@@ -50,9 +63,49 @@ func (h *GroupHandler) getHandlerForResource(group *v1.Group) (ctrlstate.StateHa
 	return selectedHandler, nil
 }
 
+func (h *GroupHandler) getSDKClientSet(ctx context.Context, group *v1.Group) (*atlas.ClientSet, error) {
+	connectionConfig, err := reconciler.GetConnectionConfig(
+		ctx,
+		h.Client,
+		&client.ObjectKey{
+			Namespace: group.Namespace,
+			Name:      group.Spec.ConnectionSecretRef.Name,
+		},
+		&h.GlobalSecretRef,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve Atlas credentials: %w", err)
+	}
+
+	atlasClients, err := h.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, h.Log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup Atlas SDK client: %w", err)
+	}
+
+	return atlasClients, nil
+}
+
+func (h *GroupHandler) getTranslationRequest(ctx context.Context) (*translate.Request, error) {
+	groupCRD := &apiextensionsv1.CustomResourceDefinition{}
+	err := h.Client.Get(ctx, client.ObjectKey{Name: "groups.atlas.generated.mongodb.com"}, groupCRD)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve Group CRD: %w", err)
+	}
+
+	translator, err := translate.NewTranslator(groupCRD, "v1", "v20250312")
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup translator: %w", err)
+	}
+
+	return &translate.Request{
+		Translator:   translator,
+		Dependencies: nil,
+	}, nil
+}
+
 // HandleInitial delegates to the version-specific handler
 func (h *GroupHandler) HandleInitial(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateInitial, err)
 	}
@@ -61,72 +114,72 @@ func (h *GroupHandler) HandleInitial(ctx context.Context, group *v1.Group) (ctrl
 
 // HandleImportRequested delegates to the version-specific handler
 func (h *GroupHandler) HandleImportRequested(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateImportRequested, err)
 	}
 	return handler.HandleImportRequested(ctx, group)
 }
 
 // HandleImported delegates to the version-specific handler
 func (h *GroupHandler) HandleImported(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateImported, err)
 	}
 	return handler.HandleImported(ctx, group)
 }
 
 // HandleCreating delegates to the version-specific handler
 func (h *GroupHandler) HandleCreating(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateCreating, err)
 	}
 	return handler.HandleCreating(ctx, group)
 }
 
 // HandleCreated delegates to the version-specific handler
 func (h *GroupHandler) HandleCreated(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateCreated, err)
 	}
 	return handler.HandleCreated(ctx, group)
 }
 
 // HandleUpdating delegates to the version-specific handler
 func (h *GroupHandler) HandleUpdating(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateUpdating, err)
 	}
 	return handler.HandleUpdating(ctx, group)
 }
 
 // HandleUpdated delegates to the version-specific handler
 func (h *GroupHandler) HandleUpdated(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateUpdated, err)
 	}
 	return handler.HandleUpdated(ctx, group)
 }
 
 // HandleDeletionRequested delegates to the version-specific handler
 func (h *GroupHandler) HandleDeletionRequested(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateDeletionRequested, err)
 	}
 	return handler.HandleDeletionRequested(ctx, group)
 }
 
 // HandleDeleting delegates to the version-specific handler
 func (h *GroupHandler) HandleDeleting(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(group)
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateDeleting, err)
 	}
 	return handler.HandleDeleting(ctx, group)
 }
@@ -134,8 +187,7 @@ func (h *GroupHandler) HandleDeleting(ctx context.Context, group *v1.Group) (ctr
 // For returns the resource and predicates for the controller
 func (h *GroupHandler) For() (client.Object, builder.Predicates) {
 	obj := &v1.Group{}
-	// TODO: Add appropriate predicates
-	return obj, builder.WithPredicates()
+	return obj, builder.WithPredicates(h.predicates...)
 }
 
 // SetupWithManager sets up the controller with the Manager

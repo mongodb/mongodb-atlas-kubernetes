@@ -16,103 +16,160 @@ package group
 
 import (
 	"context"
+	"fmt"
 
-	zap "go.uber.org/zap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
+	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
+	"go.mongodb.org/atlas-sdk/v20250312008/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 type GroupHandlerv20250312 struct {
-	atlasProvider   atlas.Provider
-	client          client.Client
-	log             *zap.SugaredLogger
-	globalSecretRef client.ObjectKey
+	client             client.Client
+	atlasClient        *admin.APIClient
+	translationRequest *translate.Request
 }
 
-func NewGroupHandlerv20250312(atlasProvider atlas.Provider, client client.Client, log *zap.SugaredLogger, globalSecretRef client.ObjectKey) *GroupHandlerv20250312 {
+func NewGroupHandlerv20250312(client client.Client, atlasClient *admin.APIClient, translatorRequest *translate.Request) *GroupHandlerv20250312 {
 	return &GroupHandlerv20250312{
-		atlasProvider:   atlasProvider,
-		client:          client,
-		globalSecretRef: globalSecretRef,
-		log:             log,
+		client:             client,
+		atlasClient:        atlasClient,
+		translationRequest: translatorRequest,
 	}
 }
 
 // HandleInitial handles the initial state for version v20250312
-func (h *GroupHandlerv20250312) HandleInitial(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement initial state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Updated AtlasGroup.")
+func (h *GroupHandlerv20250312) HandleInitial(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	atlasGroup := &admin.Group{}
+	err := translate.ToAPI(h.translationRequest, atlasGroup, group)
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
+	}
+
+	params := &admin.CreateGroupApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
+	response, _, err := h.atlasClient.ProjectsApi.CreateGroupWithParams(ctx, params).Execute()
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to create project: %w", err))
+	}
+
+	objsFromAtlas, err := translate.FromAPI(h.translationRequest, group.DeepCopy(), response)
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
+	}
+
+	groupFromAtlas := objsFromAtlas[0].(*akov2generated.Group)
+	err = h.client.Status().Patch(ctx, groupFromAtlas, client.MergeFrom(group))
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to patch group status: %w", err))
+	}
+
+	return result.NextState(state.StateCreated, "Project created.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312
-func (h *GroupHandlerv20250312) HandleImportRequested(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
+func (h *GroupHandlerv20250312) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	// TODO: Implement importrequested state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	return result.NextState(state.StateImported, "Import completed")
 }
 
 // HandleImported handles the imported state for version v20250312
-func (h *GroupHandlerv20250312) HandleImported(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement imported state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleImported(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	return result.NextState(state.StateUpdated, "Ready")
 }
 
 // HandleCreating handles the creating state for version v20250312
-func (h *GroupHandlerv20250312) HandleCreating(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement creating state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleCreating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	return result.NextState(state.StateCreated, "Resource created")
 }
 
 // HandleCreated handles the created state for version v20250312
-func (h *GroupHandlerv20250312) HandleCreated(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement created state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleCreated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	return result.NextState(state.StateUpdated, "Ready")
 }
 
 // HandleUpdating handles the updating state for version v20250312
-func (h *GroupHandlerv20250312) HandleUpdating(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement updating state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleUpdating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	return result.NextState(state.StateUpdated, "Update completed")
 }
 
 // HandleUpdated handles the updated state for version v20250312
-func (h *GroupHandlerv20250312) HandleUpdated(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement updated state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleUpdated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	//atlasClient, err := h.atlasSDKClient(ctx, group)
+	//if err != nil {
+	//	return result.Error(state.StateUpdated, fmt.Errorf("failed to setup Atlas SDK client: %w", err))
+	//}
+	//response, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *group.Status.V20250312.Id).Execute()
+	//if err != nil {
+	//	return result.Error(state.StateUpdated, fmt.Errorf("failed to get group: %w", err))
+	//}
+	//
+	//
+	//generationChanged := meta.FindStatusCondition(*group.Status.Conditions, state.StateCondition).ObservedGeneration != group.GetGeneration()
+	//hasError := meta.FindStatusCondition(*group.Status.Conditions, state.ReadyCondition).Reason == ctrlstate.ReadyReasonError
+	//shouldReapply, err := reapply.ShouldReapply(obj)
+	//if err != nil {
+	//	return result.Error(currentState, err)
+	//}
+	//
+	//switch {
+	//case generationChanged:
+	//case shouldReapply:
+	//case hasError:
+	//default:
+	//	return result.NextState(currentState, "Upserted group.")
+	//}
+	//
+	//params := &atlas20250312002.UpdateProjectApiParams{GroupUpdate: &atlas20250312002.GroupUpdate{}}
+	//json.MustUnmarshal(json.MustMarshal(obj.Spec.V20250312.Entry), params.GroupUpdate)
+	//params.GroupId = *obj.Status.V20250312.Id
+	//
+	//response, _, err = atlasClients.SdkClient20250312002.ProjectsApi.UpdateProjectWithParams(ctx, params).Execute()
+	//if err != nil {
+	//	return result.Error(currentState, fmt.Errorf("failed to update group: %w", err))
+	//}
+	//
+	//json.MustUnmarshal(json.MustMarshal(response), obj.Status.V20250312)
+	//err = r.client.Status().Patch(ctx, obj, client.RawPatch(types.MergePatchType, json.MustMarshal(obj)))
+	//if err != nil {
+	//	return result.Error(currentState, fmt.Errorf("failed to patch group: %w", err))
+	//}
+
 	return result.NextState(state.StateUpdated, "Ready")
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
-func (h *GroupHandlerv20250312) HandleDeletionRequested(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement deletionrequested state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateDeleting, "Deletion started")
+func (h *GroupHandlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	if group.Status.V20250312 == nil || group.Status.V20250312.Id == nil {
+		return result.NextState(state.StateDeletionRequested, "Project deleted.")
+	}
+
+	_, err := h.atlasClient.ProjectsApi.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
+	if admin.IsErrorCode(err, "GROUP_NOT_FOUND") {
+		return result.NextState(state.StateDeletionRequested, "Project deleted.")
+	}
+	if err != nil {
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete project: %w", err))
+	}
+
+	return result.NextState(state.StateDeleted, "Deleted")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
-func (h *GroupHandlerv20250312) HandleDeleting(ctx context.Context, group *v1.Group) (ctrlstate.Result, error) {
-	// TODO: Implement deleting state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
+func (h *GroupHandlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	return result.NextState(state.StateDeleted, "Deleted")
 }
 
 // For returns the resource and predicates for the controller
 func (h *GroupHandlerv20250312) For() (client.Object, builder.Predicates) {
-	return &v1.Group{}, builder.WithPredicates()
+	return &akov2generated.Group{}, builder.WithPredicates()
 }
 
 // SetupWithManager sets up the controller with the Manager

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -138,6 +139,9 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	if version.IsExperimental() {
 		// Add experimental controllers here
 		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
+
+		groupReconciler := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, true, r.defaultPredicates())
+		reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 	}
 	r.reconcilers = reconcilers
 }

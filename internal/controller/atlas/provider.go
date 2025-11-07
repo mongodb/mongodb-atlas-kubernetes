@@ -25,6 +25,7 @@ import (
 
 	"github.com/mongodb-forks/digest"
 	v20250312006 "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	v20250312008 "go.mongodb.org/atlas-sdk/v20250312008/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -47,6 +48,7 @@ type Provider interface {
 
 type ClientSet struct {
 	SdkClient20250312006 *v20250312006.APIClient
+	SdkClient20250312008 *v20250312008.APIClient
 }
 
 type ProductionProvider struct {
@@ -141,8 +143,17 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 		return nil, err
 	}
 
+	clientv20250312008, err := v20250312008.NewClient(
+		v20250312008.UseBaseURL(p.domain),
+		v20250312008.UseHTTPClient(httpClient),
+		v20250312008.UseUserAgent(operatorUserAgent()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &ClientSet{
 		SdkClient20250312006: clientv20250312006,
+		SdkClient20250312008: clientv20250312008,
 	}, nil
 }
 
