@@ -47,7 +47,13 @@ func TestRunOpenapi2crd(t *testing.T) {
 			err = afero.WriteFile(fs, "./testdata/openapi.yaml", []byte(openapiFile()), 0o644)
 			require.NoError(t, err)
 
-			err = runOpenapi2crd(context.Background(), fs, tt.input, tt.output, tt.overwrite)
+			c := &RunnerConfig{
+				Input:     tt.input,
+				Output:    tt.output,
+				Overwrite: tt.overwrite,
+			}
+
+			err = runOpenapi2crd(context.Background(), fs, c)
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}

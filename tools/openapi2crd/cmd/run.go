@@ -36,12 +36,21 @@ const (
 	outputOption = "output"
 	configOption = "config"
 	forceOption  = "force"
+	crdsOption   = "crds"
 
-	readOnly = os.O_RDONLY
+	crdsDefaultValue = "all"
+	readOnly         = os.O_RDONLY
 )
 
 func initConfig() {
 	viper.AutomaticEnv()
+}
+
+type RunnerConfig struct {
+	Input     string
+	Output    string
+	Overwrite bool
+	Kinds     map[string]struct{}
 }
 
 func RunCmd(ctx context.Context) *cobra.Command {
@@ -57,17 +66,35 @@ func RunCmd(ctx context.Context) *cobra.Command {
 			configPath := viper.GetString(configOption)
 			outputPath := viper.GetString(outputOption)
 			forceOverwrite := viper.GetBool(forceOption)
+			crds := viper.GetString(crdsOption)
+
+			c := &RunnerConfig{
+				Input:     configPath,
+				Output:    outputPath,
+				Overwrite: forceOverwrite,
+				Kinds:     make(map[string]struct{}),
+			}
+
+			if crds != crdsDefaultValue {
+				kinds := strings.Split(crds, ",")
+				c.Kinds = make(map[string]struct{}, len(kinds))
+				for _, kind := range kinds {
+					c.Kinds[strings.TrimSpace(kind)] = struct{}{}
+				}
+			}
 
 			fs := afero.NewOsFs()
 
-			return runOpenapi2crd(ctx, fs, configPath, outputPath, forceOverwrite)
+			return runOpenapi2crd(ctx, fs, c)
 		},
 	}
 
 	cmd.Flags().StringP(outputOption, "o", "", "Path to output file (required)")
 	_ = cmd.MarkFlagRequired(outputOption)
 	cmd.Flags().StringP(configOption, "c", "", "Path to the config file (required)")
+	_ = cmd.MarkFlagRequired(configOption)
 	cmd.Flags().BoolP(forceOption, "f", false, "Force overwrite the output file if it exists")
+	cmd.Flags().String(crdsOption, crdsDefaultValue, "One or more Kind names to generate, separated by comma. Use 'all' to generate all CRDs.")
 	cobra.OnInitialize(initConfig)
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -75,15 +102,15 @@ func RunCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
-func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, overwrite bool) error {
-	file, err := fs.OpenFile(input, readOnly, 0o644)
+func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig) error {
+	file, err := fs.OpenFile(runnerConfig.Input, readOnly, 0o644)
 	if err != nil {
-		return fmt.Errorf("error opening the file %s: %w", input, err)
+		return fmt.Errorf("error opening the file %s: %w", runnerConfig.Input, err)
 	}
 
 	configData, err := afero.ReadAll(file)
 	if err != nil {
-		return fmt.Errorf("error reading the file %s: %w", input, err)
+		return fmt.Errorf("error reading the file %s: %w", runnerConfig.Input, err)
 	}
 
 	cfg, err := config.Parse(configData)
@@ -91,7 +118,7 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, over
 		return fmt.Errorf("error parsing config: %w", err)
 	}
 
-	fsExporter, err := exporter.New(fs, output, overwrite)
+	fsExporter, err := exporter.New(fs, runnerConfig.Output, runnerConfig.Overwrite)
 	if err != nil {
 		return fmt.Errorf("error creating the exporter: %w", err)
 	}
@@ -116,6 +143,11 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, input, output string, over
 	atlasLoader := config.NewAtlas(openapiLoader)
 
 	for _, crdConfig := range cfg.Spec.CRDConfig {
+		_, shouldGen := runnerConfig.Kinds[crdConfig.GVK.Kind]
+		if len(runnerConfig.Kinds) > 0 && !shouldGen {
+			continue
+		}
+
 		pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
 		if err != nil {
 			return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
