@@ -34,3 +34,9 @@ generate-all: build
 	$(BINARY_PATH) --input $(CRD_FILE) --all \
 		--indexer-out $(INDEXER_OUT) \
 		--controller-out $(CONTROLLER_OUT) \
+
+.PHONY: generate-all-override
+generate-all-override:
+	$(BINARY_PATH) --input $(CRD_FILE) --all --override \
+		--indexer-out $(INDEXER_OUT) \
+		--controller-out $(CONTROLLER_OUT) \
