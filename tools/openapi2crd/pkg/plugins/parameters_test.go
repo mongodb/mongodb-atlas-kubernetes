@@ -56,8 +56,18 @@ func TestParameterProcess(t *testing.T) {
 							},
 						},
 					},
+					"test": {
+						Description: "required parameter for testing purposes",
+						Type:        "object",
+						XValidations: apiextensions.ValidationRules{
+							{
+								Rule:    "self == oldSelf",
+								Message: "test cannot be modified after creation",
+							},
+						},
+					},
 				},
-				Required: []string{"projectOwnerId"},
+				Required: []string{"test"},
 			},
 		},
 		"missing path in OpenAPI spec": {
@@ -132,8 +142,18 @@ func TestParameterProcess(t *testing.T) {
 							},
 						},
 					},
+					"test": {
+						Description: "required parameter for testing purposes",
+						Type:        "object",
+						XValidations: apiextensions.ValidationRules{
+							{
+								Rule:    "self == oldSelf",
+								Message: "test cannot be modified after creation",
+							},
+						},
+					},
 				},
-				Required: []string{"projectOwnerId"},
+				Required: []string{"test"},
 			},
 		},
 	}
@@ -201,6 +221,20 @@ func groupMappingRequest(
 												Default: false,
 											},
 										},
+									},
+								},
+								&openapi3.ParameterRef{
+									Value: &openapi3.Parameter{
+										Name:        "test",
+										In:          "query",
+										Description: "required parameter for testing purposes",
+										Schema: &openapi3.SchemaRef{
+											Value: &openapi3.Schema{
+												Type:    &openapi3.Types{"boolean"},
+												Default: false,
+											},
+										},
+										Required: true,
 									},
 								},
 							},
