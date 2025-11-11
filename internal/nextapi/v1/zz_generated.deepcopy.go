@@ -5,7 +5,7 @@
 package v1
 
 import (
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
+	"github.com/crd2go/crd2go/k8s"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
