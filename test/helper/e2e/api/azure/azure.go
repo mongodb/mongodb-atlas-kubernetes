@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 	"path"
 	"time"
 
@@ -28,6 +26,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 )
 

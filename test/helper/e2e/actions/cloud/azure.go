@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -27,6 +26,7 @@ import (
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 const (

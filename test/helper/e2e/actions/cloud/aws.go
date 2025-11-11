@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 	"os"
 	"strings"
 	"time"
@@ -36,6 +35,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 type AwsAction struct {

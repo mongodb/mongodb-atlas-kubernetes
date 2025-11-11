@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,6 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/onsi/ginkgo/v2"
+
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 type AwsResourcesGenerator struct {
