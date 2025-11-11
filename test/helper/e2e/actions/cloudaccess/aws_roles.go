@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 
-	awshelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/aws"
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 type AssumeRolePolicyDocument struct {
@@ -113,10 +113,10 @@ func CreateAWSIAMRole(ctx context.Context, roleName string) (string, error) {
 		AssumeRolePolicyDocument: &policy,
 	}
 	roleInput.Tags = []types.Tag{
-		{Key: aws.String(awshelper.OwnerTag), Value: aws.String(awshelper.AKOTeam)},
-		{Key: aws.String(awshelper.OwnerEmailTag), Value: aws.String(awshelper.AKOEmail)},
-		{Key: aws.String(awshelper.CostCenterTag), Value: aws.String(awshelper.AKOCostCenter)},
-		{Key: aws.String(awshelper.EnvironmentTag), Value: aws.String(awshelper.AKOEnvTest)},
+		{Key: aws.String(taghelper.OwnerTag), Value: aws.String(taghelper.AKOTeam)},
+		{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
+		{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
+		{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
 	}
 	role, err := IAMClient.CreateRole(ctx, &roleInput)
 	if err != nil {

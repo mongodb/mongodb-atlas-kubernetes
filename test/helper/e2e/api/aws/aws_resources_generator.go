@@ -26,6 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/onsi/ginkgo/v2"
+
+	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
 )
 
 type AwsResourcesGenerator struct {
@@ -108,10 +110,10 @@ func (g *AwsResourcesGenerator) CreatePolicy(ctx context.Context, name string, p
 		PolicyDocument: policy(),
 		PolicyName:     aws.String(name),
 		Tags: []iamtypes.Tag{
-			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
-			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
-			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
-			{Key: aws.String(EnvironmentTag), Value: aws.String(AKOEnvTest)},
+			{Key: aws.String(taghelper.OwnerTag), Value: aws.String(taghelper.AKOTeam)},
+			{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
+			{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
+			{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
 		},
 	}
 
@@ -194,10 +196,10 @@ func (g *AwsResourcesGenerator) CreateBucket(ctx context.Context, name string) e
 
 	tagSet := &s3types.Tagging{
 		TagSet: []s3types.Tag{
-			{Key: aws.String(OwnerTag), Value: aws.String(AKOTeam)},
-			{Key: aws.String(OwnerEmailTag), Value: aws.String(AKOEmail)},
-			{Key: aws.String(CostCenterTag), Value: aws.String(AKOCostCenter)},
-			{Key: aws.String(EnvironmentTag), Value: aws.String(AKOEnvTest)},
+			{Key: aws.String(taghelper.OwnerTag), Value: aws.String(taghelper.AKOTeam)},
+			{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
+			{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
+			{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
 		},
 	}
 
