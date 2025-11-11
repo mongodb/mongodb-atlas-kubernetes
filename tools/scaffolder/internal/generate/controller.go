@@ -32,7 +32,7 @@ func getAPIPackage(apiVersion string) string {
 }
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath string) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath string, override bool) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
@@ -78,13 +78,13 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
-	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings, refsByKind); err != nil {
+	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings, refsByKind, parsedConfig); err != nil {
 		return fmt.Errorf("failed to generate main handler file: %w", err)
 	}
 
 	// Generate version-specific handlers
 	for _, mapping := range parsedConfig.Mappings {
-		if err := generateVersionHandlerFile(controllerDir, controllerName, resourceName, typesPath, mapping); err != nil {
+		if err := generateVersionHandlerFile(controllerDir, controllerName, resourceName, typesPath, mapping, override, parsedConfig); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
 		}
 	}
@@ -214,7 +214,55 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	return f.Save(fileName)
 }
 
-func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField) error {
+func generatePackageLevelTranslationHelper(f *jen.File) {
+	f.Comment("getTranslationRequest creates a translation request for converting entities between API and AKO.")
+	f.Comment("This is a package-level function that can be called from any handler.")
+	f.Func().Id("getTranslationRequest").Params(
+		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id("k8sClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("crdName").String(),
+		jen.Id("storageVersion").String(),
+		jen.Id("targetVersion").String(),
+	).Params(
+		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		jen.Error(),
+	).Block(
+		jen.Id("crd").Op(":=").Op("&").Qual("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "CustomResourceDefinition").Values(),
+		jen.Id("err").Op(":=").Id("k8sClient").Dot("Get").Call(
+			jen.Id("ctx"),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
+				jen.Id("Name"): jen.Id("crdName"),
+			}),
+			jen.Id("crd"),
+		),
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+				jen.Lit("failed to resolve CRD %s: %w"),
+				jen.Id("crdName"),
+				jen.Id("err"),
+			)),
+		),
+		jen.Line(),
+		jen.List(jen.Id("translator"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "NewTranslator").Call(
+			jen.Id("crd"),
+			jen.Id("storageVersion"),
+			jen.Id("targetVersion"),
+		),
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+				jen.Lit("failed to setup translator: %w"),
+				jen.Id("err"),
+			)),
+		),
+		jen.Line(),
+		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request").Values(jen.Dict{
+			jen.Id("Translator"):   jen.Id("translator"),
+			jen.Id("Dependencies"): jen.Nil(),
+		}), jen.Nil()),
+	)
+}
+
+func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, config *ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -222,6 +270,9 @@ func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
+
+	// Generate package-level helper function attached to the handler
+	generatePackageLevelTranslationHelper(f)
 
 	f.Comment("getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set")
 	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("getHandlerForResource").Params(
@@ -319,10 +370,88 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 	generateSetupWithManager(f, controllerName, resourceName, refsByKind)
 }
 
-func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath string, mapping MappingWithConfig) error {
+func generateTranslationRequestWrapper(f *jen.File, controllerName, versionSuffix string, config *ParsedConfig) {
+	// Construct CRD name: {plural}.{group}
+	crdName := fmt.Sprintf("%s.%s", config.PluralName, config.CRDGroup)
+
+	f.Comment("getTranslationRequest is a convenience wrapper for the package-level getTranslationRequest function")
+	f.Func().Params(
+		jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix),
+	).Id("getTranslationRequest").Params(
+		jen.Id("ctx").Qual("context", "Context"),
+	).Params(
+		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		jen.Error(),
+	).Block(
+		jen.Return(jen.Id("getTranslationRequest").Call(
+			jen.Id("ctx"),
+			jen.Id("h").Dot("client"),
+			jen.Lit(crdName),
+			jen.Lit(config.StorageVersion),
+			jen.Lit(versionSuffix),
+		)),
+	)
+}
+
+func generateSDKClientSetMethod(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+	resourceLower := strings.ToLower(resourceName)
+
+	f.Comment("getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret")
+	f.Func().Params(
+		jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix),
+	).Id("getSDKClientSet").Params(
+		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id(resourceLower).Op("*").Qual(apiPkg, resourceName),
+	).Params(
+		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "ClientSet"),
+		jen.Error(),
+	).Block(
+		jen.List(jen.Id("connectionConfig"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "GetConnectionConfig").Call(
+			jen.Id("ctx"),
+			jen.Id("h").Dot("client"),
+			jen.Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
+				jen.Id("Namespace"): jen.Id(resourceLower).Dot("Namespace"),
+				jen.Id("Name"):      jen.Id(resourceLower).Dot("Spec").Dot("ConnectionSecretRef").Dot("Name"),
+			}),
+			jen.Op("&").Id("h").Dot("globalSecretRef"),
+		),
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+				jen.Lit("failed to resolve Atlas credentials: %w"),
+				jen.Id("err"),
+			)),
+		),
+		jen.Line(),
+		jen.List(jen.Id("clientSet"), jen.Id("err")).Op(":=").Id("h").Dot("atlasProvider").Dot("SdkClientSet").Call(
+			jen.Id("ctx"),
+			jen.Id("connectionConfig").Dot("Credentials"),
+			jen.Id("h").Dot("log"),
+		),
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+				jen.Lit("failed to setup Atlas SDK client: %w"),
+				jen.Id("err"),
+			)),
+		),
+		jen.Line(),
+		jen.Return(jen.Id("clientSet"), jen.Nil()),
+	)
+}
+
+func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath string, mapping MappingWithConfig, override bool, config *ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
+
+	fileName := filepath.Join(dir, "handler_"+versionSuffix+".go")
+
+	// Check if a versioned handler file exists
+	if !override {
+		if _, err := os.Stat(fileName); err == nil {
+			fmt.Printf("Skipping versioned handler %s (already exists, use --override to overwrite)\n", fileName)
+			return nil
+		}
+	}
 
 	f := jen.NewFile(atlasResourceName)
 	AddLicenseHeader(f)
@@ -350,12 +479,15 @@ func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath str
 		})),
 	)
 
+	// ClientSet and translation request helpers
+	generateSDKClientSetMethod(f, controllerName, resourceName, apiPkg, versionSuffix)
+	generateTranslationRequestWrapper(f, controllerName, versionSuffix, config)
+
 	generateVersionStateHandlers(f, controllerName, resourceName, apiPkg, versionSuffix)
 
 	// Generate For and SetupWithManager methods to satisfy StateHandler interface
 	generateVersionInterfaceMethods(f, controllerName, resourceName, apiPkg, versionSuffix)
 
-	fileName := filepath.Join(dir, "handler_"+versionSuffix+".go")
 	return f.Save(fileName)
 }
 

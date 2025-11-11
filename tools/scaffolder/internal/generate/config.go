@@ -37,10 +37,13 @@ type MappingWithConfig struct {
 }
 
 type ParsedConfig struct {
-	SelectedCRD  CRDInfo
-	Mappings     []MappingWithConfig
-	ResourceName string
-	APIVersion   string // API version package (e.g., "v1", "v3")
+	SelectedCRD    CRDInfo
+	Mappings       []MappingWithConfig
+	ResourceName   string
+	APIVersion     string // API version package (e.g., "v1", "v3")
+	StorageVersion string
+	PluralName     string
+	CRDGroup       string
 }
 
 type CRDDocument struct {
@@ -71,6 +74,7 @@ type CRDInfo struct {
 	Kind       string
 	Group      string
 	Version    string
+	Plural     string
 	ShortNames []string
 	Categories []string
 	Versions   []CRDVersionInfo
@@ -159,6 +163,7 @@ func decodeCRDDocument(content []byte) (*CRDInfo, error) {
 	crdInfo := &CRDInfo{
 		Kind:       crd.Spec.Names.Kind,
 		Group:      crd.Spec.Group,
+		Plural:     crd.Spec.Names.Plural,
 		ShortNames: crd.Spec.Names.ShortNames,
 		Categories: crd.Spec.Names.Categories,
 	}
@@ -212,11 +217,20 @@ func ParseCRDConfig(resultPath, crdKind string) (*ParsedConfig, error) {
 	// 	apiVersion = "v3"
 	// }
 
+	// Extract storage version - default to "v1" if not found
+	storageVersion := "v1"
+	if crdInfo.Version != "" {
+		storageVersion = crdInfo.Version
+	}
+
 	return &ParsedConfig{
-		SelectedCRD:  *crdInfo,
-		Mappings:     mappings,
-		ResourceName: crdInfo.Kind,
-		APIVersion:   apiVersion,
+		SelectedCRD:    *crdInfo,
+		Mappings:       mappings,
+		ResourceName:   crdInfo.Kind,
+		APIVersion:     apiVersion,
+		StorageVersion: storageVersion,
+		PluralName:     crdInfo.Plural,
+		CRDGroup:       crdInfo.Group,
 	}, nil
 }
 
@@ -225,7 +239,11 @@ func ListCRDs(resultPath string) ([]CRDInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open result file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("failed to close result file: %v\n", err)
+		}
+	}()
 
 	var crds []CRDInfo
 	scanner := bufio.NewScanner(file)
