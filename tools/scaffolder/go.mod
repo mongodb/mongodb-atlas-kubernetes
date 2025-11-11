@@ -1,4 +1,4 @@
-module tools/scaffolder
+module github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder
 
 go 1.25.1
 

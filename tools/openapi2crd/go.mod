@@ -1,4 +1,4 @@
-module tools/openapi2crd
+module github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd
 
 go 1.25
 
