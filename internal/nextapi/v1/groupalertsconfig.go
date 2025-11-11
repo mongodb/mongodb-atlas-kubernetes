@@ -3,7 +3,7 @@
 package v1
 
 import (
-	k8s "github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s"
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

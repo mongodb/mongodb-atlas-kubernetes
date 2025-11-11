@@ -204,6 +204,9 @@ else
     BUILD_DEPENDENCY :=
 endif
 
+# GO TOOLS
+CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help: ## Show this help screen
@@ -861,7 +864,9 @@ gen-crds:
 	BINARY_DIR=$(realpath .)/bin CRD_FILE=$(realpath .)/config/generated/crd/bases/crds.yaml $(MAKE) -C tools/openapi2crd crds
 
 gen-go-types:
-	BINARY_DIR=$(realpath .)/bin CRD_FILE=$(realpath .)/config/generated/crd/bases/crds.yaml OUTPUT_DIR=$(realpath .)/internal/nextapi/generated/v1 $(MAKE) -C tools/crd2go generate
+	@echo "==> Generating Go models from CRDs..."
+	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
+	--output $(realpath .)/internal/nextapi/generated/v1
 
 run-scaffolder:
 	BINARY_DIR=$(realpath .)/bin CRD_FILE=$(realpath .)/config/generated/crd/bases/crds.yaml $(MAKE) -C tools/scaffolder generate-all

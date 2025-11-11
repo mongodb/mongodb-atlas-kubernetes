@@ -36,10 +36,10 @@ renames:
 imports:
   - name: LocalReference
     alias: k8s
-    path: github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s
+    path: github.com/crd2go/crd2go/k8s
   - name: Reference
     alias: k8s
-    path: github.com/mongodb/mongodb-atlas-kubernetes/tools/crd2go/k8s
+    path: github.com/crd2go/crd2go/k8s
 
 # deepCopy controls the integration with controller-gen to generate deep copy code
 deepCopy:

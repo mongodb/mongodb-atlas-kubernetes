@@ -30,12 +30,10 @@ work/
 ### Setup
 
 1. **Generate CRD types**
-    Use `crd2go` tool from the `tools` directory of the AKO repository to generate go types for CRDs:
+    Use `crd2go` tool from the [github.com/crd2go/crd2go](https://github.com/crd2go/crd2go) to generate go types for CRDs. In the AKO repository is installed a a go tool:
 
     ```bash
-    cd ./tools/crd2go/
-    go build -o ./crd2go ./cmd/crd2go/main.go
-    ./crd2go -input=./pkg/crd2go/samples/crds.yaml -output=../atlas-controller-scaffolder/pkg/api/v1
+    go tool crd2go -input=./pkg/crd2go/samples/crds.yaml -output=../atlas-controller-scaffolder/pkg/api/v1
     ```
 
 2. **Build the scaffolder:**
