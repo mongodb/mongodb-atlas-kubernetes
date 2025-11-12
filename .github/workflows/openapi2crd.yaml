@@ -28,4 +28,4 @@ jobs:
 
     - name: CI checks
       working-directory: ./tools/openapi2crd
-      run: make ci
+      run: devbox run -- make ci
