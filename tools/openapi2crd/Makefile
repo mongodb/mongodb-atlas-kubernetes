@@ -42,3 +42,6 @@ clean: ## Clean up built artifacts
 	@echo "==> Cleaning..."
 	@rm -f $(BINARY_PATH)
 	@rm -f $(CRD_FILE)
+
+.PHONY: ci
+ci: all ## Standard CI tests

@@ -1,0 +1,27 @@
+name: OpenAPI2CRD tool CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/openapi2crd/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/openapi2crd/**'
+
+jobs:
+
+  githubjobs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25'
+
+    - name: CI checks
+      working-directory: ./tools/openapi2crd
+      run: make ci
