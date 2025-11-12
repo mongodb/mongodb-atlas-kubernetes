@@ -23,6 +23,7 @@ jobs:
         enable-cache: 'true'
 
     - name: Update Devbox
+      working-directory: ./tools/openapi2crd
       run: devbox update
 
     - name: CI checks
