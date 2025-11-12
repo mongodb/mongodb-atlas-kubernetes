@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/converter"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 )
 
 func TestEntryName(t *testing.T) {

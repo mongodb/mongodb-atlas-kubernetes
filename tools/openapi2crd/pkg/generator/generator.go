@@ -24,9 +24,9 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"sigs.k8s.io/yaml"
 
-	"tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/config"
-	"tools/openapi2crd/pkg/plugins"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
 
 type Generator struct {

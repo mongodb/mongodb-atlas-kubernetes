@@ -18,7 +18,7 @@ package plugins
 import (
 	"slices"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetestools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 type SkippedProperties struct{}

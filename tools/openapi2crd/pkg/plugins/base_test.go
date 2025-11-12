@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestBaseName(t *testing.T) {
