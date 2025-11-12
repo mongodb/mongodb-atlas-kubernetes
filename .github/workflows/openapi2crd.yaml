@@ -12,15 +12,18 @@ on:
 
 jobs:
 
-  githubjobs:
+  openapi2crd:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
 
-    - name: Set up Go
-      uses: actions/setup-go@v6
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
       with:
-        go-version: '1.25'
+        enable-cache: 'true'
+
+    - name: Update Devbox
+      run: devbox update
 
     - name: CI checks
       working-directory: ./tools/openapi2crd
