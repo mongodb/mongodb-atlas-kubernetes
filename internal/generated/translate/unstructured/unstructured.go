@@ -21,9 +21,19 @@ import (
 	"fmt"
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	// ErrNotFound when a field is not found in an object
+	ErrNotFound = errors.New("not found")
 
-var ErrNilObject = errors.New("nil object")
+	// ErrNilObject when an object is unexpectedly nil
+	ErrNilObject = errors.New("nil object")
+
+	// ErrNotObject when a field is not an object
+	ErrNotObject = errors.New("not an object")
+
+	// ErrNotArray when a field is not an array
+	ErrNotArray = errors.New("not an array")
+)
 
 // ToUnstructured returns an unstructured map holding the public field values
 // from the original input obj value

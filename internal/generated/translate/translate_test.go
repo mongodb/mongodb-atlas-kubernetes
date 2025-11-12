@@ -288,7 +288,7 @@ func TestFromAPI(t *testing.T) {
 										{
 											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
 												Key:  pointer.MakePtr("datadogApiKey"),
-												Name: pointer.MakePtr("groupalertscfg-5b8c46f7fd54484b88b4"),
+												Name: pointer.MakePtr("groupalertscfg-f4f4b5f9c849fc4cbdc"),
 											},
 											DatadogRegion: pointer.MakePtr("US"),
 											DelayMin:      pointer.MakePtr(42),
@@ -319,7 +319,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "groupalertscfg-5b8c46f7fd54484b88b4",
+							Name:      "groupalertscfg-f4f4b5f9c849fc4cbdc",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{
@@ -370,7 +370,7 @@ func TestFromAPI(t *testing.T) {
 								Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
 									Type: pointer.MakePtr("SLACK"),
 									ApiTokenSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.MakePtr("3rdparty-slack-5f444b9b4cc55b5b8cb"),
+										Name: pointer.MakePtr("3rdparty-slack-5798d555ff4dc66f7c99"),
 										Key:  pointer.MakePtr("apiToken"),
 									},
 									ChannelName: pointer.MakePtr("alert-channel"),
@@ -391,7 +391,7 @@ func TestFromAPI(t *testing.T) {
 					},
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3rdparty-slack-5f444b9b4cc55b5b8cb",
+							Name:      "3rdparty-slack-5798d555ff4dc66f7c99",
 							Namespace: "ns",
 						},
 						Data: map[string][]byte{

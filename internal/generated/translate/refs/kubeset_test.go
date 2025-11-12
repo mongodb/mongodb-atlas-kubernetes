@@ -37,8 +37,8 @@ var (
 	}
 )
 
-func TestNewMapContext(t *testing.T) {
-	ctx := newMapContext(mainObj, []client.Object{dep1, dep2})
+func TestNewKubeset(t *testing.T) {
+	ctx := newKubeset(mainObj, []client.Object{dep1, dep2})
 
 	require.NotNil(t, ctx, "context should not be nil")
 	assert.Equal(t, mainObj, ctx.main, "main object should be set correctly")
@@ -52,8 +52,8 @@ func TestNewMapContext(t *testing.T) {
 	assert.Equal(t, dep2, ctx.m[client.ObjectKeyFromObject(dep2)])
 }
 
-func TestContext_FindAndHas(t *testing.T) {
-	ctx := newMapContext(mainObj, []client.Object{dep1})
+func TestKubesetFindAndHas(t *testing.T) {
+	ctx := newKubeset(mainObj, []client.Object{dep1})
 
 	testCases := []struct {
 		name              string
@@ -92,8 +92,8 @@ func TestContext_FindAndHas(t *testing.T) {
 	}
 }
 
-func TestContext_Add(t *testing.T) {
-	ctx := newMapContext(mainObj, []client.Object{dep1})
+func TestKubesetAdd(t *testing.T) {
+	ctx := newKubeset(mainObj, []client.Object{dep1})
 	require.Len(t, ctx.m, 1, "pre-condition failed: map should have 1 item")
 	require.Len(t, ctx.added, 0, "pre-condition failed: added slice should be empty")
 

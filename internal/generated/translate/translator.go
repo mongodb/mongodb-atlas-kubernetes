@@ -16,26 +16,43 @@
 package translate
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/refs"
 )
 
 // translator implements Translator to translate from a given CRD to and from
 // a given SDK version using the same upstream OpenAPI schema
 type translator struct {
-	majorVersion string
-	jsonSchema   *jsonschema.Schema
-	annotations  map[string]string
+	majorVersion     string
+	validationSchema *jsonschema.Schema
+	mappingSchema    *openapi3.SchemaRef
 }
 
 // Annotation returns the annotation value from the pinned translated schema
 // CRD version
-func (tr *translator) Annotation(annotation string) string {
-	return tr.annotations[annotation]
+// FindAllMappings traverses the mapping schema and returns all found extensions.
+func (tr *translator) Mappings() ([]*refs.Mapping, error) {
+	noMappings := []*refs.Mapping{}
+	if tr.mappingSchema == nil || tr.mappingSchema.Value == nil {
+		return noMappings, nil
+	}
+	spec := propertyValueOrNil(tr.mappingSchema.Value, "spec")
+	if spec == nil {
+		return noMappings, nil
+	}
+	version := propertyValueOrNil(spec, tr.majorVersion)
+	if version == nil {
+		return noMappings, nil
+	}
+	return refs.FindMappings(version, []string{"spec", tr.majorVersion})
 }
 
 // MajorVersion returns the CRD pinned version
@@ -46,7 +63,8 @@ func (tr *translator) MajorVersion() string {
 // Validate would return any errors of the given unstructured object against the
 // pinned schema version being translated, or nil if the object is compliant
 func (tr *translator) Validate(unstructuredObj map[string]any) error {
-	if err := tr.jsonSchema.Validate(unstructuredObj); err != nil {
+	// This correctly uses the validator from crds.CompileCRDSchema
+	if err := tr.validationSchema.Validate(unstructuredObj); err != nil {
 		return fmt.Errorf("object validation failed against CRD schema: %w", err)
 	}
 	return nil
@@ -70,13 +88,25 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
 	}
-	schema, err := crds.CompileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
+	validationSchema, err := crds.CompileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compile schema: %w", err)
+		return nil, fmt.Errorf("failed to compile schema for validation: %w", err)
 	}
+	var mappingSchema openapi3.Schema
+	mappingString, ok := crd.Annotations["api-mappings"]
+	if ok && mappingString != "" {
+		jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
+		}
+		if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
+		}
+	}
+
 	return &translator{
-		majorVersion: majorVersion,
-		jsonSchema:   schema,
-		annotations:  crd.Annotations,
+		majorVersion:     majorVersion,
+		validationSchema: validationSchema,
+		mappingSchema:    &openapi3.SchemaRef{Value: &mappingSchema},
 	}, nil
 }
