@@ -39,7 +39,7 @@ work/
 2. **Build the scaffolder:**
    ```bash
    cd ../scaffolder
-   go build -o ./bin/scaffolder ./cmd/main.go
+   go build -o ./bin/scaffolder ./cmd/scaffolder/main.go
    ```
 
 

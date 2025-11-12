@@ -14,7 +14,7 @@ build: clean $(BINARY_PATH) ## Build the binary
 $(BINARY_PATH): $(GO_FILES) ## File-based build target.
 	@echo "==> Building $(BINARY_PATH)..."
 	@mkdir -p $(BINARY_DIR)
-	@go build -o $(BINARY_PATH) cmd/main.go
+	@go build -o $(BINARY_PATH) cmd/scaffolder/main.go
 
 clean:
 	@rm -f $(BINARY_PATH)
