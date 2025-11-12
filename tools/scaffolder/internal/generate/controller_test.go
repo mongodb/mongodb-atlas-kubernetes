@@ -464,7 +464,7 @@ spec:
 	// Verify package-level getTranslationRequest function
 	assert.Contains(t, contentStr, "func getTranslationRequest(")
 	assert.Contains(t, contentStr, "ctx context.Context")
-	assert.Contains(t, contentStr, "client client.Client")
+	assert.Contains(t, contentStr, "k8sClient client.Client")
 	assert.Contains(t, contentStr, "crdName string")
 	assert.Contains(t, contentStr, "storageVersion string")
 	assert.Contains(t, contentStr, "targetVersion string")

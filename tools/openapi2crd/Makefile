@@ -9,6 +9,9 @@ GO_FILES := $(shell find . -name '*.go' -not -path './vendor/*')
 # Go packages for testing
 PACKAGES := $(shell go list ./...)
 
+# GO TOOLS
+GCI := go tool -modfile=../toolbox/go.mod gci
+
 crds: build ## Generate CRDs from config file
 	@echo "==> Generating CRDs..."
 	$(BINARY_PATH) --config config.yaml --output $(CRD_FILE)
@@ -26,7 +29,7 @@ $(BINARY_PATH): $(GO_FILES) ## File-based build target.
 
 fmt: ## Format all Go code
 	@echo "==> Formatting code..."
-	@gci write -s standard -s default -s localmodule .
+	$(GCI) write -s standard -s default -s localmodule .
 
 unit-test: ## Run unit tests with race detection and coverage
 	@echo "==> Running unit tests..."
@@ -42,3 +45,6 @@ clean: ## Clean up built artifacts
 	@echo "==> Cleaning..."
 	@rm -f $(BINARY_PATH)
 	@rm -f $(CRD_FILE)
+
+.PHONY: ci
+ci: all ## Standard CI tests

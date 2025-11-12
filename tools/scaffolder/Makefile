@@ -39,4 +39,11 @@ generate-all: build
 generate-all-override:
 	$(BINARY_PATH) --input $(CRD_FILE) --all --override \
 		--indexer-out $(INDEXER_OUT) \
-		--controller-out $(CONTROLLER_OUT) \
+		--controller-out $(CONTROLLER_OUT)
+
+.PHONY: unit-test
+unit-test:
+	go test -race -cover ./... 
+
+.PHONY: ci
+ci: build unit-test ## Standard CI tests

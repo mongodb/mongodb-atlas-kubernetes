@@ -1,0 +1,57 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "github:NixOS/nixpkgs/nixpkgs-unstable": {
+      "last_modified": "2025-11-08T12:28:21Z",
+      "resolved": "github:NixOS/nixpkgs/f6b44b2401525650256b977063dbcf830f762369?lastModified=1762604901&narHash=sha256-Pr2jpryIaQr9Yx8p6QssS03wqB6UifnnLr3HJw9veDw%3D"
+    },
+    "go-mockery@latest": {
+      "last_modified": "2025-10-22T20:59:19Z",
+      "resolved": "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09#go-mockery",
+      "source": "devbox-search",
+      "version": "3.5.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qzzbjxgk4ai311ibriyyj91bn5z75520-go-mockery-3.5.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/qzzbjxgk4ai311ibriyyj91bn5z75520-go-mockery-3.5.5"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3vg4ak5zdpdm46ny0q8x0f1275358n14-go-mockery-3.5.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3vg4ak5zdpdm46ny0q8x0f1275358n14-go-mockery-3.5.5"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/jvvan3ans4x2w1vkj46mnwma0y24i2xz-go-mockery-3.5.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/jvvan3ans4x2w1vkj46mnwma0y24i2xz-go-mockery-3.5.5"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/r9s8r5h3g448bp2qi20ym2h0plxgixbn-go-mockery-3.5.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/r9s8r5h3g448bp2qi20ym2h0plxgixbn-go-mockery-3.5.5"
+        }
+      }
+    }
+  }
+}
