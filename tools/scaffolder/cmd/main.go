@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"tools/scaffolder/internal/generate"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generate"
 
 	"github.com/spf13/cobra"
 )

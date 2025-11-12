@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/converter"
-	"tools/openapi2crd/pkg/plugins"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
 
 func TestGeneratorConvert(t *testing.T) {

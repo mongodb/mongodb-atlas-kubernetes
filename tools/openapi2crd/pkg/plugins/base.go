@@ -24,7 +24,7 @@ import (
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 // Base is a plugin that add minimum required configuration to a CRD

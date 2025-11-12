@@ -20,7 +20,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"tools/openapi2crd/pkg/converter"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 )
 
 // Status plugin adds the status schema to the CRD if specified in the mapping configuration.

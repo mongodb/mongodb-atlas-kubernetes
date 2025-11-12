@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 type Set struct {
@@ -168,7 +168,7 @@ func GetPluginSet(sets []Set, name string) (*Set, error) {
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("pluginSet %s not found", name))
+	return nil, fmt.Errorf("pluginSet %s not found", name)
 }
 
 func orderPluginSet(setsDefinition []configv1alpha1.PluginSet) ([]configv1alpha1.PluginSet, error) {

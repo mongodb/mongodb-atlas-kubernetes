@@ -25,11 +25,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	configv1alpha1 "tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"tools/openapi2crd/pkg/config"
-	"tools/openapi2crd/pkg/exporter"
-	"tools/openapi2crd/pkg/generator"
-	"tools/openapi2crd/pkg/plugins"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/exporter"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/generator"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
 
 const (
