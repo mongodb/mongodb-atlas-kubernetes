@@ -18,7 +18,7 @@ package plugins
 import (
 	"slices"
 
-	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetestools/openapi2crd/pkg/apis/config/v1alpha1"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 type SkippedProperties struct{}
@@ -40,9 +40,7 @@ func (p *SkippedProperties) Process(req *PropertyProcessorRequest) error {
 	}
 
 	for _, s := range req.PropertyConfig.Filters.SkipProperties {
-		if _, ok := requiredPaths[s]; ok {
-			delete(requiredPaths, s)
-		}
+		delete(requiredPaths, s)
 	}
 
 	req.Property.Required = make([]string, 0, len(req.Property.Required))
