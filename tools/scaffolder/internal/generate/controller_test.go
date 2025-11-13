@@ -17,7 +17,6 @@ package generate
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -146,15 +145,12 @@ spec:
 
 	contentStr := string(content)
 
-	assert.Contains(t, contentStr, "func (h *ClusterHandler) SetupWithManager")
+	assert.Contains(t, contentStr, "func (h *Handler) SetupWithManager")
 
 	assert.Contains(t, contentStr, "Watches")
-	// Group conflicts with apiextensions, sometimes linted as v11
-	assert.True(t,
-		strings.Contains(contentStr, "&v1.Group{}") || strings.Contains(contentStr, "&v11.Group{}"),
-		"Should contain Group reference")
+	assert.Contains(t, contentStr, "&akov2generated.Group{}", "Should contain Group reference")
 
-	assert.Contains(t, contentStr, "func (h *ClusterHandler) clusterForGroupMapFunc()")
+	assert.Contains(t, contentStr, "func (h *Handler) clusterForGroupMapFunc()")
 	assert.Contains(t, contentStr, "ProjectsIndexMapperFunc")
 
 	assert.Contains(t, contentStr, "ResourceVersionChangedPredicate")
@@ -297,7 +293,7 @@ spec:
 
 	contentStr := string(content)
 
-	assert.Contains(t, contentStr, "func (h *TeamHandler) SetupWithManager")
+	assert.Contains(t, contentStr, "func (h *Handler) SetupWithManager")
 
 	// Should not have Watches() calls because there are no refs
 	assert.NotContains(t, contentStr, ".Watches(")
@@ -349,7 +345,7 @@ spec:
 	contentStr := string(content)
 
 	assert.Contains(t, contentStr, "package resource")
-	assert.Contains(t, contentStr, "type ResourceHandler struct")
+	assert.Contains(t, contentStr, "type Handler struct")
 	assert.Contains(t, contentStr, "+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=resources")
 	assert.Contains(t, contentStr, "func NewResourceReconciler")
 }
@@ -404,10 +400,10 @@ spec:
 
 	contentStr := string(content)
 
-	assert.Contains(t, contentStr, "func (h *ResourceHandler) getHandlerForResource")
-	assert.Contains(t, contentStr, "func (h *ResourceHandler) HandleInitial")
-	assert.Contains(t, contentStr, "func (h *ResourceHandler) HandleCreating")
-	assert.Contains(t, contentStr, "func (h *ResourceHandler) HandleDeletionRequested")
+	assert.Contains(t, contentStr, "func (h *Handler) getHandlerForResource")
+	assert.Contains(t, contentStr, "func (h *Handler) HandleInitial")
+	assert.Contains(t, contentStr, "func (h *Handler) HandleCreating")
+	assert.Contains(t, contentStr, "func (h *Handler) HandleDeletionRequested")
 	v1Handler := filepath.Join(controllerDir, "resource", "handler_v20250312.go")
 	assert.FileExists(t, v1Handler)
 
@@ -464,28 +460,20 @@ spec:
 	// Verify package-level getTranslationRequest function
 	assert.Contains(t, contentStr, "func getTranslationRequest(")
 	assert.Contains(t, contentStr, "ctx context.Context")
-	assert.Contains(t, contentStr, "k8sClient client.Client")
+	assert.Contains(t, contentStr, "kubeClient client.Client")
 	assert.Contains(t, contentStr, "crdName string")
 	assert.Contains(t, contentStr, "storageVersion string")
 	assert.Contains(t, contentStr, "targetVersion string")
 	assert.Contains(t, contentStr, "NewTranslator")
 
-	// Test versioned handler contains helper methods
-	versionHandlerFile := filepath.Join(controllerDir, "group", "handler_v20250312.go")
-	versionContent, err := os.ReadFile(versionHandlerFile)
-	require.NoError(t, err)
-	versionContentStr := string(versionContent)
-
 	// Verify getSDKClientSet method
-	assert.Contains(t, versionContentStr, "func (h *GroupHandlerv20250312) getSDKClientSet(")
-	assert.Contains(t, versionContentStr, "GetConnectionConfig")
-	assert.Contains(t, versionContentStr, "SdkClientSet")
-	assert.Contains(t, versionContentStr, "ConnectionSecretRef")
+	assert.Contains(t, contentStr, "func (h *Handler) getSDKClientSet(")
+	assert.Contains(t, contentStr, "GetConnectionConfig")
+	assert.Contains(t, contentStr, "SdkClientSet")
+	assert.Contains(t, contentStr, "ConnectionSecretRef")
 
 	// Verify getTranslationRequest wrapper method
-	assert.Contains(t, versionContentStr, "func (h *GroupHandlerv20250312) getTranslationRequest(")
-	assert.Contains(t, versionContentStr, "return getTranslationRequest(")
-	assert.Contains(t, versionContentStr, "groups.atlas.generated.mongodb.com")
-	assert.Contains(t, versionContentStr, "\"v1\"")        // storage version
-	assert.Contains(t, versionContentStr, "\"v20250312\"") // target version
+	assert.Contains(t, contentStr, "func getTranslationRequest(")
+	assert.Contains(t, contentStr, "translate.NewTranslator(")
+	assert.Contains(t, contentStr, "return &translate.Request{")
 }

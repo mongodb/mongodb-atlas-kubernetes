@@ -78,13 +78,13 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
-	if err := generateMainHandlerFile(controllerDir, controllerName, resourceName, typesPath, parsedConfig.Mappings, refsByKind, parsedConfig); err != nil {
+	if err := generateMainHandlerFile(controllerDir, resourceName, typesPath, parsedConfig.Mappings, refsByKind, parsedConfig); err != nil {
 		return fmt.Errorf("failed to generate main handler file: %w", err)
 	}
 
 	// Generate version-specific handlers
 	for _, mapping := range parsedConfig.Mappings {
-		if err := generateVersionHandlerFile(controllerDir, controllerName, resourceName, typesPath, mapping, override, parsedConfig); err != nil {
+		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, mapping, override); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
 		}
 	}
@@ -132,6 +132,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
+	f.ImportAlias(apiPkg, "akov2generated")
 
 	resourcePlural := strings.ToLower(resourceName) + "s"
 	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
@@ -157,10 +158,22 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	// Version-specific handler for each version
 	for _, mapping := range mappings {
 		versionSuffix := mapping.Version
-		handlerFields = append(handlerFields, jen.Id("handler"+versionSuffix).Op("*").Id(controllerName+"Handler"+versionSuffix))
+		sdkImportPath := mapping.OpenAPIConfig.Package
+
+		f.ImportAlias(sdkImportPath, versionSuffix+"sdk")
+
+		handlerFields = append(
+			handlerFields,
+			jen.Id("handler"+versionSuffix).
+				Qual(pkgCtrlState, "VersionedHandlerFunc").
+				Types(
+					jen.Qual(sdkImportPath, "APIClient"),
+					jen.Qual(apiPkg, resourceName),
+				),
+		)
 	}
 
-	f.Type().Id(controllerName + "Handler").Struct(handlerFields...)
+	f.Type().Id("Handler").Struct(handlerFields...)
 
 	// NewReconciler method with all service builders
 	reconcilerParams := []jen.Code{
@@ -180,25 +193,12 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	})
 
 	f.Func().Id("New"+controllerName+"Reconciler").Params(reconcilerParams...).Op("*").Qual(pkgCtrlState, "Reconciler").Types(jen.Qual(apiPkg, resourceName)).Block(
-		jen.Comment("Create version-specific handlers"),
-		jen.CustomFunc(jen.Options{Multi: true}, func(g *jen.Group) {
-			for _, mapping := range mappings {
-				versionSuffix := mapping.Version
-				g.Id("handler"+versionSuffix).Op(":=").Id("New"+controllerName+"Handler"+versionSuffix).Call(
-					jen.Id("atlasProvider"),
-					jen.Id("c").Dot("GetClient").Call(),
-					jen.Id("logger").Dot("Named").Call(jen.Lit("controllers")).Dot("Named").Call(jen.Lit(resourceName+"-"+versionSuffix)).Dot("Sugar").Call(),
-					jen.Id("globalSecretRef"),
-				)
-			}
-		}),
-		jen.Line(),
 		jen.Comment("Create main handler dispatcher"),
-		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id(controllerName+"Handler").Values(jen.DictFunc(func(d jen.Dict) {
+		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id("Handler").Values(jen.DictFunc(func(d jen.Dict) {
 			d[jen.Id("AtlasReconciler")] = atlasReconcilerBase
 			for _, mapping := range mappings {
 				versionSuffix := mapping.Version
-				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix)
+				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix + "Func")
 			}
 			d[jen.Id("predicates")] = jen.Id("predicates")
 		})),
@@ -210,6 +210,31 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		)),
 	)
 
+	for _, mapping := range mappings {
+		versionSuffix := mapping.Version
+		sdkImportPath := mapping.OpenAPIConfig.Package
+
+		handlerFuncParams := []jen.Code{
+			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
+			jen.Id("translatorRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		}
+
+		f.Func().
+			Id("handler"+versionSuffix+"Func").
+			Params(handlerFuncParams...).
+			Qual(pkgCtrlState, "StateHandler").
+			Types(jen.Qual(apiPkg, resourceName)).Block(
+			jen.Return(
+				jen.Id("NewHandler"+versionSuffix).Call(
+					jen.Id("kubeClient"),
+					jen.Id("atlasClient"),
+					jen.Id("translatorRequest"),
+				),
+			),
+		)
+	}
+
 	fileName := filepath.Join(dir, atlasResourceName+"_controller.go")
 	return f.Save(fileName)
 }
@@ -219,7 +244,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 	f.Comment("This is a package-level function that can be called from any handler.")
 	f.Func().Id("getTranslationRequest").Params(
 		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id("k8sClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 		jen.Id("crdName").String(),
 		jen.Id("storageVersion").String(),
 		jen.Id("targetVersion").String(),
@@ -228,7 +253,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 		jen.Error(),
 	).Block(
 		jen.Id("crd").Op(":=").Op("&").Qual("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "CustomResourceDefinition").Values(),
-		jen.Id("err").Op(":=").Id("k8sClient").Dot("Get").Call(
+		jen.Id("err").Op(":=").Id("kubeClient").Dot("Get").Call(
 			jen.Id("ctx"),
 			jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
 				jen.Id("Name"): jen.Id("crdName"),
@@ -262,7 +287,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 	)
 }
 
-func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, config *ParsedConfig) error {
+func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, config *ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -270,14 +295,22 @@ func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
-
-	// Generate package-level helper function attached to the handler
-	generatePackageLevelTranslationHelper(f)
+	f.ImportAlias("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "apiextensionsv1")
+	f.ImportAlias(apiPkg, "akov2generated")
 
 	f.Comment("getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("getHandlerForResource").Params(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id("getHandlerForResource").Params(
+		jen.Id("ctx").Qual("context", "Context"),
 		jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
 	).Params(jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)), jen.Error()).Block(
+		jen.List(jen.Id("atlasClients"), jen.Id("err")).Op(":=").Id("h").Dot("getSDKClientSet").Call(
+			jen.Id("ctx"),
+			jen.Id("group"),
+		),
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
+			jen.Return(jen.Nil(), jen.Id("err")),
+		),
+
 		jen.Comment("Check which resource spec version is set and validate that only one is specified"),
 		jen.Var().Id("versionCount").Int(),
 		jen.Var().Id("selectedHandler").Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)),
@@ -287,9 +320,33 @@ func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string
 				versionSuffix := mapping.Version
 				// Capitalize first letter of version (e.g., v20250312 -> V20250312)
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
+				// Construct CRD name: {plural}.{group}
+				crdName := config.PluralName + "." + config.CRDGroup
+				sdkImportPathSplit := strings.Split(mapping.OpenAPIConfig.Package, "/")
+				sdkVersionSuffix := strings.TrimPrefix(sdkImportPathSplit[len(sdkImportPathSplit)-2], "v")
+
 				g.If(jen.Id(strings.ToLower(resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
+
+					jen.List(jen.Id("translationReq"), jen.Id("err")).Op(":=").Id("getTranslationRequest").Call(
+						jen.Id("ctx"),
+						jen.Id("h").Dot("Client"),
+						jen.Lit(crdName),
+						jen.Lit(config.StorageVersion),
+						jen.Lit(versionSuffix),
+					),
+					jen.If(jen.Id("err").Op("!=").Nil()).Block(
+						jen.Return(jen.Nil(), jen.Id("err")),
+					),
 					jen.Id("versionCount").Op("++"),
-					jen.Id("selectedHandler").Op("=").Id("h").Dot("handler"+versionSuffix),
+					jen.Id("selectedHandler").
+						Op("=").Id("h").
+						Dot("handler"+versionSuffix).
+						Call(
+							jen.Id("h").
+								Dot("Client"),
+							jen.Id("atlasClients").Dot("SdkClient"+sdkVersionSuffix),
+							jen.Id("translationReq"),
+						),
 				)
 			}
 		}),
@@ -303,13 +360,18 @@ func generateMainHandlerFile(dir, controllerName, resourceName, typesPath string
 		jen.Return(jen.Id("selectedHandler").Op(",").Nil()),
 	)
 
-	generateDelegatingStateHandlers(f, controllerName, resourceName, apiPkg, refsByKind)
+	generateDelegatingStateHandlers(f, resourceName, apiPkg, refsByKind)
+	// ClientSet and translation request helpers
+	generateSDKClientSetMethod(f, resourceName, apiPkg)
+
+	// Generate package-level helper function attached to the handler
+	generatePackageLevelTranslationHelper(f)
 
 	fileName := filepath.Join(dir, "handler.go")
 	return f.Save(fileName)
 }
 
-func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
+func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
 	handlers := []string{
 		"HandleInitial",
 		"HandleImportRequested",
@@ -335,14 +397,18 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 
 	for _, handlerName := range handlers {
 		f.Comment(fmt.Sprintf("%s delegates to the version-specific handler", handlerName))
-		f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(handlerName).Params(
+		f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(handlerName).Params(
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
 		).Params(
 			jen.Qual(pkgCtrlState, "Result"),
 			jen.Error(),
 		).Block(
-			jen.List(jen.Id("handler"), jen.Id("err")).Op(":=").Id("h").Dot("getHandlerForResource").Call(jen.Id(strings.ToLower(resourceName))),
+			jen.List(jen.Id("handler"), jen.Id("err")).
+				Op(":=").
+				Id("h").
+				Dot("getHandlerForResource").
+				Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName))),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
 					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", startStateMap[handlerName]),
@@ -354,7 +420,7 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 	}
 
 	f.Comment("For returns the resource and predicates for the controller")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("For").Params().Params(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id("For").Params().Params(
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "Predicates"),
 	).Block(
@@ -365,40 +431,17 @@ func generateDelegatingStateHandlers(f *jen.File, controllerName, resourceName, 
 		),
 	)
 
-	generateMapperFunctions(f, controllerName, resourceName, apiPkg, refsByKind)
+	generateMapperFunctions(f, resourceName, apiPkg, refsByKind)
 
-	generateSetupWithManager(f, controllerName, resourceName, refsByKind)
+	generateSetupWithManager(f, resourceName, refsByKind)
 }
 
-func generateTranslationRequestWrapper(f *jen.File, controllerName, versionSuffix string, config *ParsedConfig) {
-	// Construct CRD name: {plural}.{group}
-	crdName := fmt.Sprintf("%s.%s", config.PluralName, config.CRDGroup)
-
-	f.Comment("getTranslationRequest is a convenience wrapper for the package-level getTranslationRequest function")
-	f.Func().Params(
-		jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix),
-	).Id("getTranslationRequest").Params(
-		jen.Id("ctx").Qual("context", "Context"),
-	).Params(
-		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
-		jen.Error(),
-	).Block(
-		jen.Return(jen.Id("getTranslationRequest").Call(
-			jen.Id("ctx"),
-			jen.Id("h").Dot("client"),
-			jen.Lit(crdName),
-			jen.Lit(config.StorageVersion),
-			jen.Lit(versionSuffix),
-		)),
-	)
-}
-
-func generateSDKClientSetMethod(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+func generateSDKClientSetMethod(f *jen.File, resourceName, apiPkg string) {
 	resourceLower := strings.ToLower(resourceName)
 
 	f.Comment("getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret")
 	f.Func().Params(
-		jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix),
+		jen.Id("h").Op("*").Id("Handler"),
 	).Id("getSDKClientSet").Params(
 		jen.Id("ctx").Qual("context", "Context"),
 		jen.Id(resourceLower).Op("*").Qual(apiPkg, resourceName),
@@ -408,12 +451,12 @@ func generateSDKClientSetMethod(f *jen.File, controllerName, resourceName, apiPk
 	).Block(
 		jen.List(jen.Id("connectionConfig"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "GetConnectionConfig").Call(
 			jen.Id("ctx"),
-			jen.Id("h").Dot("client"),
+			jen.Id("h").Dot("Client"),
 			jen.Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
 				jen.Id("Namespace"): jen.Id(resourceLower).Dot("Namespace"),
 				jen.Id("Name"):      jen.Id(resourceLower).Dot("Spec").Dot("ConnectionSecretRef").Dot("Name"),
 			}),
-			jen.Op("&").Id("h").Dot("globalSecretRef"),
+			jen.Op("&").Id("h").Dot("GlobalSecretRef"),
 		),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
 			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
@@ -422,10 +465,10 @@ func generateSDKClientSetMethod(f *jen.File, controllerName, resourceName, apiPk
 			)),
 		),
 		jen.Line(),
-		jen.List(jen.Id("clientSet"), jen.Id("err")).Op(":=").Id("h").Dot("atlasProvider").Dot("SdkClientSet").Call(
+		jen.List(jen.Id("clientSet"), jen.Id("err")).Op(":=").Id("h").Dot("AtlasProvider").Dot("SdkClientSet").Call(
 			jen.Id("ctx"),
 			jen.Id("connectionConfig").Dot("Credentials"),
-			jen.Id("h").Dot("log"),
+			jen.Id("h").Dot("Log"),
 		),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
 			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
@@ -438,10 +481,11 @@ func generateSDKClientSetMethod(f *jen.File, controllerName, resourceName, apiPk
 	)
 }
 
-func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath string, mapping MappingWithConfig, override bool, config *ParsedConfig) error {
+func generateVersionHandlerFile(dir, resourceName, typesPath string, mapping MappingWithConfig, override bool) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
+	sdkImportPath := mapping.OpenAPIConfig.Package
 
 	fileName := filepath.Join(dir, "handler_"+versionSuffix+".go")
 
@@ -457,41 +501,36 @@ func generateVersionHandlerFile(dir, controllerName, resourceName, typesPath str
 	AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
+	f.ImportAlias(apiPkg, "akov2generated")
+	f.ImportAlias(sdkImportPath, versionSuffix+"sdk")
 
-	f.Type().Id(controllerName+"Handler"+versionSuffix).Struct(
-		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
-		jen.Id("client").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
-		jen.Id("log").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
-		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
+	f.Type().Id("Handler"+versionSuffix).Struct(
+		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
+		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
 	)
 
-	f.Func().Id("New"+controllerName+"Handler"+versionSuffix).Params(
-		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
-		jen.Id("client").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
-		jen.Id("log").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
-		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
-	).Op("*").Id(controllerName + "Handler" + versionSuffix).Block(
-		jen.Return(jen.Op("&").Id(controllerName + "Handler" + versionSuffix).Values(jen.Dict{
-			jen.Id("atlasProvider"):   jen.Id("atlasProvider"),
-			jen.Id("client"):          jen.Id("client"),
-			jen.Id("log"):             jen.Id("log"),
-			jen.Id("globalSecretRef"): jen.Id("globalSecretRef"),
+	f.Func().Id("NewHandler"+versionSuffix).Params(
+		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
+		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+	).Op("*").Id("Handler" + versionSuffix).Block(
+		jen.Return(jen.Op("&").Id("Handler" + versionSuffix).Values(jen.Dict{
+			jen.Id("kubeClient"):         jen.Id("kubeClient"),
+			jen.Id("atlasClient"):        jen.Id("atlasClient"),
+			jen.Id("translationRequest"): jen.Id("translationRequest"),
 		})),
 	)
 
-	// ClientSet and translation request helpers
-	generateSDKClientSetMethod(f, controllerName, resourceName, apiPkg, versionSuffix)
-	generateTranslationRequestWrapper(f, controllerName, versionSuffix, config)
-
-	generateVersionStateHandlers(f, controllerName, resourceName, apiPkg, versionSuffix)
+	generateVersionStateHandlers(f, resourceName, apiPkg, versionSuffix)
 
 	// Generate For and SetupWithManager methods to satisfy StateHandler interface
-	generateVersionInterfaceMethods(f, controllerName, resourceName, apiPkg, versionSuffix)
+	generateVersionInterfaceMethods(f, resourceName, apiPkg, versionSuffix)
 
 	return f.Save(fileName)
 }
 
-func generateVersionStateHandlers(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuffix string) {
 	handlers := []struct {
 		name      string
 		nextState string
@@ -510,7 +549,7 @@ func generateVersionStateHandlers(f *jen.File, controllerName, resourceName, api
 
 	for _, handler := range handlers {
 		f.Comment(fmt.Sprintf("%s handles the %s state for version %s", handler.name, strings.ToLower(strings.TrimPrefix(handler.name, "Handle")), versionSuffix))
-		f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id(handler.name).Params(
+		f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id(handler.name).Params(
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
 		).Params(
@@ -528,10 +567,10 @@ func generateVersionStateHandlers(f *jen.File, controllerName, resourceName, api
 }
 
 // generateVersionInterfaceMethods generates For and SetupWithManager methods for version-specific handlers
-func generateVersionInterfaceMethods(f *jen.File, controllerName, resourceName, apiPkg, versionSuffix string) {
+func generateVersionInterfaceMethods(f *jen.File, resourceName, apiPkg, versionSuffix string) {
 	// For method
 	f.Comment("For returns the resource and predicates for the controller")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id("For").Params().Params(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("For").Params().Params(
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
 		jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "Predicates"),
 	).Block(
@@ -540,7 +579,7 @@ func generateVersionInterfaceMethods(f *jen.File, controllerName, resourceName, 
 
 	// SetupWithManager method
 	f.Comment("SetupWithManager sets up the controller with the Manager")
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler"+versionSuffix)).Id("SetupWithManager").Params(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("SetupWithManager").Params(
 		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
 		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
 		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
@@ -550,7 +589,7 @@ func generateVersionInterfaceMethods(f *jen.File, controllerName, resourceName, 
 	)
 }
 
-func generateSetupWithManager(f *jen.File, controllerName, resourceName string, refsByKind map[string][]ReferenceField) {
+func generateSetupWithManager(f *jen.File, resourceName string, refsByKind map[string][]ReferenceField) {
 	f.Comment("SetupWithManager sets up the controller with the Manager")
 
 	setupChain := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
@@ -578,7 +617,7 @@ func generateSetupWithManager(f *jen.File, controllerName, resourceName string, 
 		Dot("WithOptions").Call(jen.Id("defaultOptions")).
 		Dot("Complete").Call(jen.Id("rec"))
 
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id("SetupWithManager").Params(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id("SetupWithManager").Params(
 		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
 		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
 		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
@@ -588,7 +627,7 @@ func generateSetupWithManager(f *jen.File, controllerName, resourceName string, 
 	)
 }
 
-func generateMapperFunctions(f *jen.File, controllerName, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
+func generateMapperFunctions(f *jen.File, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
 	for kind, refs := range refsByKind {
 		if len(refs) == 0 {
 			continue
@@ -599,22 +638,22 @@ func generateMapperFunctions(f *jen.File, controllerName, resourceName, apiPkg s
 
 		switch indexerType {
 		case "project":
-			generateIndexerBasedMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, "ProjectsIndexMapperFunc")
+			generateIndexerBasedMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName, "ProjectsIndexMapperFunc")
 		case "credentials":
-			generateIndexerBasedMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, "CredentialsIndexMapperFunc")
+			generateIndexerBasedMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName, "CredentialsIndexMapperFunc")
 		case "resource":
-			generateResourceMapperFunction(f, controllerName, resourceName, apiPkg, kind, mapperFuncName, refs)
+			generateResourceMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName, refs)
 		}
 	}
 }
 
 // For Group or Secrets
-func generateIndexerBasedMapperFunction(f *jen.File, controllerName, resourceName, apiPkg, referencedKind, mapperFuncName, indexerHelperFunc string) {
+func generateIndexerBasedMapperFunction(f *jen.File, resourceName, apiPkg, referencedKind, mapperFuncName, indexerHelperFunc string) {
 	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
 	listTypeName := fmt.Sprintf("%sList", resourceName)
 	requestsFuncName := fmt.Sprintf("%sRequestsFrom%s", resourceName, referencedKind)
 
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
 		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer", indexerHelperFunc).Call(
 			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", indexName),
 			jen.Func().Params().Op("*").Qual(apiPkg, listTypeName).Block(
@@ -627,12 +666,12 @@ func generateIndexerBasedMapperFunction(f *jen.File, controllerName, resourceNam
 	)
 }
 
-func generateResourceMapperFunction(f *jen.File, controllerName, resourceName, apiPkg, referencedKind, mapperFuncName string, refs []ReferenceField) {
+func generateResourceMapperFunction(f *jen.File, resourceName, apiPkg, referencedKind, mapperFuncName string, refs []ReferenceField) {
 	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
 	listTypeName := fmt.Sprintf("%sList", resourceName)
 	watchedType := getWatchedType(referencedKind)
 
-	f.Func().Params(jen.Id("h").Op("*").Id(controllerName+"Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
 		jen.Return(jen.Func().Params(
 			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("obj").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
