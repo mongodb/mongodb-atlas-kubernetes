@@ -1,0 +1,216 @@
+# Copyright 2025 MongoDB Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+kind: Config
+apiVersion: atlas2crd.mongodb.com/v1alpha1
+
+.definitions:
+  myGroupRef: &groupRef
+    name: groupRef
+    property: $.groupId
+    target:
+      type:
+        kind: Group
+        resource: groups
+        group: atlas.generated.mongodb.com
+        version: v1
+      properties:
+        - $.status.v20250312.id
+
+spec:
+  pluginSets:
+    - name: atlas
+      default: true
+      plugins:
+        - base
+        - major_version
+        - parameters
+        - connection_secret
+        - mutual_exclusive_group
+        - entry
+        - status
+        - sensitive_properties
+        - skipped_properties
+        - read_only_properties
+        - read_write_properties
+        - references
+        - references_metadata
+        - mutual_exclusive_major_versions
+        - atlas_sdk_version
+
+  openapi:
+    - name: v20250312
+      package: go.mongodb.org/atlas-sdk/v20250312008/admin
+
+  crd:
+    - gvk:
+        version: v1
+        kind: Group
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - ag
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups'
+              verb: post
+          entry:
+            schema: "Group"
+            filters:
+              readWriteOnly: true
+          status:
+            schema: "Group"
+            filters:
+              readOnly: true
+              skipProperties:
+                - $.links
+
+    - gvk:
+        version: v1
+        kind: Cluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - ac
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.connectionStrings
+                - $.createDate
+                - $.groupId
+                - $.id
+                - $.links
+                - $.mongoDBVersion
+                - $.replicationSpecs[*].id
+                - $.stateName
+          status:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.acceptDataRisksAndForceReplicaSetReconfig
+                - $.backupEnabled
+                - $.biConnector
+                - $.clusterType
+                - $.diskSizeGB
+                - $.diskWarmingMode
+                - $.encryptionAtRestProvider
+                - $.labels
+                - $.links
+                - $.mongoDBMajorVersion
+                - $.name
+                - $.paused
+                - $.pitEnabled
+                - $.replicationSpecs[*].numShards
+                - $.replicationSpecs[*].regionConfigs
+                - $.replicationSpecs[*].zoneName
+                - $.rootCertType
+                - $.tags
+                - $.terminationProtectionEnabled
+                - $.versionReleaseSystem
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.connectionStrings
+                - $.createDate
+                - $.groupId
+                - $.id
+                - $.links
+                - $.mongoDBVersion
+                - $.replicationSpecs[*].id
+                - $.stateName
+          status:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.acceptDataRisksAndForceReplicaSetReconfig
+                - $.backupEnabled
+                - $.biConnector
+                - $.clusterType
+                - $.diskSizeGB
+                - $.diskWarmingMode
+                - $.encryptionAtRestProvider
+                - $.labels
+                - $.links
+                - $.mongoDBMajorVersion
+                - $.name
+                - $.paused
+                - $.pitEnabled
+                - $.replicationSpecs[*].numShards
+                - $.replicationSpecs[*].regionConfigs
+                - $.replicationSpecs[*].zoneName
+                - $.rootCertType
+                - $.tags
+                - $.terminationProtectionEnabled
+                - $.versionReleaseSystem
+
+    - gvk:
+        version: v1
+        kind: FlexCluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - afc
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/flexClusters'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'FlexClusterDescriptionCreate20241113'
+            filters:
+              skipProperties:
+                - $.links
+                - $.providerSettings.diskSizeGB
+                - $.providerSettings.providerName
+          status:
+            schema: 'FlexClusterDescription20241113'
+            filters:
+              skipProperties:
+                - $.links
+                - $.tags
+                - $.terminationProtectionEnabled
