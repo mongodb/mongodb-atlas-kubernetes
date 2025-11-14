@@ -214,3 +214,26 @@ spec:
                 - $.links
                 - $.tags
                 - $.terminationProtectionEnabled
+
+    - gvk:
+        version: v1
+        kind: DatabaseUser
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - adu
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/databaseUsers'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'CloudDatabaseUser'
+            filters:
+              readWriteOnly: true
