@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/finalizer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
@@ -103,13 +104,6 @@ func NewStateReconciler[T any](target StateHandler[T], options ...ReconcilerOpti
 	return r
 }
 
-func NewUnstructuredStateReconciler(target UnstructuredStateReconciler, gvk schema.GroupVersionKind) *Reconciler[unstructured.Unstructured] {
-	return &Reconciler[unstructured.Unstructured]{
-		reconciler:      target,
-		unstructuredGVK: gvk,
-	}
-}
-
 func (r *Reconciler[T]) SetupWithManager(mgr ctrl.Manager, defaultOptions controller.Options) error {
 	r.cluster = mgr
 	return r.reconciler.SetupWithManager(mgr, r, defaultOptions)
@@ -141,6 +135,17 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 
 	currentStatus := newStatusObject(obj)
 	currentState := state.GetState(currentStatus.Status.Conditions)
+
+	if customresource.ReconciliationShouldBeSkipped(clientObj) {
+		logger.Info(fmt.Sprintf("Skipping reconciliation by annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip))
+		if currentState == state.StateDeleted {
+			if err := finalizer.UnsetFinalizers(ctx, r.cluster.GetClient(), clientObj, "mongodb.com/finalizer"); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to unset finalizer: %w", err)
+			}
+		}
+
+		return ctrl.Result{}, nil
+	}
 
 	logger.Info("reconcile started", "currentState", currentState)
 	if err := finalizer.EnsureFinalizers(ctx, r.cluster.GetClient(), clientObj, "mongodb.com/finalizer"); err != nil {

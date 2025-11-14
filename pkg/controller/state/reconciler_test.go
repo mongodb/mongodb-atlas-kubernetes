@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
@@ -304,6 +305,20 @@ func TestReconcile(t *testing.T) {
 				return Result{NextState: "Initial"}, nil
 			},
 		},
+		{
+			name:        "should skip reconcile request",
+			existingObj: baseObj.WithSkipReconciliationAnnotation(),
+			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
+				return Result{Result: reconcile.Result{}}, nil
+			},
+		},
+		{
+			name:        "should skip reconcile request on deleted object",
+			existingObj: baseObj.WithSkipReconciliationAnnotation().WithDeletedStaze(),
+			handleState: func(ctx context.Context, do *dummyObject) (Result, error) {
+				return Result{Result: reconcile.Result{}}, nil
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -532,6 +547,33 @@ func (do *dummyObject) DeepCopy() *dummyObject {
 		ObjectMeta: *do.ObjectMeta.DeepCopy(),
 		Status:     DummyStatus{Conditions: conditions},
 	}
+}
+
+func (do *dummyObject) WithSkipReconciliationAnnotation() *dummyObject {
+	copyOfDo := do.DeepCopy()
+
+	if copyOfDo.Annotations == nil {
+		copyOfDo.Annotations = make(map[string]string)
+	}
+	copyOfDo.Annotations[customresource.ReconciliationPolicyAnnotation] = customresource.ReconciliationPolicySkip
+
+	return copyOfDo
+}
+
+func (do *dummyObject) WithDeletedStaze() *dummyObject {
+	copyOfDo := do.DeepCopy()
+
+	if len(copyOfDo.Status.Conditions) == 0 {
+		copyOfDo.Status.Conditions = []metav1.Condition{}
+	}
+
+	copyOfDo.Status.Conditions = append(copyOfDo.Status.Conditions, metav1.Condition{
+		Type:   "State",
+		Status: metav1.ConditionTrue,
+		Reason: "Deleted",
+	})
+
+	return copyOfDo
 }
 
 func prevStatusObject(state state.ResourceState, observedGen int64) StatusObject {
