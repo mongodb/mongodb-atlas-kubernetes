@@ -11,7 +11,7 @@
     "git":                         "latest",
     "gettext":                     "latest",
     "wget":                        "latest",
-    "cosign":                      "latest",
+    "cosign":                      "2.6.1",
     "kubernetes-helm":             "latest",
     "govulncheck":                 "latest",
     "gotools":                     "latest",
