@@ -880,7 +880,7 @@ tools/scaffolder/bin/scaffolder:
 
 gen-crds: $(BUILD_OPENAPI2CRD)
 	@echo "==> Generating CRDs..."
-	$(OPENAPI2CRD) --config tools/openapi2crd/config.yaml \
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 
 gen-crds-override: $(BUILD_OPENAPI2CRD)
