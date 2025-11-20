@@ -877,8 +877,8 @@ gen-go-types:
 run-scaffolder:
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--all --indexer-out $(realpath .)/internal/generated/controller \
-	--controller-out $(realpath .)/internal/generated/indexer
+	--all --indexer-out $(realpath .)/internal/generated/indexer \
+	--controller-out $(realpath .)/internal/generated/controller
 
 gen-all: gen-crds gen-go-types run-scaffolder
 
