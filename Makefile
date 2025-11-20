@@ -902,7 +902,7 @@ run-scaffolder: $(BUILD_SCAFFOLDER)
 run-scaffolder-override: $(BUILD_SCAFFOLDER)
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--all --override --indexer-out $(realpath .)/internal/generated/indexers \
+	--all --override --indexer-out $(realpath .)/internal/generated/indexer \
 	--controller-out $(realpath .)/internal/generated/controller
 
 gen-all: gen-crds gen-go-types run-scaffolder
