@@ -7,7 +7,7 @@ on:
         required: true
       dryrun:
         description: "Test the workflow by creating a branch in the forks, but do not create the PR"
-        default: false
+        default: true
         type: boolean
 jobs:
   release-openshift:
@@ -18,9 +18,9 @@ jobs:
       REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
       matrix:
-        repository: ["mongodb-forks/community-operators", "mongodb-forks/community-operators-prod", "mongodb-forks/certified-operators"]
+        repository: ["community-operators", "community-operators-prod", "certified-operators"]
         include:
-          - repository: "mongodb-forks/certified-operators"
+          - repository: "certified-operators"
             certified: true
     steps:
       - name: Clone/Checkout Atlas Operator
@@ -40,9 +40,9 @@ jobs:
       - name: Clone/Checkout releases repositories
         uses: actions/checkout@v5
         with:
-          repository: ${{ matrix.repository }}
+          repository: mongodb-forks/${{ matrix.repository }}
           ref: main
-          path: ${{ matrix.repository }}
+          path: mongodb-forks/${{ matrix.repository }}
           token: ${{ github.token }}
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
@@ -52,7 +52,7 @@ jobs:
       - name: Prepare version
         env:
           VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: ${{ matrix.repository }}
+          REPOSITORY: mongodb-forks/${{ matrix.repository }}
         run: |
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd $REPOSITORY
@@ -70,7 +70,7 @@ jobs:
         if: ${{ ! matrix.certified }}
         env:
           VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: ${{ matrix.repository }}
+          REPOSITORY: mongodb-forks/${{ matrix.repository }}
         run: |
           echo "Configure non-certified release"
           cd "$REPOSITORY/$REPO_PATH"
@@ -92,7 +92,7 @@ jobs:
         if: ${{ matrix.certified }}
         env:
           VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: ${{ matrix.repository }}
+          REPOSITORY: mongodb-forks/${{ matrix.repository }}
           IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
         run: |
           alias yq='devbox run -c mongodb-atlas-kubernetes yq'
@@ -109,7 +109,7 @@ jobs:
       - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: ${{ matrix.repository }}
+          REPOSITORY: mongodb-forks/${{ matrix.repository }}
           ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
           DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
