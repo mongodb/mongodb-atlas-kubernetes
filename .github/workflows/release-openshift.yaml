@@ -115,6 +115,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
+          set -euxo
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd "$REPOSITORY/$REPO_PATH"
           
