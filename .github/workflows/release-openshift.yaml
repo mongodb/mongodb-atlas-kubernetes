@@ -18,27 +18,25 @@ jobs:
       REPO_PATH: "operators/mongodb-atlas-kubernetes"
     strategy:
       matrix:
-        repository: ["mongodb-forks/community-operators" ] # , "mongodb-forks/community-operators-prod", "mongodb-forks/certified-operators"]
+        repository: ["mongodb-forks/community-operators", "mongodb-forks/community-operators-prod", "mongodb-forks/certified-operators"]
         include:
           - repository: "mongodb-forks/certified-operators"
             certified: true
     steps:
-      - name: Generate GitHub App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.AKO_RH_RELEASER_APP_ID }}
-          private-key: ${{ secrets.AKO_RH_RELEASER_RSA_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: |
-            mongodb-atlas-kubernetes
-            mongodb-forks/community-operators
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v5
         with:
           ref: main
           path: "mongodb-atlas-kubernetes"
           fetch-depth: 0
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AKO_RH_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RH_RELEASER_RSA_KEY }}
+          owner: mongodb-forks
+          repositories:  ${{ matrix.repository }}
       - name: Clone/Checkout releases repositories
         uses: actions/checkout@v5
         with:
