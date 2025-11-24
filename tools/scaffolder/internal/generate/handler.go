@@ -67,6 +67,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 								Dot("Client"),
 							jen.Id("atlasClients").Dot("SdkClient"+sdkVersionSuffix),
 							jen.Id("translationReq"),
+							jen.Id("h").Dot("deletionProtection"),
 						),
 				)
 			}

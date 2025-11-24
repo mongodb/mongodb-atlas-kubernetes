@@ -885,6 +885,7 @@ gen-crds: $(BUILD_OPENAPI2CRD)
 
 gen-crds-override: $(BUILD_OPENAPI2CRD)
 	@echo "==> Generating CRDs..."
+	$(MAKE) -C ./tools/openapi2crd build
 	$(OPENAPI2CRD) --config tools/openapi2crd/config.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml --force
 

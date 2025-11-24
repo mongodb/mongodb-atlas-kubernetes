@@ -148,6 +148,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	handlerFields := []jen.Code{
 		jen.Qual(pkgCtrlState, "StateHandler").Types(jen.Qual(apiPkg, resourceName)),
 		jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler"),
+		jen.Id("deletionProtection").Bool(),
 		jen.Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
 	}
 
@@ -177,6 +178,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
 		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
 		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
+		jen.Id("deletionProtection").Bool(),
 		jen.Id("reapplySupport").Bool(),
 		jen.Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
 	}
@@ -192,6 +194,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.Comment("Create main handler dispatcher"),
 		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id("Handler").Values(jen.DictFunc(func(d jen.Dict) {
 			d[jen.Id("AtlasReconciler")] = atlasReconcilerBase
+			d[jen.Id("deletionProtection")] = jen.Id("deletionProtection")
 			for _, mapping := range mappings {
 				versionSuffix := mapping.Version
 				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix + "Func")
@@ -214,6 +217,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
 			jen.Id("translatorRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+			jen.Id("deletionProtection").Bool(),
 		}
 
 		f.Func().
@@ -226,6 +230,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 					jen.Id("kubeClient"),
 					jen.Id("atlasClient"),
 					jen.Id("translatorRequest"),
+					jen.Id("deletionProtection"),
 				),
 			),
 		)
@@ -301,11 +306,11 @@ func generateIndexerBasedMapperFunction(f *jen.File, resourceName, apiPkg, refer
 
 	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
 		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer", indexerHelperFunc).Call(
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", indexName),
+			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", indexName),
 			jen.Func().Params().Op("*").Qual(apiPkg, listTypeName).Block(
 				jen.Return(jen.Op("&").Qual(apiPkg, listTypeName).Values()),
 			),
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", requestsFuncName),
+			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", requestsFuncName),
 			jen.Id("h").Dot("Client"),
 			jen.Id("h").Dot("Log"),
 		)),
@@ -334,7 +339,7 @@ func generateResourceMapperFunction(f *jen.File, resourceName, apiPkg, reference
 
 			jen.Id("listOpts").Op(":=").Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ListOptions").Values(jen.Dict{
 				jen.Id("FieldSelector"): jen.Qual("k8s.io/apimachinery/pkg/fields", "OneTermEqualSelector").Call(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexer", indexName),
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", indexName),
 					jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKeyFromObject").Call(jen.Id("refObj")).Dot("String").Call(),
 				),
 			}),

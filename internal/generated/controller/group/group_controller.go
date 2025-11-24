@@ -15,43 +15,55 @@
 package group
 
 import (
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
+	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=groups,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=groups/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=groups/finalizers,verbs=update
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=groups,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=groups/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=groups/finalizers,verbs=update
-type GroupHandler struct {
-	ctrlstate.StateHandler[v1.Group]
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
+
+type Handler struct {
+	ctrlstate.StateHandler[akov2generated.Group]
 	reconciler.AtlasReconciler
-	handlerv20250312 *GroupHandlerv20250312
+	deletionProtection bool
+	predicates         []predicate.Predicate
+	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Group]
 }
 
-func NewGroupReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, reapplySupport bool) *ctrlstate.Reconciler[v1.Group] {
-	// Create version-specific handlers
-
-	handlerv20250312 := NewGroupHandlerv20250312(atlasProvider, c.GetClient(), logger.Named("controllers").Named("Group-v20250312").Sugar(), globalSecretRef)
-
+func NewGroupReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, deletionProtection bool, reapplySupport bool, predicates []predicate.Predicate) *ctrlstate.Reconciler[akov2generated.Group] {
 	// Create main handler dispatcher
-	groupHandler := &GroupHandler{
+	groupHandler := &Handler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			AtlasProvider:   atlasProvider,
 			Client:          c.GetClient(),
 			GlobalSecretRef: globalSecretRef,
 			Log:             logger.Named("controllers").Named("AtlasGroup").Sugar(),
 		},
-		handlerv20250312: handlerv20250312,
+		deletionProtection: deletionProtection,
+		handlerv20250312:   handlerv20250312Func,
+		predicates:         predicates,
 	}
 
-	return ctrlstate.NewStateReconciler(groupHandler, ctrlstate.WithCluster[v1.Group](c), ctrlstate.WithReapplySupport[v1.Group](reapplySupport))
+	return ctrlstate.NewStateReconciler(groupHandler, ctrlstate.WithCluster[akov2generated.Group](c), ctrlstate.WithReapplySupport[akov2generated.Group](reapplySupport))
+}
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translatorRequest *translate.Request, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Group] {
+	return NewHandlerv20250312(kubeClient, atlasClient, translatorRequest, deletionProtection)
 }

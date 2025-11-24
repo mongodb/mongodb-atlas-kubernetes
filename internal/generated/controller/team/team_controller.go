@@ -15,43 +15,55 @@
 package team
 
 import (
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
+	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=teams,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=teams/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,resources=teams/finalizers,verbs=update
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=teams,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=teams/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=teams/finalizers,verbs=update
-type TeamHandler struct {
-	ctrlstate.StateHandler[v1.Team]
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=teams,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=teams/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=teams/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=teams,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=teams/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=teams/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
+
+type Handler struct {
+	ctrlstate.StateHandler[akov2generated.Team]
 	reconciler.AtlasReconciler
-	handlerv20250312 *TeamHandlerv20250312
+	deletionProtection bool
+	predicates         []predicate.Predicate
+	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Team]
 }
 
-func NewTeamReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, reapplySupport bool) *ctrlstate.Reconciler[v1.Team] {
-	// Create version-specific handlers
-
-	handlerv20250312 := NewTeamHandlerv20250312(atlasProvider, c.GetClient(), logger.Named("controllers").Named("Team-v20250312").Sugar(), globalSecretRef)
-
+func NewTeamReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, deletionProtection bool, reapplySupport bool, predicates []predicate.Predicate) *ctrlstate.Reconciler[akov2generated.Team] {
 	// Create main handler dispatcher
-	teamHandler := &TeamHandler{
+	teamHandler := &Handler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			AtlasProvider:   atlasProvider,
 			Client:          c.GetClient(),
 			GlobalSecretRef: globalSecretRef,
 			Log:             logger.Named("controllers").Named("AtlasTeam").Sugar(),
 		},
-		handlerv20250312: handlerv20250312,
+		deletionProtection: deletionProtection,
+		handlerv20250312:   handlerv20250312Func,
+		predicates:         predicates,
 	}
 
-	return ctrlstate.NewStateReconciler(teamHandler, ctrlstate.WithCluster[v1.Team](c), ctrlstate.WithReapplySupport[v1.Team](reapplySupport))
+	return ctrlstate.NewStateReconciler(teamHandler, ctrlstate.WithCluster[akov2generated.Team](c), ctrlstate.WithReapplySupport[akov2generated.Team](reapplySupport))
+}
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translatorRequest *translate.Request, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Team] {
+	return NewHandlerv20250312(kubeClient, atlasClient, translatorRequest, deletionProtection)
 }

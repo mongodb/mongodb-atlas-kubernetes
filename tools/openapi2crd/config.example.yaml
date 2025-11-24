@@ -39,29 +39,9 @@ spec:
 
   openapi:
     - name: v20250312
-      package: go.mongodb.org/atlas-sdk/v20250312008/admin
+      package: go.mongodb.org/atlas-sdk/v20250312006/admin
 
   crd:
-    - gvk:
-        version: v1
-        kind: Organization
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - aorg
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          entry:
-            schema: "CreateOrganizationRequest"
-          status:
-            schema: "CreateOrganizationResponse"
-            filters:
-              skipProperties:
-                - $.apiKey
-                - $.organization.links
     - gvk:
         version: v1
         kind: Group
@@ -91,43 +71,6 @@ spec:
 
     - gvk:
         version: v1
-        kind: NetworkPeeringConnection
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - anpc
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/peers'
-              verb: post
-            references:
-              - &groupRef
-                name: groupRef
-                property: $.groupId
-                target:
-                  type:
-                    kind: Group
-                    resource: groups
-                    group: atlas.generated.mongodb.com
-                    version: v1
-                  properties:
-                    - $.status.v20250312.id
-          entry:
-            schema: 'BaseNetworkPeeringConnectionSettings'
-            filters:
-              readWriteOnly: true
-          status:
-            schema: 'BaseNetworkPeeringConnectionSettings'
-            filters:
-              readOnly: true
-
-    - gvk:
-        version: v1
         kind: DatabaseUser
         group: atlas.generated.mongodb.com
       categories:
@@ -143,117 +86,21 @@ spec:
               name: '/api/atlas/v2/groups/{groupId}/databaseUsers'
               verb: post
             references:
-              - *groupRef
+              - &groupRef
+                name: groupRef
+                property: $.groupId
+                target:
+                  type:
+                    kind: Group
+                    resource: groups
+                    group: atlas.generated.mongodb.com
+                    version: v1
+                  properties:
+                    - $.status.v20250312.id
           entry:
             schema: 'CloudDatabaseUser'
             filters:
               readWriteOnly: true
-
-    - gvk:
-        version: v1
-        kind: BackupCompliancePolicy
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - abcp
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/backupCompliancePolicy'
-              verb: put
-            references:
-              - *groupRef
-          entry:
-            schema: 'DataProtectionSettings20231001'
-            filters:
-              readWriteOnly: true
-          status:
-            schema: 'DataProtectionSettings20231001'
-            filters:
-              readOnly: true
-
-    - gvk:
-        version: v1
-        kind: BackupSchedule
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - abs
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/schedule'
-              verb: patch
-            references:
-            - *groupRef
-          entry:
-            schema: 'DiskBackupSnapshotSchedule20240805'
-            filters:
-              readWriteOnly: true
-          status:
-            schema: 'DiskBackupSnapshotSchedule20240805'
-            filters:
-              readOnly: true
-              skipProperties:
-                - $.links
-
-    - gvk:
-        version: v1
-        kind: DataFederation
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - adf
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/dataFederation'
-              verb: post
-            references:
-              - *groupRef
-          entry:
-            schema: 'DataLakeTenant'
-            filters:
-              readWriteOnly: true
-          status:
-            schema: 'DataLakeTenant'
-            filters:
-              readOnly: true
-
-    - gvk:
-        version: v1
-        kind: OrganizationSetting
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - aos
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/orgs/{orgId}/settings'
-              verb: patch
-          entry:
-            schema: 'OrganizationSettings'
-          status:
-            path:
-              name: '/api/atlas/v2/orgs/{orgId}/settings'
-              verb: get
 
     - gvk:
         version: v1
@@ -283,45 +130,6 @@ spec:
               readOnly: true
               skipProperties:
                 - $.links
-
-    - gvk:
-        version: v1
-        kind: NetworkPermissionEntries
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - anp
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/accessList'
-              verb: post
-            references:
-              - *groupRef
-          entry:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/accessList'
-              verb: post
-              requestBody:
-                mimeType: 'application/vnd.atlas.2023-01-01+json'
-            filters:
-              skipProperties:
-                - $[*].groupId
-                - $[*].links
-          status:
-            schema: 'NetworkPermissionEntry'
-            filters:
-              skipProperties:
-                - $.cidrBlock
-                - $.comment
-                - $.deleteAfterDate
-                - $.awsSecurityGroup
-                - $.links
-                - $.ipAddress
 
     - gvk:
         version: v1
@@ -425,53 +233,6 @@ spec:
 
     - gvk:
         version: v1
-        kind: SearchIndex
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - asi
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/clusters/{clusterName}/search/indexes'
-              verb: post
-            references:
-              - *groupRef
-          entry:
-            schema: 'SearchIndexCreateRequest'
-          status:
-            schema: 'SearchIndexResponse'
-            filters:
-              skipProperties:
-                - $.latestDefinition
-
-    - gvk:
-        version: v1
-        kind: SampleDataset
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - asd
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/sampleDatasetLoad/{name}'
-              verb: post
-            references:
-              - *groupRef
-          status:
-            schema: 'SampleDatasetStatus'
-
-    - gvk:
-        version: v1
         kind: CustomRole
         group: atlas.generated.mongodb.com
       categories:
@@ -523,101 +284,3 @@ spec:
                 - $.links
                 - $.tags
                 - $.terminationProtectionEnabled
-
-    - gvk:
-        version: v1
-        kind: GroupAlertsConfig
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - aga
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/alertConfigs'
-              verb: post
-            references:
-              - *groupRef
-          entry:
-            schema: 'GroupAlertsConfig'
-            filters:
-              readWriteOnly: true
-              sensitiveProperties:
-                - $.notifications[*].webhookUrl
-                - $.notifications[*].apiToken
-                - $.notifications[*].webhookSecret
-                - $.notifications[*].victorOpsRoutingKey
-                - $.notifications[*].notificationToken
-                - $.notifications[*].serviceKey
-                - $.notifications[*].victorOpsApiKey
-                - $.notifications[*].datadogApiKey
-                - $.notifications[*].microsoftTeamsWebhookUrl
-                - $.notifications[*].opsGenieApiKey
-          status:
-            schema: 'GroupAlertsConfig'
-            filters:
-              readOnly: true
-              skipProperties:
-                - $.links
-
-    - gvk:
-        version: v1
-        kind: ThirdPartyIntegration
-        group: atlas.generated.mongodb.com
-      categories:
-        - atlas
-      shortNames:
-        - atpi
-      mappings:
-        - majorVersion: v20250312
-          openAPIRef:
-            name: v20250312
-          parameters:
-            path:
-              name: '/api/atlas/v2/groups/{groupId}/integrations/{integrationType}'
-              verb: post
-            references:
-              - *groupRef
-          entry:
-            schema: "ThirdPartyIntegration"
-            filters:
-              skipProperties:
-                - $.id
-              sensitiveProperties:
-                - $.apiKey
-                - $.apiToken
-                - $.licenseKey
-                - $.microsoftTeamsWebhookUrl
-                - $.password
-                - $.readToken
-                - $.routingKey
-                - $.secret
-                - $.serviceKey
-                - $.url
-                - $.writeToken
-          status:
-            schema: "ThirdPartyIntegration"
-            filters:
-              skipProperties:
-                - $.accountId
-                - $.apiKey
-                - $.apiToken
-                - $.channelName
-                - $.enabled
-                - $.licenseKey
-                - $.microsoftTeamsWebhookUrl
-                - $.password
-                - $.readToken
-                - $.region
-                - $.routingKey
-                - $.secret
-                - $.serviceKey
-                - $.serviceDiscovery
-                - $.teamName
-                - $.url
-                - $.username
-                - $.writeToken
