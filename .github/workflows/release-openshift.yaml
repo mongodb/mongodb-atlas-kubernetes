@@ -89,24 +89,24 @@ jobs:
       #     rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
       #     rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
       #     submit: true
-      - name: Configure certified release
-        if: ${{ matrix.certified }}
-        env:
-          VERSION: ${{ github.event.inputs.version }}
-          REPOSITORY: mongodb-forks/${{ matrix.repository }}
-          IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
-        run: |
-          alias yq='devbox run -c mongodb-atlas-kubernetes yq'
-          # Reference to image
-          docker pull "${IMAGE}":"${VERSION}"
-          export REPO_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
+      # - name: Configure certified release
+      #   if: ${{ matrix.certified }}
+      #   env:
+      #     VERSION: ${{ github.event.inputs.version }}
+      #     REPOSITORY: mongodb-forks/${{ matrix.repository }}
+      #     IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
+      #   run: |
+      #     alias yq='devbox run -c mongodb-atlas-kubernetes yq'
+      #     # Reference to image
+      #     docker pull "${IMAGE}":"${VERSION}"
+      #     export REPO_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
           
-          cd "$REPOSITORY/$REPO_PATH"
-          yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-          yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      #     cd "$REPOSITORY/$REPO_PATH"
+      #     yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      #     yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
-          # Add skip range
-          value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+      #     # Add skip range
+      #     value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
       - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}
