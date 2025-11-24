@@ -31,7 +31,7 @@ jobs:
           private-key: ${{ secrets.AKO_RH_RELEASER_RSA_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: |
-            mongodb-atlas-kubernetes
+            mongodb/mongodb-atlas-kubernetes
             mongodb-forks/community-operators
             mongodb-forks/community-operators-prod
             mongodb-forks/certified-operators
