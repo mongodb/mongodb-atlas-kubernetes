@@ -26,7 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-// AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule
+// AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.
 type AtlasBackupScheduleSpec struct {
 	// Specify true to enable automatic export of cloud backup snapshots to the AWS bucket. You must also define the export policy using export. If omitted, defaults to false.
 	// +optional
@@ -100,7 +100,7 @@ var _ api.AtlasCustomResource = &AtlasBackupSchedule{}
 // +kubebuilder:resource:categories=atlas,shortName=abs
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 //
-// AtlasBackupSchedule is the Schema for the atlasbackupschedules API
+// AtlasBackupSchedule is the Schema for the atlasbackupschedules API.
 type AtlasBackupSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

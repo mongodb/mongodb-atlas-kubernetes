@@ -66,11 +66,11 @@ type AtlasCustomRoleList struct {
 	Items           []AtlasCustomRole `json:"items"`
 }
 
-// AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
+// AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas.
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasCustomRoleSpec struct {
-	// ProjectReference is the dual external or kubernetes reference with access credentials
+	// ProjectReference is the dual external or kubernetes reference with access credentials.
 	ProjectDualReference `json:",inline"`
 	// Role represents a Custom Role in Atlas.
 	Role CustomRole `json:"role"`

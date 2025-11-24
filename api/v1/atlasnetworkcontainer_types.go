@@ -58,7 +58,7 @@ type AtlasNetworkContainerList struct {
 // +kubebuilder:validation:XValidation:rule="(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))",message="id is immutable"
 // +kubebuilder:validation:XValidation:rule="(self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region))",message="region is immutable"
 
-// AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer
+// AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.
 type AtlasNetworkContainerSpec struct {
 	ProjectDualReference `json:",inline"`
 
@@ -67,10 +67,11 @@ type AtlasNetworkContainerSpec struct {
 	// +kubebuilder:validation:Required
 	Provider string `json:"provider"`
 
+	// Collection of settings that configures the network container for a virtual private connection in a cloud provider.
 	AtlasNetworkContainerConfig `json:",inline"`
 }
 
-// AtlasNetworkContainerConfig defines the Atlas specifics of the desired state of a Network Container
+// AtlasNetworkContainerConfig defines the Atlas specifics of the desired state of a Network Container.
 type AtlasNetworkContainerConfig struct {
 	// ID is the container identifier for an already existent network container to be managed by the operator.
 	// This field can be used in conjunction with cidrBlock to update the cidrBlock of an existing container.
