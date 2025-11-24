@@ -133,7 +133,7 @@ jobs:
           git config --global --unset-all http.https://github.com/.extraheader || true
 
           # 2. Set the remote URL to explicitly use your App Token
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com${REPOSITORY}.git"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPOSITORY}.git"
           
           git push origin "mongodb-atlas-operator-community-${VERSION}"
           
