@@ -54,12 +54,13 @@ jobs:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
         run: |
+          alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd $REPOSITORY
           
           # Sync fork
-          devbox run gh auth setup-git
-          devbox run gh repo set-default $REPOSITORY
-          devbox run gh repo sync -b main
+          gh auth setup-git
+          gh repo set-default $REPOSITORY
+          gh repo sync -b main
           
           mkdir -p "${REPO_PATH}/${VERSION}"
 
@@ -94,16 +95,17 @@ jobs:
           REPOSITORY: ${{ matrix.repository }}
           IMAGE: quay.io/mongodb/mongodb-atlas-kubernetes-operator
         run: |
+          alias yq='devbox run -c mongodb-atlas-kubernetes yq'
           # Reference to image
           docker pull "${IMAGE}":"${VERSION}"
           export REPO_DIGEST=$(docker inspect --format='{{ index .RepoDigests 0}}' "${IMAGE}":"${VERSION}")
           
           cd "$REPOSITORY/$REPO_PATH"
-          devbox run yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
-          devbox run yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          yq e -i '.metadata.annotations.containerImage = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = env(REPO_DIGEST)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
           # Add skip range
-          value='">=0.8.0"' devbox run yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
+          value='">=0.8.0"' yq e -i '.spec.skipRange = env(value)' "${VERSION}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
       - name: Push Changes & Open PR
         env:
           VERSION: ${{ github.event.inputs.version }}
@@ -111,6 +113,7 @@ jobs:
           ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
           DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
+          alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd "$REPOSITORY/$REPO_PATH"
           
           # configure git user
@@ -126,7 +129,7 @@ jobs:
           
           # open PR (when not a dry-run)
           if [ "${DRYRUN}" == "false"]; then
-            devbox run gh pr create \
+            gh pr create \
                 --title "operator mongodb-atlas-kubernetes (${VERSION})" \
                 --assignee "${ASSIGNEES}"
           else
