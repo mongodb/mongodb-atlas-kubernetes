@@ -259,7 +259,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>frequencyType</b></td>
         <td>enum</td>
         <td>
-          Frequency associated with the backup policy item. One of the following values: hourly, daily, weekly or monthly. You cannot specify multiple hourly and daily backup policy items.<br/>
+          Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.<br/>
           <br/>
             <i>Enum</i>: hourly, daily, weekly, monthly, yearly<br/>
         </td>
@@ -268,7 +268,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionUnit</b></td>
         <td>enum</td>
         <td>
-          Scope of the backup policy item: days, weeks, or months.<br/>
+          Unit of time in which MongoDB Atlas measures snapshot retention.<br/>
           <br/>
             <i>Enum</i>: days, weeks, months, years<br/>
         </td>
@@ -277,7 +277,8 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionValue</b></td>
         <td>integer</td>
         <td>
-          Value to associate with RetentionUnit.<br/>
+          Duration in days, weeks, months, or years that MongoDB Cloud retains the snapshot.
+For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -355,7 +356,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -488,7 +490,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>frequencyType</b></td>
         <td>enum</td>
         <td>
-          Frequency associated with the backup policy item. One of the following values: hourly, daily, weekly or monthly. You cannot specify multiple hourly and daily backup policy items.<br/>
+          Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.<br/>
           <br/>
             <i>Enum</i>: hourly, daily, weekly, monthly, yearly<br/>
         </td>
@@ -497,7 +499,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionUnit</b></td>
         <td>enum</td>
         <td>
-          Scope of the backup policy item: days, weeks, or months.<br/>
+          Unit of time in which MongoDB Atlas measures snapshot retention.<br/>
           <br/>
             <i>Enum</i>: days, weeks, months, years<br/>
         </td>
@@ -506,7 +508,8 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>retentionValue</b></td>
         <td>integer</td>
         <td>
-          Value to associate with RetentionUnit.<br/>
+          Duration in days, weeks, months, or years that MongoDB Cloud retains the snapshot.
+For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -591,7 +594,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -621,7 +625,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
 
 
 
-AtlasBackupSchedule is the Schema for the atlasbackupschedules API
+AtlasBackupSchedule is the Schema for the atlasbackupschedules API.
 
 <table>
     <thead>
@@ -653,7 +657,7 @@ AtlasBackupSchedule is the Schema for the atlasbackupschedules API
         <td><b><a href="#atlasbackupschedulespec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule<br/>
+          AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -672,7 +676,7 @@ AtlasBackupSchedule is the Schema for the atlasbackupschedules API
 
 
 
-AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule
+AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.
 
 <table>
     <thead>
@@ -912,7 +916,7 @@ Export policy for automatically exporting cloud backup snapshots to AWS bucket.
         <td><b>deploymentID</b></td>
         <td>[]string</td>
         <td>
-          <br/>
+          List of the human-readable names of all deployments utilizing this backup schedule.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -963,7 +967,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -1025,7 +1030,7 @@ AtlasCustomRole is the Schema for the AtlasCustomRole API
         <td><b><a href="#atlascustomrolespec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas<br/>
+          AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -1047,7 +1052,7 @@ Not the one included in the AtlasProject<br/>
 
 
 
-AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
+AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas.
 
 <table>
     <thead>
@@ -1069,23 +1074,23 @@ AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas
         <td><b><a href="#atlascustomrolespecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlascustomrolespecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlascustomrolespecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1247,7 +1252,7 @@ Role represents a Custom Role in Atlas.
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -1275,8 +1280,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -1303,8 +1308,8 @@ Mutually exclusive with the "projectRef" field
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -1405,7 +1410,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -1533,7 +1539,7 @@ Identity and Access Management (IAM) credentials associated with the user or the
         <td><b><a href="#atlasdatabaseuserspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1567,8 +1573,8 @@ The specified date must be in the future and within one week.<br/>
         <td><b><a href="#atlasdatabaseuserspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1602,8 +1608,8 @@ To create a federated authentication user (Workload), specify the value of USER 
         <td><b><a href="#atlasdatabaseuserspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1675,7 +1681,7 @@ privileges that apply to the other databases.<br/>
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -1703,8 +1709,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -1792,8 +1798,8 @@ PasswordSecret is a reference to the Secret keeping the user password.
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -1945,7 +1951,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -2682,7 +2689,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -2789,7 +2797,7 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
         <td><b><a href="#atlasdeploymentspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2803,8 +2811,8 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
         <td><b><a href="#atlasdeploymentspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2825,8 +2833,8 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasdeploymentspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2889,7 +2897,7 @@ Reference to the backup schedule for the AtlasDeployment.
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -4041,8 +4049,8 @@ TagSpec holds a key-value pair for resource tagging on this deployment.
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -4293,8 +4301,8 @@ A value of null indicates that the cluster uses the default oplog size that Atla
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -4826,7 +4834,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -5547,7 +5556,7 @@ RoleMapping maps an external group from an identity provider to roles within Atl
         <td>
           The role in Atlas that should be given to group members.<br/>
           <br/>
-            <i>Enum</i>: ORG_MEMBER, ORG_READ_ONLY, ORG_BILLING_ADMIN, ORG_GROUP_CREATOR, ORG_OWNER, ORG_BILLING_READ_ONLY, ORG_TEAM_MEMBERS_ADMIN, GROUP_AUTOMATION_ADMIN, GROUP_BACKUP_ADMIN, GROUP_MONITORING_ADMIN, GROUP_OWNER, GROUP_READ_ONLY, GROUP_USER_ADMIN, GROUP_BILLING_ADMIN, GROUP_DATA_ACCESS_ADMIN, GROUP_DATA_ACCESS_READ_ONLY, GROUP_DATA_ACCESS_READ_WRITE, GROUP_CHARTS_ADMIN, GROUP_CLUSTER_MANAGER, GROUP_SEARCH_INDEX_EDITOR<br/>
+            <i>Enum</i>: ORG_MEMBER, ORG_READ_ONLY, ORG_BILLING_ADMIN, ORG_GROUP_CREATOR, ORG_OWNER, ORG_BILLING_READ_ONLY, ORG_TEAM_MEMBERS_ADMIN, GROUP_AUTOMATION_ADMIN, GROUP_BACKUP_ADMIN, GROUP_MONITORING_ADMIN, GROUP_OWNER, GROUP_READ_ONLY, GROUP_USER_ADMIN, GROUP_BILLING_ADMIN, GROUP_DATA_ACCESS_ADMIN, GROUP_DATA_ACCESS_READ_ONLY, GROUP_DATA_ACCESS_READ_WRITE, GROUP_CHARTS_ADMIN, GROUP_CLUSTER_MANAGER, GROUP_SEARCH_INDEX_EDITOR, GROUP_DATABASE_ACCESS_ADMIN, GROUP_BACKUP_MANAGER, GROUP_STREAM_PROCESSING_OWNER, ORG_STREAM_PROCESSING_ADMIN, GROUP_OBSERVABILITY_VIEWER<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5625,7 +5634,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -5730,23 +5740,23 @@ AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
         <td><b><a href="#atlasipaccesslistspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasipaccesslistspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasipaccesslistspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5815,7 +5825,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -5843,8 +5853,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -5871,8 +5881,8 @@ Mutually exclusive with the "projectRef" field
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -5979,7 +5989,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -6075,7 +6086,7 @@ AtlasNetworkContainer is the Schema for the AtlasNetworkContainer API
         <td><b><a href="#atlasnetworkcontainerspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer<br/>
+          AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li><li>(self.provider == 'GCP' && !has(self.region)) || (self.provider != 'GCP'): must not set region for GCP containers</li><li>((self.provider == 'AWS' || self.provider == 'AZURE') && has(self.region)) || (self.provider == 'GCP'): must set region for AWS and Azure containers</li><li>(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id)): id is immutable</li><li>(self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region)): region is immutable</li>
         </td>
@@ -6097,7 +6108,7 @@ Not the one included in the AtlasProject<br/>
 
 
 
-AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer
+AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.
 
 <table>
     <thead>
@@ -6128,15 +6139,15 @@ AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer
         <td><b><a href="#atlasnetworkcontainerspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasnetworkcontainerspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6152,8 +6163,8 @@ This field is immutable.<br/>
         <td><b><a href="#atlasnetworkcontainerspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6174,7 +6185,7 @@ This field is immutable, Atlas does not admit network container changes.<br/>
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -6202,8 +6213,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -6230,8 +6241,8 @@ Mutually exclusive with the "projectRef" field
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -6347,7 +6358,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -6476,15 +6488,15 @@ AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
         <td><b><a href="#atlasnetworkpeeringspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasnetworkpeeringspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6506,8 +6518,8 @@ This field is immutable.<br/>
         <td><b><a href="#atlasnetworkpeeringspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -6651,7 +6663,7 @@ AzureConfiguration is the specific Azure settings for network peering.
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -6679,8 +6691,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -6741,8 +6753,8 @@ GCPConfiguration is the specific Google Cloud settings for network peering.
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -6878,7 +6890,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -7385,15 +7398,15 @@ AtlasPrivateEndpointSpec is the specification of the desired configuration of a 
         <td><b><a href="#atlasprivateendpointspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprivateendpointspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7407,8 +7420,8 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasprivateendpointspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7481,7 +7494,7 @@ AzurePrivateEndpointConfiguration holds the Azure configuration done on customer
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -7509,8 +7522,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -7612,8 +7625,8 @@ GCPPrivateEndpoint holds the GCP forwarding rules configured on customer network
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>
@@ -7762,7 +7775,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -10492,7 +10506,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -11939,7 +11954,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -12126,7 +12142,7 @@ The name of a built-in or Custom DB Role to connect to an Atlas Cluster.
         <td><b>type</b></td>
         <td>enum</td>
         <td>
-          Type of the DB role. Can be either BuiltIn or Custom.<br/>
+          Type of the DB role. Can be either BUILT_IN or CUSTOM.<br/>
           <br/>
             <i>Enum</i>: BUILT_IN, CUSTOM<br/>
         </td>
@@ -12401,7 +12417,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -12766,7 +12783,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -13029,7 +13047,8 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>lastTransitionTime</b></td>
         <td>string</td>
         <td>
-          Last time the condition transitioned from one status to another.<br/>
+          Last time the condition transitioned from one status to another.
+Represented in ISO 8601 format.<br/>
           <br/>
             <i>Format</i>: date-time<br/>
         </td>
@@ -13170,7 +13189,7 @@ AtlasThirdPartyIntegrationSpec contains the expected configuration for an integr
         <td><b><a href="#atlasthirdpartyintegrationspecconnectionsecret">connectionSecret</a></b></td>
         <td>object</td>
         <td>
-          Name of the secret containing Atlas API private and public keys<br/>
+          Name of the secret containing Atlas API private and public keys.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13184,8 +13203,8 @@ AtlasThirdPartyIntegrationSpec contains the expected configuration for an integr
         <td><b><a href="#atlasthirdpartyintegrationspecexternalprojectref">externalProjectRef</a></b></td>
         <td>object</td>
         <td>
-          "externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field<br/>
+          externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13220,8 +13239,8 @@ Mutually exclusive with the "projectRef" field<br/>
         <td><b><a href="#atlasthirdpartyintegrationspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
-          "projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field<br/>
+          projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -13261,7 +13280,7 @@ Mutually exclusive with the "externalProjectRef" field<br/>
 
 
 
-Name of the secret containing Atlas API private and public keys
+Name of the secret containing Atlas API private and public keys.
 
 <table>
     <thead>
@@ -13372,8 +13391,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"externalProjectRef" holds the parent Atlas project ID.
-Mutually exclusive with the "projectRef" field
+externalProjectRef holds the parent Atlas project ID.
+Mutually exclusive with the "projectRef" field.
 
 <table>
     <thead>
@@ -13636,8 +13655,8 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-"projectRef" is a reference to the parent AtlasProject resource.
-Mutually exclusive with the "externalProjectRef" field
+projectRef is a reference to the parent AtlasProject resource.
+Mutually exclusive with the "externalProjectRef" field.
 
 <table>
     <thead>

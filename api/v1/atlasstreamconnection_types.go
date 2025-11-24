@@ -44,7 +44,7 @@ type ClusterConnectionConfig struct {
 type StreamsClusterDBRole struct {
 	// The name of the role to use. Can be a built-in role or a custom role.
 	Name string `json:"name"`
-	// Type of the DB role. Can be either BuiltIn or Custom.
+	// Type of the DB role. Can be either BUILT_IN or CUSTOM.
 	// +kubebuilder:validation:Enum:=BUILT_IN;CUSTOM
 	RoleType string `json:"type"`
 }

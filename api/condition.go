@@ -137,6 +137,7 @@ type Condition struct {
 	// Status of the condition, one of True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
 	// Last time the condition transitioned from one status to another.
+	// Represented in ISO 8601 format.
 	// +optional
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// The reason for the condition's last transition.

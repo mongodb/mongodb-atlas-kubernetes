@@ -28,7 +28,7 @@ type AtlasBackupPolicySpec struct {
 }
 
 type AtlasBackupPolicyItem struct {
-	// Frequency associated with the backup policy item. One of the following values: hourly, daily, weekly or monthly. You cannot specify multiple hourly and daily backup policy items.
+	// Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.
 	// +kubebuilder:validation:Enum:=hourly;daily;weekly;monthly;yearly
 	FrequencyType string `json:"frequencyType"`
 
@@ -37,11 +37,12 @@ type AtlasBackupPolicyItem struct {
 	// +kubebuilder:validation:Enum:=1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;40
 	FrequencyInterval int `json:"frequencyInterval"`
 
-	// Scope of the backup policy item: days, weeks, or months.
+	// Unit of time in which MongoDB Atlas measures snapshot retention.
 	// +kubebuilder:validation:Enum:=days;weeks;months;years
 	RetentionUnit string `json:"retentionUnit"`
 
-	// Value to associate with RetentionUnit.
+	// Duration in days, weeks, months, or years that MongoDB Cloud retains the snapshot.
+	// For less frequent policy items, MongoDB Cloud requires that you specify a value greater than or equal to the value specified for more frequent policy items.
 	RetentionValue int `json:"retentionValue"`
 }
 

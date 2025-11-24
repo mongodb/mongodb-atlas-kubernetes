@@ -42,5 +42,6 @@ func AtlasBackupScheduleUnsetDeploymentID(ID string) AtlasBackupScheduleStatusOp
 type BackupScheduleStatus struct {
 	api.Common `json:",inline"`
 
+	// List of the human-readable names of all deployments utilizing this backup schedule.
 	DeploymentIDs []string `json:"deploymentID,omitempty"`
 }
