@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-set -eou pipefail
+set -eoxu pipefail
 
 docker login -u mongodb+mongodb_atlas_kubernetes -p "${REGISTRY_PASSWORD}" "${REGISTRY}"
 
