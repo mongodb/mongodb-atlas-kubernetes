@@ -48,6 +48,7 @@ jobs:
         uses: jetify-com/devbox-install-action@v0.14.0
         with:
           enable-cache: 'true'
+          project-path: "mongodb-atlas-kubernetes"
       - name: Prepare version
         env:
           VERSION: ${{ github.event.inputs.version }}
