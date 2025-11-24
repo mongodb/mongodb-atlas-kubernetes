@@ -175,7 +175,7 @@ func getPeerIDs(statuses []status.AtlasNetworkPeer) []string {
 }
 
 func deleteUnusedContainers(context context.Context, containerService admin.NetworkPeeringApi, groupID string, doNotDelete []string) error {
-	containers, _, err := containerService.ListPeeringContainers(context, groupID).Execute()
+	containers, _, err := containerService.ListGroupContainers(context, groupID).Execute()
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 			continue
 		}
 		if !compare.Contains(doNotDelete, container.GetId()) {
-			response, errDelete := containerService.DeletePeeringContainer(context, groupID, container.GetId()).Execute()
+			response, errDelete := containerService.DeleteGroupContainer(context, groupID, container.GetId()).Execute()
 			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
 				return errDelete
 			}
@@ -198,7 +198,7 @@ func getContainer(context context.Context, containerService admin.NetworkPeering
 	var container admin.CloudProviderContainer
 
 	if peerToUpdate.GetContainerId() != "" {
-		atlasContainer, _, err := containerService.GetPeeringContainer(context, groupID, peerToUpdate.GetContainerId()).Execute()
+		atlasContainer, _, err := containerService.GetGroupContainer(context, groupID, peerToUpdate.GetContainerId()).Execute()
 		if err != nil {
 			logger.Errorf("failed to get container for gcp status %s: %v", peerToUpdate.GetContainerId(), err)
 			return container, fmt.Errorf("failed to get container for gcp status %s: %w", peerToUpdate.GetContainerId(), err)
@@ -288,7 +288,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 			case provider.ProviderGCP, provider.ProviderAzure:
 				var container admin.CloudProviderContainer
 
-				atlasContainer, _, err := mongoClient.NetworkPeeringApi.GetPeeringContainer(context, groupID, peer.ContainerID).Execute()
+				atlasContainer, _, err := mongoClient.NetworkPeeringApi.GetGroupContainer(context, groupID, peer.ContainerID).Execute()
 				if err != nil {
 					logger.Errorf("failed to get container for gcp status %s: %v", peer.ContainerID, err)
 					newPeerStatuses = append(newPeerStatuses,
@@ -313,7 +313,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string) ([]admin.BaseNetworkPeeringConnectionSettings, error) {
 	var peersList []admin.BaseNetworkPeeringConnectionSettings
 	listAWS, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
-		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+		return peerService.ListGroupPeersWithParams(ctx, &admin.ListGroupPeersApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAWS)),
 		}).PageNum(pageNum).Execute()
@@ -324,7 +324,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	peersList = append(peersList, listAWS...)
 
 	listGCP, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
-		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+		return peerService.ListGroupPeersWithParams(ctx, &admin.ListGroupPeersApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderGCP)),
 		}).PageNum(pageNum).Execute()
@@ -335,7 +335,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	peersList = append(peersList, listGCP...)
 
 	listAzure, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
-		return peerService.ListPeeringConnectionsWithParams(ctx, &admin.ListPeeringConnectionsApiParams{
+		return peerService.ListGroupPeersWithParams(ctx, &admin.ListGroupPeersApiParams{
 			GroupId:      groupID,
 			ProviderName: admin.PtrString(string(provider.ProviderAzure)),
 		}).PageNum(pageNum).Execute()
@@ -419,7 +419,7 @@ func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.Netwo
 
 	if expectedPeer.AtlasCIDRBlock != "" {
 		if existedPeer.AtlasCIDRBlock == "" {
-			get, _, err := containerService.GetPeeringContainer(ctx, groupID, existedPeer.ContainerID).Execute()
+			get, _, err := containerService.GetGroupContainer(ctx, groupID, existedPeer.ContainerID).Execute()
 			if err != nil {
 				return false
 			}
@@ -460,7 +460,7 @@ func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.Netwo
 }
 
 func deletePeerByID(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string, containerID string, logger *zap.SugaredLogger) error {
-	_, response, err := peerService.DeletePeeringConnection(ctx, groupID, containerID).Execute()
+	_, response, err := peerService.DeleteGroupPeer(ctx, groupID, containerID).Execute()
 	if err != nil {
 		if response != nil && response.StatusCode == http.StatusNotFound {
 			return errors.Join(err, errNortFound)
@@ -508,10 +508,10 @@ func createContainer(ctx context.Context, containerService admin.NetworkPeeringA
 		container.SetRegion(region)
 	}
 
-	create, response, err := containerService.CreatePeeringContainer(ctx, groupID, container).Execute()
+	create, response, err := containerService.CreateGroupContainer(ctx, groupID, container).Execute()
 	if err != nil {
 		if response.StatusCode == http.StatusConflict {
-			list, _, errList := containerService.ListPeeringContainerByCloudProvider(ctx, groupID).ProviderName(string(peer.ProviderName)).Execute()
+			list, _, errList := containerService.ListGroupContainers(ctx, groupID).ProviderName(string(peer.ProviderName)).Execute()
 			if errList != nil {
 				logger.Errorf("failed to list containers: %v", errList)
 				return "", errList
@@ -542,7 +542,7 @@ func createContainer(ctx context.Context, containerService admin.NetworkPeeringA
 }
 
 func createNetworkPeer(ctx context.Context, groupID string, service admin.NetworkPeeringApi, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (*admin.BaseNetworkPeeringConnectionSettings, error) {
-	p, _, err := service.CreatePeeringConnection(ctx, groupID, peer.ToAtlasPeer()).Execute()
+	p, _, err := service.CreateGroupPeer(ctx, groupID, peer.ToAtlasPeer()).Execute()
 	if err != nil {
 		logger.Errorf("failed to create network peer %v: %v", peer, err)
 		return p, err

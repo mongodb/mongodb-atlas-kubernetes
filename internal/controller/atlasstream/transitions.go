@@ -47,7 +47,7 @@ func (r *AtlasStreamsInstanceReconciler) create(
 	}
 
 	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312009.StreamsApi.
-		CreateStreamInstance(ctx.Context, project.ID(), &streamTenant).
+		CreateStreamWorkspace(ctx.Context, project.ID(), &streamTenant).
 		Execute()
 
 	if err != nil {
@@ -64,7 +64,7 @@ func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *
 	}
 
 	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312009.StreamsApi.
-		UpdateStreamInstance(ctx.Context, project.ID(), streamInstance.Spec.Name, &dataProcessRegion).
+		UpdateStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name, &dataProcessRegion).
 		Execute()
 
 	if err != nil {
@@ -91,7 +91,7 @@ func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *
 
 func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
 	_, err := ctx.SdkClientSet.SdkClient20250312009.StreamsApi.
-		DeleteStreamInstance(ctx.Context, project.ID(), streamInstance.Spec.Name).
+		DeleteStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name).
 		Execute()
 
 	if err != nil && !admin.IsErrorCode(err, instanceNotFound) {

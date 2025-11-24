@@ -198,9 +198,9 @@ func TestHandleAudit(t *testing.T) {
 				AuditAuthorizationSuccess: true,
 			},
 			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
-				api.EXPECT().GetAuditingConfiguration(context.Background(), "project-id").
-					Return(admin.GetAuditingConfigurationApiRequest{ApiService: api})
-				api.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
+				api.EXPECT().GetGroupAuditLog(context.Background(), "project-id").
+					Return(admin.GetGroupAuditLogApiRequest{ApiService: api})
+				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
 							AuditAuthorizationSuccess: pointer.MakePtr(false),
@@ -210,9 +210,9 @@ func TestHandleAudit(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				api.EXPECT().UpdateAuditingConfiguration(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
-					Return(admin.UpdateAuditingConfigurationApiRequest{ApiService: api})
-				api.EXPECT().UpdateAuditingConfigurationExecute(mock.AnythingOfType("admin.UpdateAuditingConfigurationApiRequest")).
+				api.EXPECT().UpdateAuditLog(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
+					Return(admin.UpdateAuditLogApiRequest{ApiService: api})
+				api.EXPECT().UpdateAuditLogExecute(mock.AnythingOfType("admin.UpdateAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
 							AuditAuthorizationSuccess: pointer.MakePtr(true),
@@ -236,9 +236,9 @@ func TestHandleAudit(t *testing.T) {
 				AuditAuthorizationSuccess: true,
 			},
 			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
-				api.EXPECT().GetAuditingConfiguration(context.Background(), "project-id").
-					Return(admin.GetAuditingConfigurationApiRequest{ApiService: api})
-				api.EXPECT().GetAuditingConfigurationExecute(mock.AnythingOfType("admin.GetAuditingConfigurationApiRequest")).
+				api.EXPECT().GetGroupAuditLog(context.Background(), "project-id").
+					Return(admin.GetGroupAuditLogApiRequest{ApiService: api})
+				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
 							AuditAuthorizationSuccess: pointer.MakePtr(false),
@@ -248,9 +248,9 @@ func TestHandleAudit(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				api.EXPECT().UpdateAuditingConfiguration(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
-					Return(admin.UpdateAuditingConfigurationApiRequest{ApiService: api})
-				api.EXPECT().UpdateAuditingConfigurationExecute(mock.AnythingOfType("admin.UpdateAuditingConfigurationApiRequest")).
+				api.EXPECT().UpdateAuditLog(context.Background(), "project-id", mock.AnythingOfType("*admin.AuditLog")).
+					Return(admin.UpdateAuditLogApiRequest{ApiService: api})
+				api.EXPECT().UpdateAuditLogExecute(mock.AnythingOfType("admin.UpdateAuditLogApiRequest")).
 					Return(
 						nil,
 						&http.Response{},

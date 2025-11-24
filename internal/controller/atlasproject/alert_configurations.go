@@ -148,7 +148,7 @@ func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpe
 	logger := service.Log
 	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
 		return service.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
-			ListAlertConfigurations(ctx, groupID).
+			ListAlertConfigs(ctx, groupID).
 			PageNum(pageNum).
 			Execute()
 	})
@@ -190,7 +190,7 @@ func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConf
 	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
 		_, err := workflowCtx.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
-			DeleteAlertConfiguration(workflowCtx.Context, groupID, alertConfigID).
+			DeleteAlertConfig(workflowCtx.Context, groupID, alertConfigID).
 			Execute()
 		if err != nil {
 			logger.Errorf("failed to delete alert configuration: %v", err)
@@ -219,7 +219,7 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 		}
 
 		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
-			CreateAlertConfiguration(workflowCtx.Context, groupID, atlasAlert).
+			CreateAlertConfig(workflowCtx.Context, groupID, atlasAlert).
 			Execute()
 		if err != nil {
 			logger.Errorf("failed to create alert configuration: %v", err)

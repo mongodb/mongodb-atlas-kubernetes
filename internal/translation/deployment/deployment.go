@@ -270,7 +270,7 @@ func (ds *ProductionAtlasDeployments) UpgradeToDedicated(ctx context.Context, cu
 		return nil, errors.New("upgrade from shared to dedicated is not supported")
 	case *Flex:
 		d := targetDeployment.(*Cluster)
-		flex, _, err := ds.flexAPI.UpgradeFlexCluster(ctx, targetDeployment.GetProjectID(), flexUpgradeToAtlas(d)).Execute()
+		flex, _, err := ds.flexAPI.TenantUpgrade(ctx, targetDeployment.GetProjectID(), flexUpgradeToAtlas(d)).Execute()
 		if err != nil {
 			return nil, err
 		}
@@ -282,7 +282,7 @@ func (ds *ProductionAtlasDeployments) UpgradeToDedicated(ctx context.Context, cu
 }
 
 func (ds *ProductionAtlasDeployments) ClusterWithProcessArgs(ctx context.Context, cluster *Cluster) error {
-	config, _, err := ds.clustersAPI.GetClusterAdvancedConfiguration(ctx, cluster.GetProjectID(), cluster.GetName()).Execute()
+	config, _, err := ds.clustersAPI.GetProcessArgs(ctx, cluster.GetProjectID(), cluster.GetName()).Execute()
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (ds *ProductionAtlasDeployments) UpdateProcessArgs(ctx context.Context, clu
 		return err
 	}
 
-	config, _, err := ds.clustersAPI.UpdateClusterAdvancedConfiguration(ctx, cluster.GetProjectID(), cluster.GetName(), processArgs).Execute()
+	config, _, err := ds.clustersAPI.UpdateProcessArgs(ctx, cluster.GetProjectID(), cluster.GetName(), processArgs).Execute()
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (ds *ProductionAtlasDeployments) UpdateProcessArgs(ctx context.Context, clu
 }
 
 func (ds *ProductionAtlasDeployments) GetCustomZones(ctx context.Context, projectID, clusterName string) (map[string]string, error) {
-	geosharding, _, err := ds.globalClusterAPI.GetManagedNamespace(ctx, projectID, clusterName).Execute()
+	geosharding, _, err := ds.globalClusterAPI.GetClusterGlobalWrites(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global cluster: %w", err)
 	}
@@ -325,7 +325,7 @@ func (ds *ProductionAtlasDeployments) CreateCustomZones(ctx context.Context, pro
 }
 
 func (ds *ProductionAtlasDeployments) DeleteCustomZones(ctx context.Context, projectID, clusterName string) error {
-	_, _, err := ds.globalClusterAPI.DeleteAllCustomZoneMappings(ctx, projectID, clusterName).Execute()
+	_, _, err := ds.globalClusterAPI.DeleteCustomZoneMapping(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete custom zone: %w", err)
 	}
@@ -345,7 +345,7 @@ func (ds *ProductionAtlasDeployments) GetZoneMapping(ctx context.Context, projec
 }
 
 func (ds *ProductionAtlasDeployments) GetManagedNamespaces(ctx context.Context, projectID, clusterName string) ([]akov2.ManagedNamespace, error) {
-	geosharding, _, err := ds.globalClusterAPI.GetManagedNamespace(ctx, projectID, clusterName).Execute()
+	geosharding, _, err := ds.globalClusterAPI.GetClusterGlobalWrites(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get global cluster: %w", err)
 	}
@@ -361,13 +361,13 @@ func (ds *ProductionAtlasDeployments) CreateManagedNamespace(ctx context.Context
 }
 
 func (ds *ProductionAtlasDeployments) DeleteManagedNamespace(ctx context.Context, projectID, clusterName string, namespace *akov2.ManagedNamespace) error {
-	params := &admin.DeleteManagedNamespaceApiParams{
+	params := &admin.DeleteManagedNamespacesApiParams{
 		GroupId:     projectID,
 		ClusterName: clusterName,
 		Db:          &namespace.Db,
 		Collection:  &namespace.Collection,
 	}
-	_, _, err := ds.globalClusterAPI.DeleteManagedNamespaceWithParams(ctx, params).Execute()
+	_, _, err := ds.globalClusterAPI.DeleteManagedNamespacesWithParams(ctx, params).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete managed namespace: %w", err)
 	}

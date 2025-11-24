@@ -374,14 +374,14 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								return nil, fmt.Errorf("failed to create sdk")
 							}
 							cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-							cdrAPI.EXPECT().GetCustomDatabaseRole(mock.Anything, "testProjectID", "TestRoleName").
-								Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-							cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+							cdrAPI.EXPECT().GetCustomDbRole(mock.Anything, "testProjectID", "TestRoleName").
+								Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
+							cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
 								Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-							cdrAPI.EXPECT().CreateCustomDatabaseRole(mock.Anything, "testProjectID",
+							cdrAPI.EXPECT().CreateCustomDbRole(mock.Anything, "testProjectID",
 								mock.AnythingOfType("*admin.UserCustomDBRole")).
-								Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-							cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+								Return(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI})
+							cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
 								Return(nil, nil, nil)
 
 							pAPI := mockadmin.NewProjectsApi(t)
@@ -390,9 +390,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 									Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
 									Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
 								}
-								pAPI.EXPECT().GetProject(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
-									Return(admin.GetProjectApiRequest{ApiService: pAPI})
-								pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
+								pAPI.EXPECT().GetGroup(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
+									Return(admin.GetGroupApiRequest{ApiService: pAPI})
+								pAPI.EXPECT().GetGroupExecute(admin.GetGroupApiRequest{ApiService: pAPI}).
 									Return(grp, nil, nil)
 							}
 							return &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{

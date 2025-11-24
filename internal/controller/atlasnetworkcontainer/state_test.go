@@ -308,19 +308,19 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ncAPI := mockadmin.NewNetworkPeeringApi(t)
-					ncAPI.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, mock.Anything).Return(
-						admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: ncAPI},
+					ncAPI.EXPECT().ListGroupContainers(mock.Anything, mock.Anything).Return(
+						admin.ListGroupContainersApiRequest{ApiService: ncAPI},
 					)
-					ncAPI.EXPECT().ListPeeringContainerByCloudProviderExecute(mock.AnythingOfType("admin.ListPeeringContainerByCloudProviderApiRequest")).Return(
+					ncAPI.EXPECT().ListGroupContainersExecute(mock.Anything).Return(
 						&admin.PaginatedCloudProviderContainer{
 							Results: &[]admin.CloudProviderContainer{},
 						}, nil, nil,
 					)
 					pAPI := mockadmin.NewProjectsApi(t)
-					pAPI.EXPECT().GetProjectByName(mock.Anything, mock.Anything).Return(
-						admin.GetProjectByNameApiRequest{ApiService: pAPI},
+					pAPI.EXPECT().GetGroupByName(mock.Anything, mock.Anything).Return(
+						admin.GetGroupByNameApiRequest{ApiService: pAPI},
 					)
-					pAPI.EXPECT().GetProjectByNameExecute(mock.AnythingOfType("admin.GetProjectByNameApiRequest")).Return(
+					pAPI.EXPECT().GetGroupByNameExecute(mock.Anything).Return(
 						&admin.Group{
 							Id: pointer.MakePtr(testProjectID),
 						}, nil, nil,

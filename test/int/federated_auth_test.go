@@ -123,7 +123,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 					}
 
 					if groupId := atlasRS.GetGroupId(); groupId != "" {
-						project, _, err := atlasClient.ProjectsApi.GetProject(ctx, atlasRS.GetGroupId()).Execute()
+						project, _, err := atlasClient.ProjectsApi.GetGroup(ctx, atlasRS.GetGroupId()).Execute()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(project).NotTo(BeNil())
 						newRS.ProjectName = project.GetName()

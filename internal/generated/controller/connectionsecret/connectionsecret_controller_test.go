@@ -802,11 +802,11 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnectionSecretReconci
 			projectAPI := mockadmin.NewProjectsApi(t)
 
 			projectAPI.EXPECT().
-				GetProject(mock.Anything, "test-project-id").
-				Return(admin.GetProjectApiRequest{ApiService: projectAPI})
+				GetGroup(mock.Anything, "test-project-id").
+				Return(admin.GetGroupApiRequest{ApiService: projectAPI})
 
 			projectAPI.EXPECT().
-				GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
+				GetGroupExecute(mock.AnythingOfType("admin.GetGroupApiRequest")).
 				Return(&admin.Group{
 					Id:   pointer.MakePtr("test-project-id"),
 					Name: "My Project Name",

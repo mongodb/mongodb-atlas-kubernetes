@@ -41,9 +41,9 @@ func TestIPAccessList_List(t *testing.T) {
 	}{
 		"should return empty when atlas is also empty": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), projectID).
-					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
+					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(&admin.PaginatedNetworkAccess{}, &http.Response{}, nil)
 
 				return apiMock
@@ -52,9 +52,9 @@ func TestIPAccessList_List(t *testing.T) {
 		},
 		"should return converted entries from atlas result": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), projectID).
-					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
+					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
 							Results: &[]admin.NetworkPermissionEntry{
@@ -95,9 +95,9 @@ func TestIPAccessList_List(t *testing.T) {
 		},
 		"should return error when request fails": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), projectID).
-					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
+					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(nil, &http.Response{}, apiErr)
 
 				return apiMock
@@ -131,9 +131,9 @@ func TestIPAccessList_Add(t *testing.T) {
 	}{
 		"should add ip access list": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().CreateProjectIpAccessList(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
-					Return(admin.CreateProjectIpAccessListApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateProjectIpAccessListExecute(mock.AnythingOfType("admin.CreateProjectIpAccessListApiRequest")).
+				apiMock.EXPECT().CreateAccessListEntry(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
+					Return(admin.CreateAccessListEntryApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
 							Results: &[]admin.NetworkPermissionEntry{
@@ -174,9 +174,9 @@ func TestIPAccessList_Add(t *testing.T) {
 		},
 		"should return error when request fails": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().CreateProjectIpAccessList(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
-					Return(admin.CreateProjectIpAccessListApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateProjectIpAccessListExecute(mock.AnythingOfType("admin.CreateProjectIpAccessListApiRequest")).
+				apiMock.EXPECT().CreateAccessListEntry(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
+					Return(admin.CreateAccessListEntryApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(nil, &http.Response{}, apiErr)
 
 				return apiMock
@@ -221,9 +221,9 @@ func TestIPAccessList_Delete(t *testing.T) {
 	}{
 		"should delete ip access list": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().DeleteProjectIpAccessList(context.Background(), projectID, "192.168.100.150/32").
-					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
+				apiMock.EXPECT().DeleteAccessListEntry(context.Background(), projectID, "192.168.100.150/32").
+					Return(admin.DeleteAccessListEntryApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().DeleteAccessListEntryExecute(mock.AnythingOfType("admin.DeleteAccessListEntryApiRequest")).
 					Return(
 						&http.Response{},
 						nil,
@@ -237,9 +237,9 @@ func TestIPAccessList_Delete(t *testing.T) {
 		},
 		"should return error when request fails": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().DeleteProjectIpAccessList(context.Background(), projectID, "192.168.100.150/32").
-					Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().DeleteProjectIpAccessListExecute(mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).
+				apiMock.EXPECT().DeleteAccessListEntry(context.Background(), projectID, "192.168.100.150/32").
+					Return(admin.DeleteAccessListEntryApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().DeleteAccessListEntryExecute(mock.AnythingOfType("admin.DeleteAccessListEntryApiRequest")).
 					Return(&http.Response{}, apiErr)
 
 				return apiMock
@@ -275,9 +275,9 @@ func TestIPAccessList_Status(t *testing.T) {
 	}{
 		"should get status of ip access list": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().GetProjectIpAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
-					Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
+				apiMock.EXPECT().GetAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
+					Return(admin.GetAccessListStatusApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
 					Return(
 						&admin.NetworkPermissionEntryStatus{
 							STATUS: "ACTIVE",
@@ -295,9 +295,9 @@ func TestIPAccessList_Status(t *testing.T) {
 		},
 		"should return error when request fails": {
 			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().GetProjectIpAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
-					Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
+				apiMock.EXPECT().GetAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
+					Return(admin.GetAccessListStatusApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
 					Return(nil, &http.Response{}, apiErr)
 
 				return apiMock

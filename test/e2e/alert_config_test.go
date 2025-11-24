@@ -211,7 +211,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.Aler
 	By("Check alert configurations have no errors and match configured configs", func() {
 		var err error
 		alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsApi.
-			ListAlertConfigurations(userData.Context, userData.Project.ID()).
+			ListAlertConfigs(userData.Context, userData.Project.ID()).
 			Execute()
 		By("No errors listing alert configs", func() {
 			Expect(err).ShouldNot(HaveOccurred())
@@ -356,7 +356,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config", 
 			atlasClient := atlas.GetClientOrFail()
 			Eventually(func(g Gomega) {
 				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurationsApi.
-					ListAlertConfigurations(testData.Context, testData.Project.ID()).
+					ListAlertConfigs(testData.Context, testData.Project.ID()).
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(atlasAlertConfigs.GetTotalCount()).Should(Equal(len(alertConfigs)))

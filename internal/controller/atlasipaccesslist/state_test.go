@@ -285,9 +285,9 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
-					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
-						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
-					ialAPI.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+					ialAPI.EXPECT().ListAccessListEntries(mock.Anything, "123").
+						Return(admin.ListAccessListEntriesApiRequest{ApiService: ialAPI})
+					ialAPI.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 						Return(
 							&admin.PaginatedNetworkAccess{
 								Results: &[]admin.NetworkPermissionEntry{
@@ -299,9 +299,9 @@ func TestHandleCustomResource(t *testing.T) {
 							nil,
 							nil,
 						)
-					ialAPI.EXPECT().GetProjectIpAccessListStatus(mock.Anything, "123", "192.168.0.0/24").
-						Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: ialAPI})
-					ialAPI.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
+					ialAPI.EXPECT().GetAccessListStatus(mock.Anything, "123", "192.168.0.0/24").
+						Return(admin.GetAccessListStatusApiRequest{ApiService: ialAPI})
+					ialAPI.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
 						Return(
 							&admin.NetworkPermissionEntryStatus{STATUS: "ACTIVE"},
 							nil,
@@ -309,9 +309,9 @@ func TestHandleCustomResource(t *testing.T) {
 						)
 
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
 					return &atlas.ClientSet{

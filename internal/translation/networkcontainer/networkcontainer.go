@@ -60,7 +60,7 @@ func NewNetworkContainerService(peeringAPI admin.NetworkPeeringApi) NetworkConta
 }
 
 func (np *networkContainerService) Create(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
-	newContainer, _, err := np.peeringAPI.CreatePeeringContainer(ctx, projectID, toAtlasConfig(cfg)).Execute()
+	newContainer, _, err := np.peeringAPI.CreateGroupContainer(ctx, projectID, toAtlasConfig(cfg)).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create peering container at project %s: %w", projectID, err)
 	}
@@ -68,7 +68,7 @@ func (np *networkContainerService) Create(ctx context.Context, projectID string,
 }
 
 func (np *networkContainerService) Get(ctx context.Context, projectID, containerID string) (*NetworkContainer, error) {
-	container, _, err := np.peeringAPI.GetPeeringContainer(ctx, projectID, containerID).Execute()
+	container, _, err := np.peeringAPI.GetGroupContainer(ctx, projectID, containerID).Execute()
 	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
 		return nil, errors.Join(err, ErrNotFound)
 	}
@@ -80,7 +80,7 @@ func (np *networkContainerService) Get(ctx context.Context, projectID, container
 
 func (np *networkContainerService) Find(ctx context.Context, projectID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
 	atlasContainers, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.CloudProviderContainer], *http.Response, error) {
-		return np.peeringAPI.ListPeeringContainerByCloudProvider(ctx, projectID).ProviderName(cfg.Provider).PageNum(pageNum).Execute()
+		return np.peeringAPI.ListGroupContainers(ctx, projectID).ProviderName(cfg.Provider).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers at project %s: %w", projectID, err)
@@ -109,7 +109,7 @@ func (np *networkContainerService) Find(ctx context.Context, projectID string, c
 }
 
 func (np *networkContainerService) Update(ctx context.Context, projectID, containerID string, cfg *NetworkContainerConfig) (*NetworkContainer, error) {
-	updatedContainer, _, err := np.peeringAPI.UpdatePeeringContainer(ctx, projectID, containerID, toAtlasConfig(cfg)).Execute()
+	updatedContainer, _, err := np.peeringAPI.UpdateGroupContainer(ctx, projectID, containerID, toAtlasConfig(cfg)).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to update peering container %s: %w", containerID, err)
 	}
@@ -117,7 +117,7 @@ func (np *networkContainerService) Update(ctx context.Context, projectID, contai
 }
 
 func (np *networkContainerService) Delete(ctx context.Context, projectID, containerID string) error {
-	_, err := np.peeringAPI.DeletePeeringContainer(ctx, projectID, containerID).Execute()
+	_, err := np.peeringAPI.DeleteGroupContainer(ctx, projectID, containerID).Execute()
 	if admin.IsErrorCode(err, "CLOUD_PROVIDER_CONTAINER_NOT_FOUND") {
 		return errors.Join(err, ErrNotFound)
 	}

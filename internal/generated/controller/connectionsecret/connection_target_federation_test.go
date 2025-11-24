@@ -227,11 +227,11 @@ func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 				dfAPI := mockadmin.NewDataFederationApi(t)
 
 				dfAPI.EXPECT().
-					GetFederatedDatabase(mock.Anything, "test-project-id", "my-df-name").
-					Return(admin.GetFederatedDatabaseApiRequest{ApiService: dfAPI})
+					GetDataFederation(mock.Anything, "test-project-id", "my-df-name").
+					Return(admin.GetDataFederationApiRequest{ApiService: dfAPI})
 
 				dfAPI.EXPECT().
-					GetFederatedDatabaseExecute(mock.AnythingOfType("admin.GetFederatedDatabaseApiRequest")).
+					GetDataFederationExecute(mock.AnythingOfType("admin.GetDataFederationApiRequest")).
 					Return(&admin.DataLakeTenant{
 						Hostnames: &[]string{"h1.example.net", "h2.example.net"},
 					}, nil, nil)

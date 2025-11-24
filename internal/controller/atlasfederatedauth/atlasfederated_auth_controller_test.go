@@ -151,9 +151,9 @@ func TestReconcile(t *testing.T) {
 				nil,
 			)
 		groupAPI := mockadmin.NewProjectsApi(t)
-		groupAPI.EXPECT().ListProjects(mock.Anything).
-			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
-		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).
+		groupAPI.EXPECT().ListGroups(mock.Anything).
+			Return(admin.ListGroupsApiRequest{ApiService: groupAPI})
+		groupAPI.EXPECT().ListGroupsExecute(mock.Anything).
 			Return(
 				&admin.PaginatedAtlasGroup{
 					Results: &[]admin.Group{

@@ -576,12 +576,12 @@ func testContainerConfig() akov2.AtlasNetworkContainerConfig {
 func testCreateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().CreatePeeringContainer(
+	apiMock.EXPECT().CreateGroupContainer(
 		mock.Anything, testProjectID, mock.Anything,
-	).Return(admin.CreatePeeringContainerApiRequest{ApiService: &apiMock})
+	).Return(admin.CreateGroupContainerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().CreatePeeringContainerExecute(
-		mock.AnythingOfType("admin.CreatePeeringContainerApiRequest"),
+	apiMock.EXPECT().CreateGroupContainerExecute(
+		mock.AnythingOfType("admin.CreateGroupContainerApiRequest"),
 	).Return(apiContainer, nil, err)
 	return &apiMock
 }
@@ -589,12 +589,12 @@ func testCreateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, e
 func testGetNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().GetPeeringContainer(
+	apiMock.EXPECT().GetGroupContainer(
 		mock.Anything, testProjectID, mock.Anything,
-	).Return(admin.GetPeeringContainerApiRequest{ApiService: &apiMock})
+	).Return(admin.GetGroupContainerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().GetPeeringContainerExecute(
-		mock.AnythingOfType("admin.GetPeeringContainerApiRequest"),
+	apiMock.EXPECT().GetGroupContainerExecute(
+		mock.AnythingOfType("admin.GetGroupContainerApiRequest"),
 	).Return(apiContainer, nil, err)
 	return &apiMock
 }
@@ -602,15 +602,15 @@ func testGetNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err 
 func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, testProjectID).Return(
-		admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: &apiMock},
+	apiMock.EXPECT().ListGroupContainers(mock.Anything, testProjectID).Return(
+		admin.ListGroupContainersApiRequest{ApiService: &apiMock},
 	)
 
 	results := admin.PaginatedCloudProviderContainer{
 		Results: &apiContainers,
 	}
-	apiMock.EXPECT().ListPeeringContainerByCloudProviderExecute(
-		mock.AnythingOfType("admin.ListPeeringContainerByCloudProviderApiRequest"),
+	apiMock.EXPECT().ListGroupContainersExecute(
+		mock.AnythingOfType("admin.ListGroupContainersApiRequest"),
 	).Return(&results, nil, err)
 	return &apiMock
 }
@@ -626,12 +626,12 @@ func testAPIError(code string) error {
 func testUpdateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().UpdatePeeringContainer(
+	apiMock.EXPECT().UpdateGroupContainer(
 		mock.Anything, testProjectID, testContainerID, mock.Anything,
-	).Return(admin.UpdatePeeringContainerApiRequest{ApiService: &apiMock})
+	).Return(admin.UpdateGroupContainerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().UpdatePeeringContainerExecute(
-		mock.AnythingOfType("admin.UpdatePeeringContainerApiRequest"),
+	apiMock.EXPECT().UpdateGroupContainerExecute(
+		mock.AnythingOfType("admin.UpdateGroupContainerApiRequest"),
 	).Return(apiContainer, nil, err)
 	return &apiMock
 }
@@ -639,12 +639,12 @@ func testUpdateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, e
 func testDeleteNetworkContainerAPI(err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().DeletePeeringContainer(
+	apiMock.EXPECT().DeleteGroupContainer(
 		mock.Anything, testProjectID, testContainerID,
-	).Return(admin.DeletePeeringContainerApiRequest{ApiService: &apiMock})
+	).Return(admin.DeleteGroupContainerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().DeletePeeringContainerExecute(
-		mock.AnythingOfType("admin.DeletePeeringContainerApiRequest"),
+	apiMock.EXPECT().DeleteGroupContainerExecute(
+		mock.AnythingOfType("admin.DeleteGroupContainerApiRequest"),
 	).Return(nil, err)
 	return &apiMock
 }

@@ -315,22 +315,22 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			privateEndpointsAPI := mockadmin.NewPrivateEndpointServicesApi(t)
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AWS").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "AWS").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				synthesizeAtlasPEs(tc.atlasPEids), nil, nil,
 			).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AZURE").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "AZURE").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				nil, nil, nil,
 			).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "GCP").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "GCP").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				nil, nil, nil,
 			).Once()
 

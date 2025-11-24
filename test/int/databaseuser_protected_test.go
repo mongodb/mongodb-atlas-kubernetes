@@ -336,11 +336,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			projectID := testProject.ID()
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+			_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true

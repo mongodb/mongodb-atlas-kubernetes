@@ -99,7 +99,7 @@ func prepareProjectList(ctx context.Context, client *admin.APIClient) (map[strin
 	}
 
 	projects, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.Group], *http.Response, error) {
-		return client.ProjectsApi.ListProjects(ctx).PageNum(pageNum).Execute()
+		return client.ProjectsApi.ListGroups(ctx).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, err

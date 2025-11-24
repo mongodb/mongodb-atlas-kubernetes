@@ -74,12 +74,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetGroupByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -94,7 +94,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 					Name:                      projectName,
 					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
-				_, _, err := atlasClient.ProjectsApi.CreateProject(context.Background(), &atlasProject).Execute()
+				_, _, err := atlasClient.ProjectsApi.CreateGroup(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())
 			})
 
@@ -116,12 +116,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetProjectByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsApi.GetGroupByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.ProjectsApi.DeleteProject(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -147,7 +147,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+					_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(r).ToNot(BeNil())
 					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))

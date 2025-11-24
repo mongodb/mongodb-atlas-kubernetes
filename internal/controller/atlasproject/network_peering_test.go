@@ -76,34 +76,34 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			peeringAPI := mockadmin.NewNetworkPeeringApi(t)
-			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Once()
-			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
-				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupPeersWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListGroupPeersApiRequest{ApiService: peeringAPI}).Once()
+			peeringAPI.EXPECT().ListGroupPeersExecute(
+				mock.Anything).Return(
 				synthesizeAtlasNetworkPeerings(tc.atlasNetworkPeers), nil, nil,
 			).Once()
-			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Twice()
-			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
-				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupPeersWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListGroupPeersApiRequest{ApiService: peeringAPI}).Twice()
+			peeringAPI.EXPECT().ListGroupPeersExecute(
+				mock.Anything).Return(
 				nil, nil, nil,
 			).Twice()
 
 			removals := len(tc.wantRemoved)
 			if removals > 0 {
-				peeringAPI.EXPECT().DeletePeeringConnection(
+				peeringAPI.EXPECT().DeleteGroupPeer(
 					mock.Anything, mock.Anything, mock.Anything,
-				).Return(admin.DeletePeeringConnectionApiRequest{ApiService: peeringAPI}).Times(removals)
-				peeringAPI.EXPECT().DeletePeeringConnectionExecute(
-					mock.AnythingOfType("admin.DeletePeeringConnectionApiRequest")).Return(
+				).Return(admin.DeleteGroupPeerApiRequest{ApiService: peeringAPI}).Times(removals)
+				peeringAPI.EXPECT().DeleteGroupPeerExecute(
+					mock.Anything).Return(
 					nil, nil, nil,
 				).Times(removals)
 			}
 
-			peeringAPI.EXPECT().ListPeeringContainers(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringContainersApiRequest{ApiService: peeringAPI}).Maybe()
-			peeringAPI.EXPECT().ListPeeringContainersExecute(
-				mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupContainers(mock.Anything, mock.Anything).
+				Return(admin.ListGroupContainersApiRequest{ApiService: peeringAPI}).Maybe()
+			peeringAPI.EXPECT().ListGroupContainersExecute(
+				mock.Anything).Return(
 				nil, nil, nil,
 			).Maybe()
 

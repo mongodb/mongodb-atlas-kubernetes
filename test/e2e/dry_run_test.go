@@ -59,14 +59,14 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 
 		testID := uuid.New().String()[0:6]
 		projectName = fmt.Sprintf("dry-run-%s", testID)
-		group, _, err := atlasClient.Client.ProjectsApi.CreateProject(ctx, &admin.Group{
+		group, _, err := atlasClient.Client.ProjectsApi.CreateGroup(ctx, &admin.Group{
 			Name:  projectName,
 			OrgId: atlasClient.OrgID,
 		}).Execute()
 		Expect(err).NotTo(HaveOccurred())
 
 		DeferCleanup(func(ctx context.Context) {
-			_, err := atlasClient.Client.ProjectsApi.DeleteProject(ctx, group.GetId()).Execute()
+			_, err := atlasClient.Client.ProjectsApi.DeleteGroup(ctx, group.GetId()).Execute()
 			Expect(err).NotTo(HaveOccurred())
 		})
 

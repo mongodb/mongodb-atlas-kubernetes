@@ -506,9 +506,9 @@ func TestHandleDeletion(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "fake-project").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "fake-project").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(nil, nil, fmt.Errorf("unexpected project fetch error"))
 					return &atlas.ClientSet{
 						SdkClient20250312009: &admin.APIClient{ProjectsApi: projectAPI},

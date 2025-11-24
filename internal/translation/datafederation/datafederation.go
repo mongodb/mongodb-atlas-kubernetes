@@ -43,7 +43,7 @@ func NewAtlasDataFederation(api admin.DataFederationApi) *AtlasDataFederationSer
 }
 
 func (dfs *AtlasDataFederationService) Get(ctx context.Context, projectID, name string) (*DataFederation, error) {
-	atlasDataFederation, resp, err := dfs.api.GetFederatedDatabase(ctx, projectID, name).Execute()
+	atlasDataFederation, resp, err := dfs.api.GetDataFederation(ctx, projectID, name).Execute()
 
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return nil, errors.Join(ErrorNotFound, err)
@@ -58,7 +58,7 @@ func (dfs *AtlasDataFederationService) Get(ctx context.Context, projectID, name 
 func (dfs *AtlasDataFederationService) Create(ctx context.Context, df *DataFederation) error {
 	atlasDataFederation := toAtlas(df)
 	_, _, err := dfs.api.
-		CreateFederatedDatabase(ctx, df.ProjectID, atlasDataFederation).
+		CreateDataFederation(ctx, df.ProjectID, atlasDataFederation).
 		Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create data federation database %q: %w", df.ProjectID, err)
@@ -69,7 +69,7 @@ func (dfs *AtlasDataFederationService) Create(ctx context.Context, df *DataFeder
 func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFederation) error {
 	atlasDataFederation := toAtlas(df)
 	_, _, err := dfs.api.
-		UpdateFederatedDatabase(ctx, df.ProjectID, df.Name, atlasDataFederation).
+		UpdateDataFederation(ctx, df.ProjectID, df.Name, atlasDataFederation).
 		// false is the default for creation, so we have to respect it for updates as well.
 		SkipRoleValidation(false).
 		Execute()
@@ -80,7 +80,7 @@ func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFeder
 }
 
 func (dfs *AtlasDataFederationService) Delete(ctx context.Context, projectID, name string) error {
-	resp, err := dfs.api.DeleteFederatedDatabase(ctx, projectID, name).Execute()
+	resp, err := dfs.api.DeleteDataFederation(ctx, projectID, name).Execute()
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return errors.Join(ErrorNotFound, err)
 	}

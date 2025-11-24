@@ -40,7 +40,7 @@ func NewAuditLog(api admin.AuditingApi) *AuditLog {
 
 // Get an Atlas Project audit log configuration
 func (s *AuditLog) Get(ctx context.Context, projectID string) (*AuditConfig, error) {
-	auditLog, _, err := s.auditAPI.GetAuditingConfiguration(ctx, projectID).Execute()
+	auditLog, _, err := s.auditAPI.GetGroupAuditLog(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get audit log from Atlas: %w", err)
 	}
@@ -50,6 +50,6 @@ func (s *AuditLog) Get(ctx context.Context, projectID string) (*AuditConfig, err
 
 // Update an Atlas Project audit log configuration
 func (s *AuditLog) Update(ctx context.Context, projectID string, auditing *AuditConfig) error {
-	_, _, err := s.auditAPI.UpdateAuditingConfiguration(ctx, projectID, toAtlas(auditing)).Execute()
+	_, _, err := s.auditAPI.UpdateAuditLog(ctx, projectID, toAtlas(auditing)).Execute()
 	return err
 }

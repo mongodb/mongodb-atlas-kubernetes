@@ -39,10 +39,10 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 	t.Run("should fail when atlas is unavailable", func(t *testing.T) {
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
-			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
+			ListCloudProviderAccess(mock.Anything, mock.Anything).
+			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			ListCloudProviderAccessRolesExecute(mock.Anything).
+			ListCloudProviderAccessExecute(mock.Anything).
 			Return(nil, nil, errors.New("service unavailable"))
 		atlasClient := admin.APIClient{
 			CloudProviderAccessApi: cpa,
@@ -101,16 +101,16 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
-			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
+			ListCloudProviderAccess(mock.Anything, mock.Anything).
+			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			ListCloudProviderAccessRolesExecute(mock.Anything).
+			ListCloudProviderAccessExecute(mock.Anything).
 			Return(&admin.CloudProviderAccessRoles{AwsIamRoles: &atlasCPAs}, &http.Response{}, nil)
 		cpa.EXPECT().
-			CreateCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			CreateCloudProviderAccess(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.CreateCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			CreateCloudProviderAccessRoleExecute(mock.Anything).
+			CreateCloudProviderAccessExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
 					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-3"),
@@ -123,12 +123,12 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				nil,
 			)
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			RunAndReturn(
-				func(request admin.AuthorizeCloudProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
+				func(request admin.AuthorizeProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
 					atlasCPA := admin.CloudProviderAccessRole{
 						AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
 						AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
@@ -143,10 +143,10 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				},
 			)
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.DeauthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			DeauthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.DeauthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			DeauthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -194,18 +194,18 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
-			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
+			ListCloudProviderAccess(mock.Anything, mock.Anything).
+			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			ListCloudProviderAccessRolesExecute(mock.Anything).
+			ListCloudProviderAccessExecute(mock.Anything).
 			Return(&admin.CloudProviderAccessRoles{AwsIamRoles: &atlasCPAs}, &http.Response{}, nil)
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			RunAndReturn(
-				func(request admin.AuthorizeCloudProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
+				func(request admin.AuthorizeProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
 					atlasCPA := admin.CloudProviderAccessRole{
 						AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
 						AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
@@ -265,16 +265,16 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			ListCloudProviderAccessRoles(mock.Anything, mock.Anything).
-			Return(admin.ListCloudProviderAccessRolesApiRequest{ApiService: cpa})
+			ListCloudProviderAccess(mock.Anything, mock.Anything).
+			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			ListCloudProviderAccessRolesExecute(mock.Anything).
+			ListCloudProviderAccessExecute(mock.Anything).
 			Return(&admin.CloudProviderAccessRoles{AwsIamRoles: &atlasCPAs}, &http.Response{}, nil)
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -847,10 +847,10 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			CreateCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			CreateCloudProviderAccess(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.CreateCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			CreateCloudProviderAccessRoleExecute(mock.Anything).
+			CreateCloudProviderAccessExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
 					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
@@ -888,10 +888,10 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			CreateCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			CreateCloudProviderAccess(mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.CreateCloudProviderAccessApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			CreateCloudProviderAccessRoleExecute(mock.Anything).
+			CreateCloudProviderAccessExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -933,10 +933,10 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
 					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
@@ -983,10 +983,10 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.AuthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			AuthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -1017,10 +1017,10 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.DeauthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			DeauthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.DeauthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			DeauthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -1047,10 +1047,10 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.DeauthorizeCloudProviderAccessRoleApiRequest{ApiService: cpa})
+			DeauthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.DeauthorizeProviderAccessRoleApiRequest{ApiService: cpa})
 		cpa.EXPECT().
-			DeauthorizeCloudProviderAccessRoleExecute(mock.Anything).
+			DeauthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(&http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{

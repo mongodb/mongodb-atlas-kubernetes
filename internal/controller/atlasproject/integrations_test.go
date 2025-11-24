@@ -280,9 +280,9 @@ func TestEnsureIntegration(t *testing.T) {
 			lastAppliedIntegration: "{}",
 			apiMock: func() admin.ThirdPartyIntegrationsApi {
 				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
-				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
+					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return integrationsApi
@@ -343,14 +343,14 @@ func TestEnsureIntegration(t *testing.T) {
 			lastAppliedIntegration: "{}",
 			apiMock: func() admin.ThirdPartyIntegrationsApi {
 				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
-				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
+					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
-				integrationsApi.EXPECT().CreateThirdPartyIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
-					Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: integrationsApi})
-				integrationsApi.EXPECT().CreateThirdPartyIntegrationExecute(mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest")).
+				integrationsApi.EXPECT().CreateGroupIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.CreateGroupIntegrationApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().CreateGroupIntegrationExecute(mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest")).
 					Return(nil, nil, errors.New("failed to create integration"))
 
 				return integrationsApi
@@ -373,14 +373,14 @@ func TestEnsureIntegration(t *testing.T) {
 			lastAppliedIntegration: "{}",
 			apiMock: func() admin.ThirdPartyIntegrationsApi {
 				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
-				integrationsApi.EXPECT().ListThirdPartyIntegrations(context.Background(), "0123456789").
-					Return(admin.ListThirdPartyIntegrationsApiRequest{ApiService: integrationsApi})
-				integrationsApi.EXPECT().ListThirdPartyIntegrationsExecute(mock.AnythingOfType("admin.ListThirdPartyIntegrationsApiRequest")).
+				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
+					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
-				integrationsApi.EXPECT().CreateThirdPartyIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
-					Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: integrationsApi})
-				integrationsApi.EXPECT().CreateThirdPartyIntegrationExecute(mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest")).
+				integrationsApi.EXPECT().CreateGroupIntegration(context.Background(), "DATADOG", "0123456789", mock.AnythingOfType("*admin.ThirdPartyIntegration")).
+					Return(admin.CreateGroupIntegrationApiRequest{ApiService: integrationsApi})
+				integrationsApi.EXPECT().CreateGroupIntegrationExecute(mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest")).
 					Return(
 						&admin.PaginatedIntegration{
 							Results: &[]admin.ThirdPartyIntegration{

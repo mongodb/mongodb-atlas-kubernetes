@@ -277,9 +277,9 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 
 func mockFindFakeParentProject(t *testing.T) *mockadmin.ProjectsApi {
 	projectAPI := mockadmin.NewProjectsApi(t)
-	projectAPI.EXPECT().GetProjectByName(mock.Anything, "fake-project").
-		Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-	projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+	projectAPI.EXPECT().GetGroupByName(mock.Anything, "fake-project").
+		Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+	projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 		Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
 	return projectAPI
 }

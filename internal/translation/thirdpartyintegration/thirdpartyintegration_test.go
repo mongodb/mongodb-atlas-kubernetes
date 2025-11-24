@@ -505,14 +505,14 @@ func TestIntegrationDelete(t *testing.T) {
 func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
 	var apiMock mockadmin.ThirdPartyIntegrationsApi
 
-	apiMock.EXPECT().CreateThirdPartyIntegration(
+	apiMock.EXPECT().CreateGroupIntegration(
 		mock.Anything, mock.Anything, testProjectID, mock.Anything,
-	).Return(admin.CreateThirdPartyIntegrationApiRequest{ApiService: &apiMock})
+	).Return(admin.CreateGroupIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
 	paginatedIntegration.Results = &integrations
-	apiMock.EXPECT().CreateThirdPartyIntegrationExecute(
-		mock.AnythingOfType("admin.CreateThirdPartyIntegrationApiRequest"),
+	apiMock.EXPECT().CreateGroupIntegrationExecute(
+		mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
 	return &apiMock
 }
@@ -520,12 +520,12 @@ func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err er
 func testGetIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
 	var apiMock mockadmin.ThirdPartyIntegrationsApi
 
-	apiMock.EXPECT().GetThirdPartyIntegration(
+	apiMock.EXPECT().GetGroupIntegration(
 		mock.Anything, testProjectID, testIntegrationType,
-	).Return(admin.GetThirdPartyIntegrationApiRequest{ApiService: &apiMock})
+	).Return(admin.GetGroupIntegrationApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().GetThirdPartyIntegrationExecute(
-		mock.AnythingOfType("admin.GetThirdPartyIntegrationApiRequest"),
+	apiMock.EXPECT().GetGroupIntegrationExecute(
+		mock.AnythingOfType("admin.GetGroupIntegrationApiRequest"),
 	).Return(integration, nil, err)
 	return &apiMock
 }
@@ -533,9 +533,9 @@ func testGetIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) 
 func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
 	var apiMock mockadmin.ThirdPartyIntegrationsApi
 
-	apiMock.EXPECT().UpdateThirdPartyIntegration(
+	apiMock.EXPECT().UpdateGroupIntegration(
 		mock.Anything, mock.Anything, testProjectID, mock.Anything,
-	).Return(admin.UpdateThirdPartyIntegrationApiRequest{ApiService: &apiMock})
+	).Return(admin.UpdateGroupIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
 	if integration != nil {
@@ -543,8 +543,8 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 			*integration,
 		}
 	}
-	apiMock.EXPECT().UpdateThirdPartyIntegrationExecute(
-		mock.AnythingOfType("admin.UpdateThirdPartyIntegrationApiRequest"),
+	apiMock.EXPECT().UpdateGroupIntegrationExecute(
+		mock.AnythingOfType("admin.UpdateGroupIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
 	return &apiMock
 }
@@ -552,12 +552,12 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 func testDeleteIntegrationAPI(err error) admin.ThirdPartyIntegrationsApi {
 	var apiMock mockadmin.ThirdPartyIntegrationsApi
 
-	apiMock.EXPECT().DeleteThirdPartyIntegration(
+	apiMock.EXPECT().DeleteGroupIntegration(
 		mock.Anything, testIntegrationType, testProjectID,
-	).Return(admin.DeleteThirdPartyIntegrationApiRequest{ApiService: &apiMock})
+	).Return(admin.DeleteGroupIntegrationApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().DeleteThirdPartyIntegrationExecute(
-		mock.AnythingOfType("admin.DeleteThirdPartyIntegrationApiRequest"),
+	apiMock.EXPECT().DeleteGroupIntegrationExecute(
+		mock.AnythingOfType("admin.DeleteGroupIntegrationApiRequest"),
 	).Return(nil, err)
 	return &apiMock
 }

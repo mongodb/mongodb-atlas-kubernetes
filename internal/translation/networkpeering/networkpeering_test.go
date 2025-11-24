@@ -407,12 +407,12 @@ func TestNetworkPeeringDelete(t *testing.T) {
 func testCreateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().CreatePeeringConnection(
+	apiMock.EXPECT().CreateGroupPeer(
 		mock.Anything, testProjectID, mock.Anything,
-	).Return(admin.CreatePeeringConnectionApiRequest{ApiService: &apiMock})
+	).Return(admin.CreateGroupPeerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().CreatePeeringConnectionExecute(
-		mock.AnythingOfType("admin.CreatePeeringConnectionApiRequest"),
+	apiMock.EXPECT().CreateGroupPeerExecute(
+		mock.AnythingOfType("admin.CreateGroupPeerApiRequest"),
 	).Return(apiPeering, nil, err)
 	return &apiMock
 }
@@ -420,12 +420,12 @@ func testCreateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionS
 func testGetNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().GetPeeringConnection(
+	apiMock.EXPECT().GetGroupPeer(
 		mock.Anything, testProjectID, testPeerID,
-	).Return(admin.GetPeeringConnectionApiRequest{ApiService: &apiMock})
+	).Return(admin.GetGroupPeerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().GetPeeringConnectionExecute(
-		mock.AnythingOfType("admin.GetPeeringConnectionApiRequest"),
+	apiMock.EXPECT().GetGroupPeerExecute(
+		mock.AnythingOfType("admin.GetGroupPeerApiRequest"),
 	).Return(apiPeering, nil, err)
 	return &apiMock
 }
@@ -433,12 +433,12 @@ func testGetNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSett
 func testUpdateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().UpdatePeeringConnection(
+	apiMock.EXPECT().UpdateGroupPeer(
 		mock.Anything, testProjectID, testPeerID, mock.Anything,
-	).Return(admin.UpdatePeeringConnectionApiRequest{ApiService: &apiMock})
+	).Return(admin.UpdateGroupPeerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().UpdatePeeringConnectionExecute(
-		mock.AnythingOfType("admin.UpdatePeeringConnectionApiRequest"),
+	apiMock.EXPECT().UpdateGroupPeerExecute(
+		mock.AnythingOfType("admin.UpdateGroupPeerApiRequest"),
 	).Return(apiPeering, nil, err)
 	return &apiMock
 }
@@ -446,12 +446,12 @@ func testUpdateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionS
 func testDeleteNetworkPeeringAPI(err error) admin.NetworkPeeringApi {
 	var apiMock mockadmin.NetworkPeeringApi
 
-	apiMock.EXPECT().DeletePeeringConnection(
+	apiMock.EXPECT().DeleteGroupPeer(
 		mock.Anything, testProjectID, testPeerID,
-	).Return(admin.DeletePeeringConnectionApiRequest{ApiService: &apiMock})
+	).Return(admin.DeleteGroupPeerApiRequest{ApiService: &apiMock})
 
-	apiMock.EXPECT().DeletePeeringConnectionExecute(
-		mock.AnythingOfType("admin.DeletePeeringConnectionApiRequest"),
+	apiMock.EXPECT().DeleteGroupPeerExecute(
+		mock.AnythingOfType("admin.DeleteGroupPeerApiRequest"),
 	).Return(nil, nil, err)
 	return &apiMock
 }

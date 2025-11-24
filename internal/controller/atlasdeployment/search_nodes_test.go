@@ -41,9 +41,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				nil,
 				&http.Response{},
@@ -70,9 +70,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -87,10 +87,10 @@ func TestHandleSearchNodes(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		searchAPI.EXPECT().UpdateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
+		searchAPI.EXPECT().UpdateClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
 			&admin.ApiSearchDeploymentRequest{Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas()}).
-			Return(admin.UpdateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().UpdateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(admin.UpdateClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().UpdateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -126,9 +126,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -164,9 +164,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -181,10 +181,10 @@ func TestHandleSearchNodes(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		searchAPI.EXPECT().UpdateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
+		searchAPI.EXPECT().UpdateClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name,
 			&admin.ApiSearchDeploymentRequest{Specs: deployment.Spec.DeploymentSpec.SearchNodesToAtlas()}).
-			Return(admin.UpdateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().UpdateAtlasSearchDeploymentExecute(mock.Anything).
+			Return(admin.UpdateClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().UpdateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				nil,
 				&http.Response{},
@@ -213,9 +213,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{},
 				&http.Response{
@@ -224,9 +224,9 @@ func TestHandleSearchNodes(t *testing.T) {
 				},
 				mockError,
 			)
-		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
-			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().CreateAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().CreateClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
+			Return(admin.CreateClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().CreateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -264,9 +264,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{},
 				&http.Response{
@@ -275,9 +275,9 @@ func TestHandleSearchNodes(t *testing.T) {
 				},
 				mockError,
 			)
-		searchAPI.EXPECT().CreateAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
-			Return(admin.CreateAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().CreateAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().CreateClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name, mock.AnythingOfType("*admin.ApiSearchDeploymentRequest")).
+			Return(admin.CreateClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().CreateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{},
 				&http.Response{},
@@ -304,9 +304,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -321,9 +321,9 @@ func TestHandleSearchNodes(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().DeleteClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.DeleteClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().DeleteClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&http.Response{},
 				nil,
@@ -349,9 +349,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -366,9 +366,9 @@ func TestHandleSearchNodes(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		searchAPI.EXPECT().DeleteAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.DeleteAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().DeleteAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().DeleteClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.DeleteClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().DeleteClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&http.Response{},
 				errors.New("delete test error"),
@@ -396,9 +396,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{},
 				&http.Response{
@@ -428,9 +428,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -467,9 +467,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -506,9 +506,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
 					GroupId:   pointer.MakePtr(projectID),
@@ -547,9 +547,9 @@ func TestHandleSearchNodes(t *testing.T) {
 		mockError := makeMockError()
 
 		searchAPI := mockadmin.NewAtlasSearchApi(t)
-		searchAPI.EXPECT().GetAtlasSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
-			Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-		searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
+			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{},
 				&http.Response{

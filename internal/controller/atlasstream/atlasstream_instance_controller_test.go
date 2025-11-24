@@ -476,9 +476,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Build()
 
 		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.Anything).
 			Return(nil, &http.Response{}, errors.New("failed to get instance"))
 
 		reconciler := &AtlasStreamsInstanceReconciler{
@@ -581,9 +581,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Build()
 
 		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.Anything).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -709,22 +709,22 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Build()
 
 		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		notFound := admin.ApiError{}
 		notFound.SetError(404)
 		notFound.SetErrorCode(instanceNotFound)
 		apiError := admin.GenericOpenAPIError{}
 		apiError.SetModel(notFound)
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
 			Return(
 				nil,
 				&http.Response{},
 				&apiError,
 			)
-		streamsAPI.EXPECT().CreateStreamInstance(mock.Anything, "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
-			Return(admin.CreateStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().CreateStreamInstanceExecute(mock.AnythingOfType("admin.CreateStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().CreateStreamWorkspace(mock.Anything, "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
+			Return(admin.CreateStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().CreateStreamWorkspaceExecute(mock.AnythingOfType("admin.CreateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -847,9 +847,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Build()
 
 		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -867,9 +867,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		streamsAPI.EXPECT().DeleteStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.DeleteStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().DeleteStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().DeleteStreamWorkspaceExecute(mock.AnythingOfType("admin.DeleteStreamWorkspaceApiRequest")).
 			Return(
 				&http.Response{},
 				nil,
@@ -965,9 +965,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Build()
 
 		streamsAPI := mockadmin.NewStreamsApi(t)
-		streamsAPI.EXPECT().GetStreamInstance(mock.Anything, "my-project-id", "instance-0").
-			Return(admin.GetStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().GetStreamInstanceExecute(mock.AnythingOfType("admin.GetStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
+			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -985,9 +985,9 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		streamsAPI.EXPECT().UpdateStreamInstance(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
-			Return(admin.UpdateStreamInstanceApiRequest{ApiService: streamsAPI})
-		streamsAPI.EXPECT().UpdateStreamInstanceExecute(mock.AnythingOfType("admin.UpdateStreamInstanceApiRequest")).
+		streamsAPI.EXPECT().UpdateStreamWorkspace(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
+		streamsAPI.EXPECT().UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),

@@ -739,7 +739,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
 					if r != nil && r.StatusCode == http.StatusNotFound {
 						return true

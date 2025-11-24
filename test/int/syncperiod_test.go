@@ -79,7 +79,7 @@ var _ = Describe("Sync Period test", Label("int", "sync-period"), func() {
 			Expect(createdProject.Status.ObservedGeneration).To(Equal(createdProject.Generation))
 
 			atlasProject, _, err := atlasClient.ProjectsApi.
-				GetProject(context.Background(), createdProject.Status.ID).
+				GetGroup(context.Background(), createdProject.Status.ID).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
 

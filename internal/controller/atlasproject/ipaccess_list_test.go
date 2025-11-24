@@ -397,9 +397,9 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should successfully handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), "project-id").
-					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+				apiMock.EXPECT().ListAccessListEntries(context.Background(), "project-id").
+					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
 							Results:    &[]admin.NetworkPermissionEntry{},
@@ -408,9 +408,9 @@ func TestHandleIPAccessList(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				apiMock.EXPECT().CreateProjectIpAccessList(context.Background(), "project-id", mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
-					Return(admin.CreateProjectIpAccessListApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateProjectIpAccessListExecute(mock.AnythingOfType("admin.CreateProjectIpAccessListApiRequest")).
+				apiMock.EXPECT().CreateAccessListEntry(context.Background(), "project-id", mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
+					Return(admin.CreateAccessListEntryApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
 							Results: &[]admin.NetworkPermissionEntry{
@@ -424,9 +424,9 @@ func TestHandleIPAccessList(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				apiMock.EXPECT().GetProjectIpAccessListStatus(context.Background(), "project-id", "192.168.100.150/32").
-					Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
+				apiMock.EXPECT().GetAccessListStatus(context.Background(), "project-id", "192.168.100.150/32").
+					Return(admin.GetAccessListStatusApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
 					Return(
 						&admin.NetworkPermissionEntryStatus{
 							STATUS: "ACTIVE",
@@ -449,9 +449,9 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should fail to handle ip access list reconciliation": {
 			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
-				apiMock.EXPECT().ListProjectIpAccessLists(context.Background(), "project-id").
-					Return(admin.ListProjectIpAccessListsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+				apiMock.EXPECT().ListAccessListEntries(context.Background(), "project-id").
+					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						nil,
 						&http.Response{},
@@ -589,38 +589,38 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			ipAccessAPI := mockadmin.NewProjectIPAccessListApi(t)
-			ipAccessAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, mock.Anything).
-				Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ipAccessAPI}).Once()
-			ipAccessAPI.EXPECT().ListProjectIpAccessListsExecute(
-				mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).Return(
+			ipAccessAPI.EXPECT().ListAccessListEntries(mock.Anything, mock.Anything).
+				Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessAPI}).Once()
+			ipAccessAPI.EXPECT().ListAccessListEntriesExecute(
+				mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).Return(
 				synthesizeAtlasIPAccessList(tc.atlasIPAccessList), nil, nil,
 			).Once()
-			// CreateProjectIpAccessList is a non destrutive operation, it does not remove entries
-			ipAccessAPI.EXPECT().CreateProjectIpAccessList(mock.Anything, mock.Anything, mock.Anything).
-				Return(admin.CreateProjectIpAccessListApiRequest{ApiService: ipAccessAPI}).Once()
-			ipAccessAPI.EXPECT().CreateProjectIpAccessListExecute(
-				mock.AnythingOfType("admin.CreateProjectIpAccessListApiRequest")).Return(
+			// CreateAccessListEntry is a non destrutive operation, it does not remove entries
+			ipAccessAPI.EXPECT().CreateAccessListEntry(mock.Anything, mock.Anything, mock.Anything).
+				Return(admin.CreateAccessListEntryApiRequest{ApiService: ipAccessAPI}).Once()
+			ipAccessAPI.EXPECT().CreateAccessListEntryExecute(
+				mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).Return(
 				nil, nil, nil,
 			).Once()
 
 			removals := len(tc.wantRemoved)
 			if removals > 0 {
-				ipAccessAPI.EXPECT().DeleteProjectIpAccessList(
+				ipAccessAPI.EXPECT().DeleteAccessListEntry(
 					mock.Anything, mock.Anything, mock.Anything,
-				).Return(admin.DeleteProjectIpAccessListApiRequest{ApiService: ipAccessAPI}).Times(removals)
-				ipAccessAPI.EXPECT().DeleteProjectIpAccessListExecute(
-					mock.AnythingOfType("admin.DeleteProjectIpAccessListApiRequest")).Return(
+				).Return(admin.DeleteAccessListEntryApiRequest{ApiService: ipAccessAPI}).Times(removals)
+				ipAccessAPI.EXPECT().DeleteAccessListEntryExecute(
+					mock.AnythingOfType("admin.DeleteAccessListEntryApiRequest")).Return(
 					nil, nil,
 				).Times(removals)
 			}
 
 			unset := len(tc.specIPAccessList) == 0
 			if !unset {
-				ipAccessAPI.EXPECT().GetProjectIpAccessListStatus(
+				ipAccessAPI.EXPECT().GetAccessListStatus(
 					mock.Anything, mock.Anything, mock.Anything,
-				).Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: ipAccessAPI}).Times(removals)
-				ipAccessAPI.EXPECT().GetProjectIpAccessListStatusExecute(
-					mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).Return(
+				).Return(admin.GetAccessListStatusApiRequest{ApiService: ipAccessAPI}).Times(removals)
+				ipAccessAPI.EXPECT().GetAccessListStatusExecute(
+					mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).Return(
 					nil, nil, nil,
 				).Times(removals)
 			}

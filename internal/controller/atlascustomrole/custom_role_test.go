@@ -760,14 +760,14 @@ func Test_handleCustomRole(t *testing.T) {
 						SdkClient20250312009: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
-									Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-								cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
+									Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
 									Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-								cdrAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
+								cdrAPI.EXPECT().CreateCustomDbRole(context.Background(), "testProjectID",
 									mock.AnythingOfType("*admin.UserCustomDBRole")).
-									Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-								cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+									Return(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
 									Return(nil, nil, nil)
 								return cdrAPI
 							}(),
@@ -829,22 +829,22 @@ func Test_handleCustomRole(t *testing.T) {
 						SdkClient20250312009: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-								cdrAPI.EXPECT().GetCustomDatabaseRole(context.Background(), "testProjectID", "testRole").
-									Return(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-								cdrAPI.EXPECT().GetCustomDatabaseRoleExecute(admin.GetCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
+									Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
 									Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-								cdrAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "testProjectID",
+								cdrAPI.EXPECT().CreateCustomDbRole(context.Background(), "testProjectID",
 									mock.AnythingOfType("*admin.UserCustomDBRole")).
-									Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI})
-								cdrAPI.EXPECT().CreateCustomDatabaseRoleExecute(admin.CreateCustomDatabaseRoleApiRequest{ApiService: cdrAPI}).
+									Return(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI})
+								cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
 									Return(nil, nil, nil)
 								return cdrAPI
 							}(),
 							ProjectsApi: func() admin.ProjectsApi {
 								projectAPI := mockadmin.NewProjectsApi(t)
-								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
-									Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-								projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+								projectAPI.EXPECT().GetGroupByName(mock.Anything, "testProject").
+									Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+								projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 									Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
 								return projectAPI
 							}(),
@@ -926,9 +926,9 @@ func Test_handleCustomRole(t *testing.T) {
 								notFound.SetModel(admin.ApiError{ErrorCode: "RESOURCE_NOT_FOUND"})
 
 								projectAPI := mockadmin.NewProjectsApi(t)
-								projectAPI.EXPECT().GetProjectByName(mock.Anything, "testProject").
-									Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-								projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+								projectAPI.EXPECT().GetGroupByName(mock.Anything, "testProject").
+									Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+								projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 									Return(nil, nil, notFound)
 								return projectAPI
 							}(),

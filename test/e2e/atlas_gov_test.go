@@ -197,7 +197,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
 			users, _, err := atlasClient.Client.MongoDBCloudUsersApi.
-				ListProjectUsers(ctx, testData.Project.ID()).
+				ListGroupUsers(ctx, testData.Project.ID()).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(users.GetResults()).ToNot(BeEmpty())

@@ -102,10 +102,10 @@ func TestCreate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			CreateStreamInstance(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
-			Return(admin.CreateStreamInstanceApiRequest{ApiService: streamsAPI})
+			CreateStreamWorkspace(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
+			Return(admin.CreateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
-			CreateStreamInstanceExecute(mock.AnythingOfType("admin.CreateStreamInstanceApiRequest")).
+			CreateStreamWorkspaceExecute(mock.AnythingOfType("admin.CreateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -208,10 +208,10 @@ func TestCreate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			CreateStreamInstance(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
-			Return(admin.CreateStreamInstanceApiRequest{ApiService: streamsAPI})
+			CreateStreamWorkspace(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
+			Return(admin.CreateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
-			CreateStreamInstanceExecute(mock.AnythingOfType("admin.CreateStreamInstanceApiRequest")).
+			CreateStreamWorkspaceExecute(mock.AnythingOfType("admin.CreateStreamWorkspaceApiRequest")).
 			Return(
 				nil,
 				&http.Response{},
@@ -303,10 +303,10 @@ func TestDelete(t *testing.T) {
 			}
 			streamsAPI := mockadmin.NewStreamsApi(t)
 			streamsAPI.EXPECT().
-				DeleteStreamInstance(context.Background(), "my-project-id", "instance-0").
-				Return(admin.DeleteStreamInstanceApiRequest{ApiService: streamsAPI})
+				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
+				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
 			streamsAPI.EXPECT().
-				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
+				DeleteStreamWorkspaceExecute(mock.AnythingOfType("admin.DeleteStreamWorkspaceApiRequest")).
 				Return(
 					&http.Response{},
 					nil,
@@ -467,10 +467,10 @@ func TestDelete(t *testing.T) {
 			}
 			streamsAPI := mockadmin.NewStreamsApi(t)
 			streamsAPI.EXPECT().
-				DeleteStreamInstance(context.Background(), "my-project-id", "instance-0").
-				Return(admin.DeleteStreamInstanceApiRequest{ApiService: streamsAPI})
+				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
+				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
 			streamsAPI.EXPECT().
-				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
+				DeleteStreamWorkspaceExecute(mock.AnythingOfType("admin.DeleteStreamWorkspaceApiRequest")).
 				Return(
 					&http.Response{},
 					errors.New("failed to delete instance"),
@@ -565,10 +565,10 @@ func TestDelete(t *testing.T) {
 			}
 			streamsAPI := mockadmin.NewStreamsApi(t)
 			streamsAPI.EXPECT().
-				DeleteStreamInstance(context.Background(), "my-project-id", "instance-0").
-				Return(admin.DeleteStreamInstanceApiRequest{ApiService: streamsAPI})
+				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
+				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
 			streamsAPI.EXPECT().
-				DeleteStreamInstanceExecute(mock.AnythingOfType("admin.DeleteStreamInstanceApiRequest")).
+				DeleteStreamWorkspaceExecute(mock.AnythingOfType("admin.DeleteStreamWorkspaceApiRequest")).
 				Return(
 					&http.Response{},
 					nil,
@@ -811,10 +811,10 @@ func TestUpdate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			UpdateStreamInstance(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
-			Return(admin.UpdateStreamInstanceApiRequest{ApiService: streamsAPI})
+			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
-			UpdateStreamInstanceExecute(mock.AnythingOfType("admin.UpdateStreamInstanceApiRequest")).
+			UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
 					Id:   pointer.MakePtr("instance-0-id"),
@@ -920,10 +920,10 @@ func TestUpdate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			UpdateStreamInstance(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
-			Return(admin.UpdateStreamInstanceApiRequest{ApiService: streamsAPI})
+			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
-			UpdateStreamInstanceExecute(mock.AnythingOfType("admin.UpdateStreamInstanceApiRequest")).
+			UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
 				nil,
 				&http.Response{},

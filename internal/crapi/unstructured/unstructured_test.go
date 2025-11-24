@@ -76,9 +76,9 @@ func TestParamsFill(t *testing.T) {
 			"eventtypename": "some-event",
 		},
 	}
-	result := admin2025.CreateAlertConfigurationApiParams{}
+	result := admin2025.CreateAlertConfigApiParams{}
 	require.NoError(t, unstructured.FromUnstructured(&result, unstructuredSample))
-	assert.Equal(t, admin2025.CreateAlertConfigurationApiParams{
+	assert.Equal(t, admin2025.CreateAlertConfigApiParams{
 		GroupId: "62b6e34b3d91647abb20e7b8",
 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
 			Enabled:       pointer.MakePtr(true),

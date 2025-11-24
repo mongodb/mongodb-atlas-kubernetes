@@ -588,9 +588,9 @@ func TestClusterWithProcessArgs(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
-					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
+				clusterAPI.EXPECT().GetProcessArgs(context.Background(), "project-id", "cluster0").
+					Return(admin.GetProcessArgsApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetProcessArgsExecute(mock.AnythingOfType("admin.GetProcessArgsApiRequest")).
 					Return(nil, nil, errors.New("failed to get cluster process args from atlas"))
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
@@ -603,9 +603,9 @@ func TestClusterWithProcessArgs(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
-					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
+				clusterAPI.EXPECT().GetProcessArgs(context.Background(), "project-id", "cluster0").
+					Return(admin.GetProcessArgsApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetProcessArgsExecute(mock.AnythingOfType("admin.GetProcessArgsApiRequest")).
 					Return(
 						&admin.ClusterDescriptionProcessArgs20240805{
 							MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1_2"),
@@ -632,9 +632,9 @@ func TestClusterWithProcessArgs(t *testing.T) {
 			deployment: geoShardedCluster(),
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().GetClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0").
-					Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
+				clusterAPI.EXPECT().GetProcessArgs(context.Background(), "project-id", "cluster0").
+					Return(admin.GetProcessArgsApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().GetProcessArgsExecute(mock.AnythingOfType("admin.GetProcessArgsApiRequest")).
 					Return(
 						&admin.ClusterDescriptionProcessArgs20240805{
 							DefaultWriteConcern:              pointer.MakePtr("available"),
@@ -728,9 +728,9 @@ func TestUpdateProcessArgs(t *testing.T) {
 			},
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
-					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.UpdateClusterAdvancedConfigurationApiRequest")).
+				clusterAPI.EXPECT().UpdateProcessArgs(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
+					Return(admin.UpdateProcessArgsApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().UpdateProcessArgsExecute(mock.AnythingOfType("admin.UpdateProcessArgsApiRequest")).
 					Return(nil, nil, errors.New("failed to update cluster process args in atlas"))
 
 				flexAPI := mockadmin.NewFlexClustersApi(t)
@@ -757,9 +757,9 @@ func TestUpdateProcessArgs(t *testing.T) {
 			},
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfiguration(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
-					Return(admin.UpdateClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-				clusterAPI.EXPECT().UpdateClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.UpdateClusterAdvancedConfigurationApiRequest")).
+				clusterAPI.EXPECT().UpdateProcessArgs(context.Background(), "project-id", "cluster0", mock.AnythingOfType("*admin.ClusterDescriptionProcessArgs20240805")).
+					Return(admin.UpdateProcessArgsApiRequest{ApiService: clusterAPI})
+				clusterAPI.EXPECT().UpdateProcessArgsExecute(mock.AnythingOfType("admin.UpdateProcessArgsApiRequest")).
 					Return(
 						&admin.ClusterDescriptionProcessArgs20240805{
 							DefaultWriteConcern:              pointer.MakePtr("available"),
@@ -841,9 +841,9 @@ func TestUpgradeCluster(t *testing.T) {
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().UpgradeFlexCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
-					Return(admin.UpgradeFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().UpgradeFlexClusterExecute(mock.AnythingOfType("admin.UpgradeFlexClusterApiRequest")).
+				flexAPI.EXPECT().TenantUpgrade(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
+					Return(admin.TenantUpgradeApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().TenantUpgradeExecute(mock.AnythingOfType("admin.TenantUpgradeApiRequest")).
 					Return(nil, &http.Response{}, errors.New("failed to upgrade flex cluster in atlas"))
 				return clusterAPI, flexAPI
 			},
@@ -864,9 +864,9 @@ func TestUpgradeCluster(t *testing.T) {
 			apiMocker: func() (admin.ClustersApi, admin.FlexClustersApi) {
 				clusterAPI := mockadmin.NewClustersApi(t)
 				flexAPI := mockadmin.NewFlexClustersApi(t)
-				flexAPI.EXPECT().UpgradeFlexCluster(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
-					Return(admin.UpgradeFlexClusterApiRequest{ApiService: flexAPI})
-				flexAPI.EXPECT().UpgradeFlexClusterExecute(mock.AnythingOfType("admin.UpgradeFlexClusterApiRequest")).
+				flexAPI.EXPECT().TenantUpgrade(context.Background(), "project-id", mock.AnythingOfType("*admin.AtlasTenantClusterUpgradeRequest20240805")).
+					Return(admin.TenantUpgradeApiRequest{ApiService: flexAPI})
+				flexAPI.EXPECT().TenantUpgradeExecute(mock.AnythingOfType("admin.TenantUpgradeApiRequest")).
 					Return(
 						&admin.FlexClusterDescription20241113{GroupId: pointer.MakePtr("project-id")},
 						&http.Response{},

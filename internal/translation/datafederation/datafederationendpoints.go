@@ -40,7 +40,7 @@ func NewDatafederationPrivateEndpoint(api admin.DataFederationApi) *Datafederati
 
 func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID string) ([]*DatafederationPrivateEndpointEntry, error) {
 	results, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.PrivateNetworkEndpointIdEntry], *http.Response, error) {
-		return d.api.ListDataFederationPrivateEndpoints(ctx, projectID).PageNum(pageNum).Execute()
+		return d.api.ListPrivateEndpointIds(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list data federation private endpoints from Atlas: %w", err)
@@ -51,7 +51,7 @@ func (d *DatafederationPrivateEndpoints) List(ctx context.Context, projectID str
 
 func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
 	ep := endpointToAtlas(aep)
-	_, _, err := d.api.CreateDataFederationPrivateEndpoint(ctx, aep.ProjectID, ep).Execute()
+	_, _, err := d.api.CreatePrivateEndpointId(ctx, aep.ProjectID, ep).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create data federation private endpoint: %w", err)
 	}
@@ -59,7 +59,7 @@ func (d *DatafederationPrivateEndpoints) Create(ctx context.Context, aep *Datafe
 }
 
 func (d *DatafederationPrivateEndpoints) Delete(ctx context.Context, aep *DatafederationPrivateEndpointEntry) error {
-	_, err := d.api.DeleteDataFederationPrivateEndpoint(ctx, aep.ProjectID, aep.EndpointID).Execute()
+	_, err := d.api.DeletePrivateEndpointId(ctx, aep.ProjectID, aep.EndpointID).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete data federation private endpoint: %w", err)
 	}

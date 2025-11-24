@@ -423,9 +423,9 @@ func TestRegularClusterReconciliation(t *testing.T) {
 					&http.Response{},
 					nil,
 				)
-			clusterAPI.EXPECT().GetClusterAdvancedConfiguration(mock.Anything, project.ID(), d.GetDeploymentName()).
-				Return(admin.GetClusterAdvancedConfigurationApiRequest{ApiService: clusterAPI})
-			clusterAPI.EXPECT().GetClusterAdvancedConfigurationExecute(mock.AnythingOfType("admin.GetClusterAdvancedConfigurationApiRequest")).
+			clusterAPI.EXPECT().GetProcessArgs(mock.Anything, project.ID(), d.GetDeploymentName()).
+				Return(admin.GetProcessArgsApiRequest{ApiService: clusterAPI})
+			clusterAPI.EXPECT().GetProcessArgsExecute(mock.AnythingOfType("admin.GetProcessArgsApiRequest")).
 				Return(
 					&admin.ClusterDescriptionProcessArgs20240805{},
 					&http.Response{},
@@ -433,9 +433,9 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				)
 
 			searchAPI := mockadmin.NewAtlasSearchApi(t)
-			searchAPI.EXPECT().GetAtlasSearchDeployment(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
-				Return(admin.GetAtlasSearchDeploymentApiRequest{ApiService: searchAPI})
-			searchAPI.EXPECT().GetAtlasSearchDeploymentExecute(mock.Anything).
+			searchAPI.EXPECT().GetClusterSearchDeployment(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
+				Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
+			searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 				Return(
 					&admin.ApiSearchDeploymentResponse{
 						GroupId:   pointer.MakePtr(project.ID()),
@@ -452,15 +452,15 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				)
 
 			projectAPI := mockadmin.NewProjectsApi(t)
-			projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-				Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			globalAPI := mockadmin.NewGlobalClustersApi(t)
-			globalAPI.EXPECT().GetManagedNamespace(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
-				Return(admin.GetManagedNamespaceApiRequest{ApiService: globalAPI})
-			globalAPI.EXPECT().GetManagedNamespaceExecute(mock.Anything).
+			globalAPI.EXPECT().GetClusterGlobalWrites(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
+				Return(admin.GetClusterGlobalWritesApiRequest{ApiService: globalAPI})
+			globalAPI.EXPECT().GetClusterGlobalWritesExecute(mock.Anything).
 				Return(&admin.GeoSharding20240805{}, nil, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
@@ -614,9 +614,9 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			)
 
 			projectAPI := mockadmin.NewProjectsApi(t)
-			projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-				Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
@@ -740,9 +740,9 @@ func TestFlexClusterReconciliation(t *testing.T) {
 				Return(nil, nil, clusterErr)
 
 			projectAPI := mockadmin.NewProjectsApi(t)
-			projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-				Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
@@ -916,9 +916,9 @@ func TestDeletionReconciliation(t *testing.T) {
 				Return(&http.Response{}, nil)
 
 			projectAPI := mockadmin.NewProjectsApi(t)
-			projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-				Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-			projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
@@ -1289,9 +1289,9 @@ func TestChangeDeploymentType(t *testing.T) {
 						)
 
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
@@ -1371,9 +1371,9 @@ func TestChangeDeploymentType(t *testing.T) {
 						)
 
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
@@ -1442,9 +1442,9 @@ func TestChangeDeploymentType(t *testing.T) {
 					)
 
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "MyProject").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{

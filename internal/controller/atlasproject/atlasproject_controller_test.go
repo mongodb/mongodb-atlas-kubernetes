@@ -67,17 +67,17 @@ func TestRenconcile(t *testing.T) {
 				notFoundErr := &admin.GenericOpenAPIError{}
 				notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
 				projectsAPI := mockadmin.NewProjectsApi(t)
-				projectsAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
-					Return(admin.GetProjectByNameApiRequest{ApiService: projectsAPI})
-				projectsAPI.EXPECT().GetProjectByNameExecute(mock.AnythingOfType("admin.GetProjectByNameApiRequest")).
+				projectsAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
+					Return(admin.GetGroupByNameApiRequest{ApiService: projectsAPI})
+				projectsAPI.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
 					Return(
 						nil,
 						&http.Response{},
 						notFoundErr,
 					)
-				projectsAPI.EXPECT().CreateProject(mock.Anything, mock.AnythingOfType("*admin.Group")).
-					Return(admin.CreateProjectApiRequest{ApiService: projectsAPI})
-				projectsAPI.EXPECT().CreateProjectExecute(mock.AnythingOfType("admin.CreateProjectApiRequest")).
+				projectsAPI.EXPECT().CreateGroup(mock.Anything, mock.AnythingOfType("*admin.Group")).
+					Return(admin.CreateGroupApiRequest{ApiService: projectsAPI})
+				projectsAPI.EXPECT().CreateGroupExecute(mock.AnythingOfType("admin.CreateGroupApiRequest")).
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",

@@ -319,7 +319,7 @@ YJZC5C0=
 				}
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetProject(ctx, projectID).Execute()
+					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(r).ToNot(BeNil())
 					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))

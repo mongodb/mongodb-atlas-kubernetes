@@ -204,7 +204,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+		_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 		if err != nil {
 			if r != nil && r.StatusCode == http.StatusNotFound {
 				return true

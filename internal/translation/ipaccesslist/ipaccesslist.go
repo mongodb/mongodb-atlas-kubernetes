@@ -37,7 +37,7 @@ type IPAccessList struct {
 
 func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntries, error) {
 	netPermResult, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.NetworkPermissionEntry], *http.Response, error) {
-		return i.ipAccessListAPI.ListProjectIpAccessLists(ctx, projectID).PageNum(pageNum).Execute()
+		return i.ipAccessListAPI.ListAccessListEntries(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ip access list from Atlas: %w", err)
@@ -47,7 +47,7 @@ func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntr
 }
 
 func (i *IPAccessList) Add(ctx context.Context, projectID string, entries IPAccessEntries) error {
-	_, _, err := i.ipAccessListAPI.CreateProjectIpAccessList(ctx, projectID, toAtlas(entries)).Execute()
+	_, _, err := i.ipAccessListAPI.CreateAccessListEntry(ctx, projectID, toAtlas(entries)).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to create ip access list from Atlas: %w", err)
 	}
@@ -56,7 +56,7 @@ func (i *IPAccessList) Add(ctx context.Context, projectID string, entries IPAcce
 }
 
 func (i *IPAccessList) Delete(ctx context.Context, projectID string, entry *IPAccessEntry) error {
-	_, err := i.ipAccessListAPI.DeleteProjectIpAccessList(ctx, projectID, entry.ID()).Execute()
+	_, err := i.ipAccessListAPI.DeleteAccessListEntry(ctx, projectID, entry.ID()).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete ip access list from Atlas: %w", err)
 	}
@@ -65,7 +65,7 @@ func (i *IPAccessList) Delete(ctx context.Context, projectID string, entry *IPAc
 }
 
 func (i *IPAccessList) Status(ctx context.Context, projectID string, entry *IPAccessEntry) (string, error) {
-	result, _, err := i.ipAccessListAPI.GetProjectIpAccessListStatus(ctx, projectID, entry.ID()).Execute()
+	result, _, err := i.ipAccessListAPI.GetAccessListStatus(ctx, projectID, entry.ID()).Execute()
 	if err != nil {
 		return "", fmt.Errorf("failed to get status of ip access list from Atlas: %w", err)
 	}

@@ -262,10 +262,10 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
-					pAPI.EXPECT().GetProjectByName(mock.Anything, mock.Anything).Return(
-						admin.GetProjectByNameApiRequest{ApiService: pAPI},
+					pAPI.EXPECT().GetGroupByName(mock.Anything, mock.Anything).Return(
+						admin.GetGroupByNameApiRequest{ApiService: pAPI},
 					)
-					pAPI.EXPECT().GetProjectByNameExecute(mock.AnythingOfType("admin.GetProjectByNameApiRequest")).Return(
+					pAPI.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).Return(
 						&admin.Group{
 							Id: pointer.MakePtr(testProjectID),
 						}, nil, nil,

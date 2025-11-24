@@ -44,7 +44,7 @@ func NewSearchIndexes(api admin.AtlasSearchApi) *SearchIndexes {
 }
 
 func (si *SearchIndexes) GetIndex(ctx context.Context, projectID, clusterName, indexName, indexID string) (*SearchIndex, error) {
-	resp, httpResp, err := si.searchAPI.GetAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	resp, httpResp, err := si.searchAPI.GetClusterSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if err != nil {
 		if httpResp.StatusCode == http.StatusNotFound {
 			return nil, errors.Join(err, ErrNotFound)
@@ -68,7 +68,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 	if err != nil {
 		return nil, err
 	}
-	resp, httpResp, err := si.searchAPI.CreateAtlasSearchIndex(ctx, projectID, clusterName, atlasIndex).Execute()
+	resp, httpResp, err := si.searchAPI.CreateClusterSearchIndex(ctx, projectID, clusterName, atlasIndex).Execute()
 	if err != nil || httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to create index, status code %d: %w", httpResp.StatusCode, err)
 	}
@@ -83,7 +83,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 }
 
 func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
-	resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	resp, err := si.searchAPI.DeleteClusterSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
 		return fmt.Errorf("error deleting index, status code %d: %w", resp.StatusCode, err)
 	}
@@ -95,7 +95,7 @@ func (si *SearchIndexes) UpdateIndex(ctx context.Context, projectID, clusterName
 	if err != nil {
 		return nil, fmt.Errorf("error converting index: %w", err)
 	}
-	resp, httpResp, err := si.searchAPI.UpdateAtlasSearchIndex(ctx, projectID, clusterName, index.GetID(), atlasIndex).Execute()
+	resp, httpResp, err := si.searchAPI.UpdateClusterSearchIndex(ctx, projectID, clusterName, index.GetID(), atlasIndex).Execute()
 	if httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK || err != nil {
 		return nil, fmt.Errorf("error updating index, status code %d: %w", httpResp.StatusCode, err)
 	}

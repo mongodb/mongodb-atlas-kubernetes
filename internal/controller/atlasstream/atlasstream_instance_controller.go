@@ -124,7 +124,7 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	workflowCtx.OrgID = connectionConfig.OrgID
 
 	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20250312009.StreamsApi.
-		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
+		GetStreamWorkspace(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
 		Execute()
 
 	if err != nil && !admin.IsErrorCode(err, instanceNotFound) {

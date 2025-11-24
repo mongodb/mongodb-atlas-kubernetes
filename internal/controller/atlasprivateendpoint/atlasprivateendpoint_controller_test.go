@@ -347,8 +347,8 @@ func TestEnsureCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProject(mock.Anything, projectID).Return(admin.GetProjectApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
+					projectAPI.EXPECT().GetGroup(mock.Anything, projectID).Return(admin.GetGroupApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupExecute(mock.AnythingOfType("admin.GetGroupApiRequest")).
 						Return(&admin.Group{Id: &projectID}, nil, nil)
 
 					peAPI := mockadmin.NewPrivateEndpointServicesApi(t)

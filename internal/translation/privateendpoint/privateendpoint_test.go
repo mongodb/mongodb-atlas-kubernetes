@@ -125,9 +125,9 @@ func TestListPrivateEndpoints(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
 			api := mockadmin.NewPrivateEndpointServicesApi(t)
-			api.EXPECT().ListPrivateEndpointServices(ctx, projectID, tt.provider).
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: api})
-			api.EXPECT().ListPrivateEndpointServicesExecute(mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).
+			api.EXPECT().ListPrivateEndpointService(ctx, projectID, tt.provider).
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: api})
+			api.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
 				Return(tt.mockListReturnFunc())
 
 			if tt.mockInterfaceReturnFunc != nil {

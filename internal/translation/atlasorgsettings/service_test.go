@@ -363,24 +363,24 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 func testGetOrgSettingsAPI(response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsApi {
 	mockAPI := &mockadmin.OrganizationsApi{}
 
-	request := admin.GetOrganizationSettingsApiRequest{ApiService: mockAPI}
-	mockAPI.EXPECT().GetOrganizationSettings(mock.Anything, testOrgID).Return(request)
-	mockAPI.EXPECT().GetOrganizationSettingsExecute(
-		mock.AnythingOfType("admin.GetOrganizationSettingsApiRequest")).Return(response, &http.Response{StatusCode: statusCode}, err)
+	request := admin.GetOrgSettingsApiRequest{ApiService: mockAPI}
+	mockAPI.EXPECT().GetOrgSettings(mock.Anything, testOrgID).Return(request)
+	mockAPI.EXPECT().GetOrgSettingsExecute(
+		mock.Anything).Return(response, &http.Response{StatusCode: statusCode}, err)
 	return mockAPI
 }
 
 func testUpdateOrgSettingsAPI(input *admin.OrganizationSettings, response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsApi {
 	mockAPI := &mockadmin.OrganizationsApi{}
 
-	request := admin.UpdateOrganizationSettingsApiRequest{ApiService: mockAPI}
+	request := admin.UpdateOrgSettingsApiRequest{ApiService: mockAPI}
 
 	if input != nil {
-		mockAPI.EXPECT().UpdateOrganizationSettings(mock.Anything, testOrgID, input).Return(request)
-		mockAPI.EXPECT().UpdateOrganizationSettingsExecute(
-			mock.AnythingOfType("admin.UpdateOrganizationSettingsApiRequest")).Return(response, &http.Response{StatusCode: statusCode}, err)
+		mockAPI.EXPECT().UpdateOrgSettings(mock.Anything, testOrgID, input).Return(request)
+		mockAPI.EXPECT().UpdateOrgSettingsExecute(
+			mock.Anything).Return(response, &http.Response{StatusCode: statusCode}, err)
 	} else {
-		mockAPI.EXPECT().UpdateOrganizationSettings(mock.Anything, testOrgID, mock.Anything).Return(request).Maybe()
+		mockAPI.EXPECT().UpdateOrgSettings(mock.Anything, testOrgID, mock.Anything).Return(request).Maybe()
 	}
 
 	return mockAPI

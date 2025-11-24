@@ -145,7 +145,7 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 		for _, AssociatedTeam := range teams {
 			team := &akov2.AtlasTeam{}
 			Expect(userData.K8SClient.Get(userData.Context, types.NamespacedName{Name: AssociatedTeam.TeamRef.Name, Namespace: userData.Resources.Namespace}, team)).Should(Succeed())
-			_, err := aClient.Client.TeamsApi.DeleteTeam(userData.Context, aClient.OrgID, team.Status.ID).Execute()
+			_, err := aClient.Client.TeamsApi.DeleteOrgTeam(userData.Context, aClient.OrgID, team.Status.ID).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(userData.K8SClient.Delete(userData.Context, team)).To(Succeed())
 		}
