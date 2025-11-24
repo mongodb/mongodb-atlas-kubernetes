@@ -880,7 +880,7 @@ tools/scaffolder/bin/scaffolder:
 
 gen-crds: $(BUILD_OPENAPI2CRD)
 	@echo "==> Generating CRDs..."
-	$(OPENAPI2CRD) --config tools/openapi2crd/config.yaml \
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 
 gen-crds-override: $(BUILD_OPENAPI2CRD)
@@ -902,7 +902,7 @@ run-scaffolder: $(BUILD_SCAFFOLDER)
 run-scaffolder-override: $(BUILD_SCAFFOLDER)
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--all --override --indexer-out $(realpath .)/internal/generated/indexers \
+	--all --override --indexer-out $(realpath .)/internal/generated/indexer \
 	--controller-out $(realpath .)/internal/generated/controller
 
 gen-all: gen-crds gen-go-types run-scaffolder
