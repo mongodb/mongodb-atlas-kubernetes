@@ -50,7 +50,8 @@ jobs:
           REPOSITORY: ${{ matrix.repository }}
         run: |
           curl -L https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz -o ghcli.tar.gz
-          ls -al 
+          ls -al
+          ls -Ral mongodb-forks
           tar --strip-components=1 -xf ghcli.tar.gz -C /usr/local
           
           cd $REPOSITORY
