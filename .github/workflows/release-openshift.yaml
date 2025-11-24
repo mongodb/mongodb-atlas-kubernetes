@@ -34,6 +34,7 @@ jobs:
             mongodb-atlas-kubernetes
             mongodb-forks/community-operators
             mongodb-forks/community-operators-prod
+            mongodb-forks/certified-operators
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v5
         with:
