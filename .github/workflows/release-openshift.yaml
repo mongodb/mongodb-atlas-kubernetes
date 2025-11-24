@@ -5,6 +5,10 @@ on:
       version:
         description: "Release version:"
         required: true
+      dryrun:
+        description: "Test the workflow by creating a branch in the forks, but do not create the PR"
+        default: false
+        type: boolean
 jobs:
   release-openshift:
     name: "Create Pull request for openshift release"
@@ -98,6 +102,7 @@ jobs:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: ${{ matrix.repository }}
           ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
+          DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
           cd "$REPOSITORY/$REPO_PATH"
           
@@ -112,7 +117,11 @@ jobs:
           git commit -m "MongoDB Atlas Operator ${VERSION}" --signoff
           git push origin "mongodb-atlas-operator-community-${VERSION}"
           
-          # open PR
-          gh pr create \
-              --title "operator mongodb-atlas-kubernetes (${VERSION})" \
-              --assignee "${ASSIGNEES}"
+          # open PR (when not a dry-run)
+          if [ "${DRYRUN}" == "false"]; then
+            gh pr create \
+                --title "operator mongodb-atlas-kubernetes (${VERSION})" \
+                --assignee "${ASSIGNEES}"
+          else
+            echo "DRYRUN: Skip PR creation (${DRYRUN})"
+          fi
