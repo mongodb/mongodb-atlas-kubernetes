@@ -6,7 +6,7 @@ on:
         description: "Release version:"
         required: true
       dryrun:
-        description: "Test the workflow by creating a branch in the forks, but do not create the PR"
+        description: "Dryrun release (no PR)"
         default: true
         type: boolean
 jobs:
@@ -56,7 +56,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
-          alias make='devbox run -c mongodb-atlas-kubernetes make'
           cd $REPOSITORY
           # Sync fork
           gh auth setup-git
@@ -66,7 +65,7 @@ jobs:
           mkdir -p "${REPO_PATH}/${VERSION}"
 
           cd ../../mongodb-atlas-kubernetes
-          make bundle
+          devbox run make bundle
           cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "../${REPOSITORY}/${REPO_PATH}/${VERSION}"
       - name: Configure non-certified release
         if: ${{ ! matrix.certified }}
