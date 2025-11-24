@@ -19,7 +19,7 @@ import (
 	"errors"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"golang.org/x/exp/slices"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -39,7 +39,7 @@ func ensurePrivateEndpoint(workflowCtx *workflow.Context, project *akov2.AtlasPr
 		return workflow.Terminate(workflow.Internal, err)
 	}
 
-	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Context, workflowCtx.SdkClientSet.SdkClient20250312006, project.ID())
+	atlasPEs, err := getAllPrivateEndpoints(workflowCtx.Context, workflowCtx.SdkClientSet.SdkClient20250312009, project.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
 	}
@@ -155,7 +155,7 @@ func getStatusForInterfaces(ctx *workflow.Context, projectID string, specPEs []a
 				return notReadyInterfaceResult
 			}
 
-			interfaceEndpoint, _, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.GetPrivateEndpointWithParams(ctx.Context, &admin.GetPrivateEndpointApiParams{
+			interfaceEndpoint, _, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.GetPrivateEndpointWithParams(ctx.Context, &admin.GetPrivateEndpointApiParams{
 				GroupId:           projectID,
 				CloudProvider:     atlasPeService.GetCloudProvider(),
 				EndpointId:        interfaceEndpointID,
@@ -245,7 +245,7 @@ func getAllPrivateEndpoints(ctx context.Context, client *admin.APIClient, projec
 func createPeServiceInAtlas(ctx *workflow.Context, projectID string, endpointsToCreate []akov2.PrivateEndpoint, endpointCounts []int) (newConnections []atlasPE, err error) {
 	newConnections = make([]atlasPE, 0)
 	for idx, pe := range endpointsToCreate {
-		conn, _, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.CreatePrivateEndpointService(ctx.Context, projectID, &admin.CloudProviderEndpointServiceRequest{
+		conn, _, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.CreatePrivateEndpointService(ctx.Context, projectID, &admin.CloudProviderEndpointServiceRequest{
 			ProviderName: string(pe.Provider),
 			Region:       pe.Region,
 		}).Execute()
@@ -281,7 +281,7 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 			}
 			interfaceConn.Endpoints = specPeService.Endpoints.ConvertToAtlas()
 
-			privateEndpoint, response, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.CreatePrivateEndpointWithParams(ctx.Context, &admin.CreatePrivateEndpointApiParams{
+			privateEndpoint, response, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.CreatePrivateEndpointWithParams(ctx.Context, &admin.CreatePrivateEndpointApiParams{
 				GroupId:               projectID,
 				CloudProvider:         string(specPeService.Provider),
 				EndpointServiceId:     atlasPeService.GetId(),
@@ -333,7 +333,7 @@ func endpointDefinedInSpec(specEndpoint akov2.PrivateEndpoint) bool {
 }
 
 func DeleteAllPrivateEndpoints(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
-	atlasPEs, err := getAllPrivateEndpoints(ctx.Context, ctx.SdkClientSet.SdkClient20250312006, atlasProject.ID())
+	atlasPEs, err := getAllPrivateEndpoints(ctx.Context, ctx.SdkClientSet.SdkClient20250312009, atlasProject.ID())
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, err)
 	}
@@ -361,7 +361,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 		interfaceEndpointIDs := peService.InterfaceEndpointIDs()
 		if len(interfaceEndpointIDs) != 0 {
 			for _, interfaceEndpointID := range interfaceEndpointIDs {
-				_, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.DeletePrivateEndpointWithParams(ctx.Context, &admin.DeletePrivateEndpointApiParams{
+				_, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.DeletePrivateEndpointWithParams(ctx.Context, &admin.DeletePrivateEndpointApiParams{
 					GroupId:           projectID,
 					CloudProvider:     peService.GetCloudProvider(),
 					EndpointId:        interfaceEndpointID,
@@ -375,7 +375,7 @@ func deletePrivateEndpointsFromAtlas(ctx *workflow.Context, projectID string, li
 			continue
 		}
 
-		_, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.DeletePrivateEndpointServiceWithParams(ctx.Context, &admin.DeletePrivateEndpointServiceApiParams{
+		_, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.DeletePrivateEndpointServiceWithParams(ctx.Context, &admin.DeletePrivateEndpointServiceApiParams{
 			GroupId:           projectID,
 			CloudProvider:     peService.GetCloudProvider(),
 			EndpointServiceId: peService.GetId(),
@@ -452,7 +452,7 @@ func getGCPInterfaceEndpoint(ctx *workflow.Context, projectID string, endpoint s
 	if endpoint.InterfaceEndpointID == "" {
 		return nil, errors.New("InterfaceEndpointID is empty")
 	}
-	interfaceEndpointConn, _, err := ctx.SdkClientSet.SdkClient20250312006.PrivateEndpointServicesApi.GetPrivateEndpointWithParams(ctx.Context, &admin.GetPrivateEndpointApiParams{
+	interfaceEndpointConn, _, err := ctx.SdkClientSet.SdkClient20250312009.PrivateEndpointServicesApi.GetPrivateEndpointWithParams(ctx.Context, &admin.GetPrivateEndpointApiParams{
 		GroupId:           projectID,
 		CloudProvider:     string(provider.ProviderGCP),
 		EndpointId:        endpoint.InterfaceEndpointID,

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"golang.org/x/exp/slices"
 )
 

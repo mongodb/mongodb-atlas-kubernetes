@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -678,7 +678,7 @@ func TestHandleProject(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: tt.atlasSDKMocker(),
+					SdkClient20250312009: tt.atlasSDKMocker(),
 				},
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
@@ -1121,7 +1121,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: tt.atlasSDKMocker(),
+					SdkClient20250312009: tt.atlasSDKMocker(),
 				},
 				Log: logger,
 			}

@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -274,7 +274,7 @@ func TestHandleAudit(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t)),
 					},
 				},

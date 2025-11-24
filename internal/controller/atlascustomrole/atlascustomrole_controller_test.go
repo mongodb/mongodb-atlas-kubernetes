@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -395,7 +395,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								pAPI.EXPECT().GetProjectExecute(admin.GetProjectApiRequest{ApiService: pAPI}).
 									Return(grp, nil, nil)
 							}
-							return &atlas.ClientSet{SdkClient20250312006: &admin.APIClient{
+							return &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{
 								CustomDatabaseRolesApi: cdrAPI,
 								ProjectsApi:            pAPI,
 							}}, nil

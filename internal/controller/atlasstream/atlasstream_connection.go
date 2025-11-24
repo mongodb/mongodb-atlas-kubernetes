@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,7 +69,7 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	atlasStreamInstance *admin.StreamsTenant,
 ) (ctrl.Result, error) {
 	streamConnections, err := paging.ListAll(ctx.Context, func(c context.Context, pageNum int) (paging.Response[admin.StreamsConnection], *http.Response, error) {
-		return ctx.SdkClientSet.SdkClient20250312006.StreamsApi.
+		return ctx.SdkClientSet.SdkClient20250312009.StreamsApi.
 			ListStreamConnections(c, project.ID(), akoStreamInstance.Spec.Name).
 			PageNum(pageNum).
 			Execute()

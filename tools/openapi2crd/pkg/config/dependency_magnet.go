@@ -17,6 +17,6 @@ package config
 
 import (
 	_ "go.mongodb.org/atlas-sdk/v20250312005/admin"
-	_ "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	_ "go.mongodb.org/atlas-sdk/v20250312009/admin"
 	_ "go.mongodb.org/atlas-sdk/v20250312008/admin"
 )

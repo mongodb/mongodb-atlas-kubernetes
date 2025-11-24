@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -52,7 +52,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -108,7 +108,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -146,7 +146,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -193,7 +193,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -244,7 +244,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -286,7 +286,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -331,7 +331,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -376,7 +376,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -410,7 +410,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -448,7 +448,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -487,7 +487,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -526,7 +526,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -561,7 +561,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},

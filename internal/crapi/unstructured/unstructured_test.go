@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"

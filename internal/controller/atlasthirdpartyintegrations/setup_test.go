@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -152,7 +152,7 @@ func TestNewReconcileRequest(t *testing.T) {
 					projectAPI := mockFindFakeParentProject(t)
 					integrationsAPI := mockadmin.NewThirdPartyIntegrationsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{
+						SdkClient20250312009: &admin.APIClient{
 							ProjectsApi:               projectAPI,
 							ThirdPartyIntegrationsApi: integrationsAPI,
 						},

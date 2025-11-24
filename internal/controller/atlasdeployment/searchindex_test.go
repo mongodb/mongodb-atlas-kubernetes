@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -433,7 +433,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312006: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -450,7 +450,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312006: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,

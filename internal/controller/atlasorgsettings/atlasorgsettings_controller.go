@@ -67,7 +67,7 @@ func NewAtlasOrgSettingsReconciler(
 			GlobalSecretRef: globalSecretRef,
 		},
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
-			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312006.OrganizationsApi)
+			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312009.OrganizationsApi)
 		},
 	}
 	return ctrlstate.NewStateReconciler(
