@@ -30,7 +30,7 @@ jobs:
           path: "mongodb-atlas-kubernetes"
           fetch-depth: 0
       - name: Generate GitHub App Token
-        id: generate_token
+        id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AKO_RH_RELEASER_APP_ID }}
@@ -53,6 +53,7 @@ jobs:
         env:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: mongodb-forks/${{ matrix.repository }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd $REPOSITORY
@@ -111,6 +112,7 @@ jobs:
           VERSION: ${{ github.event.inputs.version }}
           REPOSITORY: mongodb-forks/${{ matrix.repository }}
           ASSIGNEES: igor-karpukhin,helderjs,josvazg,roothorp
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
