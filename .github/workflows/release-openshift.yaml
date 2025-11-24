@@ -128,6 +128,13 @@ jobs:
           git add "${VERSION}"
           git status
           git commit -m "MongoDB Atlas Operator ${VERSION}" --signoff
+
+          # 1. Remove the default token header that actions/checkout added
+          git config --global --unset-all http.https://github.com/.extraheader
+
+          # 2. Set the remote URL to explicitly use your App Token
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com${REPOSITORY}.git"
+          
           git push origin "mongodb-atlas-operator-community-${VERSION}"
           
           # open PR (when not a dry-run)
