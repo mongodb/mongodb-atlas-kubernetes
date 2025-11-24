@@ -24,7 +24,7 @@ jobs:
             certified: true
     steps:
       - name: TEST GitHub App Token
-        id: app-token
+        id: app-token-test
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
