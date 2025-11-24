@@ -115,7 +115,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DRYRUN: ${{ github.event.inputs.dryrun }}
         run: |
-          set -euxo
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd "$REPOSITORY/$REPO_PATH"
           
@@ -130,7 +129,8 @@ jobs:
           git commit -m "MongoDB Atlas Operator ${VERSION}" --signoff
 
           # 1. Remove the default token header that actions/checkout added
-          git config --global --unset-all http.https://github.com/.extraheader
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git config --global --unset-all http.https://github.com/.extraheader || true
 
           # 2. Set the remote URL to explicitly use your App Token
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com${REPOSITORY}.git"
