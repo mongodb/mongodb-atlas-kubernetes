@@ -55,9 +55,10 @@ jobs:
           REPOSITORY: mongodb-forks/${{ matrix.repository }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -x
           alias gh='devbox run -c mongodb-atlas-kubernetes gh'
           cd $REPOSITORY
-          
+          pwd
           # Sync fork
           gh auth setup-git
           gh repo set-default $REPOSITORY
@@ -66,6 +67,7 @@ jobs:
           mkdir -p "${REPO_PATH}/${VERSION}"
 
           cd ../../mongodb-atlas-kubernetes
+          pwd
           cp -r bundle.Dockerfile bundle/manifests bundle/metadata bundle/tests "../${REPOSITORY}/${REPO_PATH}/${VERSION}"
       - name: Configure non-certified release
         if: ${{ ! matrix.certified }}
