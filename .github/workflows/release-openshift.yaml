@@ -80,7 +80,7 @@ jobs:
           sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${VERSION}/bundle.Dockerfile"
           rm "${VERSION}/bundle.Dockerfile.bak"
       - name: Certify Openshift images
-        uses: ./.github/actions/certify-openshift-images
+        uses: ./mongodb-atlas-kubernetes/.github/actions/certify-openshift-images
         with:
           registry: quay.io
           registry_password: ${{ secrets.QUAY_PASSWORD }}
