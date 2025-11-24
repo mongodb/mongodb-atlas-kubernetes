@@ -30,11 +30,7 @@ jobs:
           app-id: ${{ secrets.AKO_RH_RELEASER_APP_ID }}
           private-key: ${{ secrets.AKO_RH_RELEASER_RSA_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: |
-            mongodb/mongodb-atlas-kubernetes
-            mongodb-forks/community-operators
-            mongodb-forks/community-operators-prod
-            mongodb-forks/certified-operators
+          repositories: mongodb-atlas-kubernetes
       - name: Clone/Checkout Atlas Operator
         uses: actions/checkout@v5
         with:
