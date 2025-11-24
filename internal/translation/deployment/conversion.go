@@ -153,64 +153,6 @@ func deprecatedSpecs(specs *akov2.Specs) bool {
 	return false
 }
 
-type Serverless struct {
-	*akov2.ServerlessSpec
-	ProjectID      string
-	State          string
-	MongoDBVersion string
-	Connection     *status.ConnectionStrings
-
-	customResource *akov2.AtlasDeployment
-}
-
-func (s *Serverless) GetName() string {
-	return s.Name
-}
-
-func (s *Serverless) GetProjectID() string {
-	return s.ProjectID
-}
-
-func (s *Serverless) GetState() string {
-	return s.State
-}
-
-func (s *Serverless) GetMongoDBVersion() string {
-	return s.MongoDBVersion
-}
-
-func (s *Serverless) GetConnection() *status.ConnectionStrings {
-	return s.Connection
-}
-
-func (s *Serverless) GetReplicaSet() []status.ReplicaSet {
-	return nil
-}
-
-func (s *Serverless) GetCustomResource() *akov2.AtlasDeployment {
-	return s.customResource
-}
-
-func (s *Serverless) IsServerless() bool {
-	return true
-}
-
-func (s *Serverless) IsFlex() bool {
-	return false
-}
-
-func (s *Serverless) IsTenant() bool {
-	return false
-}
-
-func (s *Serverless) IsDedicated() bool {
-	return false
-}
-
-func (s *Serverless) Notifications() (bool, string, string) {
-	return true, NOTIFICATION_REASON_DEPRECATION, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
-}
-
 type Flex struct {
 	*akov2.FlexSpec
 	ProjectID      string
@@ -266,6 +208,10 @@ func (f *Flex) IsDedicated() bool {
 }
 
 func (f *Flex) Notifications() (bool, string, string) {
+	if f.customResource.IsServerless() {
+		return true, NOTIFICATION_REASON_DEPRECATION, "WARNING: Serverless is deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details."
+	}
+
 	return false, "", ""
 }
 
@@ -294,14 +240,14 @@ type Endpoint struct {
 
 func NewDeployment(projectID string, atlasDeployment *akov2.AtlasDeployment) Deployment {
 	if atlasDeployment.IsServerless() {
-		serverless := &Serverless{
+		flex := &Flex{
 			customResource: atlasDeployment,
 			ProjectID:      projectID,
-			ServerlessSpec: atlasDeployment.Spec.ServerlessSpec.DeepCopy(),
+			FlexSpec:       serverlessToFlexSpec(atlasDeployment.Spec.ServerlessSpec.DeepCopy()),
 		}
-		normalizeServerlessDeployment(serverless)
+		normalizeFlexDeployment(flex)
 
-		return serverless
+		return flex
 	}
 
 	if atlasDeployment.IsFlex() {
@@ -325,15 +271,19 @@ func NewDeployment(projectID string, atlasDeployment *akov2.AtlasDeployment) Dep
 	return cluster
 }
 
-func normalizeServerlessDeployment(serverless *Serverless) {
-	serverless.ServerlessSpec.PrivateEndpoints = nil
-	if serverless.ServerlessSpec.Tags == nil {
-		serverless.ServerlessSpec.Tags = []*akov2.TagSpec{}
+func serverlessToFlexSpec(serverless *akov2.ServerlessSpec) *akov2.FlexSpec {
+	settings := &akov2.FlexProviderSettings{}
+	if serverless.ProviderSettings != nil {
+		settings.BackingProviderName = serverless.ProviderSettings.BackingProviderName
+		settings.RegionName = serverless.ProviderSettings.RegionName
 	}
 
-	cmp.NormalizeSlice(serverless.Tags, func(a, b *akov2.TagSpec) int {
-		return strings.Compare(a.Key, b.Key)
-	})
+	return &akov2.FlexSpec{
+		Name:                         serverless.Name,
+		Tags:                         serverless.Tags,
+		TerminationProtectionEnabled: serverless.TerminationProtectionEnabled,
+		ProviderSettings:             settings,
+	}
 }
 
 func normalizeFlexDeployment(flex *Flex) {
@@ -997,85 +947,6 @@ func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionPro
 	}, nil
 }
 
-func serverlessFromAtlas(instance *admin.ServerlessInstanceDescription) *Serverless {
-	providerSettings := instance.GetProviderSettings()
-	serverlessBackupOptions := instance.GetServerlessBackupOptions()
-	connectionStrings := instance.GetConnectionStrings()
-
-	pes := make([]status.PrivateEndpoint, 0, len(connectionStrings.GetPrivateEndpoint()))
-	for _, pe := range connectionStrings.GetPrivateEndpoint() {
-		eps := make([]status.Endpoint, 0, len(pe.GetEndpoints()))
-		for _, ep := range pe.GetEndpoints() {
-			eps = append(
-				eps,
-				status.Endpoint{
-					EndpointID:   ep.GetEndpointId(),
-					ProviderName: ep.GetProviderName(),
-					Region:       ep.GetRegion(),
-				})
-		}
-
-		pes = append(
-			pes,
-			status.PrivateEndpoint{
-				SRVConnectionString: pe.GetSrvConnectionString(),
-				Endpoints:           eps,
-			})
-	}
-
-	s := &Serverless{
-		ProjectID: instance.GetGroupId(),
-		ServerlessSpec: &akov2.ServerlessSpec{
-			Name: instance.GetName(),
-			ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-				ProviderName:        provider.ProviderName(providerSettings.GetProviderName()),
-				BackingProviderName: providerSettings.GetBackingProviderName(),
-				RegionName:          providerSettings.GetRegionName(),
-			},
-			Tags: tag.FromAtlas(instance.GetTags()),
-			BackupOptions: akov2.ServerlessBackupOptions{
-				ServerlessContinuousBackupEnabled: serverlessBackupOptions.GetServerlessContinuousBackupEnabled(),
-			},
-			TerminationProtectionEnabled: instance.GetTerminationProtectionEnabled(),
-		},
-		State:          instance.GetStateName(),
-		MongoDBVersion: instance.GetMongoDBVersion(),
-		Connection: &status.ConnectionStrings{
-			StandardSrv:     connectionStrings.GetStandardSrv(),
-			PrivateEndpoint: pes,
-		},
-	}
-	normalizeServerlessDeployment(s)
-
-	return s
-}
-
-func serverlessCreateToAtlas(serverless *Serverless) *admin.ServerlessInstanceDescriptionCreate {
-	return &admin.ServerlessInstanceDescriptionCreate{
-		Name: serverless.Name,
-		ProviderSettings: admin.ServerlessProviderSettings{
-			ProviderName:        pointer.MakePtr(string(serverless.ProviderSettings.ProviderName)),
-			BackingProviderName: serverless.ProviderSettings.BackingProviderName,
-			RegionName:          serverless.ProviderSettings.RegionName,
-		},
-		ServerlessBackupOptions: &admin.ClusterServerlessBackupOptions{
-			ServerlessContinuousBackupEnabled: &serverless.BackupOptions.ServerlessContinuousBackupEnabled,
-		},
-		Tags:                         tag.ToAtlas(serverless.Tags),
-		TerminationProtectionEnabled: &serverless.TerminationProtectionEnabled,
-	}
-}
-
-func serverlessUpdateToAtlas(serverless *Serverless) *admin.ServerlessInstanceDescriptionUpdate {
-	return &admin.ServerlessInstanceDescriptionUpdate{
-		ServerlessBackupOptions: &admin.ClusterServerlessBackupOptions{
-			ServerlessContinuousBackupEnabled: &serverless.BackupOptions.ServerlessContinuousBackupEnabled,
-		},
-		Tags:                         tag.ToAtlas(serverless.Tags),
-		TerminationProtectionEnabled: &serverless.TerminationProtectionEnabled,
-	}
-}
-
 func clustersToConnections(clusters []admin.ClusterDescription20240805) []Connection {
 	conns := []Connection{}
 	for _, c := range clusters {
@@ -1099,30 +970,6 @@ func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStr
 			URL:       cpe.GetConnectionString(),
 			ServerURL: cpe.GetSrvConnectionString(),
 			ShardURL:  cpe.GetSrvShardOptimizedConnectionString(),
-		})
-	}
-	return pes
-}
-
-func serverlessToConnections(serverless []admin.ServerlessInstanceDescription) []Connection {
-	conns := []Connection{}
-	for _, s := range serverless {
-		conns = append(conns, Connection{
-			Name:             s.GetName(),
-			ConnURL:          "",
-			SrvConnURL:       s.ConnectionStrings.GetStandardSrv(),
-			Serverless:       true,
-			PrivateEndpoints: fillServerlessPrivateEndpoints(s.ConnectionStrings.GetPrivateEndpoint()),
-		})
-	}
-	return conns
-}
-
-func fillServerlessPrivateEndpoints(cpeList []admin.ServerlessConnectionStringsPrivateEndpointList) []PrivateEndpoint {
-	pes := []PrivateEndpoint{}
-	for _, cpe := range cpeList {
-		pes = append(pes, PrivateEndpoint{
-			ServerURL: cpe.GetSrvConnectionString(),
 		})
 	}
 	return pes
