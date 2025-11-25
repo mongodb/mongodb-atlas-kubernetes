@@ -8,7 +8,7 @@ jobs:
     name: AKO unit-tests 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
 
@@ -33,7 +33,7 @@ jobs:
     name: AKO linting 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
 

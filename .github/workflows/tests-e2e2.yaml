@@ -25,7 +25,7 @@ jobs:
       e2e2_matrix: ${{ steps.set-matrix.outputs.e2e2_matrix }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
 
@@ -131,7 +131,7 @@ jobs:
 
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true

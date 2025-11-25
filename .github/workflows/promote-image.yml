@@ -15,7 +15,7 @@ jobs:
       QUAY_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
     steps:
       - name: Checkout PR commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # Login in all the needed registries
       - name: Log in to the GitHub Container Registry

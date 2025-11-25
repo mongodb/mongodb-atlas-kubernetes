@@ -15,7 +15,7 @@ jobs:
   openapi2crd:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Install devbox
       uses: jetify-com/devbox-install-action@v0.14.0
