@@ -29,8 +29,8 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
 	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"

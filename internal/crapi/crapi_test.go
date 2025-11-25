@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package translate_test
+package crapi_test
 
 import (
 	"bufio"
@@ -30,11 +30,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/testdata"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/testdata/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
@@ -413,10 +413,10 @@ func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	tr, err := translate.NewTranslator(crd, version, sdkVersion)
+	tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 	require.NoError(t, err)
-	r := translate.Request{Translator: tr}
-	results, err := translate.FromAPI(&r, target, input)
+	r := crapi.Request{Translator: tr}
+	results, err := crapi.FromAPI(&r, target, input)
 	require.NoError(t, err)
 	assert.Equal(t, want, results)
 }
@@ -583,10 +583,10 @@ func TestToAPIAllRefs(t *testing.T) {
 			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			tr, err := translate.NewTranslator(crd, version, sdkVersion)
+			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 			require.NoError(t, err)
-			r := translate.Request{Translator: tr, Dependencies: tc.deps}
-			require.NoError(t, translate.ToAPI(&r, &tc.target, tc.input))
+			r := crapi.Request{Translator: tr, Dependencies: tc.deps}
+			require.NoError(t, crapi.ToAPI(&r, &tc.target, tc.input))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
@@ -2010,10 +2010,10 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	tr, err := translate.NewTranslator(crd, version, sdkVersion)
+	tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 	require.NoError(t, err)
-	r := translate.Request{Translator: tr, Dependencies: objs}
-	require.NoError(t, translate.ToAPI(&r, target, input))
+	r := crapi.Request{Translator: tr, Dependencies: objs}
+	require.NoError(t, crapi.ToAPI(&r, target, input))
 	assert.Equal(t, want, target)
 }
 

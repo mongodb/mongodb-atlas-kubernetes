@@ -23,7 +23,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
 const (

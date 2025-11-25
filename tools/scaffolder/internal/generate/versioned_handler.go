@@ -35,14 +35,14 @@ func generateVersionHandlerFile(dir, resourceName, typesPath string, mapping Map
 	f.Type().Id("Handler"+versionSuffix).Struct(
 		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
 		jen.Id("deletionProtection").Bool(),
 	)
 
 	f.Func().Id("NewHandler"+versionSuffix).Params(
 		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		jen.Id("translationRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
 		jen.Id("deletionProtection").Bool(),
 	).Op("*").Id("Handler" + versionSuffix).Block(
 		jen.Return(jen.Op("&").Id("Handler" + versionSuffix).Values(jen.Dict{

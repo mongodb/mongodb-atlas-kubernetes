@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 

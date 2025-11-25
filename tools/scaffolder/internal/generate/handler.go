@@ -219,7 +219,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 		jen.Id("storageVersion").String(),
 		jen.Id("targetVersion").String(),
 	).Params(
-		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
 		jen.Error(),
 	).Block(
 		jen.Id("crd").Op(":=").Op("&").Qual("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "CustomResourceDefinition").Values(),
@@ -238,7 +238,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 			)),
 		),
 		jen.Line(),
-		jen.List(jen.Id("translator"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "NewTranslator").Call(
+		jen.List(jen.Id("translator"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "NewTranslator").Call(
 			jen.Id("crd"),
 			jen.Id("storageVersion"),
 			jen.Id("targetVersion"),
@@ -250,7 +250,7 @@ func generatePackageLevelTranslationHelper(f *jen.File) {
 			)),
 		),
 		jen.Line(),
-		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request").Values(jen.Dict{
+		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request").Values(jen.Dict{
 			jen.Id("Translator"):   jen.Id("translator"),
 			jen.Id("Dependencies"): jen.Nil(),
 		}), jen.Nil()),

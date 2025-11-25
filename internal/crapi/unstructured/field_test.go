@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
 func TestCreateAndAccessField(t *testing.T) {
