@@ -30,11 +30,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/testdata"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/testdata/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )

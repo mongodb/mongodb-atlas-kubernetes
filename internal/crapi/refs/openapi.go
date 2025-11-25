@@ -17,7 +17,7 @@ package refs
 import (
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
 type OpenAPIMapping struct {

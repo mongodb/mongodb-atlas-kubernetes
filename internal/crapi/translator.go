@@ -24,8 +24,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
 )
 
 // translator implements Translator to translate from a given CRD to and from
