@@ -216,7 +216,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		handlerFuncParams := []jen.Code{
 			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-			jen.Id("translatorRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate", "Request"),
+			jen.Id("translatorRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
 			jen.Id("deletionProtection").Bool(),
 		}
 

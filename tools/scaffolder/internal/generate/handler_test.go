@@ -133,6 +133,6 @@ spec:
 
 	// Verify getTranslationRequest wrapper method
 	assert.Contains(t, contentStr, "func getTranslationRequest(")
-	assert.Contains(t, contentStr, "translate.NewTranslator(")
-	assert.Contains(t, contentStr, "return &translate.Request{")
+	assert.Contains(t, contentStr, "crapi.NewTranslator(")
+	assert.Contains(t, contentStr, "return &crapi.Request{")
 }
