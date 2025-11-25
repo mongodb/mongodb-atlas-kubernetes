@@ -29,10 +29,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/testdata"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/testdata"
 )
 
 const (
@@ -93,7 +93,7 @@ func TestMappings(t *testing.T) {
 			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.kind, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			tr, err := translate.NewTranslator(crd, version, sdkVersion)
+			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 			require.NoError(t, err)
 			got, err := tr.Mappings()
 			require.NoError(t, err)

@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/testdata"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/testdata"
 )
 
 const (

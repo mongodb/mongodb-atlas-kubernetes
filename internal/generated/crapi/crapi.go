@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package translate
+package crapi
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi/unstructured"
 )
 
 // Translator allows to translate back and forth between a CRD schema

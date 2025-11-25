@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/finalizer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
@@ -46,7 +46,7 @@ type Result struct {
 	StateMsg  string
 }
 
-type VersionedHandlerFunc[C any, T any] func(client client.Client, atlasClient *C, translator *translate.Request, deletionProtection bool) StateHandler[T]
+type VersionedHandlerFunc[C any, T any] func(client client.Client, atlasClient *C, translator *crapi.Request, deletionProtection bool) StateHandler[T]
 
 type StateHandler[T any] interface {
 	SetupWithManager(ctrl.Manager, reconcile.Reconciler, controller.Options) error
