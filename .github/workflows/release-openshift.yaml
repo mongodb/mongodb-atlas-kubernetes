@@ -21,13 +21,13 @@ jobs:
             certified: true
     steps:
       - name: Clone/Checkout Atlas Operator
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: main
           path: "mongodb-atlas-kubernetes"
           fetch-depth: 0
       - name: Clone/Checkout releases repositories
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ matrix.repository }}
           ref: main

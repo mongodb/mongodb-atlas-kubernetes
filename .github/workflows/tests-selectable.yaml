@@ -32,7 +32,7 @@ jobs:
       image_tag: ${{ steps.read_version.outputs.image_tag }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
       - name: Setup GO
@@ -130,7 +130,7 @@ jobs:
       GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
@@ -182,7 +182,7 @@ jobs:
     name: "integration: ${{ matrix.test }}"
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Install devbox
@@ -221,7 +221,7 @@ jobs:
           key: ${{ github.sha }}
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true
@@ -288,7 +288,7 @@ jobs:
           key: ${{ github.sha }}
       - name: Checkout if cache repo files missed
         if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
           submodules: true

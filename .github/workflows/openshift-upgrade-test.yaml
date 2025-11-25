@@ -29,7 +29,7 @@ jobs:
     if: ${{ vars.SKIP_OPENSHIFT != 'true' }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{github.event.pull_request.head.sha}}
           fetch-depth: 0 # required for tags
