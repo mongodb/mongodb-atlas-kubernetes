@@ -18,27 +18,43 @@ import (
 	"context"
 	"fmt"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
+	handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/translate"
+	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
-func (h *ClusterHandler) getHandlerForResource(cluster *v1.Cluster) (ctrlstate.StateHandler[v1.Cluster], error) {
+func (h *Handler) getHandlerForResource(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.StateHandler[akov2generated.Cluster], error) {
+	atlasClients, err := h.getSDKClientSet(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
-	var selectedHandler ctrlstate.StateHandler[v1.Cluster]
+	var selectedHandler ctrlstate.StateHandler[akov2generated.Cluster]
 
 	if cluster.Spec.V20250312 != nil {
+		translationReq, err := getTranslationRequest(ctx, h.Client, "clusters.atlas.generated.mongodb.com", "v1", "v20250312")
+		if err != nil {
+			return nil, err
+		}
 		versionCount++
-		selectedHandler = h.handlerv20250312
+		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312006, translationReq, h.deletionProtection)
 	}
 
 	if versionCount == 0 {
@@ -51,8 +67,8 @@ func (h *ClusterHandler) getHandlerForResource(cluster *v1.Cluster) (ctrlstate.S
 }
 
 // HandleInitial delegates to the version-specific handler
-func (h *ClusterHandler) HandleInitial(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleInitial(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateInitial, err)
 	}
@@ -60,86 +76,133 @@ func (h *ClusterHandler) HandleInitial(ctx context.Context, cluster *v1.Cluster)
 }
 
 // HandleImportRequested delegates to the version-specific handler
-func (h *ClusterHandler) HandleImportRequested(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleImportRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateImportRequested, err)
 	}
 	return handler.HandleImportRequested(ctx, cluster)
 }
 
 // HandleImported delegates to the version-specific handler
-func (h *ClusterHandler) HandleImported(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleImported(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateImported, err)
 	}
 	return handler.HandleImported(ctx, cluster)
 }
 
 // HandleCreating delegates to the version-specific handler
-func (h *ClusterHandler) HandleCreating(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleCreating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateCreating, err)
 	}
 	return handler.HandleCreating(ctx, cluster)
 }
 
 // HandleCreated delegates to the version-specific handler
-func (h *ClusterHandler) HandleCreated(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleCreated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateCreated, err)
 	}
 	return handler.HandleCreated(ctx, cluster)
 }
 
 // HandleUpdating delegates to the version-specific handler
-func (h *ClusterHandler) HandleUpdating(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleUpdating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateUpdating, err)
 	}
 	return handler.HandleUpdating(ctx, cluster)
 }
 
 // HandleUpdated delegates to the version-specific handler
-func (h *ClusterHandler) HandleUpdated(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleUpdated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateUpdated, err)
 	}
 	return handler.HandleUpdated(ctx, cluster)
 }
 
 // HandleDeletionRequested delegates to the version-specific handler
-func (h *ClusterHandler) HandleDeletionRequested(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleDeletionRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateDeletionRequested, err)
 	}
 	return handler.HandleDeletionRequested(ctx, cluster)
 }
 
 // HandleDeleting delegates to the version-specific handler
-func (h *ClusterHandler) HandleDeleting(ctx context.Context, cluster *v1.Cluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(cluster)
+func (h *Handler) HandleDeleting(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return result.Error(state.StateDeleting, err)
 	}
 	return handler.HandleDeleting(ctx, cluster)
 }
 
 // For returns the resource and predicates for the controller
-func (h *ClusterHandler) For() (client.Object, builder.Predicates) {
-	obj := &v1.Cluster{}
-	// TODO: Add appropriate predicates
-	return obj, builder.WithPredicates()
+func (h *Handler) For() (client.Object, builder.Predicates) {
+	obj := &akov2generated.Cluster{}
+	return obj, builder.WithPredicates(h.predicates...)
+}
+func (h *Handler) clusterForGroupMapFunc() handler.MapFunc {
+	return indexer.ProjectsIndexMapperFunc(indexers.ClusterByGroupIndex, func() *akov2generated.ClusterList {
+		return &akov2generated.ClusterList{}
+	}, indexers.ClusterRequestsFromGroup, h.Client, h.Log)
 }
 
 // SetupWithManager sets up the controller with the Manager
-func (h *ClusterHandler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
+func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	return controllerruntime.NewControllerManagedBy(mgr).Named("Cluster").For(h.For()).WithOptions(defaultOptions).Complete(rec)
+	return controllerruntime.NewControllerManagedBy(mgr).Named("Cluster").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(h.clusterForGroupMapFunc()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
+}
+
+// getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret
+func (h *Handler) getSDKClientSet(ctx context.Context, cluster *akov2generated.Cluster) (*atlas.ClientSet, error) {
+	var connectionSecretRef *client.ObjectKey
+	if cluster.Spec.ConnectionSecretRef != nil {
+		connectionSecretRef = &client.ObjectKey{
+			Name:      cluster.Spec.ConnectionSecretRef.Name,
+			Namespace: cluster.Namespace,
+		}
+	}
+
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, h.Client, connectionSecretRef, &h.GlobalSecretRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve Atlas credentials: %w", err)
+	}
+
+	clientSet, err := h.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, h.Log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup Atlas SDK client: %w", err)
+	}
+
+	return clientSet, nil
+}
+
+// getTranslationRequest creates a translation request for converting entities between API and AKO.
+// This is a package-level function that can be called from any handler.
+func getTranslationRequest(ctx context.Context, kubeClient client.Client, crdName string, storageVersion string, targetVersion string) (*translate.Request, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	err := kubeClient.Get(ctx, client.ObjectKey{Name: crdName}, crd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve CRD %s: %w", crdName, err)
+	}
+
+	translator, err := translate.NewTranslator(crd, storageVersion, targetVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup translator: %w", err)
+	}
+
+	return &translate.Request{
+		Dependencies: nil,
+		Translator:   translator,
+	}, nil
 }
