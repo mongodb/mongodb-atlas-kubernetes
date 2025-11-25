@@ -206,16 +206,10 @@ endif
 
 # GO TOOLS
 CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
-ifdef LOCALTOOLS
-	BUILD_OPENAPI2CRD := tools/openapi2crd/bin/openapi2crd
-	OPENAPI2CRD := tools/openapi2crd/bin/openapi2crd
-	BUILD_SCAFFOLDER := tools/scaffolder/bin/scaffolder
-	SCAFFOLDER := tools/scaffolder/bin/scaffolder
-else
-	OPENAPI2CRD ?= go tool -modfile=tools/toolbox/go.mod openapi2crd
-	SCAFFOLDER ?= go tool -modfile=tools/toolbox/go.mod scaffolder
-endif
 
+# LOCAL TOOLS
+OPENAPI2CRD := tools/openapi2crd/bin/openapi2crd
+SCAFFOLDER := tools/scaffolder/bin/scaffolder
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -878,15 +872,14 @@ tools/openapi2crd/bin/openapi2crd:
 tools/scaffolder/bin/scaffolder:
 	make -C tools/scaffolder build
 
-gen-crds: $(BUILD_OPENAPI2CRD)
+gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 
-gen-crds-override: $(BUILD_OPENAPI2CRD)
+gen-crds-override: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
-	$(MAKE) -C ./tools/openapi2crd build
-	$(OPENAPI2CRD) --config tools/openapi2crd/config.yaml \
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml --force
 
 gen-go-types:
@@ -894,13 +887,13 @@ gen-go-types:
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--output $(realpath .)/internal/nextapi/generated/v1
 
-run-scaffolder: $(BUILD_SCAFFOLDER)
+run-scaffolder: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--all --indexer-out $(realpath .)/internal/generated/indexers \
+	--all --indexer-out $(realpath .)/internal/generated/indexer \
 	--controller-out $(realpath .)/internal/generated/controller
 
-run-scaffolder-override: $(BUILD_SCAFFOLDER)
+run-scaffolder-override: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--all --override --indexer-out $(realpath .)/internal/generated/indexer \
