@@ -500,7 +500,7 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 clean: ## Clean built binaries
 	rm -rf bin/*
 	rm -rf config/manifests/bases/
-	rm config/generated/crd/bases/crds.yaml
+	rm -f config/generated/crd/bases/crds.yaml
 	rm -f config/crd/bases/*.yaml
 	rm -f config/rbac/clusterwide/role.yaml
 	rm -f config/rbac/namespaced/role.yaml
@@ -886,6 +886,7 @@ gen-crds: tools/openapi2crd/bin/openapi2crd
 	$(MAKE) -C tools/openapi2crd build
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml $(OPENAPI2CRD_OVERRIDE)
+	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
