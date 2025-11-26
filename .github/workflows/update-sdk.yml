@@ -1,0 +1,66 @@
+name: Weekly Atlas SDK Update
+
+on:
+  schedule:
+    - cron: '0 0 * * 3'  # This cron expression runs the action at 00:00 UTC every Sunday
+  workflow_dispatch:
+
+jobs:
+  update-devbox:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+          private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: mongodb-atlas-kubernetes
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
+        with:
+          enable-cache: 'true'
+      - name: Update Atlas SDK
+        run: |
+          ./scripts/update-sdk.sh
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            echo "CHANGES=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected."
+            echo "CHANGES=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Generate Branch Name
+        id: generate_branch
+        if: steps.check_changes.outputs.CHANGES == 'true'
+        run: |
+          RANDOM_NUM=$((RANDOM % 10000))  # Generate a random number between 0 and 9999
+          BRANCH_NAME="atlas-sdk-update-$(date +'%Y-%m-%d')-$RANDOM_NUM"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT  # Export branch name
+      - name: Commit and Push Changes
+        if: steps.check_changes.outputs.CHANGES == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: 'Atlas SDK Dependency Update'
+          BRANCH: ${{ steps.generate_branch.outputs.BRANCH_NAME }}
+        run: |
+          git checkout -b "${BRANCH}"
+          git add .
+          scripts/create-signed-commit.sh
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.CHANGES == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create --head=${{ steps.generate_branch.outputs.BRANCH_NAME }} --title "Atlas SDK Dependency Update" \
+          --body "This PR contains the new updates to the Atlas Go SDK." \
+          && echo "Pull request created"
+
