@@ -14,10 +14,10 @@
 #
 
 # input CRD schemas in YAML format
-input: ./pkg/crd2go/samples/crds.yaml
+input: ./config/generated/crd/bases/crds.yaml
 
 # output directory to egenrate Go code
-output: ./pkg/crd2go/samples/v1
+output: ./internal/nextapi/generated/v1
 
 # list of CRDs to skip by Kind name
 skipList: []
@@ -40,6 +40,10 @@ imports:
   - name: Reference
     alias: k8s
     path: github.com/crd2go/crd2go/k8s
+
+# plugins customize what extra Go code gets generated on top of the CRD types
+plugins:
+  - name: get-conditions
 
 # deepCopy controls the integration with controller-gen to generate deep copy code
 deepCopy:

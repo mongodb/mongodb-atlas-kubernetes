@@ -21,7 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.92.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.1
 	github.com/aws/smithy-go v1.23.2
-	github.com/crd2go/crd2go v0.0.0-20251111142436-d5d083fc9afb
+	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
@@ -102,7 +102,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
