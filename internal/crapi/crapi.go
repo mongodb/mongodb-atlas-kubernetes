@@ -37,9 +37,6 @@ type Translator interface {
 
 	// Mappings returns all the OpenAPi custom reference extensions, or an error
 	Mappings() ([]*refs.Mapping, error)
-
-	// Validate checks the given unsttructured object complies with the translated schema
-	Validate(unstructuredObj map[string]any) error
 }
 
 // Request holds common parameters for all translation request
@@ -71,9 +68,6 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 	unstructuredSrc, err := unstructured.ToUnstructured(source)
 	if err != nil {
 		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
-	}
-	if err := r.Translator.Validate(unstructuredSrc); err != nil {
-		return fmt.Errorf("failed to validate unstructured object input: %w", err)
 	}
 	targetUnstructured := map[string]any{}
 
@@ -139,9 +133,6 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 	extraObjects, err := expandReferences(r, targetUnstructured, target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
-	}
-	if err := r.Translator.Validate(targetUnstructured); err != nil {
-		return nil, fmt.Errorf("failed to validate unstructured object output: %w", err)
 	}
 	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)

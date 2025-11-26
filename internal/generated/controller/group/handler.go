@@ -17,6 +17,14 @@ package group
 import (
 	"context"
 	"fmt"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	builder "sigs.k8s.io/controller-runtime/pkg/builder"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
+	controller "sigs.k8s.io/controller-runtime/pkg/controller"
+	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
@@ -24,12 +32,6 @@ import (
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	controllerruntime "sigs.k8s.io/controller-runtime"
-	builder "sigs.k8s.io/controller-runtime/pkg/builder"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
-	controller "sigs.k8s.io/controller-runtime/pkg/controller"
-	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
