@@ -16,7 +16,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/chigopher/pathlib v0.19.1 // indirect
-	github.com/crd2go/crd2go v0.0.0-20251111142436-d5d083fc9afb // indirect
+	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92 // indirect
 	github.com/daixiang0/gci v0.13.7 // indirect
 	github.com/dave/jennifer v1.7.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -67,10 +67,10 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.34.1 // indirect
-	k8s.io/apiextensions-apiserver v0.34.1 // indirect
-	k8s.io/apimachinery v0.34.1 // indirect
-	k8s.io/client-go v0.34.1 // indirect
+	k8s.io/api v0.34.2 // indirect
+	k8s.io/apiextensions-apiserver v0.34.2 // indirect
+	k8s.io/apimachinery v0.34.2 // indirect
+	k8s.io/client-go v0.34.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
