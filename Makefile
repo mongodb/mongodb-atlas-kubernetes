@@ -500,6 +500,7 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 clean: ## Clean built binaries
 	rm -rf bin/*
 	rm -rf config/manifests/bases/
+	rm config/generated/crd/bases/crds.yaml
 	rm -f config/crd/bases/*.yaml
 	rm -f config/rbac/clusterwide/role.yaml
 	rm -f config/rbac/namespaced/role.yaml
@@ -882,6 +883,7 @@ tools/scaffolder/bin/scaffolder:
 
 gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
+	$(MAKE) -C tools/openapi2crd build
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml $(OPENAPI2CRD_OVERRIDE)
 
@@ -892,9 +894,10 @@ gen-go-types:
 
 run-scaffolder: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
+	$(MAKE) -C tools/scaffolder build
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--all $(SCAFFOLDER_OVERRIDE) \
-	--indexer-out $(realpath .)/internal/generated/indexer \
+	--indexer-out $(realpath .)/internal/generated/indexers \
 	--controller-out $(realpath .)/internal/generated/controller
 
 gen-all: gen-crds gen-go-types run-scaffolder

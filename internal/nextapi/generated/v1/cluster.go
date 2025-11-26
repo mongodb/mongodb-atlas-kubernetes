@@ -40,7 +40,7 @@ type ClusterSpec struct {
 type ClusterSpecV20250312 struct {
 	// Entry The entry fields of the cluster resource spec. These fields can be set for
 	// creating and updating clusters.
-	Entry *ClusterSpecV20250312Entry `json:"entry,omitempty"`
+	Entry *V20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
@@ -57,7 +57,7 @@ type ClusterSpecV20250312 struct {
 	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type ClusterSpecV20250312Entry struct {
+type V20250312Entry struct {
 	// AcceptDataRisksAndForceReplicaSetReconfig If reconfiguration is necessary to
 	// regain a primary due to a regional outage, submit this field alongside your
 	// topology reconfiguration to request a new regional outage resistant topology.
@@ -727,4 +727,12 @@ type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Cluster `json:"items"`
+}
+
+// GetConditions for Cluster
+func (c *Cluster) GetConditions() []metav1.Condition {
+	if c.Status.Conditions == nil {
+		return nil
+	}
+	return *c.Status.Conditions
 }
