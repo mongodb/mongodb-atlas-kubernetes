@@ -29,7 +29,7 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
@@ -189,19 +189,19 @@ func (h *Handler) getSDKClientSet(ctx context.Context, flexcluster *akov2generat
 
 // getTranslationRequest creates a translation request for converting entities between API and AKO.
 // This is a package-level function that can be called from any handler.
-func getTranslationRequest(ctx context.Context, kubeClient client.Client, crdName string, storageVersion string, targetVersion string) (*translate.Request, error) {
+func getTranslationRequest(ctx context.Context, kubeClient client.Client, crdName string, storageVersion string, targetVersion string) (*crapi.Request, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	err := kubeClient.Get(ctx, client.ObjectKey{Name: crdName}, crd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve CRD %s: %w", crdName, err)
 	}
 
-	translator, err := translate.NewTranslator(crd, storageVersion, targetVersion)
+	translator, err := crapi.NewTranslator(crd, storageVersion, targetVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup translator: %w", err)
 	}
 
-	return &translate.Request{
+	return &crapi.Request{
 		Dependencies: nil,
 		Translator:   translator,
 	}, nil

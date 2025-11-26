@@ -23,7 +23,7 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
@@ -64,6 +64,6 @@ func NewDatabaseUserReconciler(c cluster.Cluster, atlasProvider atlas.Provider, 
 
 	return ctrlstate.NewStateReconciler(databaseuserHandler, ctrlstate.WithCluster[akov2generated.DatabaseUser](c), ctrlstate.WithReapplySupport[akov2generated.DatabaseUser](reapplySupport))
 }
-func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translatorRequest *translate.Request, deletionProtection bool) ctrlstate.StateHandler[akov2generated.DatabaseUser] {
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translatorRequest *crapi.Request, deletionProtection bool) ctrlstate.StateHandler[akov2generated.DatabaseUser] {
 	return NewHandlerv20250312(kubeClient, atlasClient, translatorRequest, deletionProtection)
 }

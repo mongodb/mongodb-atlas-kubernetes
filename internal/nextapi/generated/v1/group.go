@@ -118,3 +118,11 @@ type GroupList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Group `json:"items"`
 }
+
+// GetConditions for Group
+func (g *Group) GetConditions() []metav1.Condition {
+	if g.Status.Conditions == nil {
+		return nil
+	}
+	return *g.Status.Conditions
+}

@@ -40,7 +40,7 @@ type DatabaseUserSpec struct {
 type DatabaseUserSpecV20250312 struct {
 	// Entry The entry fields of the databaseuser resource spec. These fields can be
 	// set for creating and updating databaseusers.
-	Entry *V20250312Entry `json:"entry,omitempty"`
+	Entry *DatabaseUserSpecV20250312Entry `json:"entry,omitempty"`
 
 	/*
 	   GroupId Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
@@ -57,7 +57,7 @@ type DatabaseUserSpecV20250312 struct {
 	GroupRef *k8s.LocalReference `json:"groupRef,omitempty"`
 }
 
-type V20250312Entry struct {
+type DatabaseUserSpecV20250312Entry struct {
 	// AwsIAMType Human-readable label that indicates whether the new database user
 	// authenticates with the Amazon Web Services (AWS) Identity and Access Management
 	// (IAM) credentials associated with the user or the user's role.
@@ -170,4 +170,12 @@ type DatabaseUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DatabaseUser `json:"items"`
+}
+
+// GetConditions for DatabaseUser
+func (du *DatabaseUser) GetConditions() []metav1.Condition {
+	if du.Status.Conditions == nil {
+		return nil
+	}
+	return *du.Status.Conditions
 }
