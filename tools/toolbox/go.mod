@@ -6,6 +6,7 @@ tool (
 	fybrik.io/crdoc
 	github.com/crd2go/crd2go/cmd/crd2go
 	github.com/daixiang0/gci
+	github.com/icholy/gomajor
 	github.com/vektra/mockery/v2
 )
 
@@ -28,6 +29,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
+	github.com/icholy/gomajor v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
