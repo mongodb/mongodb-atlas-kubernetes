@@ -3016,8 +3016,8 @@ func (in *Mappings) DeepCopyInto(out *Mappings) {
 	*out = *in
 	if in.Dynamic != nil {
 		in, out := &in.Dynamic, &out.Dynamic
-		*out = new(bool)
-		**out = **in
+		*out = new(apiextensionsv1.JSON)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Fields != nil {
 		in, out := &in.Fields, &out.Fields
