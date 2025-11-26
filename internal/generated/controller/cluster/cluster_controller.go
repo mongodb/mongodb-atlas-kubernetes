@@ -15,16 +15,17 @@
 package cluster
 
 import (
-	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
-	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=clusters,verbs=get;list;watch;create;update;patch;delete
