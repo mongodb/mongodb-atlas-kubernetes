@@ -371,19 +371,27 @@ func mappingsFromAtlas(in *admin.SearchMappings) (*akov2.Mappings, error) {
 	if in == nil {
 		return nil, nil
 	}
-	result := &akov2.Mappings{
-		Dynamic: in.Dynamic,
-		Fields:  nil,
-	}
-	if in.Fields == nil {
-		return result, nil
-	}
-
-	var fields apiextensionsv1.JSON
+	result := &akov2.Mappings{}
+	var dynamic, fields apiextensionsv1.JSON
 	if err := compat.JSONCopy(&fields, in.Fields); err != nil {
 		return nil, err
 	}
+	if err := compat.JSONCopy(&dynamic, in.Dynamic); err != nil {
+		return nil, err
+	}
 	result.Fields = &fields
+	result.Dynamic = &dynamic
+	return result, nil
+}
+
+func jsonToAny(in *apiextensionsv1.JSON) (any, error) {
+	if in == nil {
+		return nil, nil
+	}
+	var result any
+	if err := json.Unmarshal(in.Raw, &result); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -500,8 +508,12 @@ func mappingsToAtlas(in *akov2.Mappings) (*admin.SearchMappings, error) {
 	if err != nil {
 		return nil, err
 	}
+	dynamic, err := jsonToAny(in.Dynamic)
+	if err != nil {
+		return nil, err
+	}
 	return &admin.SearchMappings{
-		Dynamic: in.Dynamic,
+		Dynamic: dynamic,
 		Fields:  &fields,
 	}, nil
 }
