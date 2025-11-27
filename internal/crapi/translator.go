@@ -93,3 +93,45 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 		mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
 	}, nil
 }
+
+// NewPerVersionTranslators creates a set of translators indexed by SDK versions
+//
+// Given the following example resource:
+//
+//		apiVersion: atlas.generated.mongodb.com/v1
+//		kind: SearchIndex
+//		metadata:
+//		  name: search-index
+//		spec:
+//		  v20250312:
+//	    ...
+//		  v20250810:
+//
+// In the above case crdVersion is "v1" and versions can be "v20250312"
+// and/or "v20250810".
+func NewPerVersionTranslators(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, versions ...string) (map[string]Translator, error) {
+	translators := map[string]Translator{}
+	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
+	for _, version := range versions {
+		if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, version); err != nil {
+			return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", version, err)
+		}
+		var mappingSchema openapi3.Schema
+		mappingString, ok := crd.Annotations["api-mappings"]
+		if ok && mappingString != "" {
+			jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
+			}
+			if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
+			}
+		}
+
+		translators[version] = &translator{
+			majorVersion:  version,
+			mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
+		}
+	}
+	return translators, nil
+}
