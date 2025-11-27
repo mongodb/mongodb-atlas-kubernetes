@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312010/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -21,7 +21,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312010/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
