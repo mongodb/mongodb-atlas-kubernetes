@@ -211,13 +211,7 @@ CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
 OPENAPI2CRD := tools/openapi2crd/bin/openapi2crd
 SCAFFOLDER := tools/scaffolder/bin/scaffolder
 
-ifdef GEN_OVERRIDE
-  OPENAPI2CRD_OVERRIDE := --force
-  SCAFFOLDER_OVERRIDE := --override
-else
-  OPENAPI2CRD_OVERRIDE :=
-  SCAFFOLDER_OVERRIDE :=
-endif
+SCAFFOLDER_FLAGS ?= --all
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -885,7 +879,7 @@ gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
 	$(MAKE) -C tools/openapi2crd build
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
-	--output $(realpath .)/config/generated/crd/bases/crds.yaml $(OPENAPI2CRD_OVERRIDE)
+	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
 
 gen-go-types:
@@ -893,11 +887,13 @@ gen-go-types:
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--output $(realpath .)/internal/nextapi/generated/v1
 
+# In order to override all of the generated versioned handler, use SCAFFOLDER_FLAGS="--all --override" make gen-all
+# In order to override a specific generated versioned handler for the Group CRD, use SCAFFOLDER_FLAGS="--kind=Group --override" make gen-all
 run-scaffolder: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(MAKE) -C tools/scaffolder build
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--all $(SCAFFOLDER_OVERRIDE) \
+	$(SCAFFOLDER_FLAGS) \
 	--indexer-out $(realpath .)/internal/generated/indexers \
 	--controller-out $(realpath .)/internal/generated/controller
 
