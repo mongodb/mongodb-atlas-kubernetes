@@ -85,7 +85,7 @@ func ValidateResourceVersion(ctx *workflow.Context, resource akov2.AtlasCustomRe
 	return workflow.OK()
 }
 
-func IsResourcePolicyKeepOrDefault(resource akov2.AtlasCustomResource, protectionFlag bool) bool {
+func IsResourcePolicyKeepOrDefault(resource metav1.Object, protectionFlag bool) bool {
 	if policy, ok := resource.GetAnnotations()[ResourcePolicyAnnotation]; ok {
 		return policy == ResourcePolicyKeep
 	}

@@ -16,6 +16,8 @@ package group
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -24,6 +26,7 @@ import (
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -49,65 +52,113 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 
 // HandleInitial handles the initial state for version v20250312
 func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement initial state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Updated AtlasGroup.")
+	atlasGroup := &v20250312sdk.Group{}
+	err := crapi.ToAPI(h.translationRequest, atlasGroup, group)
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
+	}
+
+	params := &v20250312sdk.CreateProjectApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
+	response, _, err := h.atlasClient.ProjectsApi.CreateProjectWithParams(ctx, params).Execute()
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to create group: %w", err))
+	}
+
+	groupCopy := group.DeepCopy()
+	_, err = crapi.FromAPI(h.translationRequest, groupCopy, response)
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
+	}
+
+	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to patch group status: %w", err))
+	}
+
+	return result.NextState(state.StateCreated, "Group created.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement importrequested state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateImported, "Import completed")
+	id, ok := group.GetAnnotations()["mongodb.com/external-id"]
+	if !ok {
+		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+	}
+
+	response, _, err := h.atlasClient.ProjectsApi.GetProject(ctx, id).Execute()
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
+	}
+
+	_, err = crapi.FromAPI(h.translationRequest, group, response)
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
+	}
+
+	err = h.kubeClient.Status().Patch(ctx, group, client.MergeFrom(group))
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Group status: %w", err))
+	}
+
+	return result.NextState(state.StateImported, "Group imported.")
 }
 
-// HandleImported handles the imported state for version v20250312
 func (h *Handlerv20250312) HandleImported(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement imported state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Ready")
+	return h.handleUpserted(ctx, state.StateImported, group)
 }
 
-// HandleCreating handles the creating state for version v20250312
 func (h *Handlerv20250312) HandleCreating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement creating state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateCreated, "Resource created")
+	panic("unsupported state")
 }
 
 // HandleCreated handles the created state for version v20250312
 func (h *Handlerv20250312) HandleCreated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement created state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Ready")
+	return h.handleUpserted(ctx, state.StateCreated, group)
 }
 
 // HandleUpdating handles the updating state for version v20250312
 func (h *Handlerv20250312) HandleUpdating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement updating state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Update completed")
+	panic("unsupported state")
 }
 
 // HandleUpdated handles the updated state for version v20250312
 func (h *Handlerv20250312) HandleUpdated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement updated state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateUpdated, "Ready")
+	return h.handleUpserted(ctx, state.StateUpdated, group)
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
 func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement deletionrequested state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateDeleting, "Deletion started")
+	if customresource.IsResourcePolicyKeepOrDefault(group, h.deletionProtection) {
+		return result.NextState(state.StateDeleted, "Group deleted.")
+	}
+
+	if group.Status.V20250312 == nil || group.Status.V20250312.Id == nil {
+		return result.NextState(state.StateDeleted, "Group deleted.")
+	}
+
+	_, err := h.atlasClient.ProjectsApi.DeleteProject(ctx, *group.Status.V20250312.Id).Execute()
+	if v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
+		return result.NextState(state.StateDeleted, "Group deleted.")
+	}
+	if err != nil {
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
+	}
+
+	return result.NextState(state.StateDeleting, "Deleting group.")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	// TODO: Implement deleting state logic
-	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
-	return result.NextState(state.StateDeleted, "Deleted")
+	_, _, err := h.atlasClient.ProjectsApi.GetProject(ctx, *group.Status.V20250312.Id).Execute()
+	if err == nil {
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w deletion", err))
+	}
+
+	if !v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
+	}
+
+	return result.NextState(state.StateDeleted, "Group deleted.")
 }
 
 // For returns the resource and predicates for the controller
@@ -119,4 +170,44 @@ func (h *Handlerv20250312) For() (client.Object, builder.Predicates) {
 func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	// This method is not used for version-specific handlers but required by StateHandler interface
 	return nil
+}
+
+func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, group *akov2generated.Group) (ctrlstate.Result, error) {
+	update, err := ctrlstate.ShouldUpdate(group)
+	if err != nil {
+		return result.Error(currentState, reconcile.TerminalError(err))
+	}
+
+	if !update {
+		return result.NextState(currentState, "Group is up to date. No update required.")
+	}
+
+	atlasGroupUpdate := &v20250312sdk.GroupUpdate{}
+	err = crapi.ToAPI(h.translationRequest, atlasGroupUpdate, group)
+	if err != nil {
+		return result.Error(currentState, err)
+	}
+
+	params := &v20250312sdk.UpdateProjectApiParams{
+		GroupId:     *group.Status.V20250312.Id,
+		GroupUpdate: atlasGroupUpdate,
+	}
+
+	response, _, err := h.atlasClient.ProjectsApi.UpdateProjectWithParams(ctx, params).Execute()
+	if err != nil {
+		return result.Error(currentState, err)
+	}
+
+	groupCopy := group.DeepCopy()
+	_, err = crapi.FromAPI(h.translationRequest, groupCopy, response)
+	if err != nil {
+		return result.Error(currentState, err)
+	}
+
+	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
+	if err != nil {
+		return result.Error(currentState, err)
+	}
+
+	return result.NextState(state.StateUpdated, "Group is updated.")
 }

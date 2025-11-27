@@ -29,6 +29,7 @@ import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -42,7 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	akov2next "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
@@ -80,7 +81,8 @@ func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
 	setupLog := logger.Named("setup").Sugar()
 	if version.IsExperimental() {
 		setupLog.Warn("Experimental features enabled!")
-		utilruntime.Must(akov2next.AddToScheme(akoScheme))
+		utilruntime.Must(generatedv1.AddToScheme(akoScheme))
+		utilruntime.Must(apiextensionsv1.AddToScheme(akoScheme))
 	}
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))
 
