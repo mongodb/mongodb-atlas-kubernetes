@@ -407,8 +407,7 @@ func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string
 	require.NoError(t, err)
 	tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 	require.NoError(t, err)
-	r := crapi.Request{Translator: tr}
-	results, err := crapi.FromAPI(&r, target, input)
+	results, err := crapi.FromAPI(tr, target, input)
 	require.NoError(t, err)
 	assert.Equal(t, want, target)
 	assert.Equal(t, wantDeps, results)
@@ -578,8 +577,7 @@ func TestToAPIAllRefs(t *testing.T) {
 			require.NoError(t, err)
 			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 			require.NoError(t, err)
-			r := crapi.Request{Translator: tr, Dependencies: tc.deps}
-			require.NoError(t, crapi.ToAPI(&r, &tc.target, tc.input))
+			require.NoError(t, crapi.ToAPI(tr, &tc.target, tc.input, tc.deps...))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
@@ -2007,8 +2005,7 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	require.NoError(t, err)
 	tr := trs[sdkVersion]
 	require.NotNil(t, tr)
-	r := crapi.Request{Translator: tr, Dependencies: objs}
-	require.NoError(t, crapi.ToAPI(&r, target, input))
+	require.NoError(t, crapi.ToAPI(tr, target, input, objs...))
 	assert.Equal(t, want, target)
 }
 
