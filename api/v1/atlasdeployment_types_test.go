@@ -49,6 +49,57 @@ func TestDeploymentCELChecks(t *testing.T) {
 			},
 			expectedErrors: []string{"spec.deploymentSpec.name: Invalid value: \"string\": Name cannot be modified after deployment creation"},
 		},
+		{
+			title: "Cannot add a serverless deployment",
+			old:   nil,
+			obj: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					ServerlessSpec: &ServerlessSpec{
+						Name: "my-serverless",
+					},
+				},
+			},
+			expectedErrors: []string{"spec.serverlessSpec: Invalid value: \"object\": serverlessSpec cannot be added - serverless instances are deprecated"},
+		},
+		{
+			title: "Can modify to a serverless deployment",
+			old: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					ServerlessSpec: &ServerlessSpec{
+						Name:                         "my-serverless",
+						TerminationProtectionEnabled: false,
+					},
+				},
+			},
+			obj: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					ServerlessSpec: &ServerlessSpec{
+						Name:                         "my-serverless",
+						TerminationProtectionEnabled: true,
+					},
+				},
+			},
+		},
+		{
+			title: "Existing serverless deployment can continue existing when not modified",
+			old: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					ServerlessSpec: &ServerlessSpec{
+						Name:                         "my-serverless",
+						TerminationProtectionEnabled: false,
+					},
+				},
+			},
+			obj: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					BackupScheduleRef: common.ResourceRefNamespaced{},
+					ServerlessSpec: &ServerlessSpec{
+						Name:                         "my-serverless",
+						TerminationProtectionEnabled: false,
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// inject a project to avoid other CEL validations being hit
