@@ -100,6 +100,23 @@ func TestDeploymentCELChecks(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "can migrate from serverless to flex cluster",
+			old: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					ServerlessSpec: &ServerlessSpec{
+						Name: "my-serverless",
+					},
+				},
+			},
+			obj: &AtlasDeployment{
+				Spec: AtlasDeploymentSpec{
+					FlexSpec: &FlexSpec{
+						Name: "my-serverless",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// inject a project to avoid other CEL validations being hit
