@@ -17,8 +17,6 @@ package crds
 
 import (
 	"bufio"
-	"fmt"
-	"io"
 	"strings"
 	"testing"
 
@@ -28,12 +26,10 @@ import (
 )
 
 func TestParseCRD(t *testing.T) {
-	var noErr error
-
 	tests := map[string]struct {
 		scanner     *bufio.Scanner
 		expectedCrd *apiextensionsv1.CustomResourceDefinition
-		expectedErr error
+		expectedErr string
 	}{
 		"valid CRD": {
 			scanner:     bufio.NewScanner(strings.NewReader(validCRDManifest(t))),
@@ -41,15 +37,15 @@ func TestParseCRD(t *testing.T) {
 		},
 		"not a CRD": {
 			scanner:     bufio.NewScanner(strings.NewReader("apiVersion: autoscaling/__internal\nkind: Scale\nmetadata:\n  name: test-scale\n")),
-			expectedErr: fmt.Errorf("unexpected kind %q: %w", "Scale", noErr),
+			expectedErr: "failed to decode YAML: no kind \"Scale\" is registered for the internal version of group \"autoscaling\" in scheme \"pkg/runtime/scheme.go:110\"",
 		},
 		"empty input": {
 			scanner:     bufio.NewScanner(strings.NewReader("")),
-			expectedErr: io.EOF,
+			expectedErr: "EOF",
 		},
 		"only comments": {
 			scanner:     bufio.NewScanner(strings.NewReader("# This is a comment\n# Another comment line\n")),
-			expectedErr: io.EOF,
+			expectedErr: "EOF",
 		},
 		"multiple CRDs, returns first": {
 			scanner:     bufio.NewScanner(strings.NewReader(validCRDManifest(t) + "---\n" + validCRDManifest(t))),
@@ -59,7 +55,11 @@ func TestParseCRD(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			got, err := ParseCRD(tt.scanner)
-			assert.Equal(t, tt.expectedErr, err)
+			gotErr := ""
+			if err != nil {
+				gotErr = err.Error()
+			}
+			assert.Equal(t, tt.expectedErr, gotErr)
 			assert.Equal(t, tt.expectedCrd, got)
 		})
 	}
