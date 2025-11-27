@@ -388,7 +388,7 @@ func generateKeysMethod(f *jen.File, structName, crdKind string, indexer Indexer
 	}
 
 	// Add field extraction logic
-	blockStatements = append(blockStatements, generateFieldExtractionCode(indexer.ReferenceFields, indexer.TargetKind)...)
+	blockStatements = append(blockStatements, generateFieldExtractionCode(indexer.ReferenceFields)...)
 
 	// Add return statement
 	blockStatements = append(blockStatements, jen.Return(jen.Id("keys")))
@@ -398,7 +398,7 @@ func generateKeysMethod(f *jen.File, structName, crdKind string, indexer Indexer
 	).Index().String().Block(blockStatements...)
 }
 
-func generateFieldExtractionCode(fields []ReferenceField, targetKind string) []jen.Code {
+func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 	code := make([]jen.Code, 0)
 
 	for _, field := range fields {

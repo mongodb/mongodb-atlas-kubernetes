@@ -24,7 +24,7 @@ import (
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	translate "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -34,16 +34,16 @@ import (
 type Handlerv20250312 struct {
 	kubeClient         client.Client
 	atlasClient        *v20250312sdk.APIClient
-	translationRequest *translate.Request
+	translator         crapi.Translator
 	deletionProtection bool
 }
 
-func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translationRequest *translate.Request, deletionProtection bool) *Handlerv20250312 {
+func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) *Handlerv20250312 {
 	return &Handlerv20250312{
 		atlasClient:        atlasClient,
 		deletionProtection: deletionProtection,
 		kubeClient:         kubeClient,
-		translationRequest: translationRequest,
+		translator:         translator,
 	}
 }
 
