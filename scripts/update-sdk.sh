@@ -16,7 +16,6 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_SDK_RELEASE=$(go list -m all | grep go.mongodb.org/atlas-sdk | awk -F '/| ' '{print $3}')
 echo "CURRENT_SDK_RELEASE: $CURRENT_SDK_RELEASE"
 
