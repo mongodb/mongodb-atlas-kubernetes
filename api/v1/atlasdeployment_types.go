@@ -43,6 +43,7 @@ const (
 // Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
+// +kubebuilder:validation:XValidation:rule="!has(self.serverlessSpec) || (oldSelf.hasValue() && oldSelf.value().serverlessSpec != null)",optionalOldSelf=true,message="serverlessSpec cannot be added - serverless instances are deprecated",fieldPath=.serverlessSpec
 type AtlasDeploymentSpec struct {
 	// ProjectReference is the dual external or kubernetes reference with access credentials
 	ProjectDualReference `json:",inline"`

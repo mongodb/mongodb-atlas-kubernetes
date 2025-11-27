@@ -33,7 +33,7 @@ func TestNewDeployment(t *testing.T) {
 		cr       *akov2.AtlasDeployment
 		expected Deployment
 	}{
-		"should create a new serverless deployment": {
+		"should create a new serverless deployment as flex": {
 			cr: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					ServerlessSpec: &akov2.ServerlessSpec{
@@ -62,11 +62,10 @@ func TestNewDeployment(t *testing.T) {
 					},
 				},
 			},
-			expected: &Serverless{
-				ServerlessSpec: &akov2.ServerlessSpec{
+			expected: &Flex{
+				FlexSpec: &akov2.FlexSpec{
 					Name: "instance0",
-					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-						ProviderName:        "SERVERLESS",
+					ProviderSettings: &akov2.FlexProviderSettings{
 						BackingProviderName: "AWS",
 						RegionName:          "US_EAST_1",
 					},
@@ -75,9 +74,6 @@ func TestNewDeployment(t *testing.T) {
 							Key:   "name",
 							Value: "test",
 						},
-					},
-					BackupOptions: akov2.ServerlessBackupOptions{
-						ServerlessContinuousBackupEnabled: true,
 					},
 					TerminationProtectionEnabled: true,
 				},
@@ -299,103 +295,6 @@ func TestNewDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, NewDeployment("project-id", tt.cr))
-		})
-	}
-}
-
-func TestNormalizeServerlessDeployment(t *testing.T) {
-	tests := map[string]struct {
-		deployment *Serverless
-		expected   *Serverless
-	}{
-		"normalize deployment without tags": {
-			deployment: &Serverless{
-				ServerlessSpec: &akov2.ServerlessSpec{
-					Name: "instance0",
-					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-						ProviderName:        "SERVERLESS",
-						BackingProviderName: "AWS",
-						RegionName:          "US_EAST_1",
-					},
-					BackupOptions: akov2.ServerlessBackupOptions{
-						ServerlessContinuousBackupEnabled: true,
-					},
-					TerminationProtectionEnabled: true,
-				},
-			},
-			expected: &Serverless{
-				ServerlessSpec: &akov2.ServerlessSpec{
-					Name: "instance0",
-					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-						ProviderName:        "SERVERLESS",
-						BackingProviderName: "AWS",
-						RegionName:          "US_EAST_1",
-					},
-					Tags: []*akov2.TagSpec{},
-					BackupOptions: akov2.ServerlessBackupOptions{
-						ServerlessContinuousBackupEnabled: true,
-					},
-					TerminationProtectionEnabled: true,
-				},
-			},
-		},
-		"normalize deployment with tags": {
-			deployment: &Serverless{
-				ServerlessSpec: &akov2.ServerlessSpec{
-					Name: "instance0",
-					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-						ProviderName:        "SERVERLESS",
-						BackingProviderName: "AWS",
-						RegionName:          "US_EAST_1",
-					},
-					Tags: []*akov2.TagSpec{
-						{
-							Key:   "b",
-							Value: "b",
-						},
-						{
-							Key:   "a",
-							Value: "a",
-						},
-					},
-					BackupOptions: akov2.ServerlessBackupOptions{
-						ServerlessContinuousBackupEnabled: true,
-					},
-					TerminationProtectionEnabled: true,
-				},
-			},
-			expected: &Serverless{
-				ServerlessSpec: &akov2.ServerlessSpec{
-					Name: "instance0",
-					ProviderSettings: &akov2.ServerlessProviderSettingsSpec{
-						ProviderName:        "SERVERLESS",
-						BackingProviderName: "AWS",
-						RegionName:          "US_EAST_1",
-					},
-					Tags: []*akov2.TagSpec{
-						{
-							Key:   "a",
-							Value: "a",
-						},
-						{
-							Key:   "b",
-							Value: "b",
-						},
-					},
-					BackupOptions: akov2.ServerlessBackupOptions{
-						ServerlessContinuousBackupEnabled: true,
-					},
-					TerminationProtectionEnabled: true,
-				},
-			},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			normalizeServerlessDeployment(tt.deployment)
-
-			assert.Equal(t, tt.expected, tt.deployment)
 		})
 	}
 }
@@ -1168,8 +1067,8 @@ func TestIsType(t *testing.T) {
 					ServerlessSpec: &akov2.ServerlessSpec{},
 				},
 			},
-			wantServerless: true,
-			wantFlex:       false,
+			wantServerless: false,
+			wantFlex:       true,
 			wantTenant:     false,
 			wantDedicated:  false,
 		},

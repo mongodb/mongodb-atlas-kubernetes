@@ -79,7 +79,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -1439,7 +1439,7 @@ var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentShardin
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.ServerlessInstancesApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
+		deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
