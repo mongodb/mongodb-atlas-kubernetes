@@ -15,11 +15,8 @@
 package crds
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
@@ -39,25 +36,6 @@ func AssertMajorVersion(specVersion *apiextensionsv1.CustomResourceDefinitionVer
 		return fmt.Errorf("failed to match the CRD spec version %q in schema", majorVersion)
 	}
 	return nil
-}
-
-// CompileCRDSchema compiles the given JSON properties as a type schema.
-// Enables validating whether or not some JSON or unstructured data comforms
-// with such type schema.
-func CompileCRDSchema(openAPISchema *apiextensionsv1.JSONSchemaProps) (*jsonschema.Schema, error) {
-	schemaBytes, err := json.Marshal(openAPISchema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal CRD schema to JSON: %w", err)
-	}
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("schema.json", bytes.NewReader(schemaBytes)); err != nil {
-		return nil, fmt.Errorf("failed to add schema resource: %w", err)
-	}
-	schema, err := compiler.Compile("schema.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile schema: %w", err)
-	}
-	return schema, nil
 }
 
 // SelectVersion extracts the CRD version definition matching the given version.
