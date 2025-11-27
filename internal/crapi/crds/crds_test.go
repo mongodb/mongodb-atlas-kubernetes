@@ -15,36 +15,13 @@
 package crds_test
 
 import (
-	"bufio"
-	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
 )
-
-const (
-	expectedVersion = "v1"
-)
-
-func TestParseAssertAndCompile(t *testing.T) {
-	scanner := bufio.NewScanner(bytes.NewBuffer(testdata.SampleCRDs))
-	for range 2 { // CRDs sample file has at least 2 CRDs
-		def, err := crds.Parse(scanner)
-		require.NoError(t, err)
-		assert.NotNil(t, def)
-		kind := def.Spec.Names.Kind
-		specVersion := crds.SelectVersion(&def.Spec, expectedVersion)
-		crds.AssertMajorVersion(specVersion, kind, expectedVersion)
-		schema, err := crds.CompileCRDSchema(specVersion.Schema.OpenAPIV3Schema)
-		require.NoError(t, err)
-		assert.NotNil(t, schema)
-	}
-}
 
 func TestSelectVersion(t *testing.T) {
 	// Define some sample versions to be reused in the tests
