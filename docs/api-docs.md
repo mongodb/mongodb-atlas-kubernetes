@@ -2755,7 +2755,7 @@ AtlasDeployment is the Schema for the atlasdeployments API
           AtlasDeploymentSpec defines the desired state of AtlasDeployment.
 Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.<br/>
           <br/>
-            <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
+            <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li><li>!has(self.serverlessSpec) || (oldSelf.hasValue() && oldSelf.value().serverlessSpec != null): serverlessSpec cannot be added - serverless instances are deprecated</li>
         </td>
         <td>false</td>
       </tr><tr>
