@@ -80,32 +80,30 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 				}
-				want := []client.Object{
-					&v1.Group{
-						Spec: v1.GroupSpec{
-							V20250312: &v1.GroupSpecV20250312{
-								Entry: &v1.V20250312Entry{
-									Name:  "test-project",
-									OrgId: testProjectID,
-									Tags: &[]v1.Tags{
-										{
-											Key:   "key0",
-											Value: "value0",
-										},
-										{
-											Key:   "key",
-											Value: "value",
-										},
+				want := &v1.Group{
+					Spec: v1.GroupSpec{
+						V20250312: &v1.GroupSpecV20250312{
+							Entry: &v1.V20250312Entry{
+								Name:  "test-project",
+								OrgId: testProjectID,
+								Tags: &[]v1.Tags{
+									{
+										Key:   "key0",
+										Value: "value0",
 									},
-									WithDefaultAlertsSettings: pointer.MakePtr(true),
+									{
+										Key:   "key",
+										Value: "value",
+									},
 								},
+								WithDefaultAlertsSettings: pointer.MakePtr(true),
 							},
 						},
-						Status: v1.GroupStatus{
-							V20250312: &v1.GroupStatusV20250312{
-								Created: "2025-01-01T01:30:15Z",
-								Id:      pointer.MakePtr("6127378123219"),
-							},
+					},
+					Status: v1.GroupStatus{
+						V20250312: &v1.GroupStatusV20250312{
+							Created: "2025-01-01T01:30:15Z",
+							Id:      pointer.MakePtr("6127378123219"),
 						},
 					},
 				}
@@ -153,47 +151,45 @@ func TestFromAPI(t *testing.T) {
 					X509Type: pointer.MakePtr("NONE X509"),
 				}
 				target := v1.DatabaseUser{}
-				want := []client.Object{
-					&v1.DatabaseUser{
-						Spec: v1.DatabaseUserSpec{
-							V20250312: &v1.DatabaseUserSpecV20250312{
-								Entry: &v1.DatabaseUserSpecV20250312Entry{
-									AwsIAMType:      pointer.MakePtr("NONE AWS"),
-									DatabaseName:    "dbname",
-									DeleteAfterDate: pointer.MakePtr("2025-02-01T01:30:15Z"),
-									Description:     pointer.MakePtr("sample db user"),
-									GroupId:         testProjectID, // ID ref by default
-									Labels: &[]v1.Tags{
-										{
-											Key:   "key0",
-											Value: "value0",
-										},
-										{
-											Key:   "key1",
-											Value: "value1",
-										},
+				want := &v1.DatabaseUser{
+					Spec: v1.DatabaseUserSpec{
+						V20250312: &v1.DatabaseUserSpecV20250312{
+							Entry: &v1.DatabaseUserSpecV20250312Entry{
+								AwsIAMType:      pointer.MakePtr("NONE AWS"),
+								DatabaseName:    "dbname",
+								DeleteAfterDate: pointer.MakePtr("2025-02-01T01:30:15Z"),
+								Description:     pointer.MakePtr("sample db user"),
+								GroupId:         testProjectID, // ID ref by default
+								Labels: &[]v1.Tags{
+									{
+										Key:   "key0",
+										Value: "value0",
 									},
-									LdapAuthType: pointer.MakePtr("NONE LDAP"),
-									OidcAuthType: pointer.MakePtr("NONE OIDC"),
-									Roles: &[]v1.Roles{
-										{
-											CollectionName: pointer.MakePtr("collection0"),
-											DatabaseName:   "mydb",
-											RoleName:       "admin",
-										},
+									{
+										Key:   "key1",
+										Value: "value1",
 									},
-									Scopes: &[]v1.Scopes{
-										{
-											Name: "scopeName",
-											Type: "scopeType",
-										},
-									},
-									Username: "dbuser",
-									X509Type: pointer.MakePtr("NONE X509"),
-									Password: pointer.MakePtr("fakepass"), // TODO: this should go away to a secret
 								},
-								GroupId: pointer.MakePtr(testProjectID),
+								LdapAuthType: pointer.MakePtr("NONE LDAP"),
+								OidcAuthType: pointer.MakePtr("NONE OIDC"),
+								Roles: &[]v1.Roles{
+									{
+										CollectionName: pointer.MakePtr("collection0"),
+										DatabaseName:   "mydb",
+										RoleName:       "admin",
+									},
+								},
+								Scopes: &[]v1.Scopes{
+									{
+										Name: "scopeName",
+										Type: "scopeType",
+									},
+								},
+								Username: "dbuser",
+								X509Type: pointer.MakePtr("NONE X509"),
+								Password: pointer.MakePtr("fakepass"), // TODO: this should go away to a secret
 							},
+							GroupId: pointer.MakePtr(testProjectID),
 						},
 					},
 				}
@@ -254,80 +250,78 @@ func TestFromAPI(t *testing.T) {
 						Namespace: "ns",
 					},
 				}
-				want := []client.Object{
-					&v1.GroupAlertsConfig{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "groupalertscfg",
-							Namespace: "ns",
-						},
-						Spec: v1.GroupAlertsConfigSpec{
-							V20250312: &v1.GroupAlertsConfigSpecV20250312{
-								Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
-									Enabled:       pointer.MakePtr(true),
-									EventTypeName: pointer.MakePtr("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
-									Matchers: &[]v1.Matchers{
-										{
-											FieldName: "field0",
-											Operator:  "EQUALS",
-											Value:     "value0",
-										},
-										{
-											FieldName: "field1",
-											Operator:  "GREATER",
-											Value:     "value1",
-										},
+				want := &v1.GroupAlertsConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "groupalertscfg",
+						Namespace: "ns",
+					},
+					Spec: v1.GroupAlertsConfigSpec{
+						V20250312: &v1.GroupAlertsConfigSpecV20250312{
+							Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+								Enabled:       pointer.MakePtr(true),
+								EventTypeName: pointer.MakePtr("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
+								Matchers: &[]v1.Matchers{
+									{
+										FieldName: "field0",
+										Operator:  "EQUALS",
+										Value:     "value0",
 									},
-									MetricThreshold: &v1.MetricThreshold{
-										MetricName: "metric",
-										Mode:       pointer.MakePtr("mode"),
-										Operator:   pointer.MakePtr("op"),
-										Threshold:  pointer.MakePtr(0.1),
-										Units:      pointer.MakePtr("unit"),
-									},
-									Notifications: &[]v1.Notifications{
-										{
-											DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
-												Key:  pointer.MakePtr("datadogApiKey"),
-												Name: pointer.MakePtr("groupalertscfg-f4f4b5f9c849fc4cbdc"),
-											},
-											DatadogRegion: pointer.MakePtr("US"),
-											DelayMin:      pointer.MakePtr(42),
-											IntegrationId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
-											IntervalMin:   pointer.MakePtr(43),
-											NotifierId:    pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
-											TypeName:      pointer.MakePtr("DATADOG"),
-										},
-									},
-									SeverityOverride: pointer.MakePtr("CRITICIAL"),
-									Threshold: &v1.MetricThreshold{
-										MetricName: "anotherMetric",
-										Mode:       pointer.MakePtr("a mode"),
-										Operator:   pointer.MakePtr("an op"),
-										Threshold:  pointer.MakePtr(0.2),
-										Units:      pointer.MakePtr("a unit"),
+									{
+										FieldName: "field1",
+										Operator:  "GREATER",
+										Value:     "value1",
 									},
 								},
-								GroupId: pointer.MakePtr(testProjectID),
+								MetricThreshold: &v1.MetricThreshold{
+									MetricName: "metric",
+									Mode:       pointer.MakePtr("mode"),
+									Operator:   pointer.MakePtr("op"),
+									Threshold:  pointer.MakePtr(0.1),
+									Units:      pointer.MakePtr("unit"),
+								},
+								Notifications: &[]v1.Notifications{
+									{
+										DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+											Key:  pointer.MakePtr("datadogApiKey"),
+											Name: pointer.MakePtr("groupalertscfg-f4f4b5f9c849fc4cbdc"),
+										},
+										DatadogRegion: pointer.MakePtr("US"),
+										DelayMin:      pointer.MakePtr(42),
+										IntegrationId: pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+										IntervalMin:   pointer.MakePtr(43),
+										NotifierId:    pointer.MakePtr("32b6e34b3d91647abb20e7b8"),
+										TypeName:      pointer.MakePtr("DATADOG"),
+									},
+								},
+								SeverityOverride: pointer.MakePtr("CRITICIAL"),
+								Threshold: &v1.MetricThreshold{
+									MetricName: "anotherMetric",
+									Mode:       pointer.MakePtr("a mode"),
+									Operator:   pointer.MakePtr("an op"),
+									Threshold:  pointer.MakePtr(0.2),
+									Units:      pointer.MakePtr("a unit"),
+								},
 							},
-						},
-						Status: v1.GroupAlertsConfigStatus{
-							V20250312: &v1.GroupAlertsConfigStatusV20250312{
-								GroupId: pointer.MakePtr(testProjectID),
-								Id:      pointer.MakePtr("notification id"),
-							},
+							GroupId: pointer.MakePtr(testProjectID),
 						},
 					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "groupalertscfg-f4f4b5f9c849fc4cbdc",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"datadogApiKey": ([]byte)("fake api key"),
+					Status: v1.GroupAlertsConfigStatus{
+						V20250312: &v1.GroupAlertsConfigStatusV20250312{
+							GroupId: pointer.MakePtr(testProjectID),
+							Id:      pointer.MakePtr("notification id"),
 						},
 					},
 				}
-				testFromAPI(t, "GroupAlertsConfig", &target, &input, want)
+				wantSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "groupalertscfg-f4f4b5f9c849fc4cbdc",
+						Namespace: "ns",
+					},
+					Data: map[string][]byte{
+						"datadogApiKey": ([]byte)("fake api key"),
+					},
+				}
+				testFromAPI(t, "GroupAlertsConfig", &target, &input, want, wantSecret)
 			},
 		},
 
@@ -359,47 +353,45 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 				}
-				want := []client.Object{
-					&v1.ThirdPartyIntegration{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3rdparty-slack",
-							Namespace: "ns",
-						},
-						Spec: v1.ThirdPartyIntegrationSpec{
-							V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
-								Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
-									Type: pointer.MakePtr("SLACK"),
-									ApiTokenSecretRef: &v1.ApiTokenSecretRef{
-										Name: pointer.MakePtr("3rdparty-slack-5798d555ff4dc66f7c99"),
-										Key:  pointer.MakePtr("apiToken"),
-									},
-									ChannelName: pointer.MakePtr("alert-channel"),
-									TeamName:    pointer.MakePtr("some-team"),
-								},
-								// Pre-existing from input
-								GroupId: pointer.MakePtr(string(testProjectID)),
-								// Pre-existing from input
-								IntegrationType: "SLACK",
-							},
-						},
-						Status: v1.ThirdPartyIntegrationStatus{
-							V20250312: &v1.ThirdPartyIntegrationStatusV20250312{
-								Id:   pointer.MakePtr("SomeID"),
+				want := &v1.ThirdPartyIntegration{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "3rdparty-slack",
+						Namespace: "ns",
+					},
+					Spec: v1.ThirdPartyIntegrationSpec{
+						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+							Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
 								Type: pointer.MakePtr("SLACK"),
+								ApiTokenSecretRef: &v1.ApiTokenSecretRef{
+									Name: pointer.MakePtr("3rdparty-slack-5798d555ff4dc66f7c99"),
+									Key:  pointer.MakePtr("apiToken"),
+								},
+								ChannelName: pointer.MakePtr("alert-channel"),
+								TeamName:    pointer.MakePtr("some-team"),
 							},
+							// Pre-existing from input
+							GroupId: pointer.MakePtr(string(testProjectID)),
+							// Pre-existing from input
+							IntegrationType: "SLACK",
 						},
 					},
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "3rdparty-slack-5798d555ff4dc66f7c99",
-							Namespace: "ns",
-						},
-						Data: map[string][]byte{
-							"apiToken": ([]byte)("some fake api token"),
+					Status: v1.ThirdPartyIntegrationStatus{
+						V20250312: &v1.ThirdPartyIntegrationStatusV20250312{
+							Id:   pointer.MakePtr("SomeID"),
+							Type: pointer.MakePtr("SLACK"),
 						},
 					},
 				}
-				testFromAPI(t, "ThirdPartyIntegration", &target, &input, want)
+				wantSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "3rdparty-slack-5798d555ff4dc66f7c99",
+						Namespace: "ns",
+					},
+					Data: map[string][]byte{
+						"apiToken": ([]byte)("some fake api token"),
+					},
+				}
+				testFromAPI(t, "ThirdPartyIntegration", &target, &input, want, wantSecret)
 			},
 		},
 	} {
@@ -409,7 +401,7 @@ func TestFromAPI(t *testing.T) {
 	}
 }
 
-func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want []client.Object) {
+func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want client.Object, wantDeps ...client.Object) {
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
@@ -418,7 +410,8 @@ func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string
 	r := crapi.Request{Translator: tr}
 	results, err := crapi.FromAPI(&r, target, input)
 	require.NoError(t, err)
-	assert.Equal(t, want, results)
+	assert.Equal(t, want, target)
+	assert.Equal(t, wantDeps, results)
 }
 
 func TestToAPIAllRefs(t *testing.T) {

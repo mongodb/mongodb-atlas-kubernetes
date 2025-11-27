@@ -20,7 +20,6 @@ import (
 	"reflect"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
@@ -42,7 +41,6 @@ type Translator interface {
 // Request holds common parameters for all translation request
 type Request struct {
 	Translator   Translator
-	Log          logr.Logger
 	Dependencies []client.Object
 }
 
@@ -60,6 +58,10 @@ type APIExporter[T any] interface {
 
 // ToAPI translates a source Kubernetes spec into a target API structure.
 // It uses the spec only to populate ethe API request, nothing from the status.
+// The target is set to a API request struct to be filled.
+// The source is set to the Kubernetes CR value. Only the spec data is used here.
+// The request includes the translator and the dependencies associated with the
+// source CR, usually Kubernetes secrets.
 func ToAPI[T any](r *Request, target *T, source client.Object) error {
 	exporter, ok := (source).(APIExporter[T])
 	if ok {
@@ -98,6 +100,14 @@ func ToAPI[T any](r *Request, target *T, source client.Object) error {
 // FromAPI translates a source API structure into a Kubernetes object.
 // The API source is used to populate the Kubernetes spec, including the
 // spec.entry and status as well.
+// The target is set to CR value to be filled. Both spec and stuatus are filled.
+// The source is set to API response.
+// The request includes the translator and any dependencies associated with the
+// source CR.
+// Returns any extra objects extracted from the response as separate Kubernetes
+// objects, such as Kubernetes secrets, for instance. This list does not include
+// the mutated target, and will be empty if nothing else was extracted off the ç
+// response.
 func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source *S) ([]client.Object, error) {
 	importer, ok := any(source).(APIImporter[T, P])
 	if ok {
@@ -137,7 +147,7 @@ func FromAPI[S any, T any, P refs.PtrClientObj[T]](r *Request, target P, source 
 	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
 		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
 	}
-	return append([]client.Object{target}, extraObjects...), nil
+	return extraObjects, nil
 }
 
 // collapseReferences finds all Kubernetes references, solves them and collapses
