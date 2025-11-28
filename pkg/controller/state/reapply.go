@@ -48,7 +48,7 @@ func ShouldReapply(obj metav1.Object) (bool, error) {
 		return false, nil
 	}
 
-	diff := timestamp.Add(period).Sub(time.Now())
+	diff := time.Until(timestamp.Add(period))
 
 	return diff <= 0, nil
 }
