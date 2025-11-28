@@ -90,7 +90,9 @@ func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logg
 }
 
 func (r *Registry) RegisterWithDryRunManager(mgr *dryrun.Manager, ap atlas.Provider) error {
-	r.registerControllers(mgr, ap)
+	if err := r.registerControllers(mgr, ap); err != nil {
+		return fmt.Errorf("error registering controllers: %w", err)
+	}
 
 	for _, reconciler := range r.reconcilers {
 		mgr.SetupReconciler(reconciler)
@@ -143,12 +145,14 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
 		groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
 		if err != nil {
-			return fmt.Errorf("error creating group reconciler: %v", err)
+			return fmt.Errorf("error creating group reconciler: %w", err)
 		}
 		reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 	}
 
 	r.reconcilers = reconcilers
+
+	return nil
 }
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates
