@@ -8,7 +8,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, config *ParsedConfig) error {
+func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, _ *ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -41,22 +41,19 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 				versionSuffix := mapping.Version
 				// Capitalize first letter of version (e.g., v20250312 -> V20250312)
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
-				// Construct CRD name: {plural}.{group}
-				crdName := config.PluralName + "." + config.CRDGroup
+
 				sdkImportPathSplit := strings.Split(mapping.OpenAPIConfig.Package, "/")
 				sdkVersionSuffix := strings.TrimPrefix(sdkImportPathSplit[len(sdkImportPathSplit)-2], "v")
 
 				g.If(jen.Id(strings.ToLower(resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
 
-					jen.List(jen.Id("translationReq"), jen.Id("err")).Op(":=").Id("getTranslationRequest").Call(
-						jen.Id("ctx"),
-						jen.Id("h").Dot("Client"),
-						jen.Lit(crdName),
-						jen.Lit(config.StorageVersion),
-						jen.Lit(versionSuffix),
-					),
-					jen.If(jen.Id("err").Op("!=").Nil()).Block(
-						jen.Return(jen.Nil(), jen.Id("err")),
+					jen.List(jen.Id("translator"), jen.Id("ok")).Op(":=").Id("h").Dot("translators").Op("[").Lit(versionSuffix).Op("]"),
+					jen.If(jen.Id("ok").Op("!=").True()).Block(
+						jen.Return(
+							jen.Nil(),
+							jen.Qual("errors", "New").Call(
+								jen.Lit(fmt.Sprintf("unsupported version %s set in CR", versionSuffix)),
+							)),
 					),
 					jen.Id("versionCount").Op("++"),
 					jen.Id("selectedHandler").
@@ -66,7 +63,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 							jen.Id("h").
 								Dot("Client"),
 							jen.Id("atlasClients").Dot("SdkClient"+sdkVersionSuffix),
-							jen.Id("translationReq"),
+							jen.Id("translator"),
 							jen.Id("h").Dot("deletionProtection"),
 						),
 				)
@@ -85,9 +82,6 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 	generateDelegatingStateHandlers(f, resourceName, apiPkg, refsByKind)
 	// ClientSet and translation request helpers
 	generateSDKClientSetMethod(f, resourceName, apiPkg)
-
-	// Generate package-level helper function attached to the handler
-	generatePackageLevelTranslationHelper(f)
 
 	fileName := filepath.Join(dir, "handler.go")
 	return f.Save(fileName)
@@ -206,53 +200,5 @@ func generateSDKClientSetMethod(f *jen.File, resourceName, apiPkg string) {
 		),
 		jen.Line(),
 		jen.Return(jen.Id("clientSet"), jen.Nil()),
-	)
-}
-
-func generatePackageLevelTranslationHelper(f *jen.File) {
-	f.Comment("getTranslationRequest creates a translation request for converting entities between API and AKO.")
-	f.Comment("This is a package-level function that can be called from any handler.")
-	f.Func().Id("getTranslationRequest").Params(
-		jen.Id("ctx").Qual("context", "Context"),
-		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
-		jen.Id("crdName").String(),
-		jen.Id("storageVersion").String(),
-		jen.Id("targetVersion").String(),
-	).Params(
-		jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
-		jen.Error(),
-	).Block(
-		jen.Id("crd").Op(":=").Op("&").Qual("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "CustomResourceDefinition").Values(),
-		jen.Id("err").Op(":=").Id("kubeClient").Dot("Get").Call(
-			jen.Id("ctx"),
-			jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
-				jen.Id("Name"): jen.Id("crdName"),
-			}),
-			jen.Id("crd"),
-		),
-		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
-				jen.Lit("failed to resolve CRD %s: %w"),
-				jen.Id("crdName"),
-				jen.Id("err"),
-			)),
-		),
-		jen.Line(),
-		jen.List(jen.Id("translator"), jen.Id("err")).Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "NewTranslator").Call(
-			jen.Id("crd"),
-			jen.Id("storageVersion"),
-			jen.Id("targetVersion"),
-		),
-		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
-				jen.Lit("failed to setup translator: %w"),
-				jen.Id("err"),
-			)),
-		),
-		jen.Line(),
-		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request").Values(jen.Dict{
-			jen.Id("Translator"):   jen.Id("translator"),
-			jen.Id("Dependencies"): jen.Nil(),
-		}), jen.Nil()),
 	)
 }

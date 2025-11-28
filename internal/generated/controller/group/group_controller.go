@@ -15,6 +15,8 @@
 package group
 
 import (
+	"fmt"
+
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,8 +26,19 @@ import (
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+)
+
+const (
+	// crdVersion of the controler
+	crdVersion = "v1"
+)
+
+var (
+	// sdkVersions supported by this controller
+	sdkVersions = []string{"v20250312"}
 )
 
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups,verbs=get;list;watch;create;update;patch;delete
@@ -45,10 +58,26 @@ type Handler struct {
 	reconciler.AtlasReconciler
 	deletionProtection bool
 	predicates         []predicate.Predicate
+	translators        map[string]crapi.Translator
 	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Group]
 }
 
-func NewGroupReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey, deletionProtection bool, reapplySupport bool, predicates []predicate.Predicate) *ctrlstate.Reconciler[akov2generated.Group] {
+func NewGroupReconciler(
+	c cluster.Cluster,
+	atlasProvider atlas.Provider,
+	logger *zap.Logger,
+	globalSecretRef client.ObjectKey,
+	deletionProtection bool,
+	reapplySupport bool,
+	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Group], error) {
+	crd, err := crds.EmbeddedCRD("Group")
+	if err == nil {
+		return nil, fmt.Errorf("failed to read CRD for Group: %w", err)
+	}
+	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
+	if err == nil {
+		return nil, fmt.Errorf("failed to get translator set for Group: %w", err)
+	}
 	// Create main handler dispatcher
 	groupHandler := &Handler{
 		AtlasReconciler: reconciler.AtlasReconciler{
@@ -60,10 +89,11 @@ func NewGroupReconciler(c cluster.Cluster, atlasProvider atlas.Provider, logger 
 		deletionProtection: deletionProtection,
 		handlerv20250312:   handlerv20250312Func,
 		predicates:         predicates,
+		translators:        translators,
 	}
 
-	return ctrlstate.NewStateReconciler(groupHandler, ctrlstate.WithCluster[akov2generated.Group](c), ctrlstate.WithReapplySupport[akov2generated.Group](reapplySupport))
+	return ctrlstate.NewStateReconciler(groupHandler, ctrlstate.WithCluster[akov2generated.Group](c), ctrlstate.WithReapplySupport[akov2generated.Group](reapplySupport)), nil
 }
-func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translatorRequest *crapi.Request, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Group] {
-	return NewHandlerv20250312(kubeClient, atlasClient, translatorRequest, deletionProtection)
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Group] {
+	return NewHandlerv20250312(kubeClient, atlasClient, translator, deletionProtection)
 }

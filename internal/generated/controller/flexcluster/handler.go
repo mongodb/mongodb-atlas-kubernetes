@@ -16,9 +16,9 @@ package flexcluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,7 +29,6 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
@@ -49,12 +48,12 @@ func (h *Handler) getHandlerForResource(ctx context.Context, flexcluster *akov2g
 	var selectedHandler ctrlstate.StateHandler[akov2generated.FlexCluster]
 
 	if flexcluster.Spec.V20250312 != nil {
-		translationReq, err := getTranslationRequest(ctx, h.Client, "flexclusters.atlas.generated.mongodb.com", "v1", "v20250312")
-		if err != nil {
-			return nil, err
+		translator, ok := h.translators["v20250312"]
+		if ok != true {
+			return nil, errors.New("unsupported version v20250312 set in CR")
 		}
 		versionCount++
-		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312006, translationReq, h.deletionProtection)
+		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312006, translator, h.deletionProtection)
 	}
 
 	if versionCount == 0 {
@@ -185,24 +184,4 @@ func (h *Handler) getSDKClientSet(ctx context.Context, flexcluster *akov2generat
 	}
 
 	return clientSet, nil
-}
-
-// getTranslationRequest creates a translation request for converting entities between API and AKO.
-// This is a package-level function that can be called from any handler.
-func getTranslationRequest(ctx context.Context, kubeClient client.Client, crdName string, storageVersion string, targetVersion string) (*crapi.Request, error) {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	err := kubeClient.Get(ctx, client.ObjectKey{Name: crdName}, crd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve CRD %s: %w", crdName, err)
-	}
-
-	translator, err := crapi.NewTranslator(crd, storageVersion, targetVersion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup translator: %w", err)
-	}
-
-	return &crapi.Request{
-		Dependencies: nil,
-		Translator:   translator,
-	}, nil
 }

@@ -130,6 +130,21 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 	f.ImportAlias(apiPkg, "akov2generated")
 
+	f.Const().Defs(
+		jen.Comment("crdVersion of the controler"),
+		jen.Id("crdVersion").Op("=").Lit("v1"),
+	)
+
+	supportedSDKVersions := []jen.Code{}
+	for _, mapping := range mappings {
+		versionSuffix := mapping.Version
+		supportedSDKVersions = append(supportedSDKVersions, jen.Lit(versionSuffix))
+	}
+	f.Var().Defs(
+		jen.Comment("sdkVersions supported by this controller"),
+		jen.Id("sdkVersions").Op("=").Op("[]").String().Values(supportedSDKVersions...),
+	)
+
 	resourcePlural := strings.ToLower(resourceName) + "s"
 	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
 	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s/status,verbs=get;update;patch", resourcePlural))
@@ -161,6 +176,9 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 
 		handlerFields = append(
 			handlerFields,
+			jen.Id("translators").Map(jen.String()).Qual(
+				"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Translator",
+			),
 			jen.Id("handler"+versionSuffix).
 				Qual(pkgCtrlState, "VersionedHandlerFunc").
 				Types(
@@ -174,13 +192,13 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 
 	// NewReconciler method with all service builders
 	reconcilerParams := []jen.Code{
-		jen.Id("c").Qual("sigs.k8s.io/controller-runtime/pkg/cluster", "Cluster"),
-		jen.Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
-		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
-		jen.Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
-		jen.Id("deletionProtection").Bool(),
-		jen.Id("reapplySupport").Bool(),
-		jen.Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
+		jen.Line().Id("c").Qual("sigs.k8s.io/controller-runtime/pkg/cluster", "Cluster"),
+		jen.Line().Id("atlasProvider").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas", "Provider"),
+		jen.Line().Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
+		jen.Line().Id("globalSecretRef").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey"),
+		jen.Line().Id("deletionProtection").Bool(),
+		jen.Line().Id("reapplySupport").Bool(),
+		jen.Line().Id("predicates").Index().Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "Predicate"),
 	}
 
 	atlasReconcilerBase := jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler", "AtlasReconciler").Values(jen.Dict{
@@ -190,11 +208,45 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.Id("GlobalSecretRef"): jen.Id("globalSecretRef"),
 	})
 
-	f.Func().Id("New"+controllerName+"Reconciler").Params(reconcilerParams...).Op("*").Qual(pkgCtrlState, "Reconciler").Types(jen.Qual(apiPkg, resourceName)).Block(
+	f.Func().Id("New"+controllerName+"Reconciler").Params(
+		reconcilerParams...,
+	).Params(
+		jen.Op("*").Qual(pkgCtrlState, "Reconciler").Types(jen.Qual(apiPkg, resourceName)),
+		jen.Error(),
+	).Block(
+		jen.List(jen.Id("crd"), jen.Id("err")).Op(":=").Qual(
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds", "EmbeddedCRD",
+		).Call(jen.Lit(resourceName)),
+		jen.If(jen.Id("err").Op("==").Nil()).Block(
+			jen.Return(
+				jen.Nil(),
+				jen.Qual("fmt", "Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to read CRD for %s: %%w", resourceName)),
+					jen.Id("err"),
+				),
+			),
+		),
+		jen.List(jen.Id("translators"), jen.Id("err")).Op(":=").Qual(
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "NewPerVersionTranslators",
+		).Call(
+			jen.Id("crd"),
+			jen.Id("crdVersion"),
+			jen.Id("sdkVersions").Op("..."),
+		),
+		jen.If(jen.Id("err").Op("==").Nil()).Block(
+			jen.Return(
+				jen.Nil(),
+				jen.Qual("fmt", "Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to get translator set for %s: %%w", resourceName)),
+					jen.Id("err"),
+				),
+			),
+		),
 		jen.Comment("Create main handler dispatcher"),
 		jen.Id(strings.ToLower(controllerName)+"Handler").Op(":=").Op("&").Id("Handler").Values(jen.DictFunc(func(d jen.Dict) {
 			d[jen.Id("AtlasReconciler")] = atlasReconcilerBase
 			d[jen.Id("deletionProtection")] = jen.Id("deletionProtection")
+			d[jen.Id("translators")] = jen.Id("translators")
 			for _, mapping := range mappings {
 				versionSuffix := mapping.Version
 				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix + "Func")
@@ -206,7 +258,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 			jen.Id(strings.ToLower(controllerName)+"Handler"),
 			jen.Qual(pkgCtrlState, "WithCluster").Types(jen.Qual(apiPkg, resourceName)).Call(jen.Id("c")),
 			jen.Qual(pkgCtrlState, "WithReapplySupport").Types(jen.Qual(apiPkg, resourceName)).Call(jen.Id("reapplySupport")),
-		)),
+		), jen.Nil()),
 	)
 
 	for _, mapping := range mappings {
@@ -216,7 +268,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		handlerFuncParams := []jen.Code{
 			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-			jen.Id("translatorRequest").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Request"),
+			jen.Id("translator").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Translator"),
 			jen.Id("deletionProtection").Bool(),
 		}
 
@@ -229,7 +281,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 				jen.Id("NewHandler"+versionSuffix).Call(
 					jen.Id("kubeClient"),
 					jen.Id("atlasClient"),
-					jen.Id("translatorRequest"),
+					jen.Id("translator"),
 					jen.Id("deletionProtection"),
 				),
 			),

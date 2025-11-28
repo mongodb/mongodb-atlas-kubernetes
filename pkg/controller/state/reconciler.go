@@ -46,7 +46,7 @@ type Result struct {
 	StateMsg  string
 }
 
-type VersionedHandlerFunc[C any, T any] func(client client.Client, atlasClient *C, translator *crapi.Request, deletionProtection bool) StateHandler[T]
+type VersionedHandlerFunc[C any, T any] func(client client.Client, atlasClient *C, translator crapi.Translator, deletionProtection bool) StateHandler[T]
 
 type StateHandler[T any] interface {
 	SetupWithManager(ctrl.Manager, reconcile.Reconciler, controller.Options) error

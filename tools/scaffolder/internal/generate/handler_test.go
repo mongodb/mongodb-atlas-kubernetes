@@ -110,29 +110,21 @@ spec:
 	err = FromConfig(testFile, "Group", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
-	// Test handler.go contains package-level getTranslationRequest function
+	// Test handler.go contains certain package-level functions
 	handlerFile := filepath.Join(controllerDir, "group", "handler.go")
 	content, err := os.ReadFile(handlerFile)
 	require.NoError(t, err)
 	contentStr := string(content)
 
-	// Verify package-level getTranslationRequest function
-	assert.Contains(t, contentStr, "func getTranslationRequest(")
+	// Verify package-level getHandlerForResource method
+	assert.Contains(t, contentStr, "func (h *Handler) getHandlerForResource(")
 	assert.Contains(t, contentStr, "ctx context.Context")
-	assert.Contains(t, contentStr, "kubeClient client.Client")
-	assert.Contains(t, contentStr, "crdName string")
-	assert.Contains(t, contentStr, "storageVersion string")
-	assert.Contains(t, contentStr, "targetVersion string")
-	assert.Contains(t, contentStr, "NewTranslator")
+	assert.Contains(t, contentStr, "h.getSDKClientSet")
+	assert.Contains(t, contentStr, "h.translators")
 
 	// Verify getSDKClientSet method
 	assert.Contains(t, contentStr, "func (h *Handler) getSDKClientSet(")
 	assert.Contains(t, contentStr, "GetConnectionConfig")
 	assert.Contains(t, contentStr, "SdkClientSet")
 	assert.Contains(t, contentStr, "ConnectionSecretRef")
-
-	// Verify getTranslationRequest wrapper method
-	assert.Contains(t, contentStr, "func getTranslationRequest(")
-	assert.Contains(t, contentStr, "crapi.NewTranslator(")
-	assert.Contains(t, contentStr, "return &crapi.Request{")
 }
