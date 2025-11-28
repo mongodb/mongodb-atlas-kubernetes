@@ -18,13 +18,16 @@ package crapi
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
 // translator implements Translator to translate from a given CRD to and from
@@ -32,6 +35,75 @@ import (
 type translator struct {
 	majorVersion  string
 	mappingSchema *openapi3.SchemaRef
+}
+
+func (tr *translator) ToAPI(target any, source client.Object, objs ...client.Object) error {
+	unstructuredSrc, err := unstructured.ToUnstructured(source)
+	if err != nil {
+		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
+	}
+	targetUnstructured := map[string]any{}
+
+	if err := collapseReferences(tr, unstructuredSrc, source, objs); err != nil {
+		return fmt.Errorf("failed to process API mappings: %w", err)
+	}
+
+	targetType := reflect.TypeOf(target).Elem()
+	if targetType.Kind() != reflect.Struct {
+		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
+	}
+
+	value, err := unstructured.GetField[map[string]any](unstructuredSrc, "spec", tr.MajorVersion())
+	if err != nil {
+		return fmt.Errorf("failed to access source spec value: %w", err)
+	}
+	unstructured.CopyFields(targetUnstructured, value)
+	rawEntry := value["entry"]
+	if entry, ok := rawEntry.(map[string]any); ok {
+		unstructured.CopyFields(targetUnstructured, entry)
+	}
+	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
+		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
+	}
+	return nil
+}
+
+func (tr *translator) FromAPI(target client.Object, source any, objs ...client.Object) ([]client.Object, error) {
+	sourceUnstructured, err := unstructured.ToUnstructured(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
+	}
+
+	targetUnstructured, err := unstructured.ToUnstructured(target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert target value to unstructured: %w", err)
+	}
+
+	versionedSpec, err := unstructured.GetOrCreateField(
+		targetUnstructured, map[string]any{}, "spec", tr.MajorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("failed to ensure versioned spec object in unstructured target: %w", err)
+	}
+	versionedStatus, err := unstructured.GetOrCreateField(
+		targetUnstructured, map[string]any{}, "status", tr.MajorVersion())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create versioned status object in unstructured target: %w", err)
+	}
+
+	unstructured.CopyFields(versionedSpec, sourceUnstructured)
+	versionedSpecEntry := map[string]any{}
+	unstructured.CopyFields(versionedSpecEntry, sourceUnstructured)
+	versionedSpec["entry"] = versionedSpecEntry
+	unstructured.CopyFields(versionedStatus, sourceUnstructured)
+
+	extraObjects, err := expandReferences(tr, targetUnstructured, target, objs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to process API mappings: %w", err)
+	}
+	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
+		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
+	}
+	return extraObjects, nil
 }
 
 // Annotation returns the annotation value from the pinned translated schema
@@ -134,4 +206,34 @@ func NewPerVersionTranslators(crd *apiextensionsv1.CustomResourceDefinition, crd
 		}
 	}
 	return translators, nil
+}
+
+// collapseReferences finds all Kubernetes references, solves them and collapses
+// them by replacing their values from the reference (e.g Kubernetes secret or
+// group), into the corresponding API request value
+func collapseReferences(tr Translator, req map[string]any, main client.Object, objs []client.Object) error {
+	mappings, err := tr.Mappings()
+	if err != nil {
+		return fmt.Errorf("failed to extract mappings to collapse: %w", err)
+	}
+	return refs.CollapseAll(mappings, main, objs, req)
+}
+
+// expandReferences finds all API fields that must be referenced, and expand
+// such reference, moving the value (e.g. sensitive field or group id) to a
+// referenced Kubernetes object (e.g. Kubernetes secret or Atlas Group)
+func expandReferences(tr Translator, cr map[string]any, main client.Object, objs []client.Object) ([]client.Object, error) {
+	mappings, err := tr.Mappings()
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract mappings to expand: %w", err)
+	}
+	return refs.ExpandAll(mappings, main, objs, cr)
+}
+
+func propertyValueOrNil(schema *openapi3.Schema, propertyName string) *openapi3.Schema {
+	if schema.Properties != nil &&
+		schema.Properties[propertyName] != nil && schema.Properties[propertyName].Value != nil {
+		return schema.Properties[propertyName].Value
+	}
+	return nil
 }

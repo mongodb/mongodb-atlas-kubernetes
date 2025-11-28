@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -89,7 +90,9 @@ func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logg
 }
 
 func (r *Registry) RegisterWithDryRunManager(mgr *dryrun.Manager, ap atlas.Provider) error {
-	r.registerControllers(mgr, ap)
+	if err := r.registerControllers(mgr, ap); err != nil {
+		return fmt.Errorf("error registering controllers: %w", err)
+	}
 
 	for _, reconciler := range r.reconcilers {
 		mgr.SetupReconciler(reconciler)
@@ -99,7 +102,9 @@ func (r *Registry) RegisterWithDryRunManager(mgr *dryrun.Manager, ap atlas.Provi
 }
 
 func (r *Registry) RegisterWithManager(mgr ctrl.Manager, skipNameValidation bool, ap atlas.Provider) error {
-	r.registerControllers(mgr, ap)
+	if err := r.registerControllers(mgr, ap); err != nil {
+		return fmt.Errorf("error registering controllers: %w", err)
+	}
 
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.SetupWithManager(mgr, skipNameValidation); err != nil {
@@ -109,9 +114,9 @@ func (r *Registry) RegisterWithManager(mgr ctrl.Manager, skipNameValidation bool
 	return nil
 }
 
-func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
+func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) error {
 	if len(r.reconcilers) > 0 {
-		return
+		return nil
 	}
 
 	var reconcilers []Reconciler
@@ -138,8 +143,16 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	if version.IsExperimental() {
 		// Add experimental controllers here
 		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
+		groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating group reconciler: %w", err)
+		}
+		reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 	}
+
 	r.reconcilers = reconcilers
+
+	return nil
 }
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates

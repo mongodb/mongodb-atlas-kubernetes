@@ -34,13 +34,6 @@ const (
 	propertySelectorSuffix = ".#"
 )
 
-// PtrClientObj is a pointer type implementing client.Object.
-// It represents a Kubernetes object for the controller-runtime library.
-type PtrClientObj[T any] interface {
-	*T
-	client.Object
-}
-
 // Mapping encodes a reference mapping consisting of two extensions,
 // a x-kubernetes-mapping and a x-openapi-mapping
 type Mapping struct {

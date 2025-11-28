@@ -71,11 +71,11 @@ func NewGroupReconciler(
 	reapplySupport bool,
 	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Group], error) {
 	crd, err := crds.EmbeddedCRD("Group")
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for Group: %w", err)
 	}
 	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get translator set for Group: %w", err)
 	}
 	// Create main handler dispatcher

@@ -217,7 +217,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.List(jen.Id("crd"), jen.Id("err")).Op(":=").Qual(
 			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds", "EmbeddedCRD",
 		).Call(jen.Lit(resourceName)),
-		jen.If(jen.Id("err").Op("==").Nil()).Block(
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
 			jen.Return(
 				jen.Nil(),
 				jen.Qual("fmt", "Errorf").Call(
@@ -233,7 +233,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 			jen.Id("crdVersion"),
 			jen.Id("sdkVersions").Op("..."),
 		),
-		jen.If(jen.Id("err").Op("==").Nil()).Block(
+		jen.If(jen.Id("err").Op("!=").Nil()).Block(
 			jen.Return(
 				jen.Nil(),
 				jen.Qual("fmt", "Errorf").Call(

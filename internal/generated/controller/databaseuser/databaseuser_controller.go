@@ -71,11 +71,11 @@ func NewDatabaseUserReconciler(
 	reapplySupport bool,
 	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.DatabaseUser], error) {
 	crd, err := crds.EmbeddedCRD("DatabaseUser")
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for DatabaseUser: %w", err)
 	}
 	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get translator set for DatabaseUser: %w", err)
 	}
 	// Create main handler dispatcher
