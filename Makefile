@@ -732,6 +732,7 @@ validate-api-docs: api-docs
 .PHONY: addlicenses
 addlicense-check:
 	addlicense -check -l apache -c "MongoDB Inc" \
+	-ignore ".idea/*" \
 	-ignore "**/*.md" \
 	-ignore "**/*.yaml" \
 	-ignore "**/*.yml" \
