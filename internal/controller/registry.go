@@ -139,7 +139,11 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) {
 	if version.IsExperimental() {
 		// Add experimental controllers here
 		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
-		groupReconciler := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		// TODO(sur) remove this
+		if err != nil {
+			panic(err)
+		}
 		reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 	}
 

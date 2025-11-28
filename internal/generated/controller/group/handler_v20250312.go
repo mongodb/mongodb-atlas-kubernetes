@@ -53,7 +53,7 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 // HandleInitial handles the initial state for version v20250312
 func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	atlasGroup := &v20250312sdk.Group{}
-	err := crapi.ToAPI(h.translationRequest, atlasGroup, group)
+	err := h.translator.ToAPI(atlasGroup, group)
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
 	}
@@ -65,7 +65,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2genera
 	}
 
 	groupCopy := group.DeepCopy()
-	_, err = crapi.FromAPI(h.translationRequest, groupCopy, response)
+	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
 	}
@@ -90,7 +90,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *ako
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
 	}
 
-	_, err = crapi.FromAPI(h.translationRequest, group, response)
+	_, err = h.translator.FromAPI(group, response)
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
 	}
@@ -183,7 +183,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 	}
 
 	atlasGroupUpdate := &v20250312sdk.GroupUpdate{}
-	err = crapi.ToAPI(h.translationRequest, atlasGroupUpdate, group)
+	err = h.translator.ToAPI(atlasGroupUpdate, group)
 	if err != nil {
 		return result.Error(currentState, err)
 	}
@@ -199,7 +199,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 	}
 
 	groupCopy := group.DeepCopy()
-	_, err = crapi.FromAPI(h.translationRequest, groupCopy, response)
+	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
 		return result.Error(currentState, err)
 	}
