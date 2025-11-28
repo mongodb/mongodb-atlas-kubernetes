@@ -61,6 +61,7 @@ config/manifests/kustomization.yaml
 config/manager/kustomization.yaml
 config/generated/crd/bases/*.yaml
 config/generated/rbac/role.yaml
+helm-charts/atlas-operator-crds/templates/*.yaml
 
 # ignore helm test artifacts
 helm-charts/atlas-operator/charts/
