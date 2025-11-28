@@ -71,11 +71,11 @@ func NewClusterReconciler(
 	reapplySupport bool,
 	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Cluster], error) {
 	crd, err := crds.EmbeddedCRD("Cluster")
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for Cluster: %w", err)
 	}
 	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
-	if err == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get translator set for Cluster: %w", err)
 	}
 	// Create main handler dispatcher
