@@ -32,7 +32,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -401,13 +400,13 @@ func TestFromAPI(t *testing.T) {
 	}
 }
 
-func testFromAPI[S any, T any, P refs.PtrClientObj[T]](t *testing.T, kind string, target P, input *S, want client.Object, wantDeps ...client.Object) {
+func testFromAPI[S any](t *testing.T, kind string, target client.Object, input *S, want client.Object, wantDeps ...client.Object) {
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
 	tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 	require.NoError(t, err)
-	results, err := crapi.FromAPI(tr, target, input)
+	results, err := tr.FromAPI(target, input)
 	require.NoError(t, err)
 	assert.Equal(t, want, target)
 	assert.Equal(t, wantDeps, results)
@@ -577,7 +576,7 @@ func TestToAPIAllRefs(t *testing.T) {
 			require.NoError(t, err)
 			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
 			require.NoError(t, err)
-			require.NoError(t, crapi.ToAPI(tr, &tc.target, tc.input, tc.deps...))
+			require.NoError(t, tr.ToAPI(&tc.target, tc.input, tc.deps...))
 			assert.Equal(t, tc.want, tc.target)
 		})
 	}
@@ -2005,7 +2004,7 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	require.NoError(t, err)
 	tr := trs[sdkVersion]
 	require.NotNil(t, tr)
-	require.NoError(t, crapi.ToAPI(tr, target, input, objs...))
+	require.NoError(t, tr.ToAPI(target, input, objs...))
 	assert.Equal(t, want, target)
 }
 

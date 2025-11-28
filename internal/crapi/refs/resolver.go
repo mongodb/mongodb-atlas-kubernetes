@@ -68,7 +68,7 @@ func newReferenceResolver() *resolver {
 	}
 }
 
-func newKubeObjectFactory[T any, P PtrClientObj[T]]() func(map[string]any) (client.Object, error) {
+func newKubeObjectFactory[T any]() func(map[string]any) (client.Object, error) {
 	return func(unstructured map[string]any) (client.Object, error) {
 		obj := new(T)
 		initializedObj, err := initObject(obj, unstructured)
