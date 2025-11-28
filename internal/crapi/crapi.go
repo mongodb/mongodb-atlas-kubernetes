@@ -38,14 +38,6 @@ type Translator interface {
 	Mappings() ([]*refs.Mapping, error)
 }
 
-// Request is deprecated do not use
-//
-// Deprecated: request is no longer used in the ToAPI and FromAPI calls
-type Request struct {
-	Translator   Translator
-	Dependencies []client.Object
-}
-
 // APIImporter can translate itself into Kubernetes Objects.
 // Use to customize or accelerate translations ad-hoc
 type APIImporter[T any, P refs.PtrClientObj[T]] interface {
