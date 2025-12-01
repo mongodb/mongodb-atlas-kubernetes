@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312009/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,8 +58,8 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2genera
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
 	}
 
-	params := &v20250312sdk.CreateProjectApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
-	response, _, err := h.atlasClient.ProjectsApi.CreateProjectWithParams(ctx, params).Execute()
+	params := &v20250312sdk.CreateGroupApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
+	response, _, err := h.atlasClient.ProjectsApi.CreateGroupWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create group: %w", err))
 	}
@@ -85,7 +85,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *ako
 		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
 	}
 
-	response, _, err := h.atlasClient.ProjectsApi.GetProject(ctx, id).Execute()
+	response, _, err := h.atlasClient.ProjectsApi.GetGroup(ctx, id).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
 	}
@@ -136,7 +136,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *a
 		return result.NextState(state.StateDeleted, "Group deleted.")
 	}
 
-	_, err := h.atlasClient.ProjectsApi.DeleteProject(ctx, *group.Status.V20250312.Id).Execute()
+	_, err := h.atlasClient.ProjectsApi.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
 	if v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
 		return result.NextState(state.StateDeleted, "Group deleted.")
 	}
@@ -149,7 +149,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *a
 
 // HandleDeleting handles the deleting state for version v20250312
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	_, _, err := h.atlasClient.ProjectsApi.GetProject(ctx, *group.Status.V20250312.Id).Execute()
+	_, _, err := h.atlasClient.ProjectsApi.GetGroup(ctx, *group.Status.V20250312.Id).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
@@ -186,12 +186,12 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		return result.Error(currentState, err)
 	}
 
-	params := &v20250312sdk.UpdateProjectApiParams{
+	params := &v20250312sdk.UpdateGroupApiParams{
 		GroupId:     *group.Status.V20250312.Id,
 		GroupUpdate: atlasGroupUpdate,
 	}
 
-	response, _, err := h.atlasClient.ProjectsApi.UpdateProjectWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ProjectsApi.UpdateGroupWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(currentState, err)
 	}

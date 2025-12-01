@@ -52,7 +52,7 @@ spec:
 
   openapi:
     - name: v20250312
-      package: go.mongodb.org/atlas-sdk/v20250312006/admin
+      package: go.mongodb.org/atlas-sdk/v20250312009/admin
 
   crd:
     - gvk:
@@ -100,6 +100,9 @@ spec:
               verb: post
             references:
               - *groupRef
+            filters:
+              skipProperties:
+                - $.Use-Effective-Instance-Fields
           entry:
             schema: 'ClusterDescription20240805'
             filters:
