@@ -19,9 +19,8 @@ import (
 	"fmt"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
 // Parameters adds parameters from the OpenAPI spec to the CRD schema.
@@ -71,6 +70,12 @@ func (p *Parameters) Process(req *MappingProcessorRequest) error {
 						Path:                []string{"$", param.Value.Name},
 					},
 				)
+
+				// may have been filtered out by other plugins
+				if props == nil {
+					continue
+				}
+
 				props.Description = param.Value.Description
 				props.XValidations = apiextensions.ValidationRules{
 					{

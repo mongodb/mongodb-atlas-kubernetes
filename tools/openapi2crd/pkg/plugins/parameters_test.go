@@ -21,12 +21,11 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/utils/ptr"
-
-	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 )
 
 func TestParameterName(t *testing.T) {
@@ -40,6 +39,14 @@ func TestParameterProcess(t *testing.T) {
 		expectedVersionSpec apiextensions.JSONSchemaProps
 		expectedErr         error
 	}{
+		"parameter filtered out": {
+			request: groupMappingRequest(t, groupBaseCRDWithMajorVersion(t), entryInitialExtensionsSchema(t), parameterConverterNilMock(t)),
+			expectedVersionSpec: apiextensions.JSONSchemaProps{
+				Description: "The spec of the group resource for version v20250312.",
+				Type:        "object",
+				Properties:  map[string]apiextensions.JSONSchemaProps{},
+			},
+		},
 		"add parameter schema to the CRD": {
 			request: groupMappingRequest(t, groupBaseCRDWithMajorVersion(t), entryInitialExtensionsSchema(t), parameterConverterMock(t)),
 			expectedVersionSpec: apiextensions.JSONSchemaProps{
@@ -396,6 +403,14 @@ func parameterConverterMock(t *testing.T) converterFuncMock {
 				},
 			},
 		}
+	}
+}
+
+func parameterConverterNilMock(t *testing.T) converterFuncMock {
+	t.Helper()
+
+	return func(input converter.PropertyConvertInput) *apiextensions.JSONSchemaProps {
+		return nil
 	}
 }
 
