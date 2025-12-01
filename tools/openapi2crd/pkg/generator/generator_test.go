@@ -29,44 +29,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGeneratorMajorVersions(t *testing.T) {
-	tests := map[string]struct {
-		config         v1alpha1.CRDConfig
-		expectedResult []string
-	}{
-		"mapping with single version": {
-			config: v1alpha1.CRDConfig{
-				Mappings: []v1alpha1.CRDMapping{
-					{
-						MajorVersion: "v1",
-					},
-				},
-			},
-			expectedResult: []string{"- v1"},
-		},
-		"mapping with multiple versions": {
-			config: v1alpha1.CRDConfig{
-				Mappings: []v1alpha1.CRDMapping{
-					{
-						MajorVersion: "v1",
-					},
-					{
-						MajorVersion: "v2",
-					},
-				},
-			},
-			expectedResult: []string{"- v1", "- v2"},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			g := &Generator{}
-			result := g.majorVersions(tt.config)
-			assert.Equal(t, tt.expectedResult, result)
-		})
-	}
-}
-
 func TestClearPropertiesWithoutExtensions(t *testing.T) {
 	tests := map[string]struct {
 		schema         *openapi3.Schema

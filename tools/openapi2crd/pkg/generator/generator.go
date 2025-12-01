@@ -143,15 +143,6 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 	return crd, nil
 }
 
-func (g *Generator) majorVersions(config v1alpha1.CRDConfig) []string {
-	result := make([]string, 0, len(config.Mappings))
-	for _, m := range config.Mappings {
-		result = append(result, "- "+m.MajorVersion)
-	}
-
-	return result
-}
-
 func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 	if schema == nil {
 		return false
