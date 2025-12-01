@@ -245,7 +245,6 @@ spec:
               Specification of the cluster supporting the following versions:
 
               - v20250312
-              - v20250312
 
               At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
@@ -942,14 +941,6 @@ spec:
                     && has(self.groupRef))
             type: object
             x-kubernetes-validations:
-            - message: 'Only one of the following entries can be set: "v20250312,
-                v20250312"'
-              rule: '!has(self.v20250312) && has(self.v20250312) || has(self.v20250312)
-                && !has(self.v20250312)'
-            - message: spec.connectionSecretRef must be set if spec.v20250312.groupId
-                is set.
-              rule: (has(self.v20250312.groupId) && has(self.connectionSecretRef))
-                || (!has(self.v20250312.groupId))
             - message: spec.connectionSecretRef must be set if spec.v20250312.groupId
                 is set.
               rule: (has(self.v20250312.groupId) && has(self.connectionSecretRef))

@@ -21,12 +21,12 @@ import (
 	"log"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	"sigs.k8s.io/yaml"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"sigs.k8s.io/yaml"
 )
 
 type Generator struct {
@@ -66,7 +66,14 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 		}
 	}
 
+	majorVersions := sets.New[string]()
 	for _, mapping := range crdConfig.Mappings {
+		if majorVersions.Has(mapping.MajorVersion) {
+			return nil, fmt.Errorf("duplicate mapping for major version %q for %v", mapping.MajorVersion, crdConfig.GVK)
+		}
+
+		majorVersions.Insert(mapping.MajorVersion)
+
 		def, ok := g.definitions[mapping.OpenAPIRef.Name]
 		if !ok {
 			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)

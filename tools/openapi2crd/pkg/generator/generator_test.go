@@ -20,14 +20,13 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
 
 func TestGeneratorMajorVersions(t *testing.T) {
@@ -232,6 +231,31 @@ func TestGeneratorGenerate(t *testing.T) {
 					StoredVersions: []string{"v1"},
 				},
 			},
+		},
+		"duplicate major versions": {
+			apiDefinitions: map[string]v1alpha1.OpenAPIDefinition{
+				"Pet": {
+					Name: "Pet",
+					Path: "testdata/openapi.yaml",
+				},
+			},
+			config: &v1alpha1.CRDConfig{
+				Mappings: []v1alpha1.CRDMapping{
+					{
+						OpenAPIRef: v1alpha1.LocalObjectReference{
+							Name: "Pet",
+						},
+						MajorVersion: "v1",
+					},
+					{
+						OpenAPIRef: v1alpha1.LocalObjectReference{
+							Name: "Pet",
+						},
+						MajorVersion: "v1",
+					},
+				},
+			},
+			expectError: true,
 		},
 	}
 	for name, tt := range tests {
