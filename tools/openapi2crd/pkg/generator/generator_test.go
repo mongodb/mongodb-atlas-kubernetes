@@ -20,53 +20,14 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
-
-func TestGeneratorMajorVersions(t *testing.T) {
-	tests := map[string]struct {
-		config         v1alpha1.CRDConfig
-		expectedResult []string
-	}{
-		"mapping with single version": {
-			config: v1alpha1.CRDConfig{
-				Mappings: []v1alpha1.CRDMapping{
-					{
-						MajorVersion: "v1",
-					},
-				},
-			},
-			expectedResult: []string{"- v1"},
-		},
-		"mapping with multiple versions": {
-			config: v1alpha1.CRDConfig{
-				Mappings: []v1alpha1.CRDMapping{
-					{
-						MajorVersion: "v1",
-					},
-					{
-						MajorVersion: "v2",
-					},
-				},
-			},
-			expectedResult: []string{"- v1", "- v2"},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			g := &Generator{}
-			result := g.majorVersions(tt.config)
-			assert.Equal(t, tt.expectedResult, result)
-		})
-	}
-}
 
 func TestClearPropertiesWithoutExtensions(t *testing.T) {
 	tests := map[string]struct {
@@ -232,6 +193,31 @@ func TestGeneratorGenerate(t *testing.T) {
 					StoredVersions: []string{"v1"},
 				},
 			},
+		},
+		"duplicate major versions": {
+			apiDefinitions: map[string]v1alpha1.OpenAPIDefinition{
+				"Pet": {
+					Name: "Pet",
+					Path: "testdata/openapi.yaml",
+				},
+			},
+			config: &v1alpha1.CRDConfig{
+				Mappings: []v1alpha1.CRDMapping{
+					{
+						OpenAPIRef: v1alpha1.LocalObjectReference{
+							Name: "Pet",
+						},
+						MajorVersion: "v1",
+					},
+					{
+						OpenAPIRef: v1alpha1.LocalObjectReference{
+							Name: "Pet",
+						},
+						MajorVersion: "v1",
+					},
+				},
+			},
+			expectError: true,
 		},
 	}
 	for name, tt := range tests {
