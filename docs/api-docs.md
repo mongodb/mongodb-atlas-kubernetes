@@ -3824,9 +3824,12 @@ Index specifications for the collection's fields.
     </thead>
     <tbody><tr>
         <td><b>dynamic</b></td>
-        <td>boolean</td>
+        <td>JSON</td>
         <td>
-          Flag that indicates whether the index uses dynamic or static mappings. Required if mapping.fields is omitted.<br/>
+          Indicates whether the index uses static, default dynamic, or configurable dynamic mappings.
+Set to **true** to enable dynamic mapping with default type set or define object to specify the name of the configured type sets for dynamic mapping.
+If you specify configurable dynamic mappings, you must define the referred type sets in the **typeSets** field.
+Set to **false** to use only static mappings through **mappings.fields**.<br/>
         </td>
         <td>false</td>
       </tr><tr>
