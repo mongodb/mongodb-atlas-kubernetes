@@ -23,7 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
 
 func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
@@ -43,9 +43,9 @@ func CreateVPC(ctx context.Context, name, cidr, region string) (string, error) {
 				ResourceType: types.ResourceTypeVpc,
 				Tags: []types.Tag{
 					{Key: aws.String("Name"), Value: aws.String(name)},
-					{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
-					{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
-					{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
+					{Key: aws.String(tags.OwnerEmailTag), Value: aws.String(tags.AKOEmail)},
+					{Key: aws.String(tags.CostCenterTag), Value: aws.String(tags.AKOCostCenter)},
+					{Key: aws.String(tags.EnvironmentTag), Value: aws.String(tags.AKOEnvTest)},
 				},
 			}},
 		})
