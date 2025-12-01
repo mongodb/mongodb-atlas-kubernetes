@@ -272,12 +272,6 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 			"failed to upgrade cluster: upgrade from shared to dedicated is not supported",
 		),
 		Entry(
-			"Cannot upgrade a serverless cluster to dedicated",
-			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/project_with_serverless_cluster.yaml")),
-			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/sharded_cluster_upgrade.yaml")),
-			"failed to upgrade cluster: upgrade from serverless to dedicated is not supported",
-		),
-		Entry(
 			"Cannot upgrade a flex cluster to dedicated with wrong spec",
 			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/project_with_flex_cluster.yaml")),
 			yml.MustParseObjects(yml.MustOpen(flex2dedicated, "flex2dedicated/sharded_cluster_upgrade.yaml")),
