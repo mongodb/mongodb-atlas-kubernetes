@@ -35,7 +35,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	taghelper "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
 
 type AwsAction struct {
@@ -91,10 +91,10 @@ func (a *AwsAction) CreateKMS(ctx context.Context, alias, region, atlasAccountAr
 			Origin:      kmstypes.OriginTypeAwsKms,
 			Policy:      aws.String(policyString),
 			Tags: []kmstypes.Tag{
-				{TagKey: aws.String(taghelper.OwnerTag), TagValue: aws.String(taghelper.AKOTeam)},
-				{TagKey: aws.String(taghelper.OwnerEmailTag), TagValue: aws.String(taghelper.AKOEmail)},
-				{TagKey: aws.String(taghelper.CostCenterTag), TagValue: aws.String(taghelper.AKOCostCenter)},
-				{TagKey: aws.String(taghelper.EnvironmentTag), TagValue: aws.String(taghelper.AKOEnvTest)},
+				{TagKey: aws.String(tags.OwnerTag), TagValue: aws.String(tags.AKOTeam)},
+				{TagKey: aws.String(tags.OwnerEmailTag), TagValue: aws.String(tags.AKOEmail)},
+				{TagKey: aws.String(tags.CostCenterTag), TagValue: aws.String(tags.AKOCostCenter)},
+				{TagKey: aws.String(tags.EnvironmentTag), TagValue: aws.String(tags.AKOEnvTest)},
 			},
 		})
 
@@ -406,10 +406,10 @@ func (a *AwsAction) createVPC(ctx context.Context, name, cidr, region string) (s
 			ResourceType: ec2types.ResourceTypeVpc,
 			Tags: []ec2types.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
-				{Key: aws.String(taghelper.OwnerTag), Value: aws.String(taghelper.AKOTeam)},
-				{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
-				{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
-				{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
+				{Key: aws.String(tags.OwnerTag), Value: aws.String(tags.AKOTeam)},
+				{Key: aws.String(tags.OwnerEmailTag), Value: aws.String(tags.AKOEmail)},
+				{Key: aws.String(tags.CostCenterTag), Value: aws.String(tags.AKOCostCenter)},
+				{Key: aws.String(tags.EnvironmentTag), Value: aws.String(tags.AKOEnvTest)},
 			},
 		}},
 	}
@@ -486,10 +486,10 @@ func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region,
 			ResourceType: ec2types.ResourceTypeSubnet,
 			Tags: []ec2types.Tag{
 				{Key: aws.String("Name"), Value: aws.String(name)},
-				{Key: aws.String(taghelper.OwnerTag), Value: aws.String(taghelper.AKOTeam)},
-				{Key: aws.String(taghelper.OwnerEmailTag), Value: aws.String(taghelper.AKOEmail)},
-				{Key: aws.String(taghelper.CostCenterTag), Value: aws.String(taghelper.AKOCostCenter)},
-				{Key: aws.String(taghelper.EnvironmentTag), Value: aws.String(taghelper.AKOEnvTest)},
+				{Key: aws.String(tags.OwnerTag), Value: aws.String(tags.AKOTeam)},
+				{Key: aws.String(tags.OwnerEmailTag), Value: aws.String(tags.AKOEmail)},
+				{Key: aws.String(tags.CostCenterTag), Value: aws.String(tags.AKOCostCenter)},
+				{Key: aws.String(tags.EnvironmentTag), Value: aws.String(tags.AKOEnvTest)},
 			},
 		}},
 		VpcId:            aws.String(vpcID),
