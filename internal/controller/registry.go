@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
@@ -147,7 +148,14 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 		if err != nil {
 			return fmt.Errorf("error creating group reconciler: %w", err)
 		}
-		reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
+		flexController, err := flexcluster.NewFlexClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating group reconciler: %w", err)
+		}
+		reconcilers = append(reconcilers,
+			newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles),
+			newCtrlStateReconciler(flexController, r.maxConcurrentReconciles),
+		)
 	}
 
 	r.reconcilers = reconcilers

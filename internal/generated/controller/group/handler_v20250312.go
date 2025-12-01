@@ -150,15 +150,13 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *a
 // HandleDeleting handles the deleting state for version v20250312
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	_, _, err := h.atlasClient.ProjectsApi.GetProject(ctx, *group.Status.V20250312.Id).Execute()
-	if err == nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w deletion", err))
-	}
-
-	if !v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
+	switch {
+	case v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND"):
+		return result.NextState(state.StateDeleted, "Deleted")
+	case err != nil:
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
 	}
-
-	return result.NextState(state.StateDeleted, "Group deleted.")
+	return result.NextState(state.StateDeleting, "Deleting Group.")
 }
 
 // For returns the resource and predicates for the controller
