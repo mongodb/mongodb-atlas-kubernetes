@@ -208,7 +208,7 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
 			Eventually(func(g Gomega) {
 				resp, err := atlasClient.Client.DataFederationApi.
-					DeleteDataFederation(testData.Context, testData.Project.ID(), secondPE.ID).
+					DeletePrivateEndpointId(testData.Context, testData.Project.ID(), secondPE.ID).
 					Execute()
 				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
 				g.Expect(httputil.StatusCode(resp)).To(BeEquivalentTo(http.StatusNoContent))
