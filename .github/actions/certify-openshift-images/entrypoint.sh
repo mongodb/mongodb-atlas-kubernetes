@@ -27,6 +27,6 @@ echo "Check and Submit result to RedHat Connect"
 # Send results to RedHat if preflight finished wthout errors
 preflight check container "${REGISTRY}/${REPOSITORY}:${VERSION}" \
   --pyxis-api-token="${RHCC_TOKEN}" \
-  --certification-project-id="${RHCC_PROJECT}" \
+  --certification-component-id="${RHCC_PROJECT}" \
   --docker-config="${HOME}/.docker/config.json" \
   ${submit_flag}
