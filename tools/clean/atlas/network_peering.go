@@ -34,8 +34,8 @@ func (c *Cleaner) listNetworkPeering(ctx context.Context, projectID string, prov
 }
 
 func (c *Cleaner) listNetworkPeeringForProvider(ctx context.Context, projectID, providerName string) []admin.BaseNetworkPeeringConnectionSettings {
-	queryArgs := admin.ListPeeringConnectionsApiParams{GroupId: projectID, ProviderName: &providerName}
-	peers, _, err := c.client.NetworkPeeringApi.ListPeeringConnectionsWithParams(ctx, &queryArgs).Execute()
+	queryArgs := admin.ListGroupPeersApiParams{GroupId: projectID, ProviderName: &providerName}
+	peers, _, err := c.client.NetworkPeeringApi.ListGroupPeersWithParams(ctx, &queryArgs).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to list %s networking peering for project %s: %s", providerName, projectID, err))
 		return []admin.BaseNetworkPeeringConnectionSettings{}
@@ -44,7 +44,7 @@ func (c *Cleaner) listNetworkPeeringForProvider(ctx context.Context, projectID, 
 }
 
 func (c *Cleaner) getNetworkPeeringContainer(ctx context.Context, projectID, ID string) *admin.CloudProviderContainer {
-	container, _, err := c.client.NetworkPeeringApi.GetPeeringContainer(ctx, projectID, ID).Execute()
+	container, _, err := c.client.NetworkPeeringApi.GetGroupContainer(ctx, projectID, ID).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to get network peering container %s: %s", ID, err))
 
@@ -85,7 +85,7 @@ func (c *Cleaner) deleteNetworkPeering(ctx context.Context, projectID string, pe
 			}
 		}
 
-		_, _, err := c.client.NetworkPeeringApi.DeletePeeringConnection(ctx, projectID, peer.GetId()).Execute()
+		_, _, err := c.client.NetworkPeeringApi.DeleteGroupPeer(ctx, projectID, peer.GetId()).Execute()
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of network peering %s: %s", peer.GetId(), err))
 

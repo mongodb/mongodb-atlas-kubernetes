@@ -24,7 +24,7 @@ import (
 
 func (c *Cleaner) listPrivateEndpoints(ctx context.Context, projectID, cloudProvider string) []admin.EndpointService {
 	endpoints, _, err := c.client.PrivateEndpointServicesApi.
-		ListPrivateEndpointServices(ctx, projectID, cloudProvider).
+		ListPrivateEndpointService(ctx, projectID, cloudProvider).
 		Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to list %s private endpoints for project %s: %s", cloudProvider, projectID, err))
