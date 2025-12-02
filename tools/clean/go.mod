@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.40.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.275.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.46.2
+	github.com/aws/aws-sdk-go-v2/service/kms v1.49.1
 	github.com/aws/smithy-go v1.24.0
 	github.com/jedib0t/go-pretty/v6 v6.7.5
 	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
