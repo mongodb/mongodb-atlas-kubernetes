@@ -30,6 +30,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
@@ -323,7 +324,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
-					if r != nil && r.StatusCode == http.StatusNotFound {
+					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
 					}
 				}
@@ -342,7 +343,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			Eventually(func() bool {
 				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
-					if r != nil && r.StatusCode == http.StatusNotFound {
+					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
 					}
 				}

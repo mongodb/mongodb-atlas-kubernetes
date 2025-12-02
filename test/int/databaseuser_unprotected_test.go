@@ -40,6 +40,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
@@ -361,7 +362,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 						GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 						Execute()
 					if err != nil {
-						if r != nil && r.StatusCode == http.StatusNotFound {
+						if httputil.StatusCode(r) == http.StatusNotFound {
 							return true
 						}
 					}
@@ -592,7 +593,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 						GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 						Execute()
 					if err != nil {
-						if r != nil && r.StatusCode == http.StatusNotFound {
+						if httputil.StatusCode(r) == http.StatusNotFound {
 							return true
 						}
 					}
@@ -725,7 +726,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
-					if r != nil && r.StatusCode == http.StatusNotFound {
+					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
 					}
 				}
@@ -741,7 +742,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 			Eventually(func() bool {
 				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
-					if r != nil && r.StatusCode == http.StatusNotFound {
+					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
 					}
 				}
@@ -906,7 +907,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUse
 			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
 			Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}

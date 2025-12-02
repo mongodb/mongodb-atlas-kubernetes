@@ -34,6 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
@@ -732,7 +733,8 @@ func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 		if err != nil {
-			if r != nil && (r.StatusCode == http.StatusNotFound || r.StatusCode == http.StatusUnauthorized) {
+			statusCode := httputil.StatusCode(r)
+			if statusCode == http.StatusNotFound || statusCode == http.StatusUnauthorized {
 				return true
 			}
 		}

@@ -29,6 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -149,8 +150,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				Eventually(func(g Gomega) {
 					_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
-					g.Expect(r).ToNot(BeNil())
-					g.Expect(r.StatusCode).To(Equal(http.StatusNotFound))
+					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 			})
 		})

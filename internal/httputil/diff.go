@@ -59,15 +59,11 @@ func (t *TransportWithDiff) RoundTrip(req *http.Request) (*http.Response, error)
 type cleanupFunc func(map[string]interface{})
 
 func cleanLinksField(data map[string]interface{}) {
-	if _, ok := data["links"]; ok {
-		delete(data, "links")
-	}
+	delete(data, "links")
 }
 
 func cleanCreatedField(data map[string]interface{}) {
-	if _, ok := data["created"]; ok {
-		delete(data, "created")
-	}
+	delete(data, "created")
 }
 
 func (t *TransportWithDiff) tryCalculateDiff(req *http.Request, cleanupFuncs ...cleanupFunc) (string, error) {

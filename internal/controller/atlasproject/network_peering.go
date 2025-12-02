@@ -30,6 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
@@ -185,7 +186,8 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 		}
 		if !compare.Contains(doNotDelete, container.GetId()) {
 			response, errDelete := containerService.DeleteGroupContainer(context, groupID, container.GetId()).Execute()
-			if errDelete != nil && response.StatusCode != http.StatusConflict { // AWS peer does not contain container id
+			statusCode := httputil.StatusCode(response)
+			if errDelete != nil && statusCode != http.StatusConflict { // AWS peer does not contain container id
 				return errDelete
 			}
 		}
@@ -462,7 +464,7 @@ func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.Netwo
 func deletePeerByID(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string, containerID string, logger *zap.SugaredLogger) error {
 	_, response, err := peerService.DeleteGroupPeer(ctx, groupID, containerID).Execute()
 	if err != nil {
-		if response != nil && response.StatusCode == http.StatusNotFound {
+		if httputil.StatusCode(response) == http.StatusNotFound {
 			return errors.Join(err, errNortFound)
 		}
 		logger.Errorf("failed to delete peering container %s: %v", containerID, err)
@@ -510,7 +512,7 @@ func createContainer(ctx context.Context, containerService admin.NetworkPeeringA
 
 	create, response, err := containerService.CreateGroupContainer(ctx, groupID, container).Execute()
 	if err != nil {
-		if response.StatusCode == http.StatusConflict {
+		if httputil.StatusCode(response) == http.StatusConflict {
 			list, _, errList := containerService.ListGroupContainers(ctx, groupID).ProviderName(string(peer.ProviderName)).Execute()
 			if errList != nil {
 				logger.Errorf("failed to list containers: %v", errList)

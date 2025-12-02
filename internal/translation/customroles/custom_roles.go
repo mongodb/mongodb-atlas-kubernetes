@@ -20,6 +20,8 @@ import (
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
 
 type CustomRoleService interface {
@@ -41,7 +43,7 @@ func NewCustomRoles(api admin.CustomDatabaseRolesApi) *CustomRoles {
 func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string) (CustomRole, error) {
 	customRole, httpResp, err := s.roleAPI.GetCustomDbRole(ctx, projectID, roleName).Execute()
 	// handle RoleNotFound error
-	if httpResp != nil && httpResp.StatusCode == http.StatusNotFound {
+	if httputil.StatusCode(httpResp) == http.StatusNotFound {
 		return CustomRole{}, nil
 	}
 	if err != nil {

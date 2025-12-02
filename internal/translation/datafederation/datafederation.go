@@ -21,6 +21,8 @@ import (
 	"net/http"
 
 	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
 
 var (
@@ -45,7 +47,7 @@ func NewAtlasDataFederation(api admin.DataFederationApi) *AtlasDataFederationSer
 func (dfs *AtlasDataFederationService) Get(ctx context.Context, projectID, name string) (*DataFederation, error) {
 	atlasDataFederation, resp, err := dfs.api.GetDataFederation(ctx, projectID, name).Execute()
 
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
+	if httputil.StatusCode(resp) == http.StatusNotFound {
 		return nil, errors.Join(ErrorNotFound, err)
 	}
 
@@ -81,7 +83,7 @@ func (dfs *AtlasDataFederationService) Update(ctx context.Context, df *DataFeder
 
 func (dfs *AtlasDataFederationService) Delete(ctx context.Context, projectID, name string) error {
 	resp, err := dfs.api.DeleteDataFederation(ctx, projectID, name).Execute()
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
+	if httputil.StatusCode(resp) == http.StatusNotFound {
 		return errors.Join(ErrorNotFound, err)
 	}
 	if err != nil {

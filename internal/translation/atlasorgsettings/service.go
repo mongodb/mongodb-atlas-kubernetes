@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
 
 type AtlasOrgSettingsService interface {
@@ -41,8 +43,9 @@ func (a *AtlasOrgSettingsServiceImpl) Get(ctx context.Context, orgID string) (*A
 	if err != nil {
 		return nil, fmt.Errorf("failed to get AtlasOrgSettings: %w", err)
 	}
-	if httpResp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get AtlasOrgSettings: expected status code 200. Got: %d", httpResp.StatusCode)
+	statusCode := httputil.StatusCode(httpResp)
+	if statusCode != 200 {
+		return nil, fmt.Errorf("failed to get AtlasOrgSettings: expected status code 200. Got: %d", statusCode)
 	}
 
 	return NewFromAtlas(orgID, resp), nil
@@ -58,8 +61,9 @@ func (a *AtlasOrgSettingsServiceImpl) Update(ctx context.Context, orgID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update AtlasOrgSettings: %w", err)
 	}
-	if httpResp.StatusCode != 201 && httpResp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to update AtlasOrgSettings: expected status code 200 or 201. Got: %d", httpResp.StatusCode)
+	statusCode := httputil.StatusCode(httpResp)
+	if statusCode != 201 && statusCode != 200 {
+		return nil, fmt.Errorf("failed to update AtlasOrgSettings: expected status code 200 or 201. Got: %d", statusCode)
 	}
 
 	return NewFromAtlas(orgID, resp), nil

@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -76,7 +77,7 @@ func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]A
 func (tm *TeamsAPI) GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error) {
 	atlasTeam, resp, err := tm.teamsAPI.GetTeamByName(ctx, orgID, teamName).Execute()
 	if err != nil {
-		if resp.StatusCode == http.StatusNotFound {
+		if httputil.StatusCode(resp) == http.StatusNotFound {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get team by name from Atlas: %w", err)

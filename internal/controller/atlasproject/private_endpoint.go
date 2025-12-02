@@ -27,6 +27,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/set"
 )
@@ -291,7 +292,8 @@ func syncPeInterfaceInAtlas(ctx *workflow.Context, projectID string, endpointsTo
 			ctx.Log.Debugw("CreatePrivateEndpoint Reply", "privateEndpoint", privateEndpoint, "err", err)
 			if err != nil {
 				ctx.Log.Debugw("failed to create PE Interface", "error", err)
-				if response.StatusCode == http.StatusBadRequest || response.StatusCode == http.StatusConflict {
+				statusCode := httputil.StatusCode(response)
+				if statusCode == http.StatusBadRequest || statusCode == http.StatusConflict {
 					return syncedEndpoints, err
 				}
 			}
