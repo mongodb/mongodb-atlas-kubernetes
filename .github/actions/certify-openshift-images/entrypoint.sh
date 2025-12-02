@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-set -eou pipefail
+set -eoxu pipefail
 
 docker login -u mongodb+mongodb_atlas_kubernetes -p "${REGISTRY_PASSWORD}" "${REGISTRY}"
 
@@ -23,7 +23,7 @@ if [ "${SUBMIT}" == "false" ]; then
   submit_flag=
 fi
 
-echo "Check and Submit result to RedHat Connect"
+echo "Check and Submit result to RedHat Connect (contains fix)"
 # Send results to RedHat if preflight finished wthout errors
 preflight check container "${REGISTRY}/${REPOSITORY}:${VERSION}" \
   --pyxis-api-token="${RHCC_TOKEN}" \
