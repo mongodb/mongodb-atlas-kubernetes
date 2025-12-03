@@ -179,16 +179,6 @@ $ make augment-sbom SBOM_JSON_FILE="temp/linux_amd64.sbom.json"
 $ make augment-sbom SBOM_JSON_FILE="temp/linux_arm64.sbom.json"
 ```
 
-### Register SBOMs internally
-
-To be able to store SBOMs in S3, you need special credentials.
-Please advise the Wiki page "Kubernetes Atlas Operator SSDLC Compliance Manual".
-
-```shell
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=amd64 SBOMS_DIR=temp
-$ make store-augmented-sboms VERSION=${VERSION} TARGET_ARCH=arm64 SBOMS_DIR=temp
-```
-
 ## Synchronize configuration changes with the Helm Charts
 
 Go to the [helm-chart repo](https://github.com/mongodb/helm-charts) and locate the [Pull Request](https://github.com/mongodb/helm-charts/pulls)
