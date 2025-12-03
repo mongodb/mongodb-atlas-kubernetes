@@ -229,6 +229,7 @@ jobs:
           ENV: prod
           VERSION: ${{ env.VERSION }}
           IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}
+          OPERATOR_REGISTRY: ${{ needs.compute-repo.outputs.repo }}
         run: devbox run -- make bundle
 
       - name: Bump Helm chart version
