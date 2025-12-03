@@ -830,7 +830,7 @@ bundle: prepare-dirs $(CSV_FILE) release
 
 	@echo "Patching CSV with replaces: $(CURRENT_VERSION)"; \
 		$(AWK) '!/replaces:/' $(CSV_FILE) > $(CSV_FILE).tmp && mv $(CSV_FILE).tmp $(CSV_FILE); \
-		echo "  replaces: $(CURRENT_VERSION)" >> $(CSV_FILE);
+		echo "  replaces: mongodb-atlas-kubernetes.v$(CURRENT_VERSION)" >> $(CSV_FILE);
 
 	@echo "Patching CSV with WATCH_NAMESPACE..."; \
 		value="metadata.annotations['olm.targetNamespaces']" \
