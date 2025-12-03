@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 # Check if an argument is provided
 if [ -z "$1" ]; then
     echo "Error: No target specified."

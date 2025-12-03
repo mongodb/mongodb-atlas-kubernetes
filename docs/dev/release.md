@@ -286,6 +286,28 @@ You can see an [example fixed PR here for certified version 1.9.1](https://githu
 
 After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
 
+### Fix a RedHat PR
+
+If there is a bug in the Redhat PRs, those are best fixed by closing the wrong PR in review and re-issuing a new one from a freshly made branch.
+
+In order to redo a PR:
+
+1. Close the broken PR(s) at Github.
+1. Fix the isue in the AKO code and merge it.
+1. Reset the local repo copy to re-issue the release using `./script/reset-rh.sh`
+1. Issue the PR again following the normal instructions above for each PR.
+
+The `./script/reset-rh.sh` script usage is:
+
+```shell
+$ ./script/reset-rh.sh all # to reset all 3 repos
+```
+Or select one or more of `community`, `openshift` or `certified` separated by commas to reset one or more selectively. For example:
+```shell
+$ ./script/reset-rh.sh community,certified # to reset community and certified repos only
+```
+
+
 # Post install hook release
 
 If changes have been made to the post install hook (mongodb-atlas-kubernetes/cmd/post-install/main.go).
