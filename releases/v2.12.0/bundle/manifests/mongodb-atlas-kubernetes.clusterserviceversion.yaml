@@ -547,7 +547,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/mongodb/mongodb-atlas-kubernetes
     support: support@mongodb.com
-    containerImage: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease:2.12.0
+    containerImage: quay.io/mongodb/mongodb-atlas-kubernetes-operator:2.12.0
   labels:
     operatorframework.io/arch.amd64: supported
     operatorframework.io/arch.arm64: supported
@@ -778,7 +778,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease:2.12.0
+                    image: quay.io/mongodb/mongodb-atlas-kubernetes-operator:2.12.0
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
