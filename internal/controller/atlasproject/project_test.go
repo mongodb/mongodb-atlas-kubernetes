@@ -363,9 +363,9 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.Anything).
 					Return(nil, nil, nil)
-				networkPeering.EXPECT().ListGroupContainers(context.Background(), "projectID").
-					Return(admin.ListGroupContainersApiRequest{ApiService: networkPeering})
-				networkPeering.EXPECT().ListGroupContainersExecute(mock.Anything).
+				networkPeering.EXPECT().ListGroupContainerAll(context.Background(), "projectID").
+					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
+				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
 				audit := mockadmin.NewAuditingApi(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
@@ -468,9 +468,9 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.Anything).
 					Return(nil, nil, nil)
-				networkPeering.EXPECT().ListGroupContainers(context.Background(), "projectID").
-					Return(admin.ListGroupContainersApiRequest{ApiService: networkPeering})
-				networkPeering.EXPECT().ListGroupContainersExecute(mock.Anything).
+				networkPeering.EXPECT().ListGroupContainerAll(context.Background(), "projectID").
+					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
+				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
 				audit := mockadmin.NewAuditingApi(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
@@ -574,9 +574,9 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.AnythingOfType("admin.ListGroupPeersApiRequest")).
 					Return(nil, nil, nil)
-				networkPeering.EXPECT().ListGroupContainers(context.Background(), "projectID").
-					Return(admin.ListGroupContainersApiRequest{ApiService: networkPeering})
-				networkPeering.EXPECT().ListGroupContainersExecute(mock.AnythingOfType("admin.ListGroupContainersApiRequest")).
+				networkPeering.EXPECT().ListGroupContainerAll(context.Background(), "projectID").
+					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
+				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
 				audit := mockadmin.NewAuditingApi(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").

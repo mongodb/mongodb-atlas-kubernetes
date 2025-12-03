@@ -100,9 +100,9 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				).Times(removals)
 			}
 
-			peeringAPI.EXPECT().ListGroupContainers(mock.Anything, mock.Anything).
-				Return(admin.ListGroupContainersApiRequest{ApiService: peeringAPI}).Maybe()
-			peeringAPI.EXPECT().ListGroupContainersExecute(
+			peeringAPI.EXPECT().ListGroupContainerAll(mock.Anything, mock.Anything).
+				Return(admin.ListGroupContainerAllApiRequest{ApiService: peeringAPI}).Maybe()
+			peeringAPI.EXPECT().ListGroupContainerAllExecute(
 				mock.Anything).Return(
 				nil, nil, nil,
 			).Maybe()

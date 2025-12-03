@@ -176,7 +176,7 @@ func getPeerIDs(statuses []status.AtlasNetworkPeer) []string {
 }
 
 func deleteUnusedContainers(context context.Context, containerService admin.NetworkPeeringApi, groupID string, doNotDelete []string) error {
-	containers, _, err := containerService.ListGroupContainers(context, groupID).Execute()
+	containers, _, err := containerService.ListGroupContainerAll(context, groupID).Execute()
 	if err != nil {
 		return err
 	}
