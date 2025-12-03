@@ -19,7 +19,7 @@ set -eou pipefail
 version=${1:?"pass the version as the parameter, e.g \"0.5.0\""}
 repo="${RH_COMMUNITY_OPERATORHUB_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 mkdir "${repo}/${version}"
-cp -r releases/v${version}/bundle.Dockerfile releases/v${version}/bundle/manifests releases/v${version}/bundle/metadata bundle/tests "${repo}/${version}"
+cp -r releases/v${version}/bundle.Dockerfile releases/v${version}/bundle/manifests releases/v${version}/bundle/metadata releases/v${version}/bundle/tests "${repo}/${version}"
 
 cd "${repo}"
 git fetch upstream main
