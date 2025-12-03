@@ -379,8 +379,12 @@ func mappingsFromAtlas(in *admin.SearchMappings) (*akov2.Mappings, error) {
 	if err := compat.JSONCopy(&dynamic, in.Dynamic); err != nil {
 		return nil, err
 	}
-	result.Fields = &fields
-	result.Dynamic = &dynamic
+	if len(fields.Raw) > 0 {
+		result.Fields = &fields
+	}
+	if len(dynamic.Raw) > 0 {
+		result.Dynamic = &dynamic
+	}
 	return result, nil
 }
 
