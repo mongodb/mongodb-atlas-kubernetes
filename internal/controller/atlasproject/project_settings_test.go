@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312010/admin"
+	"go.mongodb.org/atlas-sdk/v20250312010/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"

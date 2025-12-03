@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // AuditLogService is the interface exposed by this translation layer over
