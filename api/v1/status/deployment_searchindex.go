@@ -23,10 +23,14 @@ const (
 type IndexStatus string
 
 type DeploymentSearchIndexStatus struct {
-	Name    string      `json:"name"`
-	ID      string      `json:"ID"`
-	Status  IndexStatus `json:"status"`
-	Message string      `json:"message"`
+	// Human-readable label that identifies this index.
+	Name string `json:"name"`
+	// Unique 24-hexadecimal digit string that identifies this Atlas Search index.
+	ID string `json:"ID"`
+	// Condition of the search index.
+	Status IndexStatus `json:"status"`
+	// Details on the status of the search index.
+	Message string `json:"message"`
 }
 
 // +k8s:deepcopy-gen=false

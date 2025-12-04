@@ -53,7 +53,9 @@ type EndpointInterfaceStatus struct {
 
 // GCPForwardingRule is the most recent observed status the GCP forwarding rules configured for an interface. Read-only.
 type GCPForwardingRule struct {
-	Name   string `json:"name,omitempty"`
+	// Human-readable label that identifies the Google Cloud consumer forwarding rule that you created.
+	Name string `json:"name,omitempty"`
+	// State of the MongoDB Atlas endpoint group.
 	Status string `json:"status,omitempty"`
 }
 

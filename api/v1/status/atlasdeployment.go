@@ -32,19 +32,25 @@ type AtlasDeploymentStatus struct {
 	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
 	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
+	// Details that explain how MongoDB Cloud replicates data on the specified MongoDB database.
+	// This array has one object per shard representing node configurations in each shard. For replica sets there is only one object representing node configurations.
 	ReplicaSets []ReplicaSet `json:"replicaSets,omitempty"`
 
+	// ServerlessPrivateEndpoints contains a list of private endpoints configured for the serverless deployment.
 	ServerlessPrivateEndpoints []ServerlessPrivateEndpoint `json:"serverlessPrivateEndpoints,omitempty"`
 
+	// List that contains key value pairs to map zones to geographic regions.
+	// These pairs map an ISO 3166-1a2 location code, with an ISO 3166-2 subdivision code when possible, to a unique 24-hexadecimal string that identifies the custom zone.
 	CustomZoneMapping *CustomZoneMapping `json:"customZoneMapping,omitempty"`
 
+	// List that contains a namespace for a Global Cluster. MongoDB Atlas manages this cluster.
 	ManagedNamespaces []ManagedNamespace `json:"managedNamespaces,omitempty"`
 
 	// MongoURIUpdated is a timestamp in ISO 8601 date and time format in UTC when the connection string was last updated.
 	// The connection string changes if you update any of the other values.
 	MongoURIUpdated string `json:"mongoURIUpdated,omitempty"`
 
-	// SearchIndexes contains a list of search indexes statuses configured for a project
+	// SearchIndexes contains a list of search indexes statuses configured for a project.
 	SearchIndexes []DeploymentSearchIndexStatus `json:"searchIndexes,omitempty"`
 }
 
@@ -58,7 +64,9 @@ const (
 )
 
 type ReplicaSet struct {
-	ID       string `json:"id"`
+	// Unique 24-hexadecimal digit string that identifies the replication object for a shard in a Cluster.
+	ID string `json:"id"`
+	// Human-readable label that describes the zone this shard belongs to in a Global Cluster.
 	ZoneName string `json:"zoneName,omitempty"`
 }
 
@@ -99,6 +107,7 @@ type PrivateEndpoint struct {
 	// Private-endpoint-aware mongodb+srv:// connection string for this private endpoint.
 	SRVConnectionString string `json:"srvConnectionString,omitempty"`
 
+	// Private endpoint-aware connection string optimized for sharded clusters that uses the `mongodb+srv://` protocol to connect to MongoDB Cloud through a private endpoint.
 	SRVShardOptimizedConnectionString string `json:"srvShardOptimizedConnectionString,omitempty"`
 
 	// Type of MongoDB process that you connect to with the connection strings

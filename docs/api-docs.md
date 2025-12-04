@@ -96,7 +96,7 @@ The AtlasBackupCompliancePolicy is a configuration that enforces specific backup
         <td><b><a href="#atlasbackupcompliancepolicystatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          BackupCompliancePolicyStatus defines the observed state of AtlasBackupCompliancePolicy.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -290,7 +290,7 @@ For less frequent policy items, MongoDB Cloud requires that you specify a value 
 
 
 
-
+BackupCompliancePolicyStatus defines the observed state of AtlasBackupCompliancePolicy.
 
 <table>
     <thead>
@@ -426,7 +426,7 @@ AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
         <td><b><a href="#atlasbackuppolicystatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          BackupPolicyStatus defines the observed state of AtlasBackupPolicy.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -521,7 +521,7 @@ For less frequent policy items, MongoDB Cloud requires that you specify a value 
 
 
 
-
+BackupPolicyStatus defines the observed state of AtlasBackupPolicy.
 
 <table>
     <thead>
@@ -664,7 +664,7 @@ AtlasBackupSchedule is the Schema for the atlasbackupschedules API.
         <td><b><a href="#atlasbackupschedulestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          BackupScheduleStatus defines the observed state of AtlasBackupSchedule.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -894,7 +894,7 @@ Export policy for automatically exporting cloud backup snapshots to AWS bucket.
 
 
 
-
+BackupScheduleStatus defines the observed state of AtlasBackupSchedule.
 
 <table>
     <thead>
@@ -2014,14 +2014,14 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API.
         <td><b><a href="#atlasdatafederationspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          DataFederationSpec defines the desired state of AtlasDataFederation.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdatafederationstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          DataFederationStatus defines the observed state of AtlasDataFederation.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2033,7 +2033,7 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API.
 
 
 
-
+DataFederationSpec defines the desired state of AtlasDataFederation.
 
 <table>
     <thead>
@@ -2616,7 +2616,7 @@ To limit a new VPC peering connection to one CIDR block and region, create the c
 
 
 
-
+DataFederationStatus defines the observed state of AtlasDataFederation.
 
 <table>
     <thead>
@@ -3038,7 +3038,7 @@ DEPRECATED: Cluster labels are deprecated and will be removed in a future releas
         <td><b>mongoDBVersion</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Version of MongoDB that the cluster runs.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3357,14 +3357,14 @@ Every hardware specification must use the same instanceSize.<br/>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsspecs">analyticsSpecs</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Hardware specifications for analytics nodes deployed in the region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexautoscaling">autoScaling</a></b></td>
         <td>object</td>
         <td>
-          AdvancedAutoScalingSpec configures your deployment to automatically scale its storage<br/>
+          Options that determine how this cluster handles resource scaling.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3382,7 +3382,7 @@ Otherwise, it should be equal to the "providerName" value.<br/>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexelectablespecs">electableSpecs</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Hardware specifications for nodes deployed in the region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3408,7 +3408,7 @@ The highest priority is 7<br/>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexreadonlyspecs">readOnlySpecs</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          Hardware specifications for read only nodes deployed in the region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3428,7 +3428,7 @@ The region you choose can affect network latency for clients accessing your data
 
 
 
-
+Hardware specifications for analytics nodes deployed in the region.
 
 <table>
     <thead>
@@ -3484,7 +3484,7 @@ The instance size you select applies to all the data-bearing hosts in your insta
 
 
 
-AdvancedAutoScalingSpec configures your deployment to automatically scale its storage
+Options that determine how this cluster handles resource scaling.
 
 <table>
     <thead>
@@ -3594,7 +3594,7 @@ The maximum memory allowed for the selected cluster tier and the oplog size can 
 
 
 
-
+Hardware specifications for nodes deployed in the region.
 
 <table>
     <thead>
@@ -3650,7 +3650,7 @@ The instance size you select applies to all the data-bearing hosts in your insta
 
 
 
-
+Hardware specifications for read only nodes deployed in the region.
 
 <table>
     <thead>
@@ -4735,14 +4735,15 @@ AtlasDeploymentStatus defines the observed state of AtlasDeployment.
         <td><b><a href="#atlasdeploymentstatuscustomzonemapping">customZoneMapping</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          List that contains key value pairs to map zones to geographic regions.
+These pairs map an ISO 3166-1a2 location code, with an ISO 3166-2 subdivision code when possible, to a unique 24-hexadecimal string that identifies the custom zone.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentstatusmanagednamespacesindex">managedNamespaces</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains a namespace for a Global Cluster. MongoDB Atlas manages this cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4774,21 +4775,22 @@ The Atlas Operator updates this field to the 'metadata.generation' as soon as it
         <td><b><a href="#atlasdeploymentstatusreplicasetsindex">replicaSets</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          Details that explain how MongoDB Cloud replicates data on the specified MongoDB database.
+This array has one object per shard representing node configurations in each shard. For replica sets there is only one object representing node configurations.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentstatussearchindexesindex">searchIndexes</a></b></td>
         <td>[]object</td>
         <td>
-          SearchIndexes contains a list of search indexes statuses configured for a project<br/>
+          SearchIndexes contains a list of search indexes statuses configured for a project.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasdeploymentstatusserverlessprivateendpointsindex">serverlessPrivateEndpoints</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          ServerlessPrivateEndpoints contains a list of private endpoints configured for the serverless deployment.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4965,7 +4967,7 @@ to which you deployed this cluster's nodes.
         <td><b>srvShardOptimizedConnectionString</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Private endpoint-aware connection string optimized for sharded clusters that uses the `mongodb+srv://` protocol to connect to MongoDB Cloud through a private endpoint.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5038,7 +5040,8 @@ Endpoint through which you connect to Atlas
 
 
 
-
+List that contains key value pairs to map zones to geographic regions.
+These pairs map an ISO 3166-1a2 location code, with an ISO 3166-2 subdivision code when possible, to a unique 24-hexadecimal string that identifies the custom zone.
 
 <table>
     <thead>
@@ -5053,21 +5056,22 @@ Endpoint through which you connect to Atlas
         <td><b>customZoneMapping</b></td>
         <td>map[string]string</td>
         <td>
-          <br/>
+          List that contains key value pairs to map zones to geographic regions.
+These pairs map an ISO 3166-1a2 location code, with an ISO 3166-2 subdivision code when possible, to a unique 24-hexadecimal string that identifies the custom zone.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>zoneMappingErrMessage</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Error message for failed Custom Zone Mapping.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>zoneMappingState</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Status of the Custom Zone Mapping.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5094,63 +5098,66 @@ Endpoint through which you connect to Atlas
         <td><b>collection</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the collection to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>db</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label of the database to manage for this Global Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>customShardKey</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Database parameter used to divide the collection into shards. Global clusters require a compound shard key.
+This compound shard key combines the location parameter and the user-selected custom key.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>errMessage</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Error message for a failed Managed Namespace.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isCustomShardKeyHashed</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key for the specified collection.
+If you set this value to false, MongoDB Atlas uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>isShardKeyUnique</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone hashed the custom shard key. If this parameter returns false, this cluster uses ranged sharding.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>numInitialChunks</b></td>
         <td>integer</td>
         <td>
-          <br/>
+          Minimum number of chunks to create initially when sharding an empty collection with a hashed shard key.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>presplitHashedZones</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether MongoDB Cloud should create and distribute initial chunks for an empty or non-existing collection.
+MongoDB Atlas distributes data based on the defined zones and zone ranges for the collection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Status of the Managed Namespace.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5177,14 +5184,14 @@ Endpoint through which you connect to Atlas
         <td><b>id</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 24-hexadecimal digit string that identifies the replication object for a shard in a Cluster.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>zoneName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that describes the zone this shard belongs to in a Global Cluster.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5211,28 +5218,28 @@ Endpoint through which you connect to Atlas
         <td><b>ID</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 24-hexadecimal digit string that identifies this Atlas Search index.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Details on the status of the search index.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies this index.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Condition of the search index.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -5361,14 +5368,14 @@ AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
         <td><b><a href="#atlasfederatedauthspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasFederatedAuthSpec defines the desired state of AtlasFederatedAuth.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasfederatedauthstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasFederatedAuthStatus defines the observed state of AtlasFederatedAuth.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -5380,7 +5387,7 @@ AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
 
 
 
-
+AtlasFederatedAuthSpec defines the desired state of AtlasFederatedAuth.
 
 <table>
     <thead>
@@ -5571,7 +5578,7 @@ RoleMapping maps an external group from an identity provider to roles within Atl
 
 
 
-
+AtlasFederatedAuthStatus defines the observed state of AtlasFederatedAuth.
 
 <table>
     <thead>
@@ -7058,14 +7065,14 @@ GCPStatus contains GCP only related status information
         <td><b><a href="#atlasorgsettingsspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasOrgSettingsSpec defines the desired state of AtlasOrgSettings.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasorgsettingsstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasOrgSettingsStatus defines the observed state of AtlasOrgSettings.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7077,7 +7084,7 @@ GCPStatus contains GCP only related status information
 
 
 
-
+AtlasOrgSettingsSpec defines the desired state of AtlasOrgSettings.
 
 <table>
     <thead>
@@ -7194,7 +7201,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 
 
 
-
+AtlasOrgSettingsStatus defines the observed state of AtlasOrgSettings.
 
 <table>
     <thead>
@@ -7877,14 +7884,14 @@ GCPForwardingRule is the most recent observed status the GCP forwarding rules co
         <td><b>name</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the Google Cloud consumer forwarding rule that you created.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          State of the MongoDB Atlas endpoint group.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9123,14 +9130,15 @@ AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Specifies whether Encryption at Rest is enabled for an Atlas project.
+To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The AWS region in which the AWS customer master key exists.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9144,7 +9152,7 @@ AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is
         <td><b>valid</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9205,28 +9213,29 @@ AzureKeyVault specifies Azure Key Vault configuration details and whether Encryp
         <td><b>azureEnvironment</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The Azure environment where the Azure account credentials reside. Valid values are the following: AZURE, AZURE_CHINA, AZURE_GERMANY<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>clientID</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The Client ID, also known as the application ID, for an Azure application associated with the Azure AD tenant.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Specifies whether Encryption at Rest is enabled for an Atlas project.
+To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>resourceGroupName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The name of the Azure Resource group that contains an Azure Key Vault.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9240,7 +9249,7 @@ AzureKeyVault specifies Azure Key Vault configuration details and whether Encryp
         <td><b>tenantID</b></td>
         <td>string</td>
         <td>
-          <br/>
+          The unique identifier for an Azure AD tenant within an Azure subscription.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -9301,7 +9310,8 @@ GoogleCloudKms specifies GCP KMS configuration details and whether Encryption at
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Specifies whether Encryption at Rest is enabled for an Atlas project.
+To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9399,14 +9409,15 @@ at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-reso
         <td><b>enabled</b></td>
         <td>boolean</td>
         <td>
-          <br/>
+          Flag that indicates whether someone has activated the Prometheus integration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>flowName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          DEPRECATED: Flowdock flow name.
+This field has been removed from Atlas, and has no effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -9434,7 +9445,8 @@ at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-reso
         <td><b>orgName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          DEPRECATED: Flowdock organization name.
+This field has been removed from Atlas, and has no effect.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11114,70 +11126,71 @@ Threshold  causes an alert to be triggered.
         <td><b>atlasAssumedRoleExternalId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique external ID that MongoDB Atlas uses when it assumes the IAM role in your Amazon Web Services account.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>providerName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the cloud provider of the role.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>atlasAWSAccountArn</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Amazon Resource Name that identifies the Amazon Web Services user account that MongoDB Atlas uses when it assumes the Identity and Access Management role.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>authorizedDate</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Date and time when someone authorized this role for the specified cloud service provider. This parameter expresses its value in the ISO 8601 timestamp format in UTC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>createdDate</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Date and time when someone created this role for the specified cloud service provider. This parameter expresses its value in the ISO 8601 timestamp format in UTC.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>errorMessage</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Application error message returned.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasprojectstatuscloudproviderintegrationsindexfeatureusagesindex">featureUsages</a></b></td>
         <td>[]object</td>
         <td>
-          <br/>
+          List that contains application features associated with this Amazon Web Services Identity and Access Management role.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>iamAssumedRoleArn</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Amazon Resource Name that identifies the Amazon Web Services Identity and Access Management role that MongoDB Cloud assumes when it accesses resources in your AWS account.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>roleId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Unique 24-hexadecimal digit string that identifies the role.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Provision status of the service account.
+Values are IN_PROGRESS, COMPLETE, FAILED, or NOT_INITIATED.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11204,14 +11217,14 @@ Threshold  causes an alert to be triggered.
         <td><b>featureId</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Identifying characteristics about the data lake linked to this Amazon Web Services Identity and Access Management role.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>featureType</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that describes one MongoDB Cloud feature linked to this Amazon Web Services Identity and Access Management role.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11532,21 +11545,21 @@ VPC is vpcID for AWS, user networkName for GCP, and vnetName for Azure.<br/>
         <td><b>endpointName</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Human-readable label that identifies the Google Cloud consumer forwarding rule that you created.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>ipAddress</b></td>
         <td>string</td>
         <td>
-          <br/>
+          One Private Internet Protocol version 4 (IPv4) address to which this Google Cloud consumer forwarding rule resolves.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          <br/>
+          State of the MongoDB Atlas endpoint group when MongoDB Cloud received this request.<br/>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -11695,14 +11708,14 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
         <td><b><a href="#atlassearchindexconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasSearchIndexConfigSpec defines the desired state of AtlasSearchIndexConfig.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlassearchindexconfigstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasSearchIndexConfigStatus defines the observed state of AtlasSearchIndexConfig.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11714,7 +11727,7 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
 
 
 
-
+AtlasSearchIndexConfigSpec defines the desired state of AtlasSearchIndexConfig.
 
 <table>
     <thead>
@@ -11891,7 +11904,7 @@ Tokenizer that you want to use to create tokens. Tokens determine how Atlas Sear
 
 
 
-
+AtlasSearchIndexConfigStatus defines the observed state of AtlasSearchIndexConfig.
 
 <table>
     <thead>
@@ -12020,14 +12033,14 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
         <td><b><a href="#atlasstreamconnectionspec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasStreamConnectionSpec defines the desired state of AtlasStreamConnection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasstreamconnectionstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasStreamConnectionStatus defines the observed state of AtlasStreamConnection.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12039,7 +12052,7 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
 
 
 
-
+AtlasStreamConnectionSpec defines the desired state of AtlasStreamConnection.
 
 <table>
     <thead>
@@ -12347,7 +12360,7 @@ A trusted, public x509 certificate for connecting to Kafka over SSL.
 
 
 
-
+AtlasStreamConnectionStatus defines the observed state of AtlasStreamConnection.
 
 <table>
     <thead>
@@ -12517,14 +12530,14 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
         <td><b><a href="#atlasstreaminstancespec">spec</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasStreamInstanceSpec defines the desired state of AtlasStreamInstance.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#atlasstreaminstancestatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          AtlasStreamInstanceStatus defines the observed state of AtlasStreamInstance.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12536,7 +12549,7 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
 
 
 
-
+AtlasStreamInstanceSpec defines the desired state of AtlasStreamInstance.
 
 <table>
     <thead>
@@ -12699,7 +12712,7 @@ ResourceRefNamespaced is a reference to a Kubernetes Resource that allows to con
 
 
 
-
+AtlasStreamInstanceStatus defines the observed state of AtlasStreamInstance.
 
 <table>
     <thead>
@@ -12924,7 +12937,7 @@ AtlasTeam is the Schema for the Atlas Teams API
         <td><b><a href="#atlasteamstatus">status</a></b></td>
         <td>object</td>
         <td>
-          <br/>
+          TeamStatus defines the observed state of AtlasTeam.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -12970,7 +12983,7 @@ TeamSpec defines the desired state of a Team in Atlas.
 
 
 
-
+TeamStatus defines the observed state of AtlasTeam.
 
 <table>
     <thead>

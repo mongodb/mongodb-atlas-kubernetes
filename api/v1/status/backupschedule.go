@@ -39,6 +39,7 @@ func AtlasBackupScheduleUnsetDeploymentID(ID string) AtlasBackupScheduleStatusOp
 	}
 }
 
+// BackupScheduleStatus defines the observed state of AtlasBackupSchedule.
 type BackupScheduleStatus struct {
 	api.Common `json:",inline"`
 

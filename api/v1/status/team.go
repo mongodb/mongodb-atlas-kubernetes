@@ -41,6 +41,7 @@ func AtlasTeamSetProjects(projects []TeamProject) AtlasTeamStatusOption {
 	}
 }
 
+// TeamStatus defines the observed state of AtlasTeam.
 type TeamStatus struct {
 	api.Common `json:",inline"`
 

@@ -26,6 +26,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasOrgSettingsList{})
 }
 
+// AtlasOrgSettingsSpec defines the desired state of AtlasOrgSettings.
 type AtlasOrgSettingsSpec struct {
 	// OrgId Unique 24-hexadecimal digit string that identifies the organization that contains your projects.
 	// +required

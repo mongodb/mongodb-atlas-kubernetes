@@ -14,6 +14,7 @@
 
 package status
 
+// AtlasOrgSettingsStatus defines the observed state of AtlasOrgSettings.
 // +k8s:deepcopy-gen=true
 type AtlasOrgSettingsStatus struct {
 	UnifiedStatus `json:",inline"`

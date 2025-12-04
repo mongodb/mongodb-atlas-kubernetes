@@ -62,8 +62,12 @@ type Integration struct {
 	// Used for Victor Ops.
 	// +optional
 	RoutingKeyRef common.ResourceRefNamespaced `json:"routingKeyRef,omitempty"`
+	// DEPRECATED: Flowdock flow name.
+	// This field has been removed from Atlas, and has no effect.
 	// +optional
 	FlowName string `json:"flowName,omitempty"`
+	// DEPRECATED: Flowdock organization name.
+	// This field has been removed from Atlas, and has no effect.
 	// +optional
 	OrgName string `json:"orgName,omitempty"`
 	// Endpoint web address to which Atlas sends notifications.
@@ -89,7 +93,7 @@ type Integration struct {
 	ServiceDiscovery string `json:"serviceDiscovery,omitempty"`
 	// +optional
 	Scheme string `json:"scheme,omitempty"`
-	//
+	// Flag that indicates whether someone has activated the Prometheus integration.
 	// +optional
 	Enabled bool `json:"enabled,omitempty"`
 }

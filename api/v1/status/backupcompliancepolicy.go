@@ -22,6 +22,7 @@ import (
 
 type AtlasBackupCompliancePolicyStatusOption func(s *BackupCompliancePolicyStatus)
 
+// BackupCompliancePolicyStatus defines the observed state of AtlasBackupCompliancePolicy.
 type BackupCompliancePolicyStatus struct {
 	api.Common `json:",inline"`
 }

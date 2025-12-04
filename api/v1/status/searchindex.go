@@ -18,6 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
+// AtlasSearchIndexConfigStatus defines the observed state of AtlasSearchIndexConfig.
 type AtlasSearchIndexConfigStatus struct {
 	api.Common `json:",inline"`
 }
