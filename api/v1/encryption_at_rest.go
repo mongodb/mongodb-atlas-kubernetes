@@ -27,9 +27,13 @@ type EncryptionAtRest struct {
 
 // AwsKms specifies AWS KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AwsKms struct {
-	Enabled *bool  `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project, To disable Encryption at Rest, pass only this parameter with a value of false, When you disable Encryption at Rest, Atlas also removes the configuration details.
-	Region  string `json:"region,omitempty"`  // The AWS region in which the AWS customer master key exists: CA_CENTRAL_1, US_EAST_1, US_EAST_2, US_WEST_1, US_WEST_2, SA_EAST_1
-	Valid   *bool  `json:"valid,omitempty"`   // Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
+	// Specifies whether Encryption at Rest is enabled for an Atlas project.
+	// To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	Enabled *bool `json:"enabled,omitempty"`
+	// The AWS region in which the AWS customer master key exists.
+	Region string `json:"region,omitempty"`
+	// Specifies whether the encryption key set for the provider is valid and may be used to encrypt and decrypt data.
+	Valid *bool `json:"valid,omitempty"`
 	// A reference to as Secret containing the AccessKeyID, SecretAccessKey, CustomerMasterKeyID and RoleID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
@@ -41,11 +45,17 @@ func (a *AwsKms) IsEnabled() bool {
 
 // AzureKeyVault specifies Azure Key Vault configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type AzureKeyVault struct {
-	Enabled           *bool  `json:"enabled,omitempty"`           // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
-	ClientID          string `json:"clientID,omitempty"`          // The Client ID, also known as the application ID, for an Azure application associated with the Azure AD tenant.
-	AzureEnvironment  string `json:"azureEnvironment,omitempty"`  // The Azure environment where the Azure account credentials reside. Valid values are the following: AZURE, AZURE_CHINA, AZURE_GERMANY
-	ResourceGroupName string `json:"resourceGroupName,omitempty"` // The name of the Azure Resource group that contains an Azure Key Vault.
-	TenantID          string `json:"tenantID,omitempty"`          // The unique identifier for an Azure AD tenant within an Azure subscription.
+	// Specifies whether Encryption at Rest is enabled for an Atlas project.
+	// To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	Enabled *bool `json:"enabled,omitempty"`
+	// The Client ID, also known as the application ID, for an Azure application associated with the Azure AD tenant.
+	ClientID string `json:"clientID,omitempty"`
+	// The Azure environment where the Azure account credentials reside. Valid values are the following: AZURE, AZURE_CHINA, AZURE_GERMANY
+	AzureEnvironment string `json:"azureEnvironment,omitempty"`
+	// The name of the Azure Resource group that contains an Azure Key Vault.
+	ResourceGroupName string `json:"resourceGroupName,omitempty"`
+	// The unique identifier for an Azure AD tenant within an Azure subscription.
+	TenantID string `json:"tenantID,omitempty"`
 	// A reference to as Secret containing the SubscriptionID, KeyVaultName, KeyIdentifier, Secret fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`
@@ -57,7 +67,9 @@ func (a *AzureKeyVault) IsEnabled() bool {
 
 // GoogleCloudKms specifies GCP KMS configuration details and whether Encryption at Rest is enabled for an Atlas project.
 type GoogleCloudKms struct {
-	Enabled *bool `json:"enabled,omitempty"` // Specifies whether Encryption at Rest is enabled for an Atlas project. To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	// Specifies whether Encryption at Rest is enabled for an Atlas project.
+	// To disable Encryption at Rest, pass only this parameter with a value of false. When you disable Encryption at Rest, Atlas also removes the configuration details.
+	Enabled *bool `json:"enabled,omitempty"`
 	// A reference to as Secret containing the ServiceAccountKey, KeyVersionResourceID fields
 	// +optional
 	SecretRef common.ResourceRefNamespaced `json:"secretRef,omitempty"`

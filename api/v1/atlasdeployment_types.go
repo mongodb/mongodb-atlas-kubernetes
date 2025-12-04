@@ -120,7 +120,8 @@ type AdvancedDeploymentSpec struct {
 	// MongoDB major version of the cluster. Set to the binary major version.
 	// +optional
 	MongoDBMajorVersion string `json:"mongoDBMajorVersion,omitempty"`
-	MongoDBVersion      string `json:"mongoDBVersion,omitempty"`
+	// Version of MongoDB that the cluster runs.
+	MongoDBVersion string `json:"mongoDBVersion,omitempty"`
 	// Name of the advanced deployment as it appears in Atlas.
 	// After Atlas creates the deployment, you can't change its name.
 	// Can only contain ASCII letters, numbers, and hyphens.
@@ -323,10 +324,14 @@ type AdvancedReplicationSpec struct {
 }
 
 type AdvancedRegionConfig struct {
-	AnalyticsSpecs *Specs                   `json:"analyticsSpecs,omitempty"`
-	ElectableSpecs *Specs                   `json:"electableSpecs,omitempty"`
-	ReadOnlySpecs  *Specs                   `json:"readOnlySpecs,omitempty"`
-	AutoScaling    *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
+	// Hardware specifications for analytics nodes deployed in the region.
+	AnalyticsSpecs *Specs `json:"analyticsSpecs,omitempty"`
+	// Hardware specifications for nodes deployed in the region.
+	ElectableSpecs *Specs `json:"electableSpecs,omitempty"`
+	// Hardware specifications for read only nodes deployed in the region.
+	ReadOnlySpecs *Specs `json:"readOnlySpecs,omitempty"`
+	// Options that determine how this cluster handles resource scaling.
+	AutoScaling *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
 	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 	// This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
 	// Otherwise, it should be equal to the "providerName" value.

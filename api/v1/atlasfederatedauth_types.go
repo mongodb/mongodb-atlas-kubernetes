@@ -32,6 +32,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasFederatedAuth{}, &AtlasFederatedAuthList{})
 }
 
+// AtlasFederatedAuthSpec defines the desired state of AtlasFederatedAuth.
 type AtlasFederatedAuthSpec struct {
 	// +kubebuilder:default:=false
 	Enabled bool `json:"enabled,omitempty"`

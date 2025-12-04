@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
+// AtlasStreamConnectionStatus defines the observed state of AtlasStreamConnection.
 type AtlasStreamConnectionStatus struct {
 	api.Common `json:",inline"`
 	// List of instances using the connection configuration

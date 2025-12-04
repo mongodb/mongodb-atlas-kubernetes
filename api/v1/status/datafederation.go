@@ -18,6 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
+// DataFederationStatus defines the observed state of AtlasDataFederation.
 type DataFederationStatus struct {
 	api.Common `json:",inline"`
 

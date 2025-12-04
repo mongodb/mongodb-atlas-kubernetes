@@ -15,21 +15,34 @@
 package status
 
 type CloudProviderIntegration struct {
-	AtlasAWSAccountArn         string         `json:"atlasAWSAccountArn,omitempty"`
-	AtlasAssumedRoleExternalID string         `json:"atlasAssumedRoleExternalId"`
-	AuthorizedDate             string         `json:"authorizedDate,omitempty"`
-	CreatedDate                string         `json:"createdDate,omitempty"`
-	FeatureUsages              []FeatureUsage `json:"featureUsages,omitempty"`
-	IamAssumedRoleArn          string         `json:"iamAssumedRoleArn,omitempty"`
-	ProviderName               string         `json:"providerName"`
-	RoleID                     string         `json:"roleId,omitempty"`
-	Status                     string         `json:"status,omitempty"`
-	ErrorMessage               string         `json:"errorMessage,omitempty"`
+	// Amazon Resource Name that identifies the Amazon Web Services user account that MongoDB Atlas uses when it assumes the Identity and Access Management role.
+	AtlasAWSAccountArn string `json:"atlasAWSAccountArn,omitempty"`
+	// Unique external ID that MongoDB Atlas uses when it assumes the IAM role in your Amazon Web Services account.
+	AtlasAssumedRoleExternalID string `json:"atlasAssumedRoleExternalId"`
+	// Date and time when someone authorized this role for the specified cloud service provider. This parameter expresses its value in the ISO 8601 timestamp format in UTC.
+	AuthorizedDate string `json:"authorizedDate,omitempty"`
+	// Date and time when someone created this role for the specified cloud service provider. This parameter expresses its value in the ISO 8601 timestamp format in UTC.
+	CreatedDate string `json:"createdDate,omitempty"`
+	// List that contains application features associated with this Amazon Web Services Identity and Access Management role.
+	FeatureUsages []FeatureUsage `json:"featureUsages,omitempty"`
+	// Amazon Resource Name that identifies the Amazon Web Services Identity and Access Management role that MongoDB Cloud assumes when it accesses resources in your AWS account.
+	IamAssumedRoleArn string `json:"iamAssumedRoleArn,omitempty"`
+	// Human-readable label that identifies the cloud provider of the role.
+	ProviderName string `json:"providerName"`
+	// Unique 24-hexadecimal digit string that identifies the role.
+	RoleID string `json:"roleId,omitempty"`
+	// Provision status of the service account.
+	// Values are IN_PROGRESS, COMPLETE, FAILED, or NOT_INITIATED.
+	Status string `json:"status,omitempty"`
+	// Application error message returned.
+	ErrorMessage string `json:"errorMessage,omitempty"`
 }
 
 type FeatureUsage struct {
+	// Human-readable label that describes one MongoDB Cloud feature linked to this Amazon Web Services Identity and Access Management role.
 	FeatureType string `json:"featureType,omitempty"`
-	FeatureID   string `json:"featureId,omitempty"`
+	// Identifying characteristics about the data lake linked to this Amazon Web Services Identity and Access Management role.
+	FeatureID string `json:"featureId,omitempty"`
 }
 
 const (

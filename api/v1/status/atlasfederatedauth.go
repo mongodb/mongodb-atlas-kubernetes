@@ -18,6 +18,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 )
 
+// AtlasFederatedAuthStatus defines the observed state of AtlasFederatedAuth.
 type AtlasFederatedAuthStatus struct {
 	api.Common `json:",inline"`
 }

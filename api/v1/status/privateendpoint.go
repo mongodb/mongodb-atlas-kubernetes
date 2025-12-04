@@ -42,9 +42,12 @@ type ProjectPrivateEndpoint struct {
 }
 
 type GCPEndpoint struct {
-	Status       string `json:"status"`
+	// State of the MongoDB Atlas endpoint group when MongoDB Cloud received this request.
+	Status string `json:"status"`
+	// Human-readable label that identifies the Google Cloud consumer forwarding rule that you created.
 	EndpointName string `json:"endpointName"`
-	IPAddress    string `json:"ipAddress"`
+	// One Private Internet Protocol version 4 (IPv4) address to which this Google Cloud consumer forwarding rule resolves.
+	IPAddress string `json:"ipAddress"`
 }
 
 // TransformRegionToID makes the same ID from region and regionName fields for PE Connections to match them

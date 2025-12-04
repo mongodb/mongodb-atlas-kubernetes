@@ -28,6 +28,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasDataFederation{}, &AtlasDataFederationList{})
 }
 
+// DataFederationSpec defines the desired state of AtlasDataFederation.
 type DataFederationSpec struct {
 	// Project is a reference to AtlasProject resource the deployment belongs to.
 	Project common.ResourceRefNamespaced `json:"projectRef"`

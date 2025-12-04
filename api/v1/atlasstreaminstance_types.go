@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 )
 
+// AtlasStreamInstanceSpec defines the desired state of AtlasStreamInstance.
 type AtlasStreamInstanceSpec struct {
 	// Human-readable label that identifies the stream connection.
 	Name string `json:"name"`

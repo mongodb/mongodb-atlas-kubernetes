@@ -19,6 +19,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
+// AtlasStreamInstanceStatus defines the observed state of AtlasStreamInstance.
 type AtlasStreamInstanceStatus struct {
 	api.Common `json:",inline"`
 	// Unique 24-hexadecimal character string that identifies the instance

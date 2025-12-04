@@ -39,6 +39,7 @@ func AtlasBackupPolicyUnsetScheduleID(ID string) AtlasBackupPolicyStatusOption {
 	}
 }
 
+// BackupPolicyStatus defines the observed state of AtlasBackupPolicy.
 type BackupPolicyStatus struct {
 	api.Common `json:",inline"`
 
