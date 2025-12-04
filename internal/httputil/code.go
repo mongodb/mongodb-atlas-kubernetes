@@ -11,12 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package config
+package httputil
 
-import (
-	_ "go.mongodb.org/atlas-sdk/v20250312005/admin"
-	_ "go.mongodb.org/atlas-sdk/v20250312008/admin"
-	_ "go.mongodb.org/atlas-sdk/v20250312009/admin"
+import "net/http"
+
+const (
+	HTTP_CODE_UNSET = 0
 )
+
+func StatusCode(rsp *http.Response) int {
+	if rsp == nil {
+		return HTTP_CODE_UNSET
+	}
+	return rsp.StatusCode
+}

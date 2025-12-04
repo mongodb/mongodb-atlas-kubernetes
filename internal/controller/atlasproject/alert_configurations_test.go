@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -467,9 +467,9 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			existingAlertConfigs: []admin.GroupAlertsConfig{},
 			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
-				apiMock.EXPECT().ListAlertConfigurations(mock.Anything, "test-group-id").
-					Return(admin.ListAlertConfigurationsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListAlertConfigurationsExecute(mock.Anything).
+				apiMock.EXPECT().ListAlertConfigs(mock.Anything, "test-group-id").
+					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
 						Results: &[]admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
@@ -497,9 +497,9 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			existingAlertConfigs: []admin.GroupAlertsConfig{},
 			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
-				apiMock.EXPECT().ListAlertConfigurations(mock.Anything, "test-group-id").
-					Return(admin.ListAlertConfigurationsApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().ListAlertConfigurationsExecute(mock.Anything).
+				apiMock.EXPECT().ListAlertConfigs(mock.Anything, "test-group-id").
+					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
 						Results: &[]admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
@@ -510,9 +510,9 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					Enabled:       pointer.MakePtr(true),
 				}
 
-				apiMock.EXPECT().CreateAlertConfiguration(mock.Anything, "test-group-id", mock.Anything).
-					Return(admin.CreateAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
+					Return(admin.CreateAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAlertConfigExecute(mock.Anything).
 					Return(&createdConfig, &http.Response{StatusCode: 201}, nil)
 
 				return apiMock
@@ -534,7 +534,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312006: mockAPIClient,
+				SdkClient20250312009: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -631,13 +631,13 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			alertConfigIDs: []string{"config-1", "config-2"},
 			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
-				apiMock.EXPECT().DeleteAlertConfiguration(mock.Anything, "test-group-id", "config-1").
-					Return(admin.DeleteAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().DeleteAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().DeleteAlertConfig(mock.Anything, "test-group-id", "config-1").
+					Return(admin.DeleteAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().DeleteAlertConfigExecute(mock.Anything).
 					Return(&http.Response{StatusCode: 204}, nil)
-				apiMock.EXPECT().DeleteAlertConfiguration(mock.Anything, "test-group-id", "config-2").
-					Return(admin.DeleteAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().DeleteAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().DeleteAlertConfig(mock.Anything, "test-group-id", "config-2").
+					Return(admin.DeleteAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().DeleteAlertConfigExecute(mock.Anything).
 					Return(&http.Response{StatusCode: 204}, nil)
 				return apiMock
 			},
@@ -649,9 +649,9 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			alertConfigIDs: []string{"config-1"},
 			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
-				apiMock.EXPECT().DeleteAlertConfiguration(mock.Anything, "test-group-id", "config-1").
-					Return(admin.DeleteAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().DeleteAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().DeleteAlertConfig(mock.Anything, "test-group-id", "config-1").
+					Return(admin.DeleteAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().DeleteAlertConfigExecute(mock.Anything).
 					Return(nil, errors.New("API error"))
 				return apiMock
 			},
@@ -669,7 +669,7 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312006: mockAPIClient,
+				SdkClient20250312009: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -730,9 +730,9 @@ func TestCreateAlertConfigs(t *testing.T) {
 					Enabled:       pointer.MakePtr(true),
 				}
 
-				apiMock.EXPECT().CreateAlertConfiguration(mock.Anything, "test-group-id", mock.Anything).
-					Return(admin.CreateAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
+					Return(admin.CreateAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAlertConfigExecute(mock.Anything).
 					Return(&createdConfig, &http.Response{StatusCode: 201}, nil)
 
 				return apiMock
@@ -751,9 +751,9 @@ func TestCreateAlertConfigs(t *testing.T) {
 			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
 
-				apiMock.EXPECT().CreateAlertConfiguration(mock.Anything, "test-group-id", mock.Anything).
-					Return(admin.CreateAlertConfigurationApiRequest{ApiService: apiMock})
-				apiMock.EXPECT().CreateAlertConfigurationExecute(mock.Anything).
+				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
+					Return(admin.CreateAlertConfigApiRequest{ApiService: apiMock})
+				apiMock.EXPECT().CreateAlertConfigExecute(mock.Anything).
 					Return(nil, &http.Response{StatusCode: 400}, errors.New("API error"))
 
 				return apiMock
@@ -772,7 +772,7 @@ func TestCreateAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312006: mockAPIClient,
+				SdkClient20250312009: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{

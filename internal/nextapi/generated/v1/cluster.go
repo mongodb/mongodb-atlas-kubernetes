@@ -130,6 +130,11 @@ type V20250312Entry struct {
 	*/
 	GlobalClusterSelfManagedSharding *bool `json:"globalClusterSelfManagedSharding,omitempty"`
 
+	// InternalClusterRole Internal classification of the cluster's role. Possible
+	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
+	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
+	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
+
 	/*
 	   Labels Collection of key-value pairs between 1 to 255 characters in length that tag and categorize the cluster. The MongoDB Cloud console doesn't display your labels.
 
@@ -199,6 +204,12 @@ type V20250312Entry struct {
 	// is enabled on the cluster. If set to `true`, MongoDB Cloud won't delete the
 	// cluster. If set to `false`, MongoDB Cloud will delete the cluster.
 	TerminationProtectionEnabled *bool `json:"terminationProtectionEnabled,omitempty"`
+
+	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
+	// time-based snapshot copies will be used instead of slower standard snapshot
+	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
+	// for clusters containing AWS nodes.
+	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
 
 	// VersionReleaseSystem Method by which the cluster maintains the MongoDB versions.
 	// If value is `CONTINUOUS`, you must not specify **mongoDBMajorVersion**.
@@ -285,9 +296,7 @@ type RegionConfigs struct {
 	// scaling.
 	AnalyticsAutoScaling *AnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
 
-	// AnalyticsSpecs Hardware specifications for read-only nodes in the region.
-	// Read-only nodes can never become the primary member, but can enable local reads.
-	// If you don't specify this parameter, no read-only nodes are deployed to the
+	// AnalyticsSpecs The current hardware specifications for read only nodes in the
 	// region.
 	AnalyticsSpecs *AnalyticsSpecs `json:"analyticsSpecs,omitempty"`
 
@@ -300,6 +309,18 @@ type RegionConfigs struct {
 	   Please note that  using an instanceSize of M2 or M5 will create a Flex cluster instead. Support for the instanceSize of M2 or M5 will be discontinued in January 2026. We recommend using the createFlexCluster API for such configurations moving forward.
 	*/
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
+
+	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
+
+	// EffectiveElectableSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveElectableSpecs *AnalyticsSpecs `json:"effectiveElectableSpecs,omitempty"`
+
+	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
 
 	// ElectableSpecs Hardware specifications for all electable nodes deployed in the
 	// region. Electable nodes can become the primary and can enable local reads. If
@@ -318,9 +339,7 @@ type RegionConfigs struct {
 	// Set dedicated clusters to `AWS`, `GCP`, `AZURE` or `TENANT`.
 	ProviderName *string `json:"providerName,omitempty"`
 
-	// ReadOnlySpecs Hardware specifications for read-only nodes in the region.
-	// Read-only nodes can never become the primary member, but can enable local reads.
-	// If you don't specify this parameter, no read-only nodes are deployed to the
+	// ReadOnlySpecs The current hardware specifications for read only nodes in the
 	// region.
 	ReadOnlySpecs *AnalyticsSpecs `json:"readOnlySpecs,omitempty"`
 
@@ -363,14 +382,6 @@ type Compute struct {
 	// MinInstanceSize Instance size boundary to which your cluster can automatically
 	// scale.
 	MinInstanceSize *string `json:"minInstanceSize,omitempty"`
-
-	/*
-	   PredictiveEnabled Flag that indicates whether predictive instance size auto-scaling is enabled.
-
-	   - Set to `true` to enable predictive instance size auto-scaling. MongoDB Cloud requires **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled** to be `true` in order to enable this feature.
-	   - Set to `false` to disable predictive instance size auto-scaling.
-	*/
-	PredictiveEnabled *bool `json:"predictiveEnabled,omitempty"`
 
 	// ScaleDownEnabled Flag that indicates whether the instance size may scale down
 	// via reactive auto-scaling. MongoDB Cloud requires this parameter if
@@ -552,6 +563,11 @@ type ClusterStatusV20250312 struct {
 	// Id Unique 24-hexadecimal digit string that identifies the cluster.
 	Id *string `json:"id,omitempty"`
 
+	// InternalClusterRole Internal classification of the cluster's role. Possible
+	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
+	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
+	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
+
 	// MongoDBEmployeeAccessGrant MongoDB employee granted access level and expiration
 	// for a cluster.
 	MongoDBEmployeeAccessGrant *MongoDBEmployeeAccessGrant `json:"mongoDBEmployeeAccessGrant,omitempty"`
@@ -596,6 +612,12 @@ type ClusterStatusV20250312 struct {
 	    - `REPAIRING`: One or more nodes in the cluster are being returned to service by the Atlas control plane. Other nodes should continue to provide service as normal.
 	*/
 	StateName *string `json:"stateName,omitempty"`
+
+	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
+	// time-based snapshot copies will be used instead of slower standard snapshot
+	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
+	// for clusters containing AWS nodes.
+	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
 }
 
 type ConnectionStrings struct {

@@ -26,6 +26,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -134,7 +135,7 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 
 			Eventually(func(g Gomega) {
 				df, _, err := atlasClient.Client.DataFederationApi.
-					GetFederatedDatabase(context.Background(), testData.Project.ID(), createdDataFederation.Spec.Name).
+					GetDataFederation(context.Background(), testData.Project.ID(), createdDataFederation.Spec.Name).
 					Execute()
 				g.Expect(err).ShouldNot(HaveOccurred())
 				g.Expect(df).NotTo(BeNil())
@@ -207,11 +208,10 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
 			Eventually(func(g Gomega) {
 				resp, err := atlasClient.Client.DataFederationApi.
-					DeleteDataFederationPrivateEndpoint(testData.Context, testData.Project.ID(), secondPE.ID).
+					DeletePrivateEndpointId(testData.Context, testData.Project.ID(), secondPE.ID).
 					Execute()
 				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))
-				g.Expect(resp).NotTo(BeNil())
-				g.Expect(resp.StatusCode).To(BeEquivalentTo(http.StatusNoContent))
+				g.Expect(httputil.StatusCode(resp)).To(BeEquivalentTo(http.StatusNoContent))
 			}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).MustPassRepeatedly(2).Should(Succeed())
 		})
 	})

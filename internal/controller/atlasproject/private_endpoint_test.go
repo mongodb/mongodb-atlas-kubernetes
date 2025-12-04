@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -315,22 +315,22 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			privateEndpointsAPI := mockadmin.NewPrivateEndpointServicesApi(t)
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AWS").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "AWS").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				synthesizeAtlasPEs(tc.atlasPEids), nil, nil,
 			).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "AZURE").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "AZURE").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				nil, nil, nil,
 			).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServices(mock.Anything, mock.Anything, "GCP").
-				Return(admin.ListPrivateEndpointServicesApiRequest{ApiService: privateEndpointsAPI}).Once()
-			privateEndpointsAPI.EXPECT().ListPrivateEndpointServicesExecute(
-				mock.AnythingOfType("admin.ListPrivateEndpointServicesApiRequest")).Return(
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "GCP").
+				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
+			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
+				mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).Return(
 				nil, nil, nil,
 			).Once()
 
@@ -354,7 +354,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						PrivateEndpointServicesApi: privateEndpointsAPI,
 					},
 				},

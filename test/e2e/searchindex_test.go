@@ -15,6 +15,7 @@
 package e2e_test
 
 import (
+	"encoding/json"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -90,7 +91,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 
 		By("Loading sample dataset into a cluster", func() {
-			sampleDataSet, _, err := atlasClient.Client.ClustersApi.LoadSampleDataset(testData.Context,
+			sampleDataSet, _, err := atlasClient.Client.ClustersApi.RequestSampleDatasetLoad(testData.Context,
 				testData.Project.ID(),
 				testData.InitialDeployments[0].GetDeploymentName()).Execute()
 			Expect(err).NotTo(HaveOccurred())
@@ -98,7 +99,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 			Expect(sampleDataSet.Id).NotTo(BeNil())
 
 			Eventually(func(g Gomega) {
-				sampleDataStatus, _, err := atlasClient.Client.ClustersApi.GetSampleDatasetLoadStatus(testData.Context,
+				sampleDataStatus, _, err := atlasClient.Client.ClustersApi.GetSampleDatasetLoad(testData.Context,
 					testData.Project.ID(),
 					*sampleDataSet.Id).Execute()
 				g.Expect(err).NotTo(HaveOccurred())
@@ -140,7 +141,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 						DBName:         DBTraining,
 						CollectionName: DBTrainingCollectionRoutes,
 						Search: &akov2.Search{
-							Mappings: &akov2.Mappings{Dynamic: pointer.MakePtr(true)},
+							Mappings: &akov2.Mappings{Dynamic: jsonMustEncode(true)},
 							SearchConfigurationRef: common.ResourceRefNamespaced{
 								Name:      searchIndexConfig.GetName(),
 								Namespace: searchIndexConfig.GetNamespace(),
@@ -243,3 +244,11 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 
 	})
 })
+
+func jsonMustEncode(jsn any) *apiextensions.JSON {
+	val, err := json.Marshal(jsn)
+	if err != nil {
+		panic(err)
+	}
+	return &apiextensions.JSON{Raw: val}
+}

@@ -22,7 +22,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
@@ -78,7 +78,7 @@ func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
 }
 
 func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
-	project, _, err := a.Client.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+	project, _, err := a.Client.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 	if admin.IsErrorCode(err, "GROUP_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
 		return false
 	}
@@ -145,7 +145,7 @@ func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) 
 
 func (a *Atlas) GetIntegrationByType(projectId, iType string) (*admin.ThirdPartyIntegration, error) {
 	integration, _, err := a.Client.ThirdPartyIntegrationsApi.
-		GetThirdPartyIntegration(context.Background(), projectId, iType).
+		GetGroupIntegration(context.Background(), projectId, iType).
 		Execute()
 
 	return integration, err
@@ -163,7 +163,7 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.Clou
 }
 
 func (a *Atlas) DeleteGlobalKey(key admin.ApiKeyUserDetails) error {
-	_, err := a.Client.ProgrammaticAPIKeysApi.DeleteApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
+	_, err := a.Client.ProgrammaticAPIKeysApi.DeleteOrgApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
 
 	return err
 }
@@ -178,7 +178,7 @@ func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, 
 
 func (a *Atlas) GetOrgUsers() ([]admin.OrgUserResponse, error) {
 	users, err := paging.ListAll(context.Background(), func(ctx context.Context, pageNum int) (paging.Response[admin.OrgUserResponse], *http.Response, error) {
-		return a.Client.MongoDBCloudUsersApi.ListOrganizationUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
+		return a.Client.MongoDBCloudUsersApi.ListOrgUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
 	})
 	return users, err
 }

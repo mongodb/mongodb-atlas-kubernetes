@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -54,9 +54,9 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 		{
 			title: "Should return empty when Atlas is also empty",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().ListProjectTeams(ctx, projectID).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI.EXPECT().ListGroupTeams(ctx, projectID).
+					Return(admin.ListGroupTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
@@ -65,9 +65,9 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 		{
 			title: "Should return populated team when team is present on Atlas",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().ListProjectTeams(ctx, projectID).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI.EXPECT().ListGroupTeams(ctx, projectID).
+					Return(admin.ListGroupTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
@@ -96,9 +96,9 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().ListProjectTeams(ctx, projectID).
-					Return(admin.ListProjectTeamsApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().ListProjectTeamsExecute(mock.Anything).
+				mockTeamAPI.EXPECT().ListGroupTeams(ctx, projectID).
+					Return(admin.ListGroupTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().ListGroupTeamsExecute(mock.Anything).
 					Return(nil, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr:   fmt.Errorf("failed to get project team list from Atlas: %w", admin.GenericOpenAPIError{}),
@@ -190,9 +190,9 @@ func TestTeamsAPI_GetTeamByID(t *testing.T) {
 		{
 			title: "Should return team when team is present on Atlas",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().GetTeamById(ctx, testOrgID, testTeamName).
-					Return(admin.GetTeamByIdApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+				mockTeamAPI.EXPECT().GetOrgTeam(ctx, testOrgID, testTeamName).
+					Return(admin.GetOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().GetOrgTeamExecute(mock.Anything).
 					Return(&admin.TeamResponse{Id: &testTeamID1, Name: &testTeamName}, &http.Response{}, nil)
 			},
 			expectedErr:   nil,
@@ -201,9 +201,9 @@ func TestTeamsAPI_GetTeamByID(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().GetTeamById(ctx, testOrgID, testTeamName).
-					Return(admin.GetTeamByIdApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().GetTeamByIdExecute(mock.Anything).
+				mockTeamAPI.EXPECT().GetOrgTeam(ctx, testOrgID, testTeamName).
+					Return(admin.GetOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().GetOrgTeamExecute(mock.Anything).
 					Return(&admin.TeamResponse{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr:   fmt.Errorf("failed to get team by ID from Atlas: %w", admin.GenericOpenAPIError{}),
@@ -236,9 +236,9 @@ func TestTeamsAPI_Assign(t *testing.T) {
 		{
 			title: "Should assign team to project",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().AddAllTeamsToProject(ctx, mock.Anything, mock.Anything).
-					Return(admin.AddAllTeamsToProjectApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().AddAllTeamsToProjectExecute(mock.Anything).
+				mockTeamAPI.EXPECT().AddGroupTeams(ctx, mock.Anything, mock.Anything).
+					Return(admin.AddGroupTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().AddGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
@@ -253,9 +253,9 @@ func TestTeamsAPI_Assign(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().AddAllTeamsToProject(ctx, mock.Anything, mock.Anything).
-					Return(admin.AddAllTeamsToProjectApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().AddAllTeamsToProjectExecute(mock.Anything).
+				mockTeamAPI.EXPECT().AddGroupTeams(ctx, mock.Anything, mock.Anything).
+					Return(admin.AddGroupTeamsApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().AddGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr: admin.GenericOpenAPIError{},
@@ -292,9 +292,9 @@ func TestTeamsAPI_Unassign(t *testing.T) {
 		{
 			title: "Should assign team to project",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RemoveProjectTeam(ctx, mock.Anything, mock.Anything).
-					Return(admin.RemoveProjectTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RemoveGroupTeam(ctx, mock.Anything, mock.Anything).
+					Return(admin.RemoveGroupTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RemoveGroupTeamExecute(mock.Anything).
 					Return(&http.Response{}, nil)
 			},
 			expectedErr: nil,
@@ -302,9 +302,9 @@ func TestTeamsAPI_Unassign(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RemoveProjectTeam(ctx, mock.Anything, mock.Anything).
-					Return(admin.RemoveProjectTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RemoveProjectTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RemoveGroupTeam(ctx, mock.Anything, mock.Anything).
+					Return(admin.RemoveGroupTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RemoveGroupTeamExecute(mock.Anything).
 					Return(&http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr: admin.GenericOpenAPIError{},
@@ -336,9 +336,9 @@ func TestTeamsAPI_Create(t *testing.T) {
 		{
 			title: "Should create team",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().CreateTeam(ctx, mock.Anything, mock.Anything).
-					Return(admin.CreateTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().CreateTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().CreateOrgTeam(ctx, mock.Anything, mock.Anything).
+					Return(admin.CreateOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().CreateOrgTeamExecute(mock.Anything).
 					Return(&admin.Team{
 						Id:        &testTeamID1,
 						Name:      testTeamName,
@@ -354,9 +354,9 @@ func TestTeamsAPI_Create(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().CreateTeam(ctx, mock.Anything, mock.Anything).
-					Return(admin.CreateTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().CreateTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().CreateOrgTeam(ctx, mock.Anything, mock.Anything).
+					Return(admin.CreateOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().CreateOrgTeamExecute(mock.Anything).
 					Return(&admin.Team{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr:  fmt.Errorf("failed to create team on Atlas: %w", admin.GenericOpenAPIError{}),
@@ -455,9 +455,9 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 		{
 			title: "Should successfully update team roles",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().UpdateTeamRoles(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.UpdateTeamRolesApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().UpdateTeamRolesExecute(mock.Anything).
+				mockTeamAPI.EXPECT().UpdateGroupTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.UpdateGroupTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().UpdateGroupTeamExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
@@ -473,9 +473,9 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().UpdateTeamRoles(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.UpdateTeamRolesApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().UpdateTeamRolesExecute(mock.Anything).
+				mockTeamAPI.EXPECT().UpdateGroupTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.UpdateGroupTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().UpdateGroupTeamExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			newRoles:    []akov2.TeamRole{},
@@ -507,9 +507,9 @@ func TestTeamsAPI_AddUsers(t *testing.T) {
 		{
 			title: "Should successfully add user to team",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().AddTeamUser(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.AddTeamUserApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().AddTeamUserExecute(mock.Anything).
+				mockTeamAPI.EXPECT().AddTeamUsers(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.AddTeamUsersApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().AddTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedApiAppUser{
 						Results: &[]admin.CloudAppUser{
 							{
@@ -524,9 +524,9 @@ func TestTeamsAPI_AddUsers(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().AddTeamUser(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.AddTeamUserApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().AddTeamUserExecute(mock.Anything).
+				mockTeamAPI.EXPECT().AddTeamUsers(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.AddTeamUsersApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().AddTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedApiAppUser{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr: admin.GenericOpenAPIError{},
@@ -562,9 +562,9 @@ func TestTeamsAPI_RemoveUser(t *testing.T) {
 		{
 			title: "Should successfully remove user from team",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RemoveTeamUser(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.RemoveTeamUserApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RemoveTeamUserExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RemoveUserFromTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.RemoveUserFromTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RemoveUserFromTeamExecute(mock.Anything).
 					Return(&http.Response{}, nil)
 			},
 			expectedErr: nil,
@@ -572,9 +572,9 @@ func TestTeamsAPI_RemoveUser(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RemoveTeamUser(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.RemoveTeamUserApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RemoveTeamUserExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RemoveUserFromTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.RemoveUserFromTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RemoveUserFromTeamExecute(mock.Anything).
 					Return(&http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr: admin.GenericOpenAPIError{},
@@ -606,9 +606,9 @@ func TestTeamsAPI_Rename(t *testing.T) {
 		{
 			title: "Should successfully rename team",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RenameTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.RenameTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RenameTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RenameOrgTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.RenameOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RenameOrgTeamExecute(mock.Anything).
 					Return(&admin.TeamResponse{
 						Id:   &testTeamID1,
 						Name: &testTeamName,
@@ -623,9 +623,9 @@ func TestTeamsAPI_Rename(t *testing.T) {
 		{
 			title: "Should return error when request fails",
 			mock: func(mockTeamAPI *mockadmin.TeamsApi) {
-				mockTeamAPI.EXPECT().RenameTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
-					Return(admin.RenameTeamApiRequest{ApiService: mockTeamAPI})
-				mockTeamAPI.EXPECT().RenameTeamExecute(mock.Anything).
+				mockTeamAPI.EXPECT().RenameOrgTeam(ctx, mock.Anything, mock.Anything, mock.Anything).
+					Return(admin.RenameOrgTeamApiRequest{ApiService: mockTeamAPI})
+				mockTeamAPI.EXPECT().RenameOrgTeamExecute(mock.Anything).
 					Return(&admin.TeamResponse{}, &http.Response{}, admin.GenericOpenAPIError{})
 			},
 			expectedErr:  fmt.Errorf("failed to rename team on Atlas: %w", admin.GenericOpenAPIError{}),

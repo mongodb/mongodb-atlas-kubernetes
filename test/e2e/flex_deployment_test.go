@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,6 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -157,8 +158,7 @@ var _ = Describe("Flex", Label("flex"), func() {
 			Eventually(func(g Gomega) {
 				_, resp, err := apiClient.FlexClustersApi.GetFlexCluster(testData.Context, testData.Project.ID(), name).Execute()
 				g.Expect(err).ToNot(BeNil())
-				g.Expect(resp).ToNot(BeNil())
-				g.Expect(resp.StatusCode).Should(Equal(404))
+				g.Expect(httputil.StatusCode(resp)).Should(Equal(404))
 			}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 		})
 	})

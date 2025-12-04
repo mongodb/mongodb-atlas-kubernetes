@@ -31,6 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -120,7 +121,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 
 				Eventually(func(g Gomega) {
 					df, _, err := atlasClient.DataFederationApi.
-						GetFederatedDatabase(context.Background(), createdProject.ID(), createdDataFederation.Spec.Name).
+						GetDataFederation(context.Background(), createdProject.ID(), createdDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ShouldNot(HaveOccurred())
 					g.Expect(df).NotTo(BeNil())
@@ -184,7 +185,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 
 func deleteAtlasDataFederation(projectID, dataFederationName string) error {
 	_, err := atlasClient.DataFederationApi.
-		DeleteFederatedDatabase(context.Background(), projectID, dataFederationName).
+		DeleteDataFederation(context.Background(), projectID, dataFederationName).
 		Execute()
 
 	return err
@@ -193,10 +194,10 @@ func deleteAtlasDataFederation(projectID, dataFederationName string) error {
 func checkAtlasDataFederationRemoved(projectID, dataFederation string) func() bool {
 	return func() bool {
 		_, r, err := atlasClient.DataFederationApi.
-			GetFederatedDatabase(context.Background(), projectID, dataFederation).
+			GetDataFederation(context.Background(), projectID, dataFederation).
 			Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}

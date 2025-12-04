@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -29,7 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-func jsonMustEncode(jsn []map[string]interface{}) *apiextensionsv1.JSON {
+func jsonMustEncode(jsn any) *apiextensionsv1.JSON {
 	val, err := json.Marshal(jsn)
 	if err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 							},
 						}),
 						Mappings: &akov2.Mappings{
-							Dynamic: pointer.MakePtr(true),
+							Dynamic: jsonMustEncode(true),
 							Fields: jsonMustEncode([]map[string]interface{}{
 								{
 									"test": "value",
@@ -134,7 +134,7 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 							},
 						}),
 						Mappings: &akov2.Mappings{
-							Dynamic: pointer.MakePtr(true),
+							Dynamic: jsonMustEncode(true),
 							Fields: jsonMustEncode([]map[string]interface{}{
 								{"test": "value"},
 							}),
@@ -263,7 +263,7 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 							},
 						}),
 						Mappings: &akov2.Mappings{
-							Dynamic: pointer.MakePtr(true),
+							Dynamic: jsonMustEncode(true),
 							Fields:  jsonMustEncodeMap(map[string]interface{}{"field": "value"}),
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
@@ -432,7 +432,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 							},
 						}),
 						Mappings: &akov2.Mappings{
-							Dynamic: pointer.MakePtr(true),
+							Dynamic: jsonMustEncode(true),
 							Fields:  jsonMustEncodeMap(map[string]interface{}{"field": "value"}),
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
@@ -487,7 +487,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 						},
 					}),
 					Mappings: &admin.SearchMappings{
-						Dynamic: pointer.MakePtr(true),
+						Dynamic: true,
 						Fields:  &map[string]interface{}{"field": "value"},
 					},
 					SearchAnalyzer: pointer.MakePtr("search-analyzer"),

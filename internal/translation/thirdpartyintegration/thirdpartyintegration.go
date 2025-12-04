@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
@@ -38,7 +38,7 @@ type ThirdPartyIntegrationService interface {
 }
 
 func NewThirdPartyIntegrationServiceFromClientSet(clientSet *atlas.ClientSet) ThirdPartyIntegrationService {
-	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312006.ThirdPartyIntegrationsApi)
+	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312009.ThirdPartyIntegrationsApi)
 }
 
 func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsApi) ThirdPartyIntegrationService {
@@ -50,7 +50,7 @@ type thirdPartyIntegration struct {
 }
 
 func (tpi *thirdPartyIntegration) List(ctx context.Context, projectID string) ([]*ThirdPartyIntegration, error) {
-	list, _, err := tpi.integrationsAPI.ListThirdPartyIntegrations(ctx, projectID).Execute()
+	list, _, err := tpi.integrationsAPI.ListGroupIntegrations(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list integrations for project %v: %w", projectID, err)
 	}
@@ -73,7 +73,7 @@ func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert integration to Atlas: %w", err)
 	}
-	integrationPages, _, err := tpi.integrationsAPI.CreateThirdPartyIntegration(
+	integrationPages, _, err := tpi.integrationsAPI.CreateGroupIntegration(
 		ctx, atlasIntegration.GetType(), projectID, atlasIntegration).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create integration from config: %w", err)
@@ -86,7 +86,7 @@ func (tpi *thirdPartyIntegration) Create(ctx context.Context, projectID string, 
 }
 
 func (tpi *thirdPartyIntegration) Get(ctx context.Context, projectID, integrationType string) (*ThirdPartyIntegration, error) {
-	atlasIntegration, _, err := tpi.integrationsAPI.GetThirdPartyIntegration(ctx, projectID, integrationType).Execute()
+	atlasIntegration, _, err := tpi.integrationsAPI.GetGroupIntegration(ctx, projectID, integrationType).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, "INTEGRATION_NOT_CONFIGURED") {
 			return nil, ErrNotFound
@@ -105,7 +105,7 @@ func (tpi *thirdPartyIntegration) Update(ctx context.Context, projectID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert integration to Atlas: %w", err)
 	}
-	integrationPages, _, err := tpi.integrationsAPI.UpdateThirdPartyIntegration(
+	integrationPages, _, err := tpi.integrationsAPI.UpdateGroupIntegration(
 		ctx, atlasIntegration.GetType(), projectID, atlasIntegration).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to update integration with config %v: %w", integration, err)
@@ -118,7 +118,7 @@ func (tpi *thirdPartyIntegration) Update(ctx context.Context, projectID string, 
 }
 
 func (tpi *thirdPartyIntegration) Delete(ctx context.Context, projectID, integrationType string) error {
-	_, err := tpi.integrationsAPI.DeleteThirdPartyIntegration(ctx, integrationType, projectID).Execute()
+	_, err := tpi.integrationsAPI.DeleteGroupIntegration(ctx, integrationType, projectID).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, "INTEGRATION_NOT_CONFIGURED") {
 			return ErrNotFound

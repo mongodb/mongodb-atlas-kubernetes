@@ -21,7 +21,7 @@ import (
 	gofuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 )

@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
 
 var (
@@ -44,16 +46,17 @@ func NewSearchIndexes(api admin.AtlasSearchApi) *SearchIndexes {
 }
 
 func (si *SearchIndexes) GetIndex(ctx context.Context, projectID, clusterName, indexName, indexID string) (*SearchIndex, error) {
-	resp, httpResp, err := si.searchAPI.GetAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	resp, httpResp, err := si.searchAPI.GetClusterSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	statusCode := httputil.StatusCode(httpResp)
 	if err != nil {
-		if httpResp.StatusCode == http.StatusNotFound {
+		if statusCode == http.StatusNotFound {
 			return nil, errors.Join(err, ErrNotFound)
 		}
 		return nil, err
 	}
 	if resp == nil {
 		return nil, fmt.Errorf("got empty index %s(%s), status code %d: %w",
-			indexName, indexID, httpResp.StatusCode, err)
+			indexName, indexID, statusCode, err)
 	}
 	stateInAtlas, err := fromAtlas(*resp)
 	if err != nil {
@@ -68,9 +71,11 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 	if err != nil {
 		return nil, err
 	}
-	resp, httpResp, err := si.searchAPI.CreateAtlasSearchIndex(ctx, projectID, clusterName, atlasIndex).Execute()
-	if err != nil || httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to create index, status code %d: %w", httpResp.StatusCode, err)
+	resp, httpResp, err := si.searchAPI.CreateClusterSearchIndex(ctx, projectID, clusterName, atlasIndex).Execute()
+	statusCode := httputil.StatusCode(httpResp)
+	respNotOK := (statusCode != http.StatusCreated && statusCode != http.StatusOK)
+	if err != nil || respNotOK {
+		return nil, fmt.Errorf("failed to create index, status code %d: %w", statusCode, err)
 	}
 	if resp == nil {
 		return nil, errors.New("empty response when creating index")
@@ -83,9 +88,10 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 }
 
 func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
-	resp, err := si.searchAPI.DeleteAtlasSearchIndex(ctx, projectID, clusterName, indexID).Execute()
-	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNotFound || err != nil {
-		return fmt.Errorf("error deleting index, status code %d: %w", resp.StatusCode, err)
+	resp, err := si.searchAPI.DeleteClusterSearchIndex(ctx, projectID, clusterName, indexID).Execute()
+	statusCode := httputil.StatusCode(resp)
+	if statusCode != http.StatusAccepted && statusCode != http.StatusNotFound || err != nil {
+		return fmt.Errorf("error deleting index, status code %d: %w", statusCode, err)
 	}
 	return nil
 }
@@ -95,9 +101,11 @@ func (si *SearchIndexes) UpdateIndex(ctx context.Context, projectID, clusterName
 	if err != nil {
 		return nil, fmt.Errorf("error converting index: %w", err)
 	}
-	resp, httpResp, err := si.searchAPI.UpdateAtlasSearchIndex(ctx, projectID, clusterName, index.GetID(), atlasIndex).Execute()
-	if httpResp.StatusCode != http.StatusCreated && httpResp.StatusCode != http.StatusOK || err != nil {
-		return nil, fmt.Errorf("error updating index, status code %d: %w", httpResp.StatusCode, err)
+	resp, httpResp, err := si.searchAPI.UpdateClusterSearchIndex(ctx, projectID, clusterName, index.GetID(), atlasIndex).Execute()
+	statusCode := httputil.StatusCode(httpResp)
+	respNotOK := statusCode != http.StatusCreated && statusCode != http.StatusOK
+	if respNotOK || err != nil {
+		return nil, fmt.Errorf("error updating index, status code %d: %w", statusCode, err)
 	}
 	if resp == nil {
 		return nil, fmt.Errorf("update returned an empty index: %w", err)

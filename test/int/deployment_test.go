@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
@@ -233,7 +234,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					defer cancelF()
 					_, resp, _ := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
 						deploymentName).Execute()
-					g.Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+					g.Expect(httputil.StatusCode(resp)).To(Equal(http.StatusNotFound))
 				}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
 			})
 		})
@@ -1650,7 +1651,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 	return func() bool {
 		_, r, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}
@@ -1665,7 +1666,7 @@ func checkAtlasFlexInstanceRemoved(projectID string, deploymentName string) func
 			GetFlexCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}

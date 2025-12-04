@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -384,7 +384,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 		By("Getting a project ID by name from Atlas", func() {
 			Eventually(func(g Gomega) error {
 				projectData, _, err := atlasClient.Client.ProjectsApi.
-					GetProjectByName(userData.Context, userData.Project.Spec.Name).
+					GetGroupByName(userData.Context, userData.Project.Spec.Name).
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(projectData).NotTo(BeNil())
@@ -402,7 +402,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 		By("Fetching project CPAs", func() {
 			var err error
 			atlasRoles, _, err = atlasClient.Client.CloudProviderAccessApi.
-				ListCloudProviderAccessRoles(userData.Context, projectID).
+				ListCloudProviderAccess(userData.Context, projectID).
 				Execute()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(atlasRoles).NotTo(BeNil())

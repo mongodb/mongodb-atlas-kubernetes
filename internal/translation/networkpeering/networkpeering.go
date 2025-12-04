@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -42,7 +42,7 @@ type networkPeeringService struct {
 }
 
 func NewNetworkPeeringServiceFromClientSet(clientSet *atlas.ClientSet) NetworkPeeringService {
-	return NewNetworkPeeringService(clientSet.SdkClient20250312006.NetworkPeeringApi)
+	return NewNetworkPeeringService(clientSet.SdkClient20250312009.NetworkPeeringApi)
 }
 
 func NewNetworkPeeringService(peeringAPI admin.NetworkPeeringApi) NetworkPeeringService {
@@ -57,7 +57,7 @@ func (np *networkPeeringService) Create(ctx context.Context, projectID, containe
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert peer to Atlas: %w", err)
 	}
-	newAtlasConn, _, err := np.peeringAPI.CreatePeeringConnection(ctx, projectID, atlasConnRequest).Execute()
+	newAtlasConn, _, err := np.peeringAPI.CreateGroupPeer(ctx, projectID, atlasConnRequest).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network peer from config %v: %w", cfg, err)
 	}
@@ -69,7 +69,7 @@ func (np *networkPeeringService) Create(ctx context.Context, projectID, containe
 }
 
 func (np *networkPeeringService) Get(ctx context.Context, projectID, peerID string) (*NetworkPeer, error) {
-	atlasConn, _, err := np.peeringAPI.GetPeeringConnection(ctx, projectID, peerID).Execute()
+	atlasConn, _, err := np.peeringAPI.GetGroupPeer(ctx, projectID, peerID).Execute()
 	if err != nil {
 		if admin.IsErrorCode(err, "PEER_NOT_FOUND") {
 			return nil, ErrNotFound
@@ -91,7 +91,7 @@ func (np *networkPeeringService) Update(ctx context.Context, projectID, peerID, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert peer to Atlas: %w", err)
 	}
-	newAtlasConn, _, err := np.peeringAPI.UpdatePeeringConnection(ctx, projectID, peerID, atlasConnRequest).Execute()
+	newAtlasConn, _, err := np.peeringAPI.UpdateGroupPeer(ctx, projectID, peerID, atlasConnRequest).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to update network peer from config %v: %w", cfg, err)
 	}
@@ -103,7 +103,7 @@ func (np *networkPeeringService) Update(ctx context.Context, projectID, peerID, 
 }
 
 func (np *networkPeeringService) Delete(ctx context.Context, projectID, peerID string) error {
-	_, _, err := np.peeringAPI.DeletePeeringConnection(ctx, projectID, peerID).Execute()
+	_, _, err := np.peeringAPI.DeleteGroupPeer(ctx, projectID, peerID).Execute()
 	if admin.IsErrorCode(err, "PEER_ALREADY_REQUESTED_DELETION") || admin.IsErrorCode(err, "PEER_NOT_FOUND") {
 		return errors.Join(err, ErrNotFound)
 	}

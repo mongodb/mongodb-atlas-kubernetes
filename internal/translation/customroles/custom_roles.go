@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
 
 type CustomRoleService interface {
@@ -39,9 +41,9 @@ func NewCustomRoles(api admin.CustomDatabaseRolesApi) *CustomRoles {
 }
 
 func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string) (CustomRole, error) {
-	customRole, httpResp, err := s.roleAPI.GetCustomDatabaseRole(ctx, projectID, roleName).Execute()
+	customRole, httpResp, err := s.roleAPI.GetCustomDbRole(ctx, projectID, roleName).Execute()
 	// handle RoleNotFound error
-	if httpResp != nil && httpResp.StatusCode == http.StatusNotFound {
+	if httputil.StatusCode(httpResp) == http.StatusNotFound {
 		return CustomRole{}, nil
 	}
 	if err != nil {
@@ -53,7 +55,7 @@ func (s *CustomRoles) Get(ctx context.Context, projectID string, roleName string
 
 func (s *CustomRoles) List(ctx context.Context, projectID string) ([]CustomRole, error) {
 	// custom database roles does not offer paginated resources.
-	atlasRoles, _, err := s.roleAPI.ListCustomDatabaseRoles(ctx, projectID).Execute()
+	atlasRoles, _, err := s.roleAPI.ListCustomDbRoles(ctx, projectID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list custom roles from Atlas: %w", err)
 	}
@@ -68,16 +70,16 @@ func (s *CustomRoles) List(ctx context.Context, projectID string) ([]CustomRole,
 }
 
 func (s *CustomRoles) Create(ctx context.Context, projectID string, role CustomRole) error {
-	_, _, err := s.roleAPI.CreateCustomDatabaseRole(ctx, projectID, toAtlas(&role)).Execute()
+	_, _, err := s.roleAPI.CreateCustomDbRole(ctx, projectID, toAtlas(&role)).Execute()
 	return err
 }
 
 func (s *CustomRoles) Update(ctx context.Context, projectID string, roleName string, role CustomRole) error {
-	_, _, err := s.roleAPI.UpdateCustomDatabaseRole(ctx, projectID, roleName, toAtlasUpdate(&role)).Execute()
+	_, _, err := s.roleAPI.UpdateCustomDbRole(ctx, projectID, roleName, toAtlasUpdate(&role)).Execute()
 	return err
 }
 
 func (s *CustomRoles) Delete(ctx context.Context, projectID string, roleName string) error {
-	_, err := s.roleAPI.DeleteCustomDatabaseRole(ctx, projectID, roleName).Execute()
+	_, err := s.roleAPI.DeleteCustomDbRole(ctx, projectID, roleName).Execute()
 	return err
 }

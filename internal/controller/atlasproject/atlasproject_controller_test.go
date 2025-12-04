@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -67,17 +67,17 @@ func TestRenconcile(t *testing.T) {
 				notFoundErr := &admin.GenericOpenAPIError{}
 				notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
 				projectsAPI := mockadmin.NewProjectsApi(t)
-				projectsAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
-					Return(admin.GetProjectByNameApiRequest{ApiService: projectsAPI})
-				projectsAPI.EXPECT().GetProjectByNameExecute(mock.AnythingOfType("admin.GetProjectByNameApiRequest")).
+				projectsAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
+					Return(admin.GetGroupByNameApiRequest{ApiService: projectsAPI})
+				projectsAPI.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
 					Return(
 						nil,
 						&http.Response{},
 						notFoundErr,
 					)
-				projectsAPI.EXPECT().CreateProject(mock.Anything, mock.AnythingOfType("*admin.Group")).
-					Return(admin.CreateProjectApiRequest{ApiService: projectsAPI})
-				projectsAPI.EXPECT().CreateProjectExecute(mock.AnythingOfType("admin.CreateProjectApiRequest")).
+				projectsAPI.EXPECT().CreateGroup(mock.Anything, mock.AnythingOfType("*admin.Group")).
+					Return(admin.CreateGroupApiRequest{ApiService: projectsAPI})
+				projectsAPI.EXPECT().CreateGroupExecute(mock.AnythingOfType("admin.CreateGroupApiRequest")).
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",
@@ -164,7 +164,7 @@ func TestRenconcile(t *testing.T) {
 					},
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
-							SdkClient20250312006: tt.atlasSDKMocker(),
+							SdkClient20250312009: tt.atlasSDKMocker(),
 						}, nil
 					},
 				},

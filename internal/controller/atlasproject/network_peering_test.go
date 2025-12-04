@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -76,34 +76,34 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			peeringAPI := mockadmin.NewNetworkPeeringApi(t)
-			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Once()
-			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
-				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupPeersWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListGroupPeersApiRequest{ApiService: peeringAPI}).Once()
+			peeringAPI.EXPECT().ListGroupPeersExecute(
+				mock.Anything).Return(
 				synthesizeAtlasNetworkPeerings(tc.atlasNetworkPeers), nil, nil,
 			).Once()
-			peeringAPI.EXPECT().ListPeeringConnectionsWithParams(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringConnectionsApiRequest{ApiService: peeringAPI}).Twice()
-			peeringAPI.EXPECT().ListPeeringConnectionsExecute(
-				mock.AnythingOfType("admin.ListPeeringConnectionsApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupPeersWithParams(mock.Anything, mock.Anything).
+				Return(admin.ListGroupPeersApiRequest{ApiService: peeringAPI}).Twice()
+			peeringAPI.EXPECT().ListGroupPeersExecute(
+				mock.Anything).Return(
 				nil, nil, nil,
 			).Twice()
 
 			removals := len(tc.wantRemoved)
 			if removals > 0 {
-				peeringAPI.EXPECT().DeletePeeringConnection(
+				peeringAPI.EXPECT().DeleteGroupPeer(
 					mock.Anything, mock.Anything, mock.Anything,
-				).Return(admin.DeletePeeringConnectionApiRequest{ApiService: peeringAPI}).Times(removals)
-				peeringAPI.EXPECT().DeletePeeringConnectionExecute(
-					mock.AnythingOfType("admin.DeletePeeringConnectionApiRequest")).Return(
+				).Return(admin.DeleteGroupPeerApiRequest{ApiService: peeringAPI}).Times(removals)
+				peeringAPI.EXPECT().DeleteGroupPeerExecute(
+					mock.Anything).Return(
 					nil, nil, nil,
 				).Times(removals)
 			}
 
-			peeringAPI.EXPECT().ListPeeringContainers(mock.Anything, mock.Anything).
-				Return(admin.ListPeeringContainersApiRequest{ApiService: peeringAPI}).Maybe()
-			peeringAPI.EXPECT().ListPeeringContainersExecute(
-				mock.AnythingOfType("admin.ListPeeringContainersApiRequest")).Return(
+			peeringAPI.EXPECT().ListGroupContainerAll(mock.Anything, mock.Anything).
+				Return(admin.ListGroupContainerAllApiRequest{ApiService: peeringAPI}).Maybe()
+			peeringAPI.EXPECT().ListGroupContainerAllExecute(
+				mock.Anything).Return(
 				nil, nil, nil,
 			).Maybe()
 
@@ -111,7 +111,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						NetworkPeeringApi: peeringAPI,
 					},
 				},

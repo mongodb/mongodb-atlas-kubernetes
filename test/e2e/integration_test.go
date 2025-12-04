@@ -258,7 +258,7 @@ var _ = Describe("Project Third-Party Integration", Label("integration-ns"), fun
 		By("Expect removed WEBHOOK integration to still exist in Atlas", func() {
 			atlasClient, err := atlas.AClient()
 			Expect(err).To(Succeed())
-			_, _, err = atlasClient.Client.ThirdPartyIntegrationsApi.GetThirdPartyIntegration(
+			_, _, err = atlasClient.Client.ThirdPartyIntegrationsApi.GetGroupIntegration(
 				ctx, kubeProject.Status.ID, "WEBHOOK",
 			).Execute()
 			Expect(err).To(Succeed())

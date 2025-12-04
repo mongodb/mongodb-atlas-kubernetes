@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -149,7 +149,7 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 	}
 
 	if !equal {
-		atlasBCP, _, err = b.ctx.SdkClientSet.SdkClient20250312006.CloudBackupsApi.UpdateDataProtectionSettings(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
+		atlasBCP, _, err = b.ctx.SdkClientSet.SdkClient20250312009.CloudBackupsApi.UpdateCompliancePolicy(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
 		if err != nil {
 			if admin.IsErrorCode(err, atlas.BackupComplianceNotMet) {
 				return b.terminate(workflow.ProjectBackupCompliancePolicyNotMet, err)
@@ -210,7 +210,7 @@ func (b *backupComplianceController) idle() workflow.DeprecatedResult {
 }
 
 func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.DataProtectionSettings20231001, bool, error) {
-	bcp, _, err := b.ctx.SdkClientSet.SdkClient20250312006.CloudBackupsApi.GetDataProtectionSettings(b.ctx.Context, b.project.ID()).Execute()
+	bcp, _, err := b.ctx.SdkClientSet.SdkClient20250312009.CloudBackupsApi.GetCompliancePolicy(b.ctx.Context, b.project.ID()).Execute()
 	if err != nil {
 		// NOTE: getting backup compliance policies never yields a 404
 		return nil, false, fmt.Errorf("error finding backup compliance policy: %w", err)

@@ -105,9 +105,9 @@ type DatabaseUserSpecV20250312Entry struct {
 	Roles *[]Roles `json:"roles,omitempty"`
 
 	// Scopes List that contains clusters, MongoDB Atlas Data Lakes, and MongoDB Atlas
-	// Streams Instances that this database user can access. If omitted, MongoDB Cloud
+	// Streams Workspaces that this database user can access. If omitted, MongoDB Cloud
 	// grants the database user access to all the clusters, MongoDB Atlas Data Lakes,
-	// and MongoDB Atlas Streams Instances in the project.
+	// and MongoDB Atlas Streams Workspaces in the project.
 	Scopes *[]Scopes `json:"scopes,omitempty"`
 
 	/*

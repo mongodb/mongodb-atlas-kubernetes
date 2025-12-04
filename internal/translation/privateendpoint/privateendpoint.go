@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"golang.org/x/exp/slices"
 )
 
@@ -41,7 +41,7 @@ type PrivateEndpoint struct {
 }
 
 func (pe *PrivateEndpoint) ListPrivateEndpoints(ctx context.Context, projectID, provider string) ([]EndpointService, error) {
-	services, _, err := pe.api.ListPrivateEndpointServices(ctx, projectID, provider).
+	services, _, err := pe.api.ListPrivateEndpointService(ctx, projectID, provider).
 		Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve the list of private endpoints: %w", err)

@@ -392,7 +392,7 @@ func TestTransportWithDiff_Integration(t *testing.T) {
 	resp, err := transport.RoundTrip(req)
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, http.StatusOK, StatusCode(resp))
 
 	body, _ := io.ReadAll(resp.Body)
 	assert.Equal(t, "updated", string(body))

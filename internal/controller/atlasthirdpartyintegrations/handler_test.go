@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,7 +108,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -137,7 +137,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -169,7 +169,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -202,7 +202,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -234,7 +234,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -265,7 +265,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -296,7 +296,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -345,7 +345,7 @@ func TestHandleUpsert(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -439,7 +439,7 @@ func TestHandleDeletion(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -463,7 +463,7 @@ func TestHandleDeletion(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -484,7 +484,7 @@ func TestHandleDeletion(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: mockFindFakeParentProject(t)},
 					}, nil
 				},
 			},
@@ -506,12 +506,12 @@ func TestHandleDeletion(t *testing.T) {
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "fake-project").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "fake-project").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(nil, nil, fmt.Errorf("unexpected project fetch error"))
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: projectAPI},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: projectAPI},
 					}, nil
 				},
 			},

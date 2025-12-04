@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -43,7 +43,7 @@ type ProjectAPI struct {
 }
 
 func (a *ProjectAPI) GetProjectByName(ctx context.Context, name string) (*Project, error) {
-	group, _, err := a.projectAPI.GetProjectByName(ctx, name).Execute()
+	group, _, err := a.projectAPI.GetGroupByName(ctx, name).Execute()
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -52,7 +52,7 @@ func (a *ProjectAPI) GetProjectByName(ctx context.Context, name string) (*Projec
 }
 
 func (a *ProjectAPI) GetProject(ctx context.Context, ID string) (*Project, error) {
-	group, _, err := a.projectAPI.GetProject(ctx, ID).Execute()
+	group, _, err := a.projectAPI.GetGroup(ctx, ID).Execute()
 	if err != nil {
 		return nil, translateError(err)
 	}
@@ -61,7 +61,7 @@ func (a *ProjectAPI) GetProject(ctx context.Context, ID string) (*Project, error
 }
 
 func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error {
-	group, _, err := a.projectAPI.CreateProject(ctx, toAtlas(project)).Execute()
+	group, _, err := a.projectAPI.CreateGroup(ctx, toAtlas(project)).Execute()
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error 
 }
 
 func (a *ProjectAPI) DeleteProject(ctx context.Context, project *Project) error {
-	_, err := a.projectAPI.DeleteProject(ctx, project.ID).Execute()
+	_, err := a.projectAPI.DeleteGroup(ctx, project.ID).Execute()
 	err = translateError(err)
 	if err != nil && !errors.Is(err, translation.ErrNotFound) {
 		return err

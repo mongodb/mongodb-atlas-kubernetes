@@ -80,7 +80,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 			}).WithTimeout(60 * time.Minute).Should(BeTrue())
 
 			Eventually(func(g Gomega) {
-				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetClusterSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(atlasSearchNodes.GetSpecs()[0].InstanceSize).Should(Equal("S20_HIGHCPU_NVME"))
 				g.Expect(atlasSearchNodes.GetSpecs()[0].NodeCount).Should(Equal(2))
@@ -91,7 +91,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				atlasSearchNodes, _, err := atlasClient.Client.AtlasSearchApi.GetClusterSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(atlasSearchNodes.GetSpecs()[0].InstanceSize).Should(Equal("S30_HIGHCPU_NVME"))
 				g.Expect(atlasSearchNodes.GetSpecs()[0].NodeCount).Should(Equal(2))
@@ -116,7 +116,7 @@ var _ = Describe("Search Nodes", Label("atlas-search-nodes"), func() {
 			Expect(testData.K8SClient.Update(testData.Context, testData.InitialDeployments[0])).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				response, httpResponse, _ := atlasClient.Client.AtlasSearchApi.GetAtlasSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
+				response, httpResponse, _ := atlasClient.Client.AtlasSearchApi.GetClusterSearchDeployment(testData.Context, testData.Project.ID(), testData.InitialDeployments[0].Name).Execute()
 				g.Expect(httpResponse).NotTo(BeNil())
 				g.Expect(response).NotTo(BeNil())
 				g.Expect(len(response.GetSpecs())).To(Equal(0))

@@ -20,12 +20,12 @@ import (
 	"sync"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 )
 
 func (c *Cleaner) listProjectsByOrg(ctx context.Context, orgID string) []admin.Group {
 	projectsList, _, err := c.client.OrganizationsApi.
-		ListOrganizationProjects(ctx, orgID).
+		GetOrgGroups(ctx, orgID).
 		Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("Failed to list projects of organization %s: %s", orgID, err))
@@ -43,7 +43,7 @@ func (c *Cleaner) listProjectsByOrg(ctx context.Context, orgID string) []admin.G
 }
 
 func (c *Cleaner) deleteProject(ctx context.Context, p *admin.Group) {
-	_, err := c.client.ProjectsApi.DeleteProject(ctx, p.GetId()).Execute()
+	_, err := c.client.ProjectsApi.DeleteGroup(ctx, p.GetId()).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to request deletion of project %s(%s): %s", p.GetName(), p.GetId(), err))
 

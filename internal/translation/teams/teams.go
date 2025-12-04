@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -65,7 +66,7 @@ func NewTeamsAPIService(teamAPI admin.TeamsApi, userAPI admin.MongoDBCloudUsersA
 
 func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]AssignedTeam, error) {
 	atlasAssignedTeams, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.TeamRole], *http.Response, error) {
-		return tm.teamsAPI.ListProjectTeams(ctx, projectID).PageNum(pageNum).Execute()
+		return tm.teamsAPI.ListGroupTeams(ctx, projectID).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project team list from Atlas: %w", err)
@@ -76,7 +77,7 @@ func (tm *TeamsAPI) ListProjectTeams(ctx context.Context, projectID string) ([]A
 func (tm *TeamsAPI) GetTeamByName(ctx context.Context, orgID, teamName string) (*AssignedTeam, error) {
 	atlasTeam, resp, err := tm.teamsAPI.GetTeamByName(ctx, orgID, teamName).Execute()
 	if err != nil {
-		if resp.StatusCode == http.StatusNotFound {
+		if httputil.StatusCode(resp) == http.StatusNotFound {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get team by name from Atlas: %w", err)
@@ -85,7 +86,7 @@ func (tm *TeamsAPI) GetTeamByName(ctx context.Context, orgID, teamName string) (
 }
 
 func (tm *TeamsAPI) GetTeamByID(ctx context.Context, orgID, teamID string) (*AssignedTeam, error) {
-	atlasTeam, _, err := tm.teamsAPI.GetTeamById(ctx, orgID, teamID).Execute()
+	atlasTeam, _, err := tm.teamsAPI.GetOrgTeam(ctx, orgID, teamID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get team by ID from Atlas: %w", err)
 	}
@@ -94,18 +95,18 @@ func (tm *TeamsAPI) GetTeamByID(ctx context.Context, orgID, teamID string) (*Ass
 
 func (tm *TeamsAPI) Assign(ctx context.Context, at *[]AssignedTeam, projectID string) error {
 	desiredRoles := TeamRolesToAtlas(*at)
-	_, _, err := tm.teamsAPI.AddAllTeamsToProject(ctx, projectID, &desiredRoles).Execute()
+	_, _, err := tm.teamsAPI.AddGroupTeams(ctx, projectID, &desiredRoles).Execute()
 	return err
 }
 
 func (tm *TeamsAPI) Unassign(ctx context.Context, projectID, teamID string) error {
-	_, err := tm.teamsAPI.RemoveProjectTeam(ctx, projectID, teamID).Execute()
+	_, err := tm.teamsAPI.RemoveGroupTeam(ctx, projectID, teamID).Execute()
 	return err
 }
 
 func (tm *TeamsAPI) Create(ctx context.Context, at *Team, orgID string) (*Team, error) {
 	desiredTeam := TeamToAtlas(at)
-	atlasTeam, _, err := tm.teamsAPI.CreateTeam(ctx, orgID, desiredTeam).Execute()
+	atlasTeam, _, err := tm.teamsAPI.CreateOrgTeam(ctx, orgID, desiredTeam).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create team on Atlas: %w", err)
 	}
@@ -118,7 +119,7 @@ func (tm *TeamsAPI) Create(ctx context.Context, at *Team, orgID string) (*Team, 
 
 func (tm *TeamsAPI) RenameTeam(ctx context.Context, at *AssignedTeam, orgID, newName string) (*AssignedTeam, error) {
 	teamUpdate := &admin.TeamUpdate{Name: newName}
-	atlasTeam, _, err := tm.teamsAPI.RenameTeam(ctx, orgID, at.TeamID, teamUpdate).Execute()
+	atlasTeam, _, err := tm.teamsAPI.RenameOrgTeam(ctx, orgID, at.TeamID, teamUpdate).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename team on Atlas: %w", err)
 	}
@@ -134,7 +135,7 @@ func (tm *TeamsAPI) UpdateRoles(ctx context.Context, at *AssignedTeam, projectID
 		roles = append(roles, string(role))
 	}
 
-	_, _, err := tm.teamsAPI.UpdateTeamRoles(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: &roles}).Execute()
+	_, _, err := tm.teamsAPI.UpdateGroupTeam(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: &roles}).Execute()
 	return err
 }
 
@@ -148,11 +149,11 @@ func (tm *TeamsAPI) GetTeamUsers(ctx context.Context, orgID, teamID string) ([]T
 }
 
 func (tm *TeamsAPI) AddUsers(ctx context.Context, usersToAdd *[]TeamUser, orgID, teamID string) error {
-	_, _, err := tm.teamsAPI.AddTeamUser(ctx, orgID, teamID, UsersToAtlas(usersToAdd)).Execute()
+	_, _, err := tm.teamsAPI.AddTeamUsers(ctx, orgID, teamID, UsersToAtlas(usersToAdd)).Execute()
 	return err
 }
 
 func (tm *TeamsAPI) RemoveUser(ctx context.Context, orgID, teamID, userID string) error {
-	_, err := tm.teamsAPI.RemoveTeamUser(ctx, orgID, teamID, userID).Execute()
+	_, err := tm.teamsAPI.RemoveUserFromTeam(ctx, orgID, teamID, userID).Execute()
 	return err
 }

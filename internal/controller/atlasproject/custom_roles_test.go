@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -79,9 +79,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 			name: "No Roles in AKO or Atlas (no op)",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{},
 						&http.Response{},
@@ -96,17 +96,17 @@ func TestEnsureCustomRoles(t *testing.T) {
 			roles: testRole,
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{},
 						&http.Response{},
 						nil,
 					)
-				roleAPI.EXPECT().CreateCustomDatabaseRole(context.Background(), "", mock.AnythingOfType("*admin.UserCustomDBRole")).
-					Return(admin.CreateCustomDatabaseRoleApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().CreateCustomDatabaseRoleExecute(mock.Anything).
+				roleAPI.EXPECT().CreateCustomDbRole(context.Background(), "", mock.AnythingOfType("*admin.UserCustomDBRole")).
+					Return(admin.CreateCustomDbRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().CreateCustomDbRoleExecute(mock.Anything).
 					Return(
 						&admin.UserCustomDBRole{},
 						&http.Response{},
@@ -121,9 +121,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 			roles: testRole,
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{
 							{
@@ -144,9 +144,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				roleAPI.EXPECT().UpdateCustomDatabaseRole(context.Background(), "", "test-role", mock.AnythingOfType("*admin.UpdateCustomDBRole")).
-					Return(admin.UpdateCustomDatabaseRoleApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().UpdateCustomDatabaseRoleExecute(mock.Anything).
+				roleAPI.EXPECT().UpdateCustomDbRole(context.Background(), "", "test-role", mock.AnythingOfType("*admin.UpdateCustomDBRole")).
+					Return(admin.UpdateCustomDbRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().UpdateCustomDbRoleExecute(mock.Anything).
 					Return(
 						&admin.UserCustomDBRole{},
 						&http.Response{},
@@ -183,9 +183,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 			name: "Roles not in AKO but are in Atlas (Delete) if there were previous in AKO. Remove only those that were in AKO",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{
 							{
@@ -220,9 +220,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role-1").
-					Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(mock.Anything).
+				roleAPI.EXPECT().DeleteCustomDbRole(context.Background(), "", "test-role-1").
+					Return(admin.DeleteCustomDbRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().DeleteCustomDbRoleExecute(mock.Anything).
 					Return(
 						&http.Response{},
 						nil,
@@ -296,9 +296,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 			},
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{
 							{
@@ -351,9 +351,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				roleAPI.EXPECT().DeleteCustomDatabaseRole(context.Background(), "", "test-role-2").
-					Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(mock.Anything).
+				roleAPI.EXPECT().DeleteCustomDbRole(context.Background(), "", "test-role-2").
+					Return(admin.DeleteCustomDbRoleApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().DeleteCustomDbRoleExecute(mock.Anything).
 					Return(
 						&http.Response{},
 						nil,
@@ -366,9 +366,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 			name: "Roles not in AKO but are in Atlas (Do not Delete) and NO previous in AKO",
 			roleAPI: func() *mockadmin.CustomDatabaseRolesApi {
 				roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-				roleAPI.EXPECT().ListCustomDatabaseRoles(context.Background(), "").
-					Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI})
-				roleAPI.EXPECT().ListCustomDatabaseRolesExecute(mock.Anything).
+				roleAPI.EXPECT().ListCustomDbRoles(context.Background(), "").
+					Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI})
+				roleAPI.EXPECT().ListCustomDbRolesExecute(mock.Anything).
 					Return(
 						[]admin.UserCustomDBRole{
 							{
@@ -397,7 +397,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						CustomDatabaseRolesApi: tc.roleAPI,
 					},
 				},
@@ -459,20 +459,20 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
 			roleAPI := mockadmin.NewCustomDatabaseRolesApi(t)
-			roleAPI.EXPECT().ListCustomDatabaseRoles(mock.Anything, mock.Anything).
-				Return(admin.ListCustomDatabaseRolesApiRequest{ApiService: roleAPI}).Once()
-			roleAPI.EXPECT().ListCustomDatabaseRolesExecute(
-				mock.AnythingOfType("admin.ListCustomDatabaseRolesApiRequest")).Return(
+			roleAPI.EXPECT().ListCustomDbRoles(mock.Anything, mock.Anything).
+				Return(admin.ListCustomDbRolesApiRequest{ApiService: roleAPI}).Once()
+			roleAPI.EXPECT().ListCustomDbRolesExecute(
+				mock.AnythingOfType("admin.ListCustomDbRolesApiRequest")).Return(
 				synthesizeAtlasCustomRoles(tc.atlasCustomRoles), nil, nil,
 			).Once()
 
 			removals := len(tc.wantRemoved)
 			if removals > 0 {
-				roleAPI.EXPECT().DeleteCustomDatabaseRole(
+				roleAPI.EXPECT().DeleteCustomDbRole(
 					mock.Anything, mock.Anything, mock.Anything,
-				).Return(admin.DeleteCustomDatabaseRoleApiRequest{ApiService: roleAPI}).Times(removals)
-				roleAPI.EXPECT().DeleteCustomDatabaseRoleExecute(
-					mock.AnythingOfType("admin.DeleteCustomDatabaseRoleApiRequest")).Return(
+				).Return(admin.DeleteCustomDbRoleApiRequest{ApiService: roleAPI}).Times(removals)
+				roleAPI.EXPECT().DeleteCustomDbRoleExecute(
+					mock.AnythingOfType("admin.DeleteCustomDbRoleApiRequest")).Return(
 					nil, nil,
 				).Times(removals)
 			}
@@ -481,7 +481,7 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						CustomDatabaseRolesApi: roleAPI,
 					},
 				},

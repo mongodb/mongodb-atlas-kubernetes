@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -151,9 +151,9 @@ func TestReconcile(t *testing.T) {
 				nil,
 			)
 		groupAPI := mockadmin.NewProjectsApi(t)
-		groupAPI.EXPECT().ListProjects(mock.Anything).
-			Return(admin.ListProjectsApiRequest{ApiService: groupAPI})
-		groupAPI.EXPECT().ListProjectsExecute(mock.Anything).
+		groupAPI.EXPECT().ListGroups(mock.Anything).
+			Return(admin.ListGroupsApiRequest{ApiService: groupAPI})
+		groupAPI.EXPECT().ListGroupsExecute(mock.Anything).
 			Return(
 				&admin.PaginatedAtlasGroup{
 					Results: &[]admin.Group{
@@ -170,7 +170,7 @@ func TestReconcile(t *testing.T) {
 		atlasProvider := atlasmock.TestProvider{
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						ProjectsApi:                groupAPI,
 						FederatedAuthenticationApi: fedAuthAPI,
 					},

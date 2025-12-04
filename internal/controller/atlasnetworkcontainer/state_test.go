@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -262,7 +262,7 @@ func TestHandleCustomResource(t *testing.T) {
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{ProjectsApi: pAPI},
+						SdkClient20250312009: &admin.APIClient{ProjectsApi: pAPI},
 					}, nil
 				},
 			},
@@ -308,25 +308,25 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ncAPI := mockadmin.NewNetworkPeeringApi(t)
-					ncAPI.EXPECT().ListPeeringContainerByCloudProvider(mock.Anything, mock.Anything).Return(
-						admin.ListPeeringContainerByCloudProviderApiRequest{ApiService: ncAPI},
+					ncAPI.EXPECT().ListGroupContainers(mock.Anything, mock.Anything).Return(
+						admin.ListGroupContainersApiRequest{ApiService: ncAPI},
 					)
-					ncAPI.EXPECT().ListPeeringContainerByCloudProviderExecute(mock.AnythingOfType("admin.ListPeeringContainerByCloudProviderApiRequest")).Return(
+					ncAPI.EXPECT().ListGroupContainersExecute(mock.Anything).Return(
 						&admin.PaginatedCloudProviderContainer{
 							Results: &[]admin.CloudProviderContainer{},
 						}, nil, nil,
 					)
 					pAPI := mockadmin.NewProjectsApi(t)
-					pAPI.EXPECT().GetProjectByName(mock.Anything, mock.Anything).Return(
-						admin.GetProjectByNameApiRequest{ApiService: pAPI},
+					pAPI.EXPECT().GetGroupByName(mock.Anything, mock.Anything).Return(
+						admin.GetGroupByNameApiRequest{ApiService: pAPI},
 					)
-					pAPI.EXPECT().GetProjectByNameExecute(mock.AnythingOfType("admin.GetProjectByNameApiRequest")).Return(
+					pAPI.EXPECT().GetGroupByNameExecute(mock.Anything).Return(
 						&admin.Group{
 							Id: pointer.MakePtr(testProjectID),
 						}, nil, nil,
 					)
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{
+						SdkClient20250312009: &admin.APIClient{
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},

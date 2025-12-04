@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -71,9 +71,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 			settings: nil,
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
-				projectAPI.EXPECT().GetProjectSettings(context.Background(), "").
-					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().GetProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
+					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{ // These are the default settings on a fresh project
 							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
@@ -98,9 +98,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 			settings: nil,
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
-				projectAPI.EXPECT().GetProjectSettings(context.Background(), "").
-					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().GetProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
+					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{},
 						&http.Response{},
@@ -125,9 +125,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
-				projectAPI.EXPECT().GetProjectSettings(context.Background(), "").
-					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().GetProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
+					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
 							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
@@ -160,9 +160,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
-				projectAPI.EXPECT().GetProjectSettings(context.Background(), "").
-					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().GetProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
+					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
 							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
@@ -175,9 +175,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				projectAPI.EXPECT().UpdateProjectSettings(context.Background(), "", mock.AnythingOfType("*admin.GroupSettings")).
-					Return(admin.UpdateProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().UpdateProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().UpdateGroupSettings(context.Background(), "", mock.AnythingOfType("*admin.GroupSettings")).
+					Return(admin.UpdateGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().UpdateGroupSettingsExecute(mock.Anything).
 					Return(&admin.GroupSettings{}, &http.Response{}, nil)
 
 				return projectAPI
@@ -200,9 +200,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
-				projectAPI.EXPECT().GetProjectSettings(context.Background(), "").
-					Return(admin.GetProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().GetProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
+					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
 							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
@@ -215,9 +215,9 @@ func TestEnsureProjectSettings(t *testing.T) {
 						&http.Response{},
 						nil,
 					)
-				projectAPI.EXPECT().UpdateProjectSettings(context.Background(), "", mock.AnythingOfType("*admin.GroupSettings")).
-					Return(admin.UpdateProjectSettingsApiRequest{ApiService: projectAPI})
-				projectAPI.EXPECT().UpdateProjectSettingsExecute(mock.Anything).
+				projectAPI.EXPECT().UpdateGroupSettings(context.Background(), "", mock.AnythingOfType("*admin.GroupSettings")).
+					Return(admin.UpdateGroupSettingsApiRequest{ApiService: projectAPI})
+				projectAPI.EXPECT().UpdateGroupSettingsExecute(mock.Anything).
 					Return(&admin.GroupSettings{}, &http.Response{}, errors.New("TEST PATCH ERROR"))
 
 				return projectAPI
@@ -232,7 +232,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						ProjectsApi: tc.projectAPI,
 					},
 				},

@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	admin "go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -227,11 +227,11 @@ func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 				dfAPI := mockadmin.NewDataFederationApi(t)
 
 				dfAPI.EXPECT().
-					GetFederatedDatabase(mock.Anything, "test-project-id", "my-df-name").
-					Return(admin.GetFederatedDatabaseApiRequest{ApiService: dfAPI})
+					GetDataFederation(mock.Anything, "test-project-id", "my-df-name").
+					Return(admin.GetDataFederationApiRequest{ApiService: dfAPI})
 
 				dfAPI.EXPECT().
-					GetFederatedDatabaseExecute(mock.AnythingOfType("admin.GetFederatedDatabaseApiRequest")).
+					GetDataFederationExecute(mock.AnythingOfType("admin.GetDataFederationApiRequest")).
 					Return(&admin.DataLakeTenant{
 						Hostnames: &[]string{"h1.example.net", "h2.example.net"},
 					}, nil, nil)
@@ -239,7 +239,7 @@ func TestFederationConnectionTarget_BuildConnData(t *testing.T) {
 				r.AtlasProvider = &atlasmock.TestProvider{
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 						return &atlas.ClientSet{
-							SdkClient20250312006: &admin.APIClient{
+							SdkClient20250312009: &admin.APIClient{
 								DataFederationApi: dfAPI,
 							},
 						}, nil

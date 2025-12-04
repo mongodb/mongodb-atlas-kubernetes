@@ -16,6 +16,7 @@ package atlasdeployment
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -189,10 +190,10 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
+			CreateClusterSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.CreateClusterSearchIndexApiRequest{ApiService: mockSearchAPI})
 		mockSearchAPI.EXPECT().
-			CreateAtlasSearchIndexExecute(admin.CreateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
+			CreateClusterSearchIndexExecute(admin.CreateClusterSearchIndexApiRequest{ApiService: mockSearchAPI}).
 			Return(nil, &http.Response{StatusCode: http.StatusOK}, nil)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
@@ -433,7 +434,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312006: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -450,7 +451,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312006: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312009: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -517,7 +518,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Search: &akov2.Search{
 					Synonyms: nil,
 					Mappings: &akov2.Mappings{
-						Dynamic: pointer.MakePtr(true),
+						Dynamic: jsonMustEncode(true),
 					},
 				},
 			},
@@ -578,7 +579,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Search: &akov2.Search{
 					Synonyms: nil,
 					Mappings: &akov2.Mappings{
-						Dynamic: pointer.MakePtr(true),
+						Dynamic: jsonMustEncode(true),
 					},
 				},
 			},
@@ -594,10 +595,10 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 	t.Run("update: must terminate if API call returned an empty index", func(t *testing.T) {
 		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
 		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-			Return(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI})
+			UpdateClusterSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(admin.UpdateClusterSearchIndexApiRequest{ApiService: mockSearchAPI})
 		mockSearchAPI.EXPECT().
-			UpdateAtlasSearchIndexExecute(admin.UpdateAtlasSearchIndexApiRequest{ApiService: mockSearchAPI}).
+			UpdateClusterSearchIndexExecute(admin.UpdateClusterSearchIndexApiRequest{ApiService: mockSearchAPI}).
 			Return(
 				nil,
 				&http.Response{StatusCode: http.StatusCreated}, nil,
@@ -644,7 +645,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Search: &akov2.Search{
 					Synonyms: nil,
 					Mappings: &akov2.Mappings{
-						Dynamic: pointer.MakePtr(true),
+						Dynamic: jsonMustEncode(true),
 					},
 				},
 			},
@@ -701,7 +702,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Search: &akov2.Search{
 					Synonyms: nil,
 					Mappings: &akov2.Mappings{
-						Dynamic: pointer.MakePtr(false),
+						Dynamic: jsonMustEncode(true),
 						Fields:  &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
 					},
 				},
@@ -765,4 +766,13 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			})
 		}
 	})
+}
+
+//nolint:unparam
+func jsonMustEncode(jsn any) *apiextensions.JSON {
+	val, err := json.Marshal(jsn)
+	if err != nil {
+		panic(err)
+	}
+	return &apiextensions.JSON{Raw: val}
 }

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -147,8 +147,8 @@ func readNotificationSecret(ctx context.Context, kubeClient client.Client, res c
 func syncAlertConfigurations(service *workflow.Context, groupID string, alertSpec []akov2.AlertConfiguration) workflow.DeprecatedResult {
 	logger := service.Log
 	existedAlertConfigs, err := paging.ListAll(service.Context, func(ctx context.Context, pageNum int) (paging.Response[admin.GroupAlertsConfig], *http.Response, error) {
-		return service.SdkClientSet.SdkClient20250312006.AlertConfigurationsApi.
-			ListAlertConfigurations(ctx, groupID).
+		return service.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
+			ListAlertConfigs(ctx, groupID).
 			PageNum(pageNum).
 			Execute()
 	})
@@ -189,8 +189,8 @@ func checkAlertConfigurationStatuses(statuses []status.AlertConfiguration) workf
 func deleteAlertConfigs(workflowCtx *workflow.Context, groupID string, alertConfigIDs []string) error {
 	logger := workflowCtx.Log
 	for _, alertConfigID := range alertConfigIDs {
-		_, err := workflowCtx.SdkClientSet.SdkClient20250312006.AlertConfigurationsApi.
-			DeleteAlertConfiguration(workflowCtx.Context, groupID, alertConfigID).
+		_, err := workflowCtx.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
+			DeleteAlertConfig(workflowCtx.Context, groupID, alertConfigID).
 			Execute()
 		if err != nil {
 			logger.Errorf("failed to delete alert configuration: %v", err)
@@ -218,8 +218,8 @@ func createAlertConfigs(workflowCtx *workflow.Context, groupID string, alertSpec
 			continue
 		}
 
-		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20250312006.AlertConfigurationsApi.
-			CreateAlertConfiguration(workflowCtx.Context, groupID, atlasAlert).
+		alertConfiguration, _, err := workflowCtx.SdkClientSet.SdkClient20250312009.AlertConfigurationsApi.
+			CreateAlertConfig(workflowCtx.Context, groupID, atlasAlert).
 			Execute()
 		if err != nil {
 			logger.Errorf("failed to create alert configuration: %v", err)

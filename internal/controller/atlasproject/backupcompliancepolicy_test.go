@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -88,9 +88,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						nil,
 						&http.Response{},
@@ -109,13 +109,13 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     testBCP,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
-				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().UpdateCompliancePolicy(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{State: pointer.MakePtr("ACTIVE")}, &http.Response{}, nil)
 				return backupAPI
 			}(),
@@ -129,13 +129,13 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     testBCP,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
-				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().UpdateCompliancePolicy(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, errors.New("create test error"))
 				return backupAPI
 			}(),
@@ -150,9 +150,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     testBCP,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{
 							AuthorizedEmail:         "test@example.com",
@@ -194,9 +194,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{
 							AuthorizedEmail:         "test@example.com",
@@ -238,9 +238,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{State: pointer.MakePtr("UPDATING")},
 						&http.Response{},
@@ -261,9 +261,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{
 							AuthorizedEmail:         "test@example.com",
@@ -303,9 +303,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     testBCP,
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, nil)
 
 				mockError := &admin.GenericOpenAPIError{}
@@ -313,9 +313,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 				model.SetErrorCode(atlas.BackupComplianceNotMet)
 				mockError.SetModel(model)
 
-				backupAPI.EXPECT().UpdateDataProtectionSettings(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
-					Return(admin.UpdateDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().UpdateDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().UpdateCompliancePolicy(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
+					Return(admin.UpdateCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().UpdateCompliancePolicyExecute(mock.Anything).
 					Return(&admin.DataProtectionSettings20231001{}, &http.Response{}, mockError)
 				return backupAPI
 			}(),
@@ -331,9 +331,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{
 							AuthorizedEmail:         "test@example.com",
@@ -374,9 +374,9 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
 			backupAPI: func() *mockadmin.CloudBackupsApi {
 				backupAPI := mockadmin.NewCloudBackupsApi(t)
-				backupAPI.EXPECT().GetDataProtectionSettings(context.Background(), "").
-					Return(admin.GetDataProtectionSettingsApiRequest{ApiService: backupAPI})
-				backupAPI.EXPECT().GetDataProtectionSettingsExecute(mock.Anything).
+				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
+					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
+				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
 						&admin.DataProtectionSettings20231001{},
 						&http.Response{},
@@ -392,7 +392,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312006: &admin.APIClient{
+					SdkClient20250312009: &admin.APIClient{
 						CloudBackupsApi: tc.backupAPI,
 					},
 				},

@@ -31,6 +31,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
@@ -178,7 +179,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUse
 			GetDatabaseUser(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username).
 			Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}
@@ -193,7 +194,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 			GetCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}
@@ -204,9 +205,9 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ProjectsApi.GetProject(context.Background(), projectID).Execute()
+		_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
 		if err != nil {
-			if r != nil && r.StatusCode == http.StatusNotFound {
+			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
 			}
 		}

@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 )
 
 func (c *Cleaner) listFederatedDatabases(ctx context.Context, projectID string) []admin.DataLakeTenant {
 	federatedDBs, _, err := c.client.DataFederationApi.
-		ListFederatedDatabases(ctx, projectID).
+		ListDataFederation(ctx, projectID).
 		Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to list federated databases for project %s: %s", projectID, err))
@@ -43,7 +43,7 @@ func (c *Cleaner) deleteFederatedDatabases(ctx context.Context, projectID string
 			continue
 		}
 
-		_, err := c.client.DataFederationApi.DeleteFederatedDatabase(ctx, projectID, fedDB.GetName()).Execute()
+		_, err := c.client.DataFederationApi.DeleteDataFederation(ctx, projectID, fedDB.GetName()).Execute()
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to request deletion of Federated Database %s: %s", fedDB.GetName(), err))
 		}

@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -62,9 +62,9 @@ func TestReconcile(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
-					ialAPI.EXPECT().ListProjectIpAccessLists(mock.Anything, "123").
-						Return(admin.ListProjectIpAccessListsApiRequest{ApiService: ialAPI})
-					ialAPI.EXPECT().ListProjectIpAccessListsExecute(mock.AnythingOfType("admin.ListProjectIpAccessListsApiRequest")).
+					ialAPI.EXPECT().ListAccessListEntries(mock.Anything, "123").
+						Return(admin.ListAccessListEntriesApiRequest{ApiService: ialAPI})
+					ialAPI.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 						Return(
 							&admin.PaginatedNetworkAccess{
 								Results: &[]admin.NetworkPermissionEntry{
@@ -76,9 +76,9 @@ func TestReconcile(t *testing.T) {
 							nil,
 							nil,
 						)
-					ialAPI.EXPECT().GetProjectIpAccessListStatus(mock.Anything, "123", "192.168.0.0/24").
-						Return(admin.GetProjectIpAccessListStatusApiRequest{ApiService: ialAPI})
-					ialAPI.EXPECT().GetProjectIpAccessListStatusExecute(mock.AnythingOfType("admin.GetProjectIpAccessListStatusApiRequest")).
+					ialAPI.EXPECT().GetAccessListStatus(mock.Anything, "123", "192.168.0.0/24").
+						Return(admin.GetAccessListStatusApiRequest{ApiService: ialAPI})
+					ialAPI.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
 						Return(
 							&admin.NetworkPermissionEntryStatus{STATUS: "ACTIVE"},
 							nil,
@@ -86,13 +86,13 @@ func TestReconcile(t *testing.T) {
 						)
 
 					projectAPI := mockadmin.NewProjectsApi(t)
-					projectAPI.EXPECT().GetProjectByName(mock.Anything, "my-project").
-						Return(admin.GetProjectByNameApiRequest{ApiService: projectAPI})
-					projectAPI.EXPECT().GetProjectByNameExecute(mock.Anything).
+					projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
+						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
+					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312006: &admin.APIClient{
+						SdkClient20250312009: &admin.APIClient{
 							ProjectIPAccessListApi: ialAPI,
 							ProjectsApi:            projectAPI,
 						},

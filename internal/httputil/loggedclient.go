@@ -64,7 +64,8 @@ func (l loggedRoundTripper) logResponse(req *http.Request, res *http.Response, e
 	if err != nil {
 		l.log.Debugf("HTTP Request (%s) %s [time (ms): %d, error=%q]", req.Method, req.URL, duration, err.Error())
 	} else {
-		l.log.Debugf("HTTP Request (%s) %s [time (ms): %d, status: %d]", req.Method, req.URL, duration, res.StatusCode)
+		statusCode := StatusCode(res)
+		l.log.Debugf("HTTP Request (%s) %s [time (ms): %d, status: %d]", req.Method, req.URL, duration, statusCode)
 	}
 }
 

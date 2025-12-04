@@ -17,7 +17,7 @@ package cluster
 import (
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312009/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"

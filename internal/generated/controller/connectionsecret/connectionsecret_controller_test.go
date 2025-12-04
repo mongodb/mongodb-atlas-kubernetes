@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
-	"go.mongodb.org/atlas-sdk/v20250312006/mockadmin"
+	admin "go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -802,18 +802,18 @@ func createDummyEnv(t *testing.T, objs []client.Object) *ConnectionSecretReconci
 			projectAPI := mockadmin.NewProjectsApi(t)
 
 			projectAPI.EXPECT().
-				GetProject(mock.Anything, "test-project-id").
-				Return(admin.GetProjectApiRequest{ApiService: projectAPI})
+				GetGroup(mock.Anything, "test-project-id").
+				Return(admin.GetGroupApiRequest{ApiService: projectAPI})
 
 			projectAPI.EXPECT().
-				GetProjectExecute(mock.AnythingOfType("admin.GetProjectApiRequest")).
+				GetGroupExecute(mock.AnythingOfType("admin.GetGroupApiRequest")).
 				Return(&admin.Group{
 					Id:   pointer.MakePtr("test-project-id"),
 					Name: "My Project Name",
 				}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312006: &admin.APIClient{
+				SdkClient20250312009: &admin.APIClient{
 					ProjectsApi: projectAPI,
 				},
 			}, nil

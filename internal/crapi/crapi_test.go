@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312009/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1030,11 +1030,10 @@ func TestToAPI(t *testing.T) {
 									},
 									AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.MakePtr(true),
-											ScaleDownEnabled:  pointer.MakePtr(true),
-											MaxInstanceSize:   pointer.MakePtr("M20"),
-											MinInstanceSize:   pointer.MakePtr("M10"),
-											PredictiveEnabled: pointer.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
+											MaxInstanceSize:  pointer.MakePtr("M20"),
+											MinInstanceSize:  pointer.MakePtr("M10"),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
 											Enabled: pointer.MakePtr(true),
@@ -1042,11 +1041,10 @@ func TestToAPI(t *testing.T) {
 									},
 									AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.MakePtr(true),
-											ScaleDownEnabled:  pointer.MakePtr(true),
-											MaxInstanceSize:   pointer.MakePtr("M30"),
-											MinInstanceSize:   pointer.MakePtr("M10"),
-											PredictiveEnabled: pointer.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
+											MaxInstanceSize:  pointer.MakePtr("M30"),
+											MinInstanceSize:  pointer.MakePtr("M10"),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
 											Enabled: pointer.MakePtr(true),
@@ -1082,11 +1080,10 @@ func TestToAPI(t *testing.T) {
 									},
 									AutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.MakePtr(true),
-											ScaleDownEnabled:  pointer.MakePtr(true),
-											MaxInstanceSize:   pointer.MakePtr("M50"),
-											MinInstanceSize:   pointer.MakePtr("M20"),
-											PredictiveEnabled: pointer.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
+											MaxInstanceSize:  pointer.MakePtr("M50"),
+											MinInstanceSize:  pointer.MakePtr("M20"),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
 											Enabled: pointer.MakePtr(true),
@@ -1094,11 +1091,10 @@ func TestToAPI(t *testing.T) {
 									},
 									AnalyticsAutoScaling: &admin2025.AdvancedAutoScalingSettings{
 										Compute: &admin2025.AdvancedComputeAutoScaling{
-											Enabled:           pointer.MakePtr(true),
-											ScaleDownEnabled:  pointer.MakePtr(true),
-											MaxInstanceSize:   pointer.MakePtr("M40"),
-											MinInstanceSize:   pointer.MakePtr("M10"),
-											PredictiveEnabled: pointer.MakePtr(true),
+											Enabled:          pointer.MakePtr(true),
+											ScaleDownEnabled: pointer.MakePtr(true),
+											MaxInstanceSize:  pointer.MakePtr("M40"),
+											MinInstanceSize:  pointer.MakePtr("M10"),
 										},
 										DiskGB: &admin2025.DiskGBAutoScaling{
 											Enabled: pointer.MakePtr(true),
@@ -1865,7 +1861,7 @@ func TestToAPI(t *testing.T) {
 							map[string]any{"field3": "value3"},
 						},
 						Mappings: &admin2025.SearchMappings{
-							Dynamic: pointer.MakePtr(true),
+							Dynamic: true,
 							Fields: &map[string]any{
 								"field1": map[string]any{"key4": "value4"},
 							},

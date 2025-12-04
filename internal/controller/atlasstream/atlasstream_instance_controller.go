@@ -17,7 +17,7 @@ package atlasstream
 import (
 	"context"
 
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -123,8 +123,8 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	workflowCtx.SdkClientSet = atlasClientSet
 	workflowCtx.OrgID = connectionConfig.OrgID
 
-	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20250312006.StreamsApi.
-		GetStreamInstance(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
+	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20250312009.StreamsApi.
+		GetStreamWorkspace(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
 		Execute()
 
 	if err != nil && !admin.IsErrorCode(err, instanceNotFound) {

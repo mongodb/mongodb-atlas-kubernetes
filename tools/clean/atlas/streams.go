@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312009/admin"
 )
 
 func (c *Cleaner) listStreams(ctx context.Context, id string) []admin.StreamsTenant {
-	streams, _, err := c.client.StreamsApi.ListStreamInstances(ctx, id).Execute()
+	streams, _, err := c.client.StreamsApi.ListStreamWorkspaces(ctx, id).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to list stream instances for project %s: %s", id, err))
 		return nil
@@ -33,7 +33,7 @@ func (c *Cleaner) listStreams(ctx context.Context, id string) []admin.StreamsTen
 
 func (c *Cleaner) deleteStreams(ctx context.Context, id string, streams []admin.StreamsTenant) {
 	for _, stream := range streams {
-		_, err := c.client.StreamsApi.DeleteStreamInstance(ctx, id, stream.GetName()).Execute()
+		_, err := c.client.StreamsApi.DeleteStreamWorkspace(ctx, id, stream.GetName()).Execute()
 		if err != nil {
 			fmt.Println(text.FgRed.Sprintf("\t\t\tFailed to delete Stream instance %s", stream.GetId()), err)
 
