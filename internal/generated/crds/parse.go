@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -35,11 +34,14 @@ var (
 	ErrNoCRD = errors.New("not a CRD")
 )
 
-// ParseCRD scans a YAML stream and returns the next CRD found.
+// ParseCRDs scans a YAML stream and returns the next CRD found.
 // If more than one CRD is present in the stream, calling again
 // on the same stream will return the next CRD found.
-func ParseCRD(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition, error) {
-	var buffer bytes.Buffer
+func ParseCRDs(scanner *bufio.Scanner) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	var (
+		buffer bytes.Buffer
+		result []*apiextensionsv1.CustomResourceDefinition
+	)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -54,7 +56,7 @@ func ParseCRD(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition
 				if err != nil {
 					return nil, err
 				}
-				return crd, nil
+				result = append(result, crd)
 			}
 			continue
 		}
@@ -73,10 +75,10 @@ func ParseCRD(scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition
 		if err != nil && !errors.Is(err, ErrNoCRD) {
 			return nil, err
 		}
-		return crd, nil
+		result = append(result, crd)
 	}
 
-	return nil, io.EOF
+	return result, nil
 }
 
 func DecodeCRD(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {

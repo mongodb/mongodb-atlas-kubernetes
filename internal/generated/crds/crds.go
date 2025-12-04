@@ -28,13 +28,16 @@ var crdsYAML []byte
 
 // EmbeddedCRD tried to load the given kind from a set of embedded CRDs
 func EmbeddedCRD(kind string) (*apiextensionsv1.CustomResourceDefinition, error) {
-	for {
-		crd, err := ParseCRD(bufio.NewScanner(bytes.NewBuffer(crdsYAML)))
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse CRDs YAML for %q: %w", kind, err)
-		}
+	crds, err := ParseCRDs(bufio.NewScanner(bytes.NewBuffer(crdsYAML)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CRDs YAML for %q: %w", kind, err)
+	}
+
+	for _, crd := range crds {
 		if crd.Spec.Names.Kind == kind {
 			return crd, nil
 		}
 	}
+
+	return nil, fmt.Errorf("failed to find CRD %q", kind)
 }
