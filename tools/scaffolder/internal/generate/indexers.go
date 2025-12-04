@@ -33,7 +33,6 @@ type ReferenceField struct {
 	ReferencedKind    string
 	ReferencedGroup   string
 	ReferencedVersion string
-	IndexerType       string
 }
 
 type IndexerInfo struct {
@@ -217,7 +216,6 @@ func processKubernetesMapping(v map[string]any, path string, references *[]Refer
 			ReferencedGroup:   group,
 			ReferencedVersion: version,
 		}
-		ref.IndexerType = determineIndexerType(ref.ReferencedKind, ref.ReferencedGroup)
 		*references = append(*references, ref)
 	}
 }
@@ -242,18 +240,6 @@ func findReferences(data any, path string, references *[]ReferenceField) {
 			findReferences(item, newPath, references)
 		}
 	}
-}
-
-func determineIndexerType(referencedKind, referencedGroup string) string {
-	if referencedKind == "Group" && referencedGroup == "atlas.generated.mongodb.com" {
-		return "project"
-	}
-
-	if referencedKind == "Secret" && referencedGroup == "" {
-		return "credentials"
-	}
-
-	return "resource"
 }
 
 func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
@@ -359,8 +345,10 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir stri
 	// Keys method with logic for all reference fields
 	generateKeysMethod(f, structName, crdKind, indexer)
 
+	f.Line()
+
 	// Always generate helper Requests function for all reference types
-	generateRequestsFunction(f, crdKind, indexer.TargetKind)
+	generateMapFunc(f, crdKind, indexer)
 
 	if err := f.Save(filePath); err != nil {
 		return fmt.Errorf("failed to save file %s: %w", filePath, err)
@@ -458,24 +446,108 @@ func capitalizeFirst(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-func generateRequestsFunction(f *jen.File, crdKind string, targetKind string) {
-	listTypeName := fmt.Sprintf("%sList", crdKind)
-	// Make function name unique per targetKind to avoid duplicates when multiple indexers exist for same CRD
-	requestsFuncName := fmt.Sprintf("%sRequestsFrom%s", crdKind, targetKind)
-	f.Func().Id(requestsFuncName).Params(
-		jen.Id("list").Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", listTypeName),
-	).Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Block(
-		jen.Id("requests").Op(":=").Make(jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"), jen.Lit(0), jen.Len(jen.Id("list").Dot("Items"))),
-		jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id("list").Dot("Items")).Block(
-			jen.Id("requests").Op("=").Append(jen.Id("requests"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Values(jen.Dict{
-				jen.Id("NamespacedName"): jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
-					jen.Id("Name"):      jen.Id("item").Dot("Name"),
-					jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
-				}),
-			})),
-		),
-		jen.Return(jen.Id("requests")),
-	)
+func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {
+	f.Func().
+		Id(fmt.Sprintf("New%sBy%sMapFunc", crdKind, indexer.TargetKind)).
+		Params(
+			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+		).
+		Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").
+		Block(
+			jen.Return(
+				jen.Func().
+					Params(
+						jen.Id("ctx").Qual("context", "Context"),
+						jen.Id("obj").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+					).
+					Index().
+					Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").
+					Block(
+						jen.Id("logger").Op(":=").
+							Qual("sigs.k8s.io/controller-runtime/pkg/log", "FromContext").
+							Call(jen.Id("ctx")),
+						jen.Line(),
+						jen.Id("listOpts").Op(":=").
+							Op("&").
+							Qual("sigs.k8s.io/controller-runtime/pkg/client", "ListOptions").
+							Values(
+								jen.Dict{
+									jen.Id("FieldSelector"): jen.
+										Qual("k8s.io/apimachinery/pkg/fields", "OneTermEqualSelector").
+										Call(
+											jen.Id(indexer.ConstantName),
+											jen.
+												Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").
+												Values(
+													jen.Dict{
+														jen.Id("Name"):      jen.Id("obj").Dot("GetName").Call(),
+														jen.Id("Namespace"): jen.Id("obj").Dot("GetNamespace").Call(),
+													},
+												).
+												Dot("String").
+												Call(),
+										),
+								},
+							),
+						jen.Line(),
+						jen.Id("list").Op(":=").
+							Op("&").
+							Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", fmt.Sprintf("%sList", crdKind)).
+							Values(),
+						jen.Id("err").Op(":=").
+							Id("kubeClient").Dot("List").
+							Call(
+								jen.Id("ctx"),
+								jen.Id("list"),
+								jen.Id("listOpts"),
+							),
+						jen.If(jen.Id("err").Op("!=").Nil()).Block(
+							jen.Id("logger").Dot("Error").
+								Call(
+									jen.Id("err"),
+									jen.Lit(fmt.Sprintf("failed to list %v objects", crdKind)),
+								),
+							jen.Return(jen.Nil()),
+						),
+						jen.Line(),
+						jen.Id("requests").Op(":=").
+							Make(
+								jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"),
+								jen.Lit(0),
+								jen.Len(jen.Id("list").Dot("Items")),
+							),
+						jen.For(
+							jen.List(
+								jen.Id("_"),
+								jen.Id("item"),
+							).
+								Op(":=").
+								Range().
+								Id("list").Dot("Items"),
+						).Block(
+							jen.Id("requests").Op("=").
+								Append(
+									jen.Id("requests"),
+									jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").
+										Values(
+											jen.Dict{
+												jen.Id("NamespacedName"): jen.
+													Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").
+													Values(
+														jen.Dict{
+															jen.Id("Name"):      jen.Id("item").Dot("Name"),
+															jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
+														},
+													),
+											},
+										),
+								),
+						),
+						jen.Line(),
+						jen.Return(jen.Id("requests")),
+					),
+			),
+		)
 }
 
 // TODO: UpdateIndexerRegistry needs to be reimplemented to work with the new kind-based indexer approach

@@ -147,8 +147,6 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg string, r
 		),
 	)
 
-	generateMapperFunctions(f, resourceName, apiPkg, refsByKind)
-
 	generateSetupWithManager(f, resourceName, refsByKind)
 }
 

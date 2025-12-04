@@ -75,7 +75,6 @@ spec:
 		ref := refs[0]
 		assert.Equal(t, "groupRef", ref.FieldName)
 		assert.Equal(t, "Group", ref.ReferencedKind)
-		assert.Equal(t, "project", ref.IndexerType)
 		assert.Contains(t, ref.FieldPath, "groupRef")
 	})
 
@@ -237,7 +236,7 @@ spec:
 		assert.Contains(t, contentStr, "func (*ClusterByGroupIndexer) Object()")
 		assert.Contains(t, contentStr, "func (*ClusterByGroupIndexer) Name()")
 		assert.Contains(t, contentStr, "func (i *ClusterByGroupIndexer) Keys(")
-		assert.Contains(t, contentStr, "func ClusterRequestsFromGroup")
+		assert.Contains(t, contentStr, "func NewClusterByGroupMapFunc")
 		assert.Contains(t, contentStr, `"k8s.io/apimachinery/pkg/types"`)
 		assert.Contains(t, contentStr, `"sigs.k8s.io/controller-runtime/pkg/reconcile"`)
 	})
@@ -362,7 +361,6 @@ func TestCreateIndexerInfoForKind(t *testing.T) {
 			FieldName:      "groupRef",
 			FieldPath:      "properties.spec.properties.v20250312.properties.groupRef",
 			ReferencedKind: "Group",
-			IndexerType:    "project",
 		},
 	}
 
@@ -435,8 +433,8 @@ spec:
 	secretFile, err := os.ReadFile(filepath.Join(outputDir, "integrationbysecret.go"))
 	require.NoError(t, err)
 
-	assert.Contains(t, string(groupFile), "IntegrationRequestsFromGroup")
-	assert.Contains(t, string(secretFile), "IntegrationRequestsFromSecret")
+	assert.Contains(t, string(groupFile), "NewIntegrationByGroupMapFunc")
+	assert.Contains(t, string(secretFile), "NewIntegrationBySecretMapFunc")
 	assert.NotContains(t, string(groupFile), "func IntegrationRequests(")
 	assert.NotContains(t, string(secretFile), "func IntegrationRequests(")
 }

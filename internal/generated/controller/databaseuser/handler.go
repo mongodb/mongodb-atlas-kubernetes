@@ -30,7 +30,6 @@ import (
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -151,16 +150,9 @@ func (h *Handler) For() (client.Object, builder.Predicates) {
 	obj := &akov2generated.DatabaseUser{}
 	return obj, builder.WithPredicates(h.predicates...)
 }
-func (h *Handler) databaseuserForGroupMapFunc() handler.MapFunc {
-	return indexer.ProjectsIndexMapperFunc(indexers.DatabaseUserByGroupIndex, func() *akov2generated.DatabaseUserList {
-		return &akov2generated.DatabaseUserList{}
-	}, indexers.DatabaseUserRequestsFromGroup, h.Client, h.Log)
-}
-
-// SetupWithManager sets up the controller with the Manager
 func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	return controllerruntime.NewControllerManagedBy(mgr).Named("DatabaseUser").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(h.databaseuserForGroupMapFunc()), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
+	return controllerruntime.NewControllerManagedBy(mgr).Named("DatabaseUser").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
 }
 
 // getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret

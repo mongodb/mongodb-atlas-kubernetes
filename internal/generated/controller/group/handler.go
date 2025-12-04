@@ -147,8 +147,6 @@ func (h *Handler) For() (client.Object, builder.Predicates) {
 	obj := &akov2generated.Group{}
 	return obj, builder.WithPredicates(h.predicates...)
 }
-
-// SetupWithManager sets up the controller with the Manager
 func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
 	return controllerruntime.NewControllerManagedBy(mgr).Named("Group").For(h.For()).WithOptions(defaultOptions).Complete(rec)

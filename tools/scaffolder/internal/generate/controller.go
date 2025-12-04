@@ -293,130 +293,46 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 }
 
 func generateSetupWithManager(f *jen.File, resourceName string, refsByKind map[string][]ReferenceField) {
-	f.Comment("SetupWithManager sets up the controller with the Manager")
-
-	setupChain := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
+	newControllerManagedBy := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
 		Dot("Named").Call(jen.Lit(resourceName)).
 		Dot("For").Call(jen.Id("h").Dot("For").Call())
 
-	// Add Watches()
-	for kind := range refsByKind {
-		watchedTypeInstance := getWatchedTypeInstance(kind)
-		mapperFuncName := fmt.Sprintf("%sFor%sMapFunc", strings.ToLower(resourceName), kind)
-
-		setupChain = setupChain.
-			Dot("Watches").Call(
-			watchedTypeInstance,
-			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").Call(
-				jen.Id("h").Dot(mapperFuncName).Call(),
-			),
-			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").Call(
-				jen.Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "ResourceVersionChangedPredicate").Values(),
-			),
+	for referencedKind := range refsByKind {
+		newControllerManagedBy = newControllerManagedBy.Dot("Watches").Call(
+			getWatchedTypeInstance(referencedKind),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").
+				Call(
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", fmt.Sprintf("New%sBy%sMapFunc", resourceName, referencedKind)).
+						Call(jen.Id("h").Dot("Client")),
+				),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").
+				Call(
+					jen.Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "ResourceVersionChangedPredicate").Values(),
+				),
 		)
 	}
 
-	setupChain = setupChain.
+	newControllerManagedBy = newControllerManagedBy.
 		Dot("WithOptions").Call(jen.Id("defaultOptions")).
 		Dot("Complete").Call(jen.Id("rec"))
 
-	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id("SetupWithManager").Params(
-		jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
-		jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
-		jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
-	).Error().Block(
-		jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
-		jen.Return(setupChain),
-	)
-}
-
-func generateMapperFunctions(f *jen.File, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
-	for kind, refs := range refsByKind {
-		if len(refs) == 0 {
-			continue
-		}
-
-		indexerType := refs[0].IndexerType
-		mapperFuncName := fmt.Sprintf("%sFor%sMapFunc", strings.ToLower(resourceName), kind)
-
-		switch indexerType {
-		case "project":
-			generateIndexerBasedMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName, "ProjectsIndexMapperFunc")
-		case "credentials":
-			generateIndexerBasedMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName, "CredentialsIndexMapperFunc")
-		case "resource":
-			generateResourceMapperFunction(f, resourceName, apiPkg, kind, mapperFuncName)
-		}
-	}
-}
-
-// For Group or Secrets
-func generateIndexerBasedMapperFunction(f *jen.File, resourceName, apiPkg, referencedKind, mapperFuncName, indexerHelperFunc string) {
-	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
-	listTypeName := fmt.Sprintf("%sList", resourceName)
-	requestsFuncName := fmt.Sprintf("%sRequestsFrom%s", resourceName, referencedKind)
-
-	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
-		jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer", indexerHelperFunc).Call(
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", indexName),
-			jen.Func().Params().Op("*").Qual(apiPkg, listTypeName).Block(
-				jen.Return(jen.Op("&").Qual(apiPkg, listTypeName).Values()),
-			),
-			jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", requestsFuncName),
-			jen.Id("h").Dot("Client"),
-			jen.Id("h").Dot("Log"),
-		)),
-	)
-}
-
-func generateResourceMapperFunction(f *jen.File, resourceName, apiPkg, referencedKind, mapperFuncName string) {
-	indexName := fmt.Sprintf("%sBy%sIndex", resourceName, referencedKind)
-	listTypeName := fmt.Sprintf("%sList", resourceName)
-	watchedType := getWatchedType(referencedKind)
-
-	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id(mapperFuncName).Params().Qual("sigs.k8s.io/controller-runtime/pkg/handler", "MapFunc").Block(
-		jen.Return(jen.Func().Params(
-			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id("obj").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
-		).Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Block(
-
-			jen.List(jen.Id("refObj"), jen.Id("ok")).Op(":=").Id("obj").Assert(jen.Op("*").Add(watchedType)),
-			jen.If(jen.Op("!").Id("ok")).Block(
-				jen.Id("h").Dot("Log").Dot("Warnf").Call(
-					jen.Lit(fmt.Sprintf("watching %s but got %%T", referencedKind)),
-					jen.Id("obj"),
-				),
-				jen.Return(jen.Nil()),
-			),
-
-			jen.Id("listOpts").Op(":=").Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ListOptions").Values(jen.Dict{
-				jen.Id("FieldSelector"): jen.Qual("k8s.io/apimachinery/pkg/fields", "OneTermEqualSelector").Call(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", indexName),
-					jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKeyFromObject").Call(jen.Id("refObj")).Dot("String").Call(),
-				),
-			}),
-			jen.Id("list").Op(":=").Op("&").Qual(apiPkg, listTypeName).Values(),
-			jen.Id("err").Op(":=").Id("h").Dot("Client").Dot("List").Call(jen.Id("ctx"), jen.Id("list"), jen.Id("listOpts")),
-			jen.If(jen.Id("err").Op("!=").Nil()).Block(
-				jen.Id("h").Dot("Log").Dot("Errorf").Call(
-					jen.Lit(fmt.Sprintf("failed to list from indexer %s: %%v", indexName)),
-					jen.Id("err"),
-				),
-				jen.Return(jen.Nil()),
-			),
-
-			jen.Id("requests").Op(":=").Make(jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"), jen.Lit(0), jen.Len(jen.Id("list").Dot("Items"))),
-			jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id("list").Dot("Items")).Block(
-				jen.Id("requests").Op("=").Append(jen.Id("requests"), jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Values(jen.Dict{
-					jen.Id("NamespacedName"): jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
-						jen.Id("Name"):      jen.Id("item").Dot("Name"),
-						jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
-					}),
-				})),
-			),
-			jen.Return(jen.Id("requests")),
-		)),
-	)
+	f.Func().
+		Params(
+			jen.Id("h").Op("*").Id("Handler"),
+		).
+		Id("SetupWithManager").
+		Params(
+			jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
+			jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
+			jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
+		).
+		Params(
+			jen.Error(),
+		).
+		Block(
+			jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
+			jen.Return(newControllerManagedBy),
+		)
 }
 
 func getWatchedTypeInstance(kind string) *jen.Statement {
@@ -427,16 +343,5 @@ func getWatchedTypeInstance(kind string) *jen.Statement {
 		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Group").Values()
 	default:
 		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", kind).Values()
-	}
-}
-
-func getWatchedType(kind string) *jen.Statement {
-	switch kind {
-	case "Secret":
-		return jen.Qual("k8s.io/api/core/v1", "Secret")
-	case "Group":
-		return jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Group")
-	default:
-		return jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", kind)
 	}
 }
