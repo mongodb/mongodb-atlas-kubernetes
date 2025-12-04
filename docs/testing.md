@@ -60,7 +60,7 @@ For Kubernetes, the [operator-runtime library has a fake package](https://pkg.go
 
 ### Atlas
 
-For Atlas, the operator currently uses the [go-client-mongodb-atlas](https://github.com/mongodb/go-client-mongodb-atlas#go-client-mongodb-atlas). This [client main struct is composed of a set of interfaces](https://pkg.go.dev/go.mongodb.org/atlas@v0.31.0/mongodbatlas#Client), one per Service behind Atlas. A simple way to mock such a client for unit tests, that will probably only call a couple of API endpoints from Atlas at a time, is to replace those service implementations by the mock:
+For Atlas, the operator currently uses the [Atlas Go SDK](https://github.com/mongodb/atlas-sdk-go). This [client main struct is composed of a set of interfaces](https://pkg.go.dev/go.mongodb.org/atlas@v0.31.0/mongodbatlas#Client), one per Service behind Atlas. A simple way to mock such a client for unit tests, that will probably only call a couple of API endpoints from Atlas at a time, is to replace those service implementations by the mock:
 
 - The mock is an struct that implements the Service interface by calling methods set in that struct for each of the interface methods defined. [See sample below](#sample-snippets).
 - Under `test/atlas` you should find all mocked services already being unit tested using this approach.
