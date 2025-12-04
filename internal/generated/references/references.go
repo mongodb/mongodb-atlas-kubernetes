@@ -34,8 +34,8 @@ func GetGroupID(ctx context.Context, c client.Client, groupRef *k8s.LocalReferen
 
 	group := &akov2generated.Group{}
 	err := c.Get(ctx, client.ObjectKey{
-		Namespace: groupRef.Name,
-		Name:      namespace,
+		Name:      groupRef.Name,
+		Namespace: namespace,
 	}, group)
 
 	if err != nil {

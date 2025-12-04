@@ -28,7 +28,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/references"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -51,35 +50,48 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 	}
 }
 
-// TODO: Autogenerate with Scaffolder
-func (h *Handlerv20250312) getGroupId(ctx context.Context, flexcluster *akov2generated.FlexCluster) (string, error) {
-	groupID := ""
+func (h *Handlerv20250312) getDependencies(ctx context.Context, flexcluster *akov2generated.FlexCluster) ([]client.Object, error) {
+	var result []client.Object
 
-	if flexcluster.Spec.V20250312.GroupId != nil {
-		groupID = *flexcluster.Spec.V20250312.GroupId
-	} else {
-		var err error
-		groupID, err = references.GetGroupID(
-			ctx, h.kubeClient, flexcluster.Spec.V20250312.GroupRef, flexcluster.GetNamespace())
+	if flexcluster.Spec.V20250312.GroupRef != nil {
+		group := &akov2generated.Group{}
+
+		err := h.kubeClient.Get(ctx, client.ObjectKey{
+			Name:      flexcluster.Spec.V20250312.GroupRef.Name,
+			Namespace: flexcluster.GetNamespace(),
+		}, group)
+
 		if err != nil {
-			return "", err
+			return nil, fmt.Errorf("failed to get group  %w", err)
 		}
+
+		result = append(result, group)
 	}
 
-	return groupID, nil
+	return result, nil
 }
 
 // HandleInitial handles the initial state for version v20250312
 func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	groupID, err := h.getGroupId(ctx, flexcluster)
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateInitial, reconcile.TerminalError(err))
+		return result.Error(state.StateInitial, fmt.Errorf("failed to get dependencies: %w", err))
 	}
-	flexClusterRequest := v20250312sdk.FlexClusterDescriptionCreate20241113{}
-	if err := h.translator.ToAPI(&flexClusterRequest, flexcluster); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex create request: %w", err))
+
+	body := &v20250312sdk.FlexClusterDescriptionCreate20241113{}
+	params := &v20250312sdk.CreateFlexClusterApiParams{
+		FlexClusterDescriptionCreate20241113: body,
 	}
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.CreateFlexCluster(ctx, groupID, &flexClusterRequest).Execute()
+
+	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex api params: %w", err))
+	}
+
+	if err := h.translator.ToAPI(body, flexcluster, deps...); err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex create description: %w", err))
+	}
+
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.CreateFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
 	}
@@ -109,7 +121,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, flexcluste
 	flexClusterCopy := flexcluster.DeepCopy()
 	flexClusterCopy.Spec.V20250312.Entry.Name = externalName
 	flexClusterCopy.Spec.V20250312.GroupId = &externalGroupID
-	_, err := h.getToPatchStatus(ctx, flexClusterCopy)
+	_, err := h.patchStatus(ctx, flexClusterCopy)
 	if err != nil {
 		return result.Error(state.StateImportRequested, err)
 	}
@@ -151,12 +163,17 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 		return result.NextState(state.StateDeleted, "Flex Cluster is unamanged.")
 	}
 
-	groupID, err := h.getGroupId(ctx, flexcluster)
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateInitial, reconcile.TerminalError(err))
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
 	}
-	_, err = h.atlasClient.FlexClustersApi.DeleteFlexCluster(
-		ctx, groupID, flexcluster.Spec.V20250312.Entry.Name).Execute()
+
+	params := &v20250312sdk.DeleteFlexClusterApiParams{}
+	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to translate flex api params: %w", err))
+	}
+
+	_, err = h.atlasClient.FlexClustersApi.DeleteFlexClusterWithParams(ctx, params).Execute()
 
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
@@ -170,12 +187,17 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 
 // HandleDeleting handles the deleting state for version v20250312
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	groupID, err := h.getGroupId(ctx, flexcluster)
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateInitial, reconcile.TerminalError(err))
+		return result.Error(state.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
 	}
-	_, _, err = h.atlasClient.FlexClustersApi.GetFlexCluster(
-		ctx, groupID, flexcluster.Spec.V20250312.Entry.Name).Execute()
+
+	params := &v20250312sdk.GetFlexClusterApiParams{}
+	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
+		return result.Error(state.StateDeleting, fmt.Errorf("failed to translate flex api params: %w", err))
+	}
+
+	_, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
@@ -197,7 +219,7 @@ func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec r
 
 // HandleUpserting handles the creating and updating state for flex version v20250312
 func (h *Handlerv20250312) handleUpserting(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState state.ResourceState) (ctrlstate.Result, error) {
-	atlasFlexCluster, err := h.getToPatchStatus(ctx, flexcluster)
+	atlasFlexCluster, err := h.patchStatus(ctx, flexcluster)
 	if err != nil {
 		return result.Error(currentState, err)
 	}
@@ -218,16 +240,27 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 		return result.NextState(currentState, "Flex cluster up to date. No update required.")
 	}
 
-	groupID, err := h.getGroupId(ctx, flexcluster)
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateInitial, reconcile.TerminalError(err))
+		return result.Error(currentState, fmt.Errorf("failed to get dependencies: %w", err))
 	}
-	flexClusterUpdate := v20250312sdk.FlexClusterDescriptionUpdate20241113{}
-	if err := h.translator.ToAPI(&flexClusterUpdate, flexcluster); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate update flex cluster request: %w", err))
+
+	body := &v20250312sdk.FlexClusterDescriptionUpdate20241113{}
+	params := &v20250312sdk.UpdateFlexClusterApiParams{
+		FlexClusterDescriptionUpdate20241113: body,
 	}
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.UpdateFlexCluster(
-		ctx, groupID, flexcluster.Spec.V20250312.Entry.Name, &flexClusterUpdate).Execute()
+
+	// translate parameters
+	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to translate update flex cluster parameters: %w", err))
+	}
+
+	// translate body
+	if err := h.translator.ToAPI(body, flexcluster, deps...); err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to translate update flex cluster description: %w", err))
+	}
+
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.UpdateFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to get update cluster: %w", err))
 	}
@@ -243,18 +276,23 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 	return result.NextState(finalState, "Updating Flex Cluster.")
 }
 
-func (h *Handlerv20250312) getToPatchStatus(ctx context.Context, flexcluster *akov2generated.FlexCluster) (*v20250312sdk.FlexClusterDescription20241113, error) {
-	groupID, err := h.getGroupId(ctx, flexcluster)
+func (h *Handlerv20250312) patchStatus(ctx context.Context, flexcluster *akov2generated.FlexCluster) (*v20250312sdk.FlexClusterDescription20241113, error) {
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
 		return nil, err
 	}
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.GetFlexCluster(
-		ctx, groupID, flexcluster.Spec.V20250312.Entry.Name).Execute()
+	params := &v20250312sdk.GetFlexClusterApiParams{}
+	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
+		return nil, fmt.Errorf("failed to translate update flex cluster parameters: %w", err)
+	}
+
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster: %w", err)
 	}
+
 	flexclusterCopy := flexcluster.DeepCopy()
-	if _, err := h.translator.FromAPI(flexclusterCopy, atlasFlexCluster); err != nil {
+	if _, err := h.translator.FromAPI(flexclusterCopy, atlasFlexCluster, deps...); err != nil {
 		return nil, fmt.Errorf("failed to translate get cluster response: %w", err)
 	}
 
