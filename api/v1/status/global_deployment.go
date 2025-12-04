@@ -36,9 +36,9 @@ type ManagedNamespace struct {
 	NumInitialChunks int `json:"numInitialChunks,omitempty"`
 	// Flag that indicates whether someone hashed the custom shard key for the specified collection.
 	// If you set this value to false, MongoDB Atlas uses ranged sharding.
-	IsCustomShardKeyHashed *bool `json:"isCustomShardKeyHashed,omitempty"` // Flag that specifies whether the custom shard key for the collection is hashed.
+	IsCustomShardKeyHashed *bool `json:"isCustomShardKeyHashed,omitempty"`
 	// Flag that indicates whether someone hashed the custom shard key. If this parameter returns false, this cluster uses ranged sharding.
-	IsShardKeyUnique *bool `json:"isShardKeyUnique,omitempty"` // Flag that specifies whether the underlying index enforces a unique constraint.
+	IsShardKeyUnique *bool `json:"isShardKeyUnique,omitempty"`
 	// Status of the Managed Namespace.
 	Status string `json:"status,omitempty"`
 	// Flag that indicates whether MongoDB Cloud should create and distribute initial chunks for an empty or non-existing collection.
