@@ -54,7 +54,7 @@ func TestParseCRD(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := ParseCRD(tt.scanner)
+			got, err := ParseCRDs(tt.scanner)
 			gotErr := ""
 			if err != nil {
 				gotErr = err.Error()
