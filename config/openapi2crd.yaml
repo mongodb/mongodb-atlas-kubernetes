@@ -113,7 +113,13 @@ spec:
                 - $.id
                 - $.links
                 - $.mongoDBVersion
+                - $.featureCompatibilityVersion
+                - $.featureCompatibilityVersionExpirationDate
+                - $.internalClusterRole
                 - $.replicationSpecs[*].id
+                - $.replicationSpecs[*].regionConfigs[*].effectiveAnalyticsSpecs
+                - $.replicationSpecs[*].regionConfigs[*].effectiveElectableSpecs
+                - $.replicationSpecs[*].regionConfigs[*].effectiveReadOnlySpecs
                 - $.stateName
           status:
             schema: 'ClusterDescription20240805'
@@ -133,12 +139,21 @@ spec:
                 - $.paused
                 - $.pitEnabled
                 - $.replicationSpecs[*].numShards
-                - $.replicationSpecs[*].regionConfigs
                 - $.replicationSpecs[*].zoneName
+                - $.replicationSpecs[*].regionConfigs[*].analyticsAutoScaling
+                - $.replicationSpecs[*].regionConfigs[*].analyticsSpecs
+                - $.replicationSpecs[*].regionConfigs[*].autoScaling
+                - $.replicationSpecs[*].regionConfigs[*].backingProviderName
+                - $.replicationSpecs[*].regionConfigs[*].electableSpecs
+                - $.replicationSpecs[*].regionConfigs[*].priority
+                - $.replicationSpecs[*].regionConfigs[*].providerName
+                - $.replicationSpecs[*].regionConfigs[*].readOnlySpecs
+                - $.replicationSpecs[*].regionConfigs[*].regionName
                 - $.rootCertType
                 - $.tags
                 - $.terminationProtectionEnabled
                 - $.versionReleaseSystem
+                - $.useAwsTimeBasedSnapshotCopyForFastInitialSync
 
     - gvk:
         version: v1

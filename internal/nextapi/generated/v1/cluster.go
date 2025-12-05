@@ -110,15 +110,6 @@ type V20250312Entry struct {
 	// be `M10` or higher and `"backupEnabled" : false` or omitted entirely.
 	EncryptionAtRestProvider *string `json:"encryptionAtRestProvider,omitempty"`
 
-	// FeatureCompatibilityVersion Feature compatibility version of the cluster. This
-	// will always appear regardless of whether FCV is pinned.
-	FeatureCompatibilityVersion *string `json:"featureCompatibilityVersion,omitempty"`
-
-	// FeatureCompatibilityVersionExpirationDate Feature compatibility version
-	// expiration date. Will only appear if FCV is pinned. This parameter expresses its
-	// value in the ISO 8601 timestamp format in UTC.
-	FeatureCompatibilityVersionExpirationDate *string `json:"featureCompatibilityVersionExpirationDate,omitempty"`
-
 	/*
 	   GlobalClusterSelfManagedSharding Set this field to configure the Sharding Management Mode when creating a new Global Cluster.
 
@@ -129,11 +120,6 @@ type V20250312Entry struct {
 	   This setting cannot be changed once the cluster is deployed.
 	*/
 	GlobalClusterSelfManagedSharding *bool `json:"globalClusterSelfManagedSharding,omitempty"`
-
-	// InternalClusterRole Internal classification of the cluster's role. Possible
-	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
-	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
-	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
 
 	/*
 	   Labels Collection of key-value pairs between 1 to 255 characters in length that tag and categorize the cluster. The MongoDB Cloud console doesn't display your labels.
@@ -309,18 +295,6 @@ type RegionConfigs struct {
 	   Please note that  using an instanceSize of M2 or M5 will create a Flex cluster instead. Support for the instanceSize of M2 or M5 will be discontinued in January 2026. We recommend using the createFlexCluster API for such configurations moving forward.
 	*/
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
-
-	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
-
-	// EffectiveElectableSpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveElectableSpecs *AnalyticsSpecs `json:"effectiveElectableSpecs,omitempty"`
-
-	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
-	// in the region.
-	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
 
 	// ElectableSpecs Hardware specifications for all electable nodes deployed in the
 	// region. Electable nodes can become the primary and can enable local reads. If
@@ -612,12 +586,6 @@ type ClusterStatusV20250312 struct {
 	    - `REPAIRING`: One or more nodes in the cluster are being returned to service by the Atlas control plane. Other nodes should continue to provide service as normal.
 	*/
 	StateName *string `json:"stateName,omitempty"`
-
-	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
-	// time-based snapshot copies will be used instead of slower standard snapshot
-	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
-	// for clusters containing AWS nodes.
-	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
 }
 
 type ConnectionStrings struct {
@@ -739,9 +707,32 @@ type V20250312ReplicationSpecs struct {
 	// corresponds to Shard ID displayed in the UI.
 	Id *string `json:"id,omitempty"`
 
+	/*
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+
+	   **Example:**
+
+	   If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+	*/
+	RegionConfigs *[]ReplicationSpecsRegionConfigs `json:"regionConfigs,omitempty"`
+
 	// ZoneId Unique 24-hexadecimal digit string that identifies the zone in a Global
 	// Cluster. This value can be used to configure Global Cluster backup policies.
 	ZoneId *string `json:"zoneId,omitempty"`
+}
+
+type ReplicationSpecsRegionConfigs struct {
+	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
+
+	// EffectiveElectableSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveElectableSpecs *AnalyticsSpecs `json:"effectiveElectableSpecs,omitempty"`
+
+	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
 }
 
 // +kubebuilder:object:root=true
