@@ -213,7 +213,6 @@ jobs:
 
       - name: Certify Openshift images
         uses: ./.github/actions/certify-openshift-images
-        if: github.event.inputs.release_type == 'official-release'
         with:
           registry: quay.io
           repository: ${{ needs.compute-repo.outputs.repo }}
@@ -221,7 +220,7 @@ jobs:
           registry_password: ${{ secrets.QUAY_PASSWORD }}
           rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
           rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
-          submit: true
+          submit: ${{ github.event.inputs.release_type == 'official-release' }}
 
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
