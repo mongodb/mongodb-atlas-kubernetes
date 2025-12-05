@@ -1,7 +1,6 @@
 # MongoDB Atlas Operator
 
 [![MongoDB Atlas Operator](https://github.com/mongodb/mongodb-atlas-kubernetes/workflows/Test/badge.svg)](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/test.yml?query=branch%3Amain)
-[![MongoDB Atlas Go Client](https://img.shields.io/badge/Powered%20by%20-go--client--mongodb--atlas-%2313AA52)](https://github.com/mongodb/go-client-mongodb-atlas)
 
 The MongoDB Atlas Operator provides a native integration between the Kubernetes orchestration platform and MongoDB Atlas
 — the only multi-cloud document database service that gives you the versatility you need to build sophisticated and
