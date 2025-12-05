@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
+	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -76,6 +77,7 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		// add experimental indexers here
 		indexers = append(indexers,
 			NewAtlasDataFederationByProjectIDIndexer(ctx, c.GetClient(), logger),
+			indexer.NewFlexClusterByGroupIndexer(logger),
 		)
 	}
 	return Register(ctx, c, indexers...)

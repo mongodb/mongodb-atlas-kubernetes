@@ -150,8 +150,7 @@ spec:
 	assert.Contains(t, contentStr, "Watches")
 	assert.Contains(t, contentStr, "&akov2generated.Group{}", "Should contain Group reference")
 
-	assert.Contains(t, contentStr, "func (h *Handler) clusterForGroupMapFunc()")
-	assert.Contains(t, contentStr, "ProjectsIndexMapperFunc")
+	assert.Contains(t, contentStr, "NewClusterByGroupMapFunc")
 
 	assert.Contains(t, contentStr, "ResourceVersionChangedPredicate")
 }
@@ -216,15 +215,11 @@ spec:
 
 	contentStr := string(content)
 
-	assert.Contains(t, contentStr, "integrationForGroupMapFunc")
-	assert.Contains(t, contentStr, "integrationForSecretMapFunc")
-
 	// Check for Group and Secret references (may be aliased due to import conflicts)
 	assert.Contains(t, contentStr, ".Group{}")
 	assert.Contains(t, contentStr, ".Secret{}")
 
-	assert.Contains(t, contentStr, "ProjectsIndexMapperFunc")
-	assert.Contains(t, contentStr, "CredentialsIndexMapperFunc")
+	assert.Contains(t, contentStr, "NewIntegrationBySecretMapFunc")
 }
 
 func TestGetWatchedTypeInstance(t *testing.T) {

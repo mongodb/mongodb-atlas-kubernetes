@@ -15,9 +15,14 @@
 package indexer
 
 import (
+	"context"
+
 	zap "go.uber.org/zap"
+	fields "k8s.io/apimachinery/pkg/fields"
 	types "k8s.io/apimachinery/pkg/types"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
+	handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	log "sigs.k8s.io/controller-runtime/pkg/log"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
@@ -56,13 +61,31 @@ func (i *ClusterByGroupIndexer) Keys(object client.Object) []string {
 	}
 	return keys
 }
-func ClusterRequestsFromGroup(list *v1.ClusterList) []reconcile.Request {
-	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, item := range list.Items {
-		requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
-			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+
+func NewClusterByGroupMapFunc(kubeClient client.Client) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		logger := log.FromContext(ctx)
+
+		listOpts := &client.ListOptions{FieldSelector: fields.OneTermEqualSelector(ClusterByGroupIndex, types.NamespacedName{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+		}.String())}
+
+		list := &v1.ClusterList{}
+		err := kubeClient.List(ctx, list, listOpts)
+		if err != nil {
+			logger.Error(err, "failed to list Cluster objects")
+			return nil
+		}
+
+		requests := make([]reconcile.Request, 0, len(list.Items))
+		for _, item := range list.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      item.Name,
+				Namespace: item.Namespace,
+			}})
+		}
+
+		return requests
 	}
-	return requests
 }
