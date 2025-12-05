@@ -15,8 +15,10 @@
 package status
 
 type Prometheus struct {
+	// Protocol scheme used for Prometheus requests.
 	// +optional
 	Scheme string `json:"scheme,omitempty"`
+	// URL from which Prometheus fetches the targets.
 	// +optional
 	DiscoveryURL string `json:"prometheusDiscoveryURL,omitempty"`
 }
