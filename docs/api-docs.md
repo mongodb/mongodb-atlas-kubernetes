@@ -11587,14 +11587,14 @@ including the prometheusDiscoveryURL
         <td><b>prometheusDiscoveryURL</b></td>
         <td>string</td>
         <td>
-          <br/>
+          URL from which Prometheus fetches the targets.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>scheme</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Protocol scheme used for Prometheus requests.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
