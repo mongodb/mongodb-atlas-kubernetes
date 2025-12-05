@@ -18,9 +18,9 @@ set -eou pipefail
 
 docker login -u mongodb+mongodb_atlas_kubernetes -p "${REGISTRY_PASSWORD}" "${REGISTRY}"
 
-submit_flag=--submit
-if [ "${SUBMIT}" == "false" ]; then
-  submit_flag=
+submit_flag=
+if [ "${SUBMIT}" == "true" ]; then
+  submit_flag=--submit
 fi
 
 echo "Check and Submit result to RedHat Connect"
