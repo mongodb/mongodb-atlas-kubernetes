@@ -271,11 +271,11 @@ envtest-assets:
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 
 .PHONY: e2e
-e2e: bundle manifests run-kind install-crds $(BUILD_DEPENDENCY) ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
+e2e: bundle helm-crds manifests run-kind install-crds $(BUILD_DEPENDENCY) ## Run e2e test. Command `make e2e label=cluster-ns` run cluster-ns test
 	AKO_E2E_TEST=1 $(GINKGO) $(shell pwd)/test/$@
 
 .PHONY: e2e2
-e2e2: bundle run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+e2e2: bundle helm-crds run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
@@ -375,8 +375,8 @@ endif
 validate-manifests: generate manifests
 	$(MAKE) check-missing-files
 
-.PHONE: sync-crds-chart
-sync-crds-chart: bundle
+.PHONY: helm-crds
+helm-crds: bundle
 	@cp -r bundle/manifests/atlas.mongodb.com_* helm-charts/atlas-operator-crds/templates/
 
 .PHONY: validate-crds-chart
@@ -496,6 +496,7 @@ clean: ## Clean built binaries
 	rm -rf config/manifests/bases/
 	rm -f config/generated/crd/bases/crds.yaml
 	rm -f config/crd/bases/*.yaml
+	rm -f helm-charts/atlas-operator-crds/templates/*.yaml
 	rm -f config/rbac/clusterwide/role.yaml
 	rm -f config/rbac/namespaced/role.yaml
 	rm -f config/rbac/role.yaml
