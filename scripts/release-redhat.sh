@@ -31,10 +31,10 @@ sed -i.bak 's/COPY bundle\/metadata/COPY metadata/' "${version}/bundle.Dockerfil
 sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${version}/bundle.Dockerfile"
 rm "${version}/bundle.Dockerfile.bak"
 
-yq e -i '.metadata.annotations.containerImage = .metadata.annotations.containerImage' \
+yq e -i '.metadata.annotations.containerImage = "quay.io/" + .metadata.annotations.containerImage' \
   "${repo}/${version}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
-yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = .spec.install.spec.deployments[0].spec.template.spec.containers[0].image' \
+yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/" + .spec.install.spec.deployments[0].spec.template.spec.containers[0].image' \
   "${repo}/${version}"/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 
 # commit

@@ -74,7 +74,7 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Base registry for the operator, bundle, catalog images
-REGISTRY ?= quay.io/mongodb
+REGISTRY ?= mongodb
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(REGISTRY)/mongodb-atlas-kubernetes-operator-prerelease-bundle:$(VERSION)
