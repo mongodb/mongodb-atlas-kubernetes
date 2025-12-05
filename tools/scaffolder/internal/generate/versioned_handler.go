@@ -9,7 +9,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func generateVersionHandlerFile(dir, resourceName, typesPath string, mapping MappingWithConfig, override bool) error {
+func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string, mapping MappingWithConfig, override bool) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
@@ -23,6 +23,11 @@ func generateVersionHandlerFile(dir, resourceName, typesPath string, mapping Map
 			fmt.Printf("Skipping versioned handler %s (already exists, use --override to overwrite)\n", fileName)
 			return nil
 		}
+	}
+	
+	referenceFields, err := ParseReferenceFields(resultPath, resourceName)
+	if err != nil {
+		return fmt.Errorf("failed to parse reference fields: %w", err)
 	}
 
 	f := jen.NewFile(atlasResourceName)
@@ -54,6 +59,9 @@ func generateVersionHandlerFile(dir, resourceName, typesPath string, mapping Map
 	)
 
 	generateVersionStateHandlers(f, resourceName, apiPkg, versionSuffix)
+
+	// Generate getDependencies method to be used in for api translation calls
+	generateGetDependenciesMethod(f, resourceName, apiPkg, versionSuffix, referenceFields)
 
 	// Generate For and SetupWithManager methods to satisfy StateHandler interface
 	generateVersionInterfaceMethods(f, resourceName, apiPkg, versionSuffix)
@@ -95,6 +103,76 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			)),
 		)
 	}
+}
+
+// generateGetDependenciesMethod generates the getDependencies method for the version-specific handler
+func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuffix string, referenceFields []ReferenceField) {
+	resourceVarName := strings.ToLower(resourceName)
+
+	blockStatements := []jen.Code{
+		jen.Var().Id("deps").Index().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+		jen.Line(),
+	}
+
+	if len(referenceFields) == 0 {
+		blockStatements = append(blockStatements, jen.Return(jen.Id("deps"), jen.Nil()))
+	} else {
+		for _, ref := range referenceFields {
+			// No array-based refs
+			if strings.Contains(ref.FieldPath, ".items.") {
+				continue
+			}
+
+			fieldAccessPath := strings.Replace(buildFieldAccessPath(ref.FieldPath), "resource", resourceVarName, 1)
+
+			refKind := ref.ReferencedKind
+			refVarName := strings.ToLower(refKind)
+
+			// TODO: simplify?
+			var refPkgQual *jen.Statement
+			if refKind == "Secret" {
+				refPkgQual = jen.Qual("k8s.io/api/core/v1", refKind)
+			} else {
+				refPkgQual = jen.Qual(apiPkg, refKind)
+			}
+
+			blockStatements = append(blockStatements,
+				jen.Comment(fmt.Sprintf("Check if %s is present", ref.FieldName)),
+				jen.If(jen.Id(fieldAccessPath).Op("!=").Nil()).Block(
+					jen.Id(refVarName).Op(":=").Op("&").Add(refPkgQual).Values(),
+					jen.Err().Op(":=").Id("h").Dot("kubeClient").Dot("Get").Call(
+						jen.Id("ctx"),
+						jen.Qual("sigs.k8s.io/controller-runtime/pkg/client", "ObjectKey").Values(jen.Dict{
+							jen.Id("Name"):      jen.Id(fieldAccessPath).Dot("Name"),
+							jen.Id("Namespace"): jen.Id(resourceVarName).Dot("GetNamespace").Call(),
+						}),
+						jen.Id(refVarName),
+					),
+					jen.If(jen.Err().Op("!=").Nil()).Block(
+						jen.Return(jen.Id("deps"), jen.Qual("fmt", "Errorf").Call(
+							jen.Lit(fmt.Sprintf("failed to get %s %%s/%%s: %%w", refKind)),
+							jen.Id(resourceVarName).Dot("GetNamespace").Call(),
+							jen.Id(fieldAccessPath).Dot("Name"),
+							jen.Err(),
+						)),
+					),
+					jen.Line(),
+					jen.Id("deps").Op("=").Append(jen.Id("deps"), jen.Id(refVarName)),
+				),
+				jen.Line(),
+			)
+		}
+
+		blockStatements = append(blockStatements, jen.Return(jen.Id("deps"), jen.Nil()))
+	}
+
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("getDependencies").Params(
+		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id(resourceVarName).Op("*").Qual(apiPkg, resourceName),
+	).Params(
+		jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
+		jen.Error(),
+	).Block(blockStatements...)
 }
 
 // generateVersionInterfaceMethods generates For and SetupWithManager methods for version-specific handlers
