@@ -39,6 +39,11 @@ type ReferenceField struct {
 	ReferencedKind    string
 	ReferencedGroup   string
 	ReferencedVersion string
+	// RequiredSegments tracks whether each meaningful path segment is required.
+	// The slice aligns with the meaningful parts of FieldPath (excluding "properties", "items").
+	// For example, for FieldPath "properties.spec.properties.groupRef",
+	// RequiredSegments[0] indicates if "spec" is required, RequiredSegments[1] if "groupRef" is required.
+	RequiredSegments []bool
 }
 
 type IndexerInfo struct {
@@ -179,12 +184,13 @@ func parseAPIMapping(apiMappingsStr string, schema *apiextensionsv1.JSONSchemaPr
 	var references []ReferenceField
 
 	// Recursively search for x-kubernetes-mapping
-	findReferences(mapping, "", schema, &references)
+	// Start with empty requiredSegments slice
+	findReferences(mapping, "", schema, nil, &references)
 
 	return references, nil
 }
 
-func processKubernetesMapping(v map[string]any, path string, references *[]ReferenceField) {
+func processKubernetesMapping(v map[string]any, path string, requiredSegments []bool, references *[]ReferenceField) {
 	kubeMapping, exists := v["x-kubernetes-mapping"]
 	if !exists {
 		return
@@ -217,22 +223,27 @@ func processKubernetesMapping(v map[string]any, path string, references *[]Refer
 	}
 
 	if kind != "" && fieldName != "" {
+		// Make a copy of requiredSegments to avoid sharing the underlying array
+		reqCopy := make([]bool, len(requiredSegments))
+		copy(reqCopy, requiredSegments)
+
 		ref := ReferenceField{
 			FieldName:         fieldName,
 			FieldPath:         path,
 			ReferencedKind:    kind,
 			ReferencedGroup:   group,
 			ReferencedVersion: version,
+			RequiredSegments:  reqCopy,
 		}
 		*references = append(*references, ref)
 	}
 }
 
-func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaProps, references *[]ReferenceField) {
+func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaProps, requiredSegments []bool, references *[]ReferenceField) {
 	switch v := data.(type) {
 	case map[string]any:
 		// Check if this is a kubernetes mapping and process it
-		processKubernetesMapping(v, path, references)
+		processKubernetesMapping(v, path, requiredSegments, references)
 
 		for key, value := range v {
 			newPath := path
@@ -243,8 +254,18 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 
 			// Resolve the child schema for this key and pass it into the recursive call
 			required, childSchema := getSchemaForPathSegment(schema, key)
-			_ = required
-			findReferences(value, newPath, childSchema, references)
+
+			// Track required status for meaningful segments (not "properties" or "items")
+			newRequiredSegments := requiredSegments
+			if key != "properties" && key != "items" {
+				// Special case: the top-level "spec" property is never required per Kubernetes convention
+				if key == "spec" && len(requiredSegments) == 0 {
+					required = false
+				}
+				newRequiredSegments = append(requiredSegments, required)
+			}
+
+			findReferences(value, newPath, childSchema, newRequiredSegments, references)
 		}
 	case []any:
 		for i, item := range v {
@@ -253,11 +274,9 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 			// For arrays pass the items schema if available
 			var childSchema *apiextensionsv1.JSONSchemaProps
 			if schema != nil {
-				var required bool
-				required, childSchema = getSchemaForPathSegment(schema, "items")
-				_ = required
+				_, childSchema = getSchemaForPathSegment(schema, "items")
 			}
-			findReferences(item, newPath, childSchema, references)
+			findReferences(item, newPath, childSchema, requiredSegments, references)
 		}
 	}
 }
@@ -285,6 +304,10 @@ func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string
 	}
 
 	if key == "items" {
+		// Return the items schema for arrays
+		if schema.Items != nil && schema.Items.Schema != nil {
+			return false, schema.Items.Schema
+		}
 		return false, nil
 	}
 

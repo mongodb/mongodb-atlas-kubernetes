@@ -141,6 +141,139 @@ spec:
 	assert.Contains(t, refs[0].FieldPath, ".items.")
 }
 
+func TestParseReferenceFields_RequiredSegments(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
+        - spec
+        properties:
+          spec:
+            type: object
+            required:
+            - v20250312
+            properties:
+              v20250312:
+                type: object
+                required:
+                - groupRef
+                properties:
+                  groupRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	refs, err := ParseReferenceFields(testFile, "Cluster")
+	require.NoError(t, err)
+	require.Len(t, refs, 1)
+
+	ref := refs[0]
+	assert.Equal(t, "groupRef", ref.FieldName)
+	assert.Equal(t, "Group", ref.ReferencedKind)
+	assert.Equal(t, "properties.spec.properties.v20250312.properties.groupRef", ref.FieldPath)
+	// spec is never required (Kubernetes convention), v20250312 is required in spec, groupRef is required in v20250312
+	assert.Equal(t, []bool{false, true, true}, ref.RequiredSegments)
+}
+
+func TestParseReferenceFields_MixedRequiredSegments(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                optionalSection:
+                  properties:
+                    groupRef:
+                      x-kubernetes-mapping:
+                        type:
+                          kind: Group
+                          group: atlas.generated.mongodb.com
+                          version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
+        - spec
+        properties:
+          spec:
+            type: object
+            required:
+            - v20250312
+            properties:
+              v20250312:
+                type: object
+                properties:
+                  optionalSection:
+                    type: object
+                    required:
+                    - groupRef
+                    properties:
+                      groupRef:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	refs, err := ParseReferenceFields(testFile, "Cluster")
+	require.NoError(t, err)
+	require.Len(t, refs, 1)
+
+	ref := refs[0]
+	assert.Equal(t, "groupRef", ref.FieldName)
+	// spec is never required (Kubernetes convention), v20250312 is required, optionalSection is NOT required, groupRef IS required
+	assert.Equal(t, []bool{false, true, false, true}, ref.RequiredSegments)
+}
+
 func TestBuildFieldAccessPath(t *testing.T) {
 	tests := []struct {
 		name      string
