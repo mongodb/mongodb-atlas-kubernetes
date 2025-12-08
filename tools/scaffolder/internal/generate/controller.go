@@ -80,7 +80,7 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 
 	// Generate version-specific handlers
 	for _, mapping := range parsedConfig.Mappings {
-		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, mapping, override); err != nil {
+		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, resultPath, mapping, override); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
 		}
 	}
