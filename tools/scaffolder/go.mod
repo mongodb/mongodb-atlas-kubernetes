@@ -9,7 +9,7 @@ require (
 	// github.com/josvazg/crd2go v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.10.1
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.34.1 // indirect
+	k8s.io/apimachinery v0.34.1
 )
 
 require (
@@ -40,4 +40,5 @@ require (
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )

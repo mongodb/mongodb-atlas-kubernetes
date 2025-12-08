@@ -25,6 +25,12 @@ import (
 
 	"github.com/dave/jennifer/jen"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	clientsetscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type ReferenceField struct {
@@ -33,6 +39,7 @@ type ReferenceField struct {
 	ReferencedKind    string
 	ReferencedGroup   string
 	ReferencedVersion string
+	RequiredSegments  []bool
 }
 
 type IndexerInfo struct {
@@ -112,19 +119,19 @@ func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]Refere
 }
 
 func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceField, error) {
-	var crd CRDDocument
-	if err := yaml.Unmarshal(content, &crd); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	crd, err := Decode(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %w", err)
 	}
 
-	if crd.Kind != "CustomResourceDefinition" || crd.Spec.Names.Kind != targetKind {
+	if crd.Spec.Names.Kind != targetKind {
 		return nil, fmt.Errorf("not target CRD")
 	}
 
 	var references []ReferenceField
 
-	if apiMappingsStr, exists := crd.Metadata.Annotations["api-mappings"]; exists {
-		refs, err := parseAPIMapping(apiMappingsStr)
+	if apiMappingsStr, exists := crd.GetAnnotations()["api-mappings"]; exists {
+		refs, err := parseAPIMapping(apiMappingsStr, crd.Spec.Versions[0].Schema.OpenAPIV3Schema)
 		if err == nil {
 			references = append(references, refs...)
 		}
@@ -134,34 +141,36 @@ func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceFie
 	return references, nil
 }
 
-type VersionProperties struct {
-	Properties map[string]PropertyMapping `yaml:"properties"`
+func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
+	sch := runtime.NewScheme()
+	_ = clientsetscheme.AddToScheme(sch)
+	_ = apiextensions.AddToScheme(sch)
+	_ = apiextensionsv1.AddToScheme(sch)
+	_ = apiextensionsv1.RegisterConversions(sch)
+	_ = apiextensionsv1beta1.AddToScheme(sch)
+	_ = apiextensionsv1beta1.RegisterConversions(sch)
+
+	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
+
+	obj, _, err := decode(content, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %w", err)
+	}
+
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	if kind != "CustomResourceDefinition" {
+		return nil, fmt.Errorf("unexpected kind %q: %w", kind, err)
+	}
+
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	err = sch.Convert(obj, crd, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert CRD object: %w", err)
+	}
+	return crd, nil
 }
 
-type PropertyMapping struct {
-	KubernetesMapping *KubernetesMapping `yaml:"x-kubernetes-mapping,omitempty"`
-	OpenAPIMapping    *OpenAPIMapping    `yaml:"x-openapi-mapping,omitempty"`
-}
-
-type KubernetesMapping struct {
-	NameSelector string            `yaml:"nameSelector"`
-	Properties   []string          `yaml:"properties"`
-	Type         KubernetesRefType `yaml:"type"`
-}
-
-type KubernetesRefType struct {
-	Group    string `yaml:"group"`
-	Kind     string `yaml:"kind"`
-	Resource string `yaml:"resource"`
-	Version  string `yaml:"version"`
-}
-
-type OpenAPIMapping struct {
-	Property string `yaml:"property"`
-	Type     string `yaml:"type,omitempty"`
-}
-
-func parseAPIMapping(apiMappingsStr string) ([]ReferenceField, error) {
+func parseAPIMapping(apiMappingsStr string, schema *apiextensionsv1.JSONSchemaProps) ([]ReferenceField, error) {
 	// Parse the api-mappings as a generic map to handle any nesting level
 	var mapping map[string]any
 	if err := yaml.Unmarshal([]byte(apiMappingsStr), &mapping); err != nil {
@@ -171,12 +180,13 @@ func parseAPIMapping(apiMappingsStr string) ([]ReferenceField, error) {
 	var references []ReferenceField
 
 	// Recursively search for x-kubernetes-mapping
-	findReferences(mapping, "", &references)
+	// Start with empty requiredSegments slice
+	findReferences(mapping, "", schema, nil, &references)
 
 	return references, nil
 }
 
-func processKubernetesMapping(v map[string]any, path string, references *[]ReferenceField) {
+func processKubernetesMapping(v map[string]any, path string, requiredSegments []bool, references *[]ReferenceField) {
 	kubeMapping, exists := v["x-kubernetes-mapping"]
 	if !exists {
 		return
@@ -209,22 +219,27 @@ func processKubernetesMapping(v map[string]any, path string, references *[]Refer
 	}
 
 	if kind != "" && fieldName != "" {
+		// Make a copy of requiredSegments to avoid sharing the underlying array
+		reqCopy := make([]bool, len(requiredSegments))
+		copy(reqCopy, requiredSegments)
+
 		ref := ReferenceField{
 			FieldName:         fieldName,
 			FieldPath:         path,
 			ReferencedKind:    kind,
 			ReferencedGroup:   group,
 			ReferencedVersion: version,
+			RequiredSegments:  reqCopy,
 		}
 		*references = append(*references, ref)
 	}
 }
 
-func findReferences(data any, path string, references *[]ReferenceField) {
+func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaProps, requiredSegments []bool, references *[]ReferenceField) {
 	switch v := data.(type) {
 	case map[string]any:
 		// Check if this is a kubernetes mapping and process it
-		processKubernetesMapping(v, path, references)
+		processKubernetesMapping(v, path, requiredSegments, references)
 
 		for key, value := range v {
 			newPath := path
@@ -232,14 +247,73 @@ func findReferences(data any, path string, references *[]ReferenceField) {
 				newPath += "."
 			}
 			newPath += key
-			findReferences(value, newPath, references)
+
+			// Resolve the child schema for this key and pass it into the recursive call
+			required, childSchema := getSchemaForPathSegment(schema, key)
+
+			// Track required status for meaningful segments (not "properties" or "items")
+			newRequiredSegments := requiredSegments
+			if key != "properties" && key != "items" {
+				// Special case: the top-level "spec" property is never required per Kubernetes convention
+				if key == "spec" && len(requiredSegments) == 0 {
+					required = false
+				}
+				newRequiredSegments = append(requiredSegments, required)
+			}
+
+			findReferences(value, newPath, childSchema, newRequiredSegments, references)
 		}
 	case []any:
 		for i, item := range v {
 			newPath := fmt.Sprintf("%s[%d]", path, i)
-			findReferences(item, newPath, references)
+
+			// For arrays pass the items schema if available
+			var childSchema *apiextensionsv1.JSONSchemaProps
+			if schema != nil {
+				_, childSchema = getSchemaForPathSegment(schema, "items")
+			}
+			findReferences(item, newPath, childSchema, requiredSegments, references)
 		}
 	}
+}
+
+// getSchemaForPathSegment returns the nested JSONSchemaProps for a given mapping key.
+// - "properties" returns the current schema (so inner property names will be looked up in schema.Properties)
+// - "items" returns the schema for array items (handles single Schema or first element of JSONSchemas)
+// - normal property names return schema.Properties[name] (strips trailing "[index]" if present)
+func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string) (bool, *apiextensionsv1.JSONSchemaProps) {
+	if schema == nil {
+		return false, nil
+	}
+
+	if key == "properties" {
+		// The next level will contain actual property names; keep the current schema so those names can be looked up in schema.Properties
+		return false, schema
+	}
+
+	required := false
+	for _, req := range schema.Required {
+		if req == key {
+			required = true
+			break
+		}
+	}
+
+	if key == "items" {
+		// Return the items schema for arrays
+		if schema.Items != nil && schema.Items.Schema != nil {
+			return false, schema.Items.Schema
+		}
+		return false, nil
+	}
+
+	if schema.Properties != nil {
+		if p, ok := schema.Properties[key]; ok {
+			return required, &p
+		}
+	}
+
+	return false, nil
 }
 
 func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
@@ -395,17 +469,19 @@ func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 		// We need to convert this to: resource.Spec.<version>.GroupRef
 		fieldAccessPath := buildFieldAccessPath(field.FieldPath)
 
-		// Generate: if resource.Spec.<version>.GroupRef != nil && resource.Spec.<version>.GroupRef.Name != "" {
-		//   keys = append(keys, types.NamespacedName{Name: resource.Spec.<version>.GroupRef.Name, Namespace: resource.Namespace}.String())
+		// Nil check if conditions
+		nilCheckCondition := buildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
+
+		// Add check that the Name field is not empty
+		condition := nilCheckCondition.Op("&&").Add(
+			jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
+		)
+
+		// Generate: if <nil checks> && resource.Spec.<version>.GroupRef.Name != "" {
+		//   keys = append(keys, types.NamespacedName{...}.String())
 		// }
 		code = append(code,
-			jen.If(
-				jen.Op("").Add(
-					jen.Id(fieldAccessPath).Op("!=").Nil(),
-				).Op("&&").Add(
-					jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
-				),
-			).Block(
+			jen.If(condition).Block(
 				jen.Id("keys").Op("=").Append(
 					jen.Id("keys"),
 					jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
@@ -444,6 +520,71 @@ func capitalizeFirst(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// buildNilCheckConditions creates a compound nil check condition for a field access path
+// based on which segments are required (non-pointer) vs optional (pointer).
+// Examples:
+//   - fieldAccessPath: "cluster.Spec.V20250312.GroupRef"
+//   - requiredSegments: [false, true, false] (for Spec, V20250312, GroupRef - excludes variable name)
+func buildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *jen.Statement {
+	segments := strings.Split(fieldAccessPath, ".")
+
+	if len(requiredSegments) == 0 {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	if len(requiredSegments) != len(segments)-1 {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	var conditions *jen.Statement
+
+	for i := 1; i < len(segments); i++ {
+		requiredIndex := i - 1
+
+		// Skip if segment is required, means it's a non-pointer struct
+		if requiredSegments[requiredIndex] {
+			continue
+		}
+
+		// Special case: "Spec" is always a non-pointer struct in Kubernetes resources
+		if segments[i] == "Spec" {
+			continue
+		}
+
+		// Build the path up to this segment
+		pathSegments := segments[:i+1]
+		nilCheck := buildDotChain(pathSegments).Op("!=").Nil()
+
+		if conditions == nil {
+			conditions = nilCheck
+		} else {
+			conditions = conditions.Op("&&").Add(nilCheck)
+		}
+	}
+
+	// If no conditions were added (all segments required), check only the last field
+	if conditions == nil {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	return conditions
+}
+
+// buildDotChain creates a jen.Statement for a dot-separated path
+// For example: ["cluster", "Spec", "V20250312"] -> jen.Id("cluster").Dot("Spec").Dot("V20250312")
+func buildDotChain(segments []string) *jen.Statement {
+	if len(segments) == 0 {
+		return jen.Null()
+	}
+
+	stmt := jen.Id(segments[0])
+	for i := 1; i < len(segments); i++ {
+		stmt = stmt.Dot(segments[i])
+	}
+
+	return stmt
 }
 
 func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {
