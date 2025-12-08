@@ -1,0 +1,791 @@
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package generate
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGenerateVersionHandlerFile(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: resources.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Resource
+    plural: resources
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Resource",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	assert.FileExists(t, handlerFile)
+
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Verify package declaration
+	assert.Contains(t, contentStr, "package resource")
+
+	// Verify license header
+	assert.Contains(t, contentStr, "Copyright 2025 MongoDB Inc")
+	assert.Contains(t, contentStr, "Apache License, Version 2.0")
+
+	// Verify imports
+	assert.Contains(t, contentStr, `ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"`)
+	assert.Contains(t, contentStr, `akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"`)
+	assert.Contains(t, contentStr, `v20250312sdk "go.mongodb.org/atlas-sdk/v20250312008/admin"`)
+
+	// Verify Handler struct
+	assert.Contains(t, contentStr, "type Handlerv20250312 struct")
+	assert.Contains(t, contentStr, "kubeClient")
+	assert.Contains(t, contentStr, "atlasClient")
+	assert.Contains(t, contentStr, "translator")
+	assert.Contains(t, contentStr, "deletionProtection")
+
+	// Verify constructor
+	assert.Contains(t, contentStr, "func NewHandlerv20250312(")
+
+	// Verify all state handlers exist
+	handlers := []string{
+		"HandleInitial",
+		"HandleImportRequested",
+		"HandleImported",
+		"HandleCreating",
+		"HandleCreated",
+		"HandleUpdating",
+		"HandleUpdated",
+		"HandleDeletionRequested",
+		"HandleDeleting",
+	}
+	for _, handler := range handlers {
+		assert.Contains(t, contentStr, "func (h *Handlerv20250312) "+handler)
+	}
+
+	// Verify getDependencies method
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependencies(")
+
+	// Verify interface methods
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) For()")
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) SetupWithManager(")
+}
+
+func TestGenerateVersionHandlerFileWithReferences(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: deployments.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+                secretRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Secret
+                      group: ""
+                      version: v1
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Deployment
+    plural: deployments
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+                properties:
+                  groupRef:
+                    type: object
+                  secretRef:
+                    type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Deployment",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Verify getDependencies method handles references
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependencies(")
+	assert.Contains(t, contentStr, "var deps []client.Object")
+
+	// Should contain checks for both groupRef and secretRef
+	assert.Contains(t, contentStr, "Check if groupRef is present")
+	assert.Contains(t, contentStr, "Check if secretRef is present")
+
+	// Should contain Group and Secret references
+	assert.Contains(t, contentStr, "group := &akov2generated.Group{}")
+	assert.Contains(t, contentStr, `secret := &v1.Secret{}`)
+
+	// Should contain error handling for Get operations
+	assert.Contains(t, contentStr, `failed to get Group`)
+	assert.Contains(t, contentStr, `failed to get Secret`)
+}
+
+func TestGenerateVersionHandlerFileOverride(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: resources.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Resource
+    plural: resources
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	// Create initial file
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Resource",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	initialContent, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+
+	// Try to generate again without override - should skip
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Resource",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	afterSkipContent, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	assert.Equal(t, initialContent, afterSkipContent, "File should not change when override=false")
+
+	// Generate with override - should update
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Resource",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		true,
+	)
+	require.NoError(t, err)
+
+	// File should exist and be valid
+	assert.FileExists(t, handlerFile)
+}
+
+func TestGenerateVersionStateHandlers(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Cluster
+    plural: clusters
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Cluster",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Test state transitions
+	stateTests := []struct {
+		handler   string
+		nextState string
+		message   string
+	}{
+		{"HandleInitial", "StateUpdated", "Updated AtlasCluster."},
+		{"HandleImportRequested", "StateImported", "Import completed"},
+		{"HandleImported", "StateUpdated", "Ready"},
+		{"HandleCreating", "StateCreated", "Resource created"},
+		{"HandleCreated", "StateUpdated", "Ready"},
+		{"HandleUpdating", "StateUpdated", "Update completed"},
+		{"HandleUpdated", "StateUpdated", "Ready"},
+		{"HandleDeletionRequested", "StateDeleting", "Deletion started"},
+		{"HandleDeleting", "StateDeleted", "Deleted"},
+	}
+
+	for _, tt := range stateTests {
+		t.Run(tt.handler, func(t *testing.T) {
+			// Verify handler method exists
+			assert.Contains(t, contentStr, "func (h *Handlerv20250312) "+tt.handler)
+
+			// Verify it returns correct state
+			assert.Contains(t, contentStr, `state.`+tt.nextState)
+			assert.Contains(t, contentStr, `"`+tt.message+`"`)
+
+			// Verify it has TODO comments
+			assert.Contains(t, contentStr, "// TODO: Implement")
+		})
+	}
+}
+
+func TestGenerateVersionHandlerFileWithMultipleVersions(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: projects.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+            v20250401:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250401001/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Project
+    plural: projects
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+              v20250401:
+                type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	// Generate handlers for both versions
+	mappings := []MappingWithConfig{
+		{
+			Version: "v20250312",
+			OpenAPIConfig: OpenAPIConfig{
+				Name:    "v20250312",
+				Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+			},
+		},
+		{
+			Version: "v20250401",
+			OpenAPIConfig: OpenAPIConfig{
+				Name:    "v20250401",
+				Package: "go.mongodb.org/atlas-sdk/v20250401001/admin",
+			},
+		},
+	}
+
+	for _, mapping := range mappings {
+		err = generateVersionHandlerFile(
+			controllerDir,
+			"Project",
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testFile,
+			mapping,
+			false,
+		)
+		require.NoError(t, err)
+	}
+
+	// Verify both handler files exist
+	handler1 := filepath.Join(controllerDir, "handler_v20250312.go")
+	handler2 := filepath.Join(controllerDir, "handler_v20250401.go")
+	assert.FileExists(t, handler1)
+	assert.FileExists(t, handler2)
+
+	// Verify each has correct version-specific content
+	content1, err := os.ReadFile(handler1)
+	require.NoError(t, err)
+	content1Str := string(content1)
+	assert.Contains(t, content1Str, "type Handlerv20250312 struct")
+	assert.Contains(t, content1Str, "func NewHandlerv20250312(")
+	assert.Contains(t, content1Str, `v20250312sdk "go.mongodb.org/atlas-sdk/v20250312008/admin"`)
+
+	content2, err := os.ReadFile(handler2)
+	require.NoError(t, err)
+	content2Str := string(content2)
+	assert.Contains(t, content2Str, "type Handlerv20250401 struct")
+	assert.Contains(t, content2Str, "func NewHandlerv20250401(")
+	assert.Contains(t, content2Str, `v20250401sdk "go.mongodb.org/atlas-sdk/v20250401001/admin"`)
+}
+
+func TestGenerateGetDependenciesMethod(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: users.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                projectRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Project
+                      group: atlas.generated.mongodb.com
+                      version: v1
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: User
+    plural: users
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+                properties:
+                  projectRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"User",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Verify getDependencies method signature
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependencies(")
+	assert.Contains(t, contentStr, "ctx context.Context")
+	assert.Contains(t, contentStr, "user *akov2generated.User")
+	assert.Contains(t, contentStr, "[]client.Object")
+
+	// Verify it initializes deps slice
+	assert.Contains(t, contentStr, "var deps []client.Object")
+
+	// Verify it checks for projectRef
+	assert.Contains(t, contentStr, "Check if projectRef is present")
+	assert.Contains(t, contentStr, "user.Spec.V20250312.ProjectRef")
+
+	// Verify it creates Project object
+	assert.Contains(t, contentStr, "project := &akov2generated.Project{}")
+
+	// Verify it appends to deps
+	assert.Contains(t, contentStr, "deps = append(deps, project)")
+
+	// Verify it returns
+	assert.Contains(t, contentStr, "return deps, nil")
+}
+
+func TestGenerateVersionInterfaceMethods(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databases.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Database
+    plural: databases
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Database",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Test For method
+	assert.Contains(t, contentStr, "// For returns the resource and predicates for the controller")
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) For()")
+	assert.Contains(t, contentStr, "client.Object")
+	assert.Contains(t, contentStr, "builder.Predicates")
+	assert.Contains(t, contentStr, "&akov2generated.Database{}")
+	assert.Contains(t, contentStr, "builder.WithPredicates()")
+
+	// Test SetupWithManager method
+	assert.Contains(t, contentStr, "// SetupWithManager sets up the controller with the Manager")
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) SetupWithManager(")
+	assert.Contains(t, contentStr, "mgr controllerruntime.Manager")
+	assert.Contains(t, contentStr, "rec reconcile.Reconciler")
+	assert.Contains(t, contentStr, "defaultOptions controller.Options")
+	assert.Contains(t, contentStr, "// This method is not used for version-specific handlers")
+	assert.Contains(t, contentStr, "return nil")
+}
+
+func TestGenerateVersionHandlerFileNoReferences(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: simple.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Simple
+    plural: simples
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                type: object
+                properties:
+                  name:
+                    type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Simple",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testFile,
+		mapping,
+		false,
+	)
+	require.NoError(t, err)
+
+	handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+	content, err := os.ReadFile(handlerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Verify getDependencies method returns empty deps
+	assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependencies(")
+	assert.Contains(t, contentStr, "var deps []client.Object")
+
+	// Should have early return since no references
+	lines := strings.Split(contentStr, "\n")
+	foundReturn := false
+	for _, line := range lines {
+		if strings.Contains(line, "return deps, nil") {
+			foundReturn = true
+			break
+		}
+	}
+	assert.True(t, foundReturn, "Should have return statement for empty deps")
+}
+
+func TestGenerateVersionHandlerInvalidResultPath(t *testing.T) {
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	tmpDir := t.TempDir()
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err := os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	// Try with non-existent file
+	err = generateVersionHandlerFile(
+		controllerDir,
+		"Resource",
+		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		"/non/existent/file.yaml",
+		mapping,
+		false,
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse reference fields")
+}
