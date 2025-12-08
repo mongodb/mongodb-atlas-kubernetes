@@ -39,11 +39,13 @@ func (p *ReadWriteProperties) Process(req *PropertyProcessorRequest) error {
 	}
 
 	required := sets.New(req.OpenAPISchema.Required...)
+	required.Insert(req.Property.Required...)
 	for name, prop := range req.OpenAPISchema.Properties {
 		if prop.Value.ReadOnly {
 			required.Delete(name)
 		}
 	}
+
 	req.Property.Required = required.UnsortedList()
 	slices.Sort(req.Property.Required)
 
