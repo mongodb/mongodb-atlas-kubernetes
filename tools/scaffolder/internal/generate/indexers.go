@@ -39,11 +39,7 @@ type ReferenceField struct {
 	ReferencedKind    string
 	ReferencedGroup   string
 	ReferencedVersion string
-	// RequiredSegments tracks whether each meaningful path segment is required.
-	// The slice aligns with the meaningful parts of FieldPath (excluding "properties", "items").
-	// For example, for FieldPath "properties.spec.properties.groupRef",
-	// RequiredSegments[0] indicates if "spec" is required, RequiredSegments[1] if "groupRef" is required.
-	RequiredSegments []bool
+	RequiredSegments  []bool
 }
 
 type IndexerInfo struct {
@@ -473,17 +469,19 @@ func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 		// We need to convert this to: resource.Spec.<version>.GroupRef
 		fieldAccessPath := buildFieldAccessPath(field.FieldPath)
 
-		// Generate: if resource.Spec.<version>.GroupRef != nil && resource.Spec.<version>.GroupRef.Name != "" {
-		//   keys = append(keys, types.NamespacedName{Name: resource.Spec.<version>.GroupRef.Name, Namespace: resource.Namespace}.String())
+		// Nil check if conditions
+		nilCheckCondition := buildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
+
+		// Add check that the Name field is not empty
+		condition := nilCheckCondition.Op("&&").Add(
+			jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
+		)
+
+		// Generate: if <nil checks> && resource.Spec.<version>.GroupRef.Name != "" {
+		//   keys = append(keys, types.NamespacedName{...}.String())
 		// }
 		code = append(code,
-			jen.If(
-				jen.Op("").Add(
-					jen.Id(fieldAccessPath).Op("!=").Nil(),
-				).Op("&&").Add(
-					jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
-				),
-			).Block(
+			jen.If(condition).Block(
 				jen.Id("keys").Op("=").Append(
 					jen.Id("keys"),
 					jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
@@ -522,6 +520,71 @@ func capitalizeFirst(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// buildNilCheckConditions creates a compound nil check condition for a field access path
+// based on which segments are required (non-pointer) vs optional (pointer).
+// Examples:
+//   - fieldAccessPath: "cluster.Spec.V20250312.GroupRef"
+//   - requiredSegments: [false, true, false] (for Spec, V20250312, GroupRef - excludes variable name)
+func buildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *jen.Statement {
+	segments := strings.Split(fieldAccessPath, ".")
+
+	if len(requiredSegments) == 0 {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	if len(requiredSegments) != len(segments)-1 {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	var conditions *jen.Statement
+
+	for i := 1; i < len(segments); i++ {
+		requiredIndex := i - 1
+
+		// Skip if segment is required, means it's a non-pointer struct
+		if requiredSegments[requiredIndex] {
+			continue
+		}
+
+		// Special case: "Spec" is always a non-pointer struct in Kubernetes resources
+		if segments[i] == "Spec" {
+			continue
+		}
+
+		// Build the path up to this segment
+		pathSegments := segments[:i+1]
+		nilCheck := buildDotChain(pathSegments).Op("!=").Nil()
+
+		if conditions == nil {
+			conditions = nilCheck
+		} else {
+			conditions = conditions.Op("&&").Add(nilCheck)
+		}
+	}
+
+	// If no conditions were added (all segments required), check only the last field
+	if conditions == nil {
+		return buildDotChain(segments).Op("!=").Nil()
+	}
+
+	return conditions
+}
+
+// buildDotChain creates a jen.Statement for a dot-separated path
+// For example: ["cluster", "Spec", "V20250312"] -> jen.Id("cluster").Dot("Spec").Dot("V20250312")
+func buildDotChain(segments []string) *jen.Statement {
+	if len(segments) == 0 {
+		return jen.Null()
+	}
+
+	stmt := jen.Id(segments[0])
+	for i := 1; i < len(segments); i++ {
+		stmt = stmt.Dot(segments[i])
+	}
+
+	return stmt
 }
 
 func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {

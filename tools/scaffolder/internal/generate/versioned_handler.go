@@ -125,6 +125,9 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 
 			fieldAccessPath := strings.Replace(buildFieldAccessPath(ref.FieldPath), "resource", resourceVarName, 1)
 
+			// Build nil check conditions using RequiredSegments to handle optional pointer fields
+			nilCheckCondition := buildNilCheckConditions(fieldAccessPath, ref.RequiredSegments)
+
 			refKind := ref.ReferencedKind
 			refVarName := strings.ToLower(refKind)
 
@@ -138,7 +141,7 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 
 			blockStatements = append(blockStatements,
 				jen.Comment(fmt.Sprintf("Check if %s is present", ref.FieldName)),
-				jen.If(jen.Id(fieldAccessPath).Op("!=").Nil()).Block(
+				jen.If(nilCheckCondition).Block(
 					jen.Id(refVarName).Op(":=").Op("&").Add(refPkgQual).Values(),
 					jen.Err().Op(":=").Id("h").Dot("kubeClient").Dot("Get").Call(
 						jen.Id("ctx"),
