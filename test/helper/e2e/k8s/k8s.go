@@ -38,6 +38,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 )
 
 func init() {
@@ -102,6 +103,21 @@ func GetProjectStatusCondition(ctx context.Context, k8sClient client.Client, sta
 		}
 	}
 	return "", fmt.Errorf("condition %s not found. found %v", statusType, project.Status.Conditions)
+}
+
+func GetStatusCondition(ctx context.Context, k8sClient client.Client, obj kube.ObjectWithStatus, statusType string) (metav1.Condition, error) {
+	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+	if err != nil {
+		return metav1.Condition{}, err
+	}
+
+	for _, condition := range obj.GetConditions() {
+		if condition.Type == statusType {
+			return condition, nil
+		}
+	}
+
+	return metav1.Condition{}, fmt.Errorf("condition %s not found. found %v", statusType, obj.GetConditions())
 }
 
 func GetDeploymentStatusCondition(ctx context.Context, k8sClient client.Client, statusType api.ConditionType, ns string, name string) (string, error) {

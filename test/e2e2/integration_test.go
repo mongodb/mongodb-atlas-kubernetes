@@ -59,7 +59,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		ako.Start(GinkgoT())
 
 		ctx = context.Background()
-		client, err := kube.NewTestClient()
+		client, err := kube.NewTestClient(false)
 		Expect(err).To(Succeed())
 		kubeClient = client
 		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{

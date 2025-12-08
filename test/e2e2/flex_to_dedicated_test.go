@@ -52,7 +52,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		ako.Start(GinkgoT())
 
 		ctx = context.Background()
-		client, err := kube.NewTestClient()
+		client, err := kube.NewTestClient(false)
 		Expect(err).ToNot(HaveOccurred())
 		kubeClient = client
 	})

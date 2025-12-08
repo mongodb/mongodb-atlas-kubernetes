@@ -1,0 +1,33 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: my-group
+spec:
+  v20250312:
+    entry:
+      orgId: 63402b6913a34618ed885c13
+      name: Group Test
+      regionUsageRestrictions: NONE
+      withDefaultAlertsSettings: true
+      tags:
+        - key: project
+          value: mongodb-atlas-operator
+        - key: environment
+          value: production
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: my-group
+spec:
+  v20250312:
+    entry:
+      orgId: 63402b6913a34618ed885c13
+      name: Group Test Imported
+      regionUsageRestrictions: NONE
+      withDefaultAlertsSettings: true
+      tags:
+        - key: project
+          value: mongodb-atlas-operator
+        - key: environment
+          value: production

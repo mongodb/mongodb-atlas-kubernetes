@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 )
 
 const (
@@ -53,12 +54,17 @@ func AssertCRDs(ctx context.Context, kubeClient client.Client, crds ...*apiexten
 // NewTestClient returns a Kubernetes client for tests.
 // It requires a running Kubernetes cluster and a local configuration to it.
 // It supports core Kubernetes types, production and experimental CRDs.
-func NewTestClient() (client.Client, error) {
+func NewTestClient(experimental bool) (client.Client, error) {
 	testScheme := runtime.NewScheme()
 	utilruntime.Must(corev1.AddToScheme(testScheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
 	utilruntime.Must(akov2.AddToScheme(testScheme))
 	utilruntime.Must(appsv1.AddToScheme(testScheme))
+
+	if experimental {
+		utilruntime.Must(akov2generated.AddToScheme(testScheme))
+	}
+
 	return getKubeClient(testScheme)
 }
 

@@ -1,26 +1,195 @@
-apiVersion: atlas.mongodb.com/v1
-kind: AtlasDeployment
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
 metadata:
-  name: my-atlas-deployment
+  name: my-atlas-group
 spec:
-  projectRef:
-    name: my-project
-  backupRef:
-    name: atlasbackupschedule-sample
-  deploymentSpec:
-    name: "test-deployment"
-    clusterType: REPLICASET
-    backupEnabled: true
-    mongoDBMajorVersion: "7.0"
-    replicationSpecs:
-      - zoneName: "Zone 1"
-        regionConfigs:
-          - providerName: AWS
-            regionName: US_EAST_1
-            priority: 7
-            electableSpecs:
-              instanceSize: M10
-              nodeCount: 3
-    tags:
-      - key: team
-        value: atlas-operator
+  v20250312:
+    entry:
+      name: My AutoGen Group
+      orgId: 63402b6913a34618ed885c13
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: my-shared-deployment-ref
+spec:
+  v20250312:
+    groupRef:
+      name: my-atlas-group
+    entry:
+      name: AutoGenSharedClusterRef
+      clusterType: REPLICASET
+      tags:
+        - key: test
+          value: shared
+      replicationSpecs:
+        - regionConfigs:
+            - providerName: TENANT
+              backingProviderName: AWS
+              regionName: US_EAST_1
+              electableSpecs:
+                  instanceSize: M0
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: my-rs-deployment
+spec:
+  connectionSecretRef:
+    name: cluster-credentials
+  v20250312:
+    groupId: 693167ff26814b04575d12a8
+    entry:
+      name: AutoGenRSClusterRef
+      clusterType: REPLICASET
+      tags:
+        - key: test
+          value: replicaset
+      replicationSpecs:
+        - regionConfigs:
+            - providerName: AWS
+              regionName: US_EAST_1
+              priority: 7
+              electableSpecs:
+                  instanceSize: M20
+                  nodeCount: 3
+                  diskSizeGB: 40
+              readOnlySpecs:
+                instanceSize: M10
+                nodeCount: 2
+                diskSizeGB: 40
+              autoScaling:
+                diskGB:
+                  enabled: true
+                compute:
+                  enabled: true
+                  scaleDownEnabled: true
+                  minInstanceSize: M20
+                  maxInstanceSize: M50
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: my-s-deployment
+spec:
+  connectionSecretRef:
+    name: cluster-credentials
+  v20250312:
+    groupId: 693167ff26814b04575d12a8
+    entry:
+      name: AutoGenSClusterRef
+      clusterType: SHARDED
+      backupEnabled: true
+      tags:
+        - key: test
+          value: sharded
+      replicationSpecs:
+        - zoneName: Zone 1
+          regionConfigs:
+            - providerName: AWS
+              regionName: US_EAST_1
+              priority: 7
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 3
+                diskSizeGB: 40
+            - providerName: GCP
+              regionName: CENTRAL_US
+              priority: 6
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 2
+                diskSizeGB: 40
+              readOnlySpecs:
+                instanceSize: M10
+                nodeCount: 1
+                diskSizeGB: 40
+        - zoneName: Zone 1
+          regionConfigs:
+            - providerName: AWS
+              regionName: US_EAST_1
+              priority: 7
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 3
+                diskSizeGB: 40
+            - providerName: GCP
+              regionName: CENTRAL_US
+              priority: 6
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 2
+                diskSizeGB: 40
+              readOnlySpecs:
+                instanceSize: M10
+                nodeCount: 1
+                diskSizeGB: 40
+---
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Cluster
+metadata:
+  name: my-gs-deployment-ref
+spec:
+  v20250312:
+    groupRef:
+      name: my-atlas-group
+    entry:
+      name: AutoGenGSClusterRef
+      clusterType: GEOSHARDED
+      backupEnabled: true
+      tags:
+        - key: test
+          value: geosharded
+      replicationSpecs:
+        - zoneName: Zone 1
+          regionConfigs:
+            - providerName: AWS
+              regionName: US_EAST_1
+              priority: 7
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 3
+                diskSizeGB: 40
+            - providerName: GCP
+              regionName: CENTRAL_US
+              priority: 6
+              electableSpecs:
+                instanceSize: M20
+                nodeCount: 2
+                diskSizeGB: 40
+              readOnlySpecs:
+                instanceSize: M10
+                nodeCount: 1
+                diskSizeGB: 40
+        - zoneName: Zone 2
+          regionConfigs:
+            - providerName: AWS
+              regionName: US_WEST_1
+              priority: 7
+              electableSpecs:
+                instanceSize: M10
+                nodeCount: 5
+                diskSizeGB: 40
+            - providerName: GCP
+              regionName: US_WEST_2
+              priority: 6
+              electableSpecs:
+                instanceSize: M10
+                nodeCount: 2
+                diskSizeGB: 40
+              readOnlySpecs:
+                instanceSize: M20
+                nodeCount: 2
+                diskSizeGB: 40
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-credentials
+  labels:
+    atlas.mongodb.com/type: credentials
+type: Opaque
+stringData:
+  orgId: "63402b6913a34618ed885c13"
+  privateApiKey: "e11bbd6e-bc0e-4b9a-a3bc-ef82bd44cac0"
+  publicApiKey: "pygbcyah"
