@@ -39,6 +39,10 @@ func (p *SkippedProperties) Process(req *PropertyProcessorRequest) error {
 		requiredPaths[jsonPath(append(req.Path, r))] = r
 	}
 
+	for _, r := range req.Property.Required {
+		requiredPaths[jsonPath(append(req.Path, r))] = r
+	}
+
 	for _, s := range req.PropertyConfig.Filters.SkipProperties {
 		delete(requiredPaths, s)
 	}

@@ -19,11 +19,10 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-
-	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 func TestSensitivePropertyName(t *testing.T) {
@@ -70,6 +69,7 @@ func TestSensitivePropertyProcess(t *testing.T) {
 				ID:          "passwordSecretRef",
 				Type:        "object",
 				Description: "SENSITIVE FIELD\n\nReference to a secret containing data for the \"password\" field:\n\nthe password",
+				Required:    []string{"name"},
 				Properties: map[string]apiextensions.JSONSchemaProps{
 					"name": {
 						Type:        "string",
@@ -120,6 +120,7 @@ func TestSensitivePropertyProcess(t *testing.T) {
 				ID:          "passwordSecretRef",
 				Type:        "object",
 				Description: "SENSITIVE FIELD\n\nReference to a secret containing data for the \"password\" field:\n\nthe credentials password",
+				Required:    []string{"name"},
 				Properties: map[string]apiextensions.JSONSchemaProps{
 					"name": {
 						Type:        "string",
