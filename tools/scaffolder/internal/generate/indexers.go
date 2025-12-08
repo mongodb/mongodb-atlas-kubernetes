@@ -25,6 +25,12 @@ import (
 
 	"github.com/dave/jennifer/jen"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	clientsetscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type ReferenceField struct {
@@ -112,19 +118,19 @@ func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]Refere
 }
 
 func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceField, error) {
-	var crd CRDDocument
-	if err := yaml.Unmarshal(content, &crd); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	crd, err := Decode(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %w", err)
 	}
 
-	if crd.Kind != "CustomResourceDefinition" || crd.Spec.Names.Kind != targetKind {
+	if crd.Spec.Names.Kind != targetKind {
 		return nil, fmt.Errorf("not target CRD")
 	}
 
 	var references []ReferenceField
 
-	if apiMappingsStr, exists := crd.Metadata.Annotations["api-mappings"]; exists {
-		refs, err := parseAPIMapping(apiMappingsStr)
+	if apiMappingsStr, exists := crd.GetAnnotations()["api-mappings"]; exists {
+		refs, err := parseAPIMapping(apiMappingsStr, crd.Spec.Versions[0].Schema.OpenAPIV3Schema)
 		if err == nil {
 			references = append(references, refs...)
 		}
@@ -134,34 +140,36 @@ func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceFie
 	return references, nil
 }
 
-type VersionProperties struct {
-	Properties map[string]PropertyMapping `yaml:"properties"`
+func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
+	sch := runtime.NewScheme()
+	_ = clientsetscheme.AddToScheme(sch)
+	_ = apiextensions.AddToScheme(sch)
+	_ = apiextensionsv1.AddToScheme(sch)
+	_ = apiextensionsv1.RegisterConversions(sch)
+	_ = apiextensionsv1beta1.AddToScheme(sch)
+	_ = apiextensionsv1beta1.RegisterConversions(sch)
+
+	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
+
+	obj, _, err := decode(content, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %w", err)
+	}
+
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	if kind != "CustomResourceDefinition" {
+		return nil, fmt.Errorf("unexpected kind %q: %w", kind, err)
+	}
+
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	err = sch.Convert(obj, crd, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert CRD object: %w", err)
+	}
+	return crd, nil
 }
 
-type PropertyMapping struct {
-	KubernetesMapping *KubernetesMapping `yaml:"x-kubernetes-mapping,omitempty"`
-	OpenAPIMapping    *OpenAPIMapping    `yaml:"x-openapi-mapping,omitempty"`
-}
-
-type KubernetesMapping struct {
-	NameSelector string            `yaml:"nameSelector"`
-	Properties   []string          `yaml:"properties"`
-	Type         KubernetesRefType `yaml:"type"`
-}
-
-type KubernetesRefType struct {
-	Group    string `yaml:"group"`
-	Kind     string `yaml:"kind"`
-	Resource string `yaml:"resource"`
-	Version  string `yaml:"version"`
-}
-
-type OpenAPIMapping struct {
-	Property string `yaml:"property"`
-	Type     string `yaml:"type,omitempty"`
-}
-
-func parseAPIMapping(apiMappingsStr string) ([]ReferenceField, error) {
+func parseAPIMapping(apiMappingsStr string, schema *apiextensionsv1.JSONSchemaProps) ([]ReferenceField, error) {
 	// Parse the api-mappings as a generic map to handle any nesting level
 	var mapping map[string]any
 	if err := yaml.Unmarshal([]byte(apiMappingsStr), &mapping); err != nil {
@@ -171,7 +179,7 @@ func parseAPIMapping(apiMappingsStr string) ([]ReferenceField, error) {
 	var references []ReferenceField
 
 	// Recursively search for x-kubernetes-mapping
-	findReferences(mapping, "", &references)
+	findReferences(mapping, "", schema, &references)
 
 	return references, nil
 }
@@ -220,7 +228,7 @@ func processKubernetesMapping(v map[string]any, path string, references *[]Refer
 	}
 }
 
-func findReferences(data any, path string, references *[]ReferenceField) {
+func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaProps, references *[]ReferenceField) {
 	switch v := data.(type) {
 	case map[string]any:
 		// Check if this is a kubernetes mapping and process it
@@ -232,14 +240,61 @@ func findReferences(data any, path string, references *[]ReferenceField) {
 				newPath += "."
 			}
 			newPath += key
-			findReferences(value, newPath, references)
+
+			// Resolve the child schema for this key and pass it into the recursive call
+			required, childSchema := getSchemaForPathSegment(schema, key)
+			_ = required
+			findReferences(value, newPath, childSchema, references)
 		}
 	case []any:
 		for i, item := range v {
 			newPath := fmt.Sprintf("%s[%d]", path, i)
-			findReferences(item, newPath, references)
+
+			// For arrays pass the items schema if available
+			var childSchema *apiextensionsv1.JSONSchemaProps
+			if schema != nil {
+				var required bool
+				required, childSchema = getSchemaForPathSegment(schema, "items")
+				_ = required
+			}
+			findReferences(item, newPath, childSchema, references)
 		}
 	}
+}
+
+// getSchemaForPathSegment returns the nested JSONSchemaProps for a given mapping key.
+// - "properties" returns the current schema (so inner property names will be looked up in schema.Properties)
+// - "items" returns the schema for array items (handles single Schema or first element of JSONSchemas)
+// - normal property names return schema.Properties[name] (strips trailing "[index]" if present)
+func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string) (bool, *apiextensionsv1.JSONSchemaProps) {
+	if schema == nil {
+		return false, nil
+	}
+
+	if key == "properties" {
+		// The next level will contain actual property names; keep the current schema so those names can be looked up in schema.Properties
+		return false, schema
+	}
+
+	required := false
+	for _, req := range schema.Required {
+		if req == key {
+			required = true
+			break
+		}
+	}
+
+	if key == "items" {
+		return false, nil
+	}
+
+	if schema.Properties != nil {
+		if p, ok := schema.Properties[key]; ok {
+			return required, &p
+		}
+	}
+
+	return false, nil
 }
 
 func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
