@@ -352,7 +352,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 generate: ${GO_SOURCES} ## Generate code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/v1/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
 endif
 	go tool -modfile=tools/toolbox/go.mod mockery
 	$(MAKE) fmt
@@ -604,14 +604,10 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git submodule update helm-charts
 
 .PHONY: install-crds
-install-crds: manifests ## Install CRDs in Kubernetes
+install-crds: manifests gen-crds ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
-	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
-	kubectl apply -f internal/next-crds/*.yaml; \
-	else \
-	echo "No experimental CRDs found, skipping apply."; \
-	fi
+	kubectl apply -f config/generated/crd/bases/crds.yaml
 endif
 
 .PHONY: set-namespace

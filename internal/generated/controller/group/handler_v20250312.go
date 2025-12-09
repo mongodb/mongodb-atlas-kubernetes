@@ -90,12 +90,13 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *ako
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
 	}
 
-	_, err = h.translator.FromAPI(group, response)
+	groupCopy := group.DeepCopy()
+	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, group, client.MergeFrom(group))
+	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Group status: %w", err))
 	}

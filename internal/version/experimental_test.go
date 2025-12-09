@@ -35,8 +35,18 @@ func TestIsExperimental(t *testing.T) {
 			want:  true,
 		},
 		{
+			title: "setting 1 makes it experimental",
+			set:   "true",
+			want:  true,
+		},
+		{
+			title: "setting yes makes it experimental",
+			set:   "yes",
+			want:  true,
+		},
+		{
 			title: "setting other value is not experimental",
-			set:   "1",
+			set:   "0",
 			want:  false,
 		},
 	}
