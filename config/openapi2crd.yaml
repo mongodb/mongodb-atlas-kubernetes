@@ -210,3 +210,5 @@ spec:
             schema: 'CloudDatabaseUser'
             filters:
               readWriteOnly: true
+              sensitiveProperties:
+                - $.password

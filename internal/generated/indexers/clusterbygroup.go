@@ -53,7 +53,7 @@ func (i *ClusterByGroupIndexer) Keys(object client.Object) []string {
 		return nil
 	}
 	var keys []string
-	if resource.Spec.V20250312.GroupRef != nil && resource.Spec.V20250312.GroupRef.Name != "" {
+	if resource.Spec.V20250312 != nil && resource.Spec.V20250312.GroupRef != nil && resource.Spec.V20250312.GroupRef.Name != "" {
 		keys = append(keys, types.NamespacedName{
 			Name:      resource.Spec.V20250312.GroupRef.Name,
 			Namespace: resource.Namespace,

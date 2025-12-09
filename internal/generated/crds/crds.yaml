@@ -1838,6 +1838,20 @@ metadata:
           properties:
             v20250312:
               properties:
+                entry:
+                  properties:
+                    passwordSecretRef:
+                      x-kubernetes-mapping:
+                        nameSelector: .name
+                        propertySelectors:
+                        - $.data.#
+                        type:
+                          kind: Secret
+                          resource: secrets
+                          version: v1
+                      x-openapi-mapping:
+                        property: .password
+                        type: string
                 groupRef:
                   x-kubernetes-mapping:
                     nameSelector: .name
@@ -1956,12 +1970,26 @@ spec:
                           authentication group, specify the value of IDP_GROUP in
                           this field.
                         type: string
-                      password:
-                        description: Alphanumeric string that authenticates this database
-                          user against the database specified in `databaseName`. To
-                          authenticate with SCRAM-SHA, you must specify this parameter.
-                          This parameter doesn't appear in this response.
-                        type: string
+                      passwordSecretRef:
+                        description: |-
+                          SENSITIVE FIELD
+
+                          Reference to a secret containing data for the "password" field:
+
+                          Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.
+                        properties:
+                          key:
+                            default: .data.password
+                            description: Key of the secret data containing the sensitive
+                              field value, defaults to "password".
+                            type: string
+                          name:
+                            description: Name of the secret containing the sensitive
+                              field value.
+                            type: string
+                        required:
+                        - name
+                        type: object
                       roles:
                         description: List that provides the pairings of one role with
                           one applicable database.

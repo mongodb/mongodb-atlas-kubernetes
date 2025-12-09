@@ -96,10 +96,14 @@ type DatabaseUserSpecV20250312Entry struct {
 	// federated authentication group, specify the value of IDP_GROUP in this field.
 	OidcAuthType *string `json:"oidcAuthType,omitempty"`
 
-	// Password Alphanumeric string that authenticates this database user against the
-	// database specified in `databaseName`. To authenticate with SCRAM-SHA, you must
-	// specify this parameter. This parameter doesn't appear in this response.
-	Password *string `json:"password,omitempty"`
+	/*
+	   PasswordSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing data for the "password" field:
+
+	   Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.
+	*/
+	PasswordSecretRef *PasswordSecretRef `json:"passwordSecretRef,omitempty"`
 
 	// Roles List that provides the pairings of one role with one applicable database.
 	Roles *[]Roles `json:"roles,omitempty"`
@@ -136,6 +140,15 @@ type DatabaseUserSpecV20250312Entry struct {
 	   Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.
 	*/
 	X509Type *string `json:"x509Type,omitempty"`
+}
+
+type PasswordSecretRef struct {
+	// Key Key of the secret data containing the sensitive field value, defaults to
+	// "password".
+	Key *string `json:"key,omitempty"`
+
+	// Name Name of the secret containing the sensitive field value.
+	Name string `json:"name"`
 }
 
 type Roles struct {

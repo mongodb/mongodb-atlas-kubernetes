@@ -29,44 +29,44 @@ import (
 )
 
 // nolint:dupl
-const DatabaseUserByGroupIndex = "databaseuser.groupRef"
+const DatabaseUserBySecretIndex = "databaseuser.passwordSecretRef"
 
-type DatabaseUserByGroupIndexer struct {
+type DatabaseUserBySecretIndexer struct {
 	logger *zap.SugaredLogger
 }
 
-func NewDatabaseUserByGroupIndexer(logger *zap.Logger) *DatabaseUserByGroupIndexer {
-	return &DatabaseUserByGroupIndexer{logger: logger.Named(DatabaseUserByGroupIndex).Sugar()}
+func NewDatabaseUserBySecretIndexer(logger *zap.Logger) *DatabaseUserBySecretIndexer {
+	return &DatabaseUserBySecretIndexer{logger: logger.Named(DatabaseUserBySecretIndex).Sugar()}
 }
-func (*DatabaseUserByGroupIndexer) Object() client.Object {
+func (*DatabaseUserBySecretIndexer) Object() client.Object {
 	return &v1.DatabaseUser{}
 }
-func (*DatabaseUserByGroupIndexer) Name() string {
-	return DatabaseUserByGroupIndex
+func (*DatabaseUserBySecretIndexer) Name() string {
+	return DatabaseUserBySecretIndex
 }
 
 // Keys extracts the index key(s) from the given object
-func (i *DatabaseUserByGroupIndexer) Keys(object client.Object) []string {
+func (i *DatabaseUserBySecretIndexer) Keys(object client.Object) []string {
 	resource, ok := object.(*v1.DatabaseUser)
 	if !ok {
 		i.logger.Errorf("expected *v1.DatabaseUser but got %T", object)
 		return nil
 	}
 	var keys []string
-	if resource.Spec.V20250312 != nil && resource.Spec.V20250312.GroupRef != nil && resource.Spec.V20250312.GroupRef.Name != "" {
+	if resource.Spec.V20250312 != nil && resource.Spec.V20250312.Entry != nil && resource.Spec.V20250312.Entry.PasswordSecretRef != nil && resource.Spec.V20250312.Entry.PasswordSecretRef.Name != "" {
 		keys = append(keys, types.NamespacedName{
-			Name:      resource.Spec.V20250312.GroupRef.Name,
+			Name:      resource.Spec.V20250312.Entry.PasswordSecretRef.Name,
 			Namespace: resource.Namespace,
 		}.String())
 	}
 	return keys
 }
 
-func NewDatabaseUserByGroupMapFunc(kubeClient client.Client) handler.MapFunc {
+func NewDatabaseUserBySecretMapFunc(kubeClient client.Client) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		logger := log.FromContext(ctx)
 
-		listOpts := &client.ListOptions{FieldSelector: fields.OneTermEqualSelector(DatabaseUserByGroupIndex, types.NamespacedName{
+		listOpts := &client.ListOptions{FieldSelector: fields.OneTermEqualSelector(DatabaseUserBySecretIndex, types.NamespacedName{
 			Name:      obj.GetName(),
 			Namespace: obj.GetNamespace(),
 		}.String())}
