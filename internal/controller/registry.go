@@ -48,6 +48,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	akov2generatedcluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/cluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/databaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -161,10 +162,16 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 			return fmt.Errorf("error creating flex cluster reconciler: %w", err)
 		}
 
+		databaseUserReconciler, err := databaseuser.NewDatabaseUserReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating database user reconciler: %w", err)
+		}
+
 		reconcilers = append(reconcilers,
 			newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles),
 			newCtrlStateReconciler(clusterController, r.maxConcurrentReconciles),
 			newCtrlStateReconciler(flexController, r.maxConcurrentReconciles),
+			newCtrlStateReconciler(databaseUserReconciler, r.maxConcurrentReconciles),
 		)
 	}
 

@@ -79,9 +79,6 @@ type DatabaseUserSpecV20250312Entry struct {
 	// Description Description of this database user.
 	Description *string `json:"description,omitempty"`
 
-	// GroupId Unique 24-hexadecimal digit string that identifies the project.
-	GroupId string `json:"groupId"`
-
 	// Labels List that contains the key-value pairs for tagging and categorizing the
 	// MongoDB database user. The labels that you define do not appear in the console.
 	Labels *[]Tags `json:"labels,omitempty"`

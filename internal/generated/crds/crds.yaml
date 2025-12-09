@@ -1962,10 +1962,6 @@ spec:
                       description:
                         description: Description of this database user.
                         type: string
-                      groupId:
-                        description: Unique 24-hexadecimal digit string that identifies
-                          the project.
-                        type: string
                       labels:
                         description: List that contains the key-value pairs for tagging
                           and categorizing the MongoDB database user. The labels that
@@ -2007,7 +2003,7 @@ spec:
                           Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.
                         properties:
                           key:
-                            default: .data.password
+                            default: password
                             description: Key of the secret data containing the sensitive
                               field value, defaults to "password".
                             type: string
@@ -2095,7 +2091,6 @@ spec:
                         type: string
                     required:
                     - databaseName
-                    - groupId
                     - username
                     type: object
                   groupId:
