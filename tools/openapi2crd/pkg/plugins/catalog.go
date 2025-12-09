@@ -151,8 +151,8 @@ func NewCatalog() *Catalog {
 			"read_write_properties": &ReadWriteProperties{},
 		},
 		extension: map[string]ExtensionPlugin{
-			"atlas_sdk_version":   &AtlasSdkVersionPlugin{},
-			"references_metadata": &ReferencesMetadata{},
+			"atlas_sdk_version":    &AtlasSdkVersionPlugin{},
+			"reference_extensions": &ReferenceExtensions{},
 		},
 	}
 }

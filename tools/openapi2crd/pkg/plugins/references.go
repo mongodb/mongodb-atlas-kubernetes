@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strings"
 
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -37,37 +38,55 @@ func (r *References) Process(req *MappingProcessorRequest) error {
 	majorVersionSpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion]
 
 	for _, ref := range req.MappingConfig.ParametersMapping.References {
-		var refProp apiextensions.JSONSchemaProps
-
-		openApiPropertyPath := strings.Split(ref.Property, ".")
-		openApiProperty := openApiPropertyPath[len(openApiPropertyPath)-1]
-		refProp.Type = "object"
-
-		switch len(ref.Target.Properties) {
-		case 0:
-			return errors.New("reference target must have at least one property defined")
-		case 1:
-			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nThe value of %q will be used to set %q.\nMutually exclusive with the %q property.", ref.Target.Type.Kind, ref.Target.Properties[0], openApiProperty, openApiProperty)
-		default:
-			bulleted := "- " + strings.Join(ref.Target.Properties, "\n- ")
-			refProp.Description = fmt.Sprintf("A reference to a %q resource.\nOne of the following mutually exclusive values will be used to retrieve the %q value:\n\n%s\n\nMutually exclusive with the %q property.", ref.Target.Type.Kind, openApiProperty, bulleted, openApiProperty)
+		err := r.addReference(ref, &majorVersionSpec)
+		if err != nil {
+			return err
 		}
-
-		refProp.Properties = map[string]apiextensions.JSONSchemaProps{
-			"name": {
-				Type:        "string",
-				Description: fmt.Sprintf(`Name of the %q resource.`, ref.Target.Type.Kind),
-			},
-		}
-
-		required := sets.New(majorVersionSpec.Required...)
-		required.Delete(openApiProperty)
-		majorVersionSpec.Required = required.UnsortedList()
-		slices.Sort(majorVersionSpec.Required)
-
-		majorVersionSpec.Properties[ref.Name] = refProp
 		req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion] = majorVersionSpec
 	}
+
+	entrySpec := req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion].Properties["entry"]
+	for _, ref := range req.MappingConfig.EntryMapping.References {
+		err := r.addReference(ref, &entrySpec)
+		if err != nil {
+			return err
+		}
+		req.CRD.Spec.Validation.OpenAPIV3Schema.Properties["spec"].Properties[req.MappingConfig.MajorVersion].Properties["entry"] = entrySpec
+	}
+
+	return nil
+}
+
+func (r *References) addReference(ref configv1alpha1.Reference, targetSchema *apiextensions.JSONSchemaProps) error {
+	var referenceSchema apiextensions.JSONSchemaProps
+
+	openApiPropertyPath := strings.Split(ref.Property, ".")
+	openApiProperty := openApiPropertyPath[len(openApiPropertyPath)-1]
+	referenceSchema.Type = "object"
+
+	switch len(ref.Target.Properties) {
+	case 0:
+		return errors.New("reference target must have at least one property defined")
+	case 1:
+		referenceSchema.Description = fmt.Sprintf("A reference to a %q resource.\nThe value of %q will be used to set %q.\nMutually exclusive with the %q property.", ref.Target.Type.Kind, ref.Target.Properties[0], openApiProperty, openApiProperty)
+	default:
+		bulleted := "- " + strings.Join(ref.Target.Properties, "\n- ")
+		referenceSchema.Description = fmt.Sprintf("A reference to a %q resource.\nOne of the following mutually exclusive values will be used to retrieve the %q value:\n\n%s\n\nMutually exclusive with the %q property.", ref.Target.Type.Kind, openApiProperty, bulleted, openApiProperty)
+	}
+
+	referenceSchema.Properties = map[string]apiextensions.JSONSchemaProps{
+		"name": {
+			Type:        "string",
+			Description: fmt.Sprintf(`Name of the %q resource.`, ref.Target.Type.Kind),
+		},
+	}
+
+	required := sets.New(targetSchema.Required...)
+	required.Delete(openApiProperty)
+	targetSchema.Required = required.UnsortedList()
+	slices.Sort(targetSchema.Required)
+
+	targetSchema.Properties[ref.Name] = referenceSchema
 
 	return nil
 }

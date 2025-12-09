@@ -19,9 +19,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildSets(t *testing.T) {
@@ -75,7 +74,7 @@ func TestBuildSets(t *testing.T) {
 				{
 					Name:    "set-1",
 					Default: true,
-					Plugins: []string{"base", "entry", "status", "references_metadata"},
+					Plugins: []string{"base", "entry", "status", "reference_extensions"},
 				},
 			},
 			expectedSet: []Set{
@@ -85,7 +84,7 @@ func TestBuildSets(t *testing.T) {
 					CRD:       []CRDPlugin{&Base{}},
 					Mapping:   []MappingPlugin{&Entry{}, &Status{}},
 					Property:  []PropertyPlugin{},
-					Extension: []ExtensionPlugin{&ReferencesMetadata{}},
+					Extension: []ExtensionPlugin{&ReferenceExtensions{}},
 				},
 				{
 					Name:      "set-2",
@@ -93,7 +92,7 @@ func TestBuildSets(t *testing.T) {
 					CRD:       []CRDPlugin{&Base{}},
 					Mapping:   []MappingPlugin{&Entry{}, &Status{}, &References{}},
 					Property:  []PropertyPlugin{&ReadOnlyProperties{}, &ReadWriteProperties{}},
-					Extension: []ExtensionPlugin{&ReferencesMetadata{}},
+					Extension: []ExtensionPlugin{&ReferenceExtensions{}},
 				},
 			},
 			expectedErr: nil,
