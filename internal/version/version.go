@@ -41,5 +41,5 @@ func IsRelease(v string) bool {
 }
 
 func IsExperimental() bool {
-	return Experimental == "true"
+	return Experimental == "true" || Experimental == "yes" || Experimental == "1"
 }
