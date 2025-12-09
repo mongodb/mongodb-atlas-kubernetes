@@ -38,8 +38,7 @@ func (p *ReadWriteProperties) Process(req *PropertyProcessorRequest) error {
 		return nil
 	}
 
-	required := sets.New(req.OpenAPISchema.Required...)
-	required.Insert(req.Property.Required...)
+	required := sets.New(req.Property.Required...)
 	for name, prop := range req.OpenAPISchema.Properties {
 		if prop.Value.ReadOnly {
 			required.Delete(name)
