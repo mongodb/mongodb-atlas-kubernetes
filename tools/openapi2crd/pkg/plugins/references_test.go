@@ -79,6 +79,29 @@ func TestReferenceProcess(t *testing.T) {
 			expectedProps: map[string]apiextensions.JSONSchemaProps{},
 			expectedError: errors.New("reference target must have at least one property defined"),
 		},
+		"add reference to entry spec": {
+			request: mappingRequestWithEntryReferences(t, crdWithEntry(t)),
+			expectedProps: map[string]apiextensions.JSONSchemaProps{
+				"entry": {
+					Type:        "object",
+					Description: "Entry spec",
+					Required:    []string{},
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"clusterRef": {
+							Type:        "object",
+							Description: "A reference to a \"Cluster\" resource.\nThe value of \"$.status.v20250312.name\" will be used to set \"clusterName\".\nMutually exclusive with the \"clusterName\" property.",
+							Properties: map[string]apiextensions.JSONSchemaProps{
+								"name": {
+									Type:        "string",
+									Description: `Name of the "Cluster" resource.`,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -217,6 +240,106 @@ func mappingRequestWithReferences(
 								Version:  "v1",
 							},
 							Properties: []string{"$.status.v20250312.id"},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func crdWithEntry(t *testing.T) *apiextensions.CustomResourceDefinition {
+	t.Helper()
+
+	return &apiextensions.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "databaseusers.atlas.generated.mongodb.com",
+		},
+		Spec: apiextensions.CustomResourceDefinitionSpec{
+			Group: "atlas.generated.mongodb.com",
+			Names: apiextensions.CustomResourceDefinitionNames{
+				Plural:     "databaseusers",
+				Singular:   "databaseuser",
+				Kind:       "DatabaseUser",
+				ShortNames: []string{"adu"},
+				Categories: []string{"atlas"},
+			},
+			Scope: apiextensions.NamespaceScoped,
+			Versions: []apiextensions.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1",
+					Served:  true,
+					Storage: true,
+				},
+			},
+			PreserveUnknownFields: ptr.To(false),
+			Validation: &apiextensions.CustomResourceValidation{
+				OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+					Type:        "object",
+					Description: "A database user, managed by the MongoDB Kubernetes Atlas Operator.",
+					Properties: map[string]apiextensions.JSONSchemaProps{
+						"spec": {
+							Type:        "object",
+							Description: "Specification of the database user.",
+							Properties: map[string]apiextensions.JSONSchemaProps{
+								"v20250312": {
+									Type:        "object",
+									Description: "The spec of the database user resource for version v20250312.",
+									Properties: map[string]apiextensions.JSONSchemaProps{
+										"entry": {
+											Type:        "object",
+											Description: "Entry spec",
+											Properties:  map[string]apiextensions.JSONSchemaProps{},
+										},
+									},
+								},
+							},
+						},
+						"status": {
+							Type:        "object",
+							Description: `Most recently observed read-only status of the database user.`,
+							Properties:  map[string]apiextensions.JSONSchemaProps{},
+						},
+					},
+				},
+			},
+			Subresources: &apiextensions.CustomResourceSubresources{
+				Status: &apiextensions.CustomResourceSubresourceStatus{},
+			},
+		},
+	}
+}
+
+func mappingRequestWithEntryReferences(
+	t *testing.T,
+	crd *apiextensions.CustomResourceDefinition,
+) *MappingProcessorRequest {
+	t.Helper()
+
+	return &MappingProcessorRequest{
+		CRD: crd,
+		MappingConfig: &configv1alpha1.CRDMapping{
+			MajorVersion: "v20250312",
+			OpenAPIRef: configv1alpha1.LocalObjectReference{
+				Name: "v20250312",
+			},
+			EntryMapping: configv1alpha1.PropertyMapping{
+				Path: configv1alpha1.PropertyPath{
+					Name: "/api/atlas/v2/groups/{groupId}/databaseUsers",
+					Verb: "post",
+				},
+				References: []configv1alpha1.Reference{
+					{
+						Name:     "clusterRef",
+						Property: "$.clusterName",
+						Target: configv1alpha1.Target{
+							Type: configv1alpha1.Type{
+								Kind:     "Cluster",
+								Resource: "Clusters",
+								Group:    "atlas.generated.mongodb.com",
+								Version:  "v1",
+							},
+							Properties: []string{"$.status.v20250312.name"},
 						},
 					},
 				},

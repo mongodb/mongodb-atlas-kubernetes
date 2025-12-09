@@ -46,7 +46,7 @@ spec:
         - read_only_properties
         - read_write_properties
         - references
-        - references_metadata
+        - reference_extensions
         - mutual_exclusive_major_versions
         - atlas_sdk_version
 
