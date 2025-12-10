@@ -58,7 +58,7 @@ func (p *SensitiveProperties) Process(req *PropertyProcessorRequest) error {
 
 	req.Property.Type = "object"
 	req.Property.Description = fmt.Sprintf("SENSITIVE FIELD\n\nReference to a secret containing data for the %q field:\n\n%v", req.Path[len(req.Path)-1], req.OpenAPISchema.Description)
-	defaultKey := apiextensions.JSON(".data." + req.Path[len(req.Path)-1])
+	defaultKey := apiextensions.JSON(req.Path[len(req.Path)-1])
 	req.Property.Properties = map[string]apiextensions.JSONSchemaProps{
 		"name": {
 			Type:        "string",
