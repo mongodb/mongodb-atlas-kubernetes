@@ -17,9 +17,10 @@ package plugins
 
 import (
 	"github.com/getkin/kin-openapi/openapi3"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
 	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
 type CRDProcessorRequest struct {

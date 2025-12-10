@@ -143,6 +143,7 @@ func NewCatalog() *Catalog {
 			"references":             &References{},
 			"connection_secret":      &ConnectionSecret{},
 			"mutual_exclusive_group": &MutualExclusiveGroup{},
+			"print_conditions":       &PrintConditions{},
 		},
 		property: map[string]PropertyPlugin{
 			"sensitive_properties":  &SensitiveProperties{},

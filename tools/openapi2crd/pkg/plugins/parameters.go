@@ -19,8 +19,9 @@ import (
 	"fmt"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 )
 
 // Parameters adds parameters from the OpenAPI spec to the CRD schema.

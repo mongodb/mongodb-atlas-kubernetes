@@ -25,7 +25,14 @@ spec:
     singular: group
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="State")].reason
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: A group, managed by the MongoDB Kubernetes Atlas Operator.
@@ -235,7 +242,14 @@ spec:
     singular: cluster
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="State")].reason
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: A cluster, managed by the MongoDB Kubernetes Atlas Operator.
@@ -1555,7 +1569,14 @@ spec:
     singular: flexcluster
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="State")].reason
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: A flexcluster, managed by the MongoDB Kubernetes Atlas Operator.
@@ -1880,7 +1901,14 @@ spec:
     singular: databaseuser
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="State")].reason
+      name: State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: A databaseuser, managed by the MongoDB Kubernetes Atlas Operator.
