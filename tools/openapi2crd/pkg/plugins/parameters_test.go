@@ -21,11 +21,12 @@ import (
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/utils/ptr"
+
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/converter"
 )
 
 func TestParameterName(t *testing.T) {

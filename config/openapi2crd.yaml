@@ -49,6 +49,7 @@ spec:
         - reference_extensions
         - mutual_exclusive_major_versions
         - atlas_sdk_version
+        - print_conditions
 
   openapi:
     - name: v20250312

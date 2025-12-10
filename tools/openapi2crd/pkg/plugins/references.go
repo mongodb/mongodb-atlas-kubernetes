@@ -21,9 +21,10 @@ import (
 	"slices"
 	"strings"
 
-	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 // References adds reference properties to the CRD OpenAPI schema based on the mapping configuration.

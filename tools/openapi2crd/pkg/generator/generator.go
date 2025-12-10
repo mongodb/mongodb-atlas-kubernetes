@@ -21,12 +21,13 @@ import (
 	"log"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/plugins"
 )
 
 type Generator struct {
