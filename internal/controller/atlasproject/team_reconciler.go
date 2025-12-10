@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312010/admin"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
