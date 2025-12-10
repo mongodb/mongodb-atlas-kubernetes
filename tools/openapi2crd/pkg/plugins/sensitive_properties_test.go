@@ -32,7 +32,7 @@ func TestSensitivePropertyName(t *testing.T) {
 }
 
 func TestSensitivePropertyProcess(t *testing.T) {
-	stringJson := apiextensions.JSON(".data.password")
+	stringJson := apiextensions.JSON("password")
 
 	tests := map[string]struct {
 		request            *PropertyProcessorRequest
