@@ -62,7 +62,7 @@ func (h *Handlerv20250312) getDependencies(ctx context.Context, flexcluster *ako
 		}, group)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to get group  %w", err)
+			return nil, fmt.Errorf("failed to get group %w", err)
 		}
 
 		result = append(result, group)
