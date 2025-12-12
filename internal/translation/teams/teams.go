@@ -135,7 +135,7 @@ func (tm *TeamsAPI) UpdateRoles(ctx context.Context, at *AssignedTeam, projectID
 		roles = append(roles, string(role))
 	}
 
-	_, _, err := tm.teamsAPI.UpdateGroupTeam(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: &roles}).Execute()
+	_, _, err := tm.teamsAPI.UpdateGroupTeam(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: roles}).Execute()
 	return err
 }
 
