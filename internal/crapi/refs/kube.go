@@ -75,6 +75,13 @@ func (km KubeMapping) fetchReferencedValue(mc *kubeset, target string, reference
 		return nil, fmt.Errorf("failed to find Kubernetes resource %q: %w", refName, err)
 	}
 	gvk := resource.GetObjectKind().GroupVersionKind()
+	if gvk.Kind == "" || gvk.GroupVersion().String() == "" {
+		gvks, _, err := mc.scheme.ObjectKinds(resource)
+		if err != nil || len(gvks) == 0 {
+			return nil, fmt.Errorf("failed to infer GroupVersionKind for resource %q from scheme: %w", refName, err)
+		}
+		gvk = gvks[0]
+	}
 	if km.Type.Kind != "" && !km.equal(gvk) {
 		return nil, fmt.Errorf("resource %q had to be a %q but got %q", refName, km.gvk(), gvk)
 	}

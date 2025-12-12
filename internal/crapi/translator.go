@@ -22,6 +22,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -33,6 +34,7 @@ import (
 // translator implements Translator to translate from a given CRD to and from
 // a given SDK version using the same upstream OpenAPI schema
 type translator struct {
+	scheme        *runtime.Scheme
 	majorVersion  string
 	mappingSchema *openapi3.SchemaRef
 }
@@ -130,6 +132,11 @@ func (tr *translator) MajorVersion() string {
 	return tr.majorVersion
 }
 
+// Scheme returns the Kubernetes scheme used to translate the CRD.
+func (tr *translator) Scheme() *runtime.Scheme {
+	return tr.scheme
+}
+
 // NewTranslator creates a translator for a particular CRD version. It is also
 // locked into a particular API majorVersion.
 //
@@ -143,7 +150,7 @@ func (tr *translator) MajorVersion() string {
 //	  v20250312:
 //
 // In the above case crdVersion is "v1" and majorVersion is "v20250312".
-func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string) (Translator, error) {
+func NewTranslator(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string) (Translator, error) {
 	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
 	if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
 		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
@@ -161,6 +168,7 @@ func NewTranslator(crd *apiextensionsv1.CustomResourceDefinition, crdVersion str
 	}
 
 	return &translator{
+		scheme:        scheme,
 		majorVersion:  majorVersion,
 		mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
 	}, nil
@@ -216,7 +224,7 @@ func collapseReferences(tr Translator, req map[string]any, main client.Object, o
 	if err != nil {
 		return fmt.Errorf("failed to extract mappings to collapse: %w", err)
 	}
-	return refs.CollapseAll(mappings, main, objs, req)
+	return refs.CollapseAll(tr.Scheme(), mappings, main, objs, req)
 }
 
 // expandReferences finds all API fields that must be referenced, and expand
@@ -227,7 +235,7 @@ func expandReferences(tr Translator, cr map[string]any, main client.Object, objs
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract mappings to expand: %w", err)
 	}
-	return refs.ExpandAll(mappings, main, objs, cr)
+	return refs.ExpandAll(tr.Scheme(), mappings, main, objs, cr)
 }
 
 func propertyValueOrNil(schema *openapi3.Schema, propertyName string) *openapi3.Schema {

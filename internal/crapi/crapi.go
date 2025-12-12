@@ -16,6 +16,7 @@
 package crapi
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
@@ -26,6 +27,9 @@ import (
 // A translator is an immutable configuration object, it can be safely shared
 // across goroutines
 type Translator interface {
+	// Scheme returns the Kubernetes scheme used to translate the CRD.
+	Scheme() *runtime.Scheme
+
 	// MajorVersion returns the pinned SDK major version
 	MajorVersion() string
 

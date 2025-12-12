@@ -28,8 +28,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	akoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
@@ -401,10 +404,11 @@ func TestFromAPI(t *testing.T) {
 }
 
 func testFromAPI[S any](t *testing.T, kind string, target client.Object, input *S, want client.Object, wantDeps ...client.Object) {
+	scheme := testScheme(t)
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	tr, err := crapi.NewTranslator(crd, version, sdkVersion)
+	tr, err := crapi.NewTranslator(scheme, crd, version, sdkVersion)
 	require.NoError(t, err)
 	results, err := tr.FromAPI(target, input)
 	require.NoError(t, err)
@@ -517,8 +521,7 @@ func TestToAPIAllRefs(t *testing.T) {
 						"webhookSecret": ([]byte)("sample-webhook-secret"),
 					},
 				},
-				&corev1.Secret{
-					TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
+				&corev1.Secret{ // works without type meta set as well
 					ObjectMeta: metav1.ObjectMeta{Name: "alert-secrets-1", Namespace: "ns"},
 					Data: map[string][]byte{
 						"webhookUrl": ([]byte)("sample-webhook-url"),
@@ -571,10 +574,11 @@ func TestToAPIAllRefs(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			scheme := testScheme(t)
 			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.crd, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
+			tr, err := crapi.NewTranslator(scheme, crd, version, sdkVersion)
 			require.NoError(t, err)
 			require.NoError(t, tr.ToAPI(&tc.target, tc.input, tc.deps...))
 			assert.Equal(t, tc.want, tc.target)
@@ -2014,4 +2018,13 @@ func extractCRD(kind string, scanner *bufio.Scanner) (*apiextensionsv1.CustomRes
 			return crd, nil
 		}
 	}
+}
+
+func testScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, akov2.AddToScheme(scheme))
+	require.NoError(t, akoscheme.AddToScheme(scheme))
+	return scheme
 }
