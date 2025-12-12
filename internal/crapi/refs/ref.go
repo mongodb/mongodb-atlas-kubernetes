@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
@@ -63,8 +64,8 @@ func FindMappings(schema *openapi3.Schema, path []string) ([]*Mapping, error) {
 // ExpandAll takes a list of mappings and expands the ones found in the given
 // CR unstructured object. CR corresponds to the main typed object and deps
 // are other kubernetes objects related with such main object
-func ExpandAll(mappings []*Mapping, main client.Object, deps []client.Object, cr map[string]any) ([]client.Object, error) {
-	ks := newKubeset(main, deps)
+func ExpandAll(scheme *runtime.Scheme, mappings []*Mapping, main client.Object, deps []client.Object, cr map[string]any) ([]client.Object, error) {
+	ks := newKubeset(scheme, main, deps)
 	for _, mapping := range mappings {
 		if err := mapping.expand(ks, cr); err != nil {
 			return nil, fmt.Errorf("failed to expand reference for %q: %w", mapping.propertyName, err)
@@ -77,8 +78,8 @@ func ExpandAll(mappings []*Mapping, main client.Object, deps []client.Object, cr
 // given request unstructured object. The SDK request must map to the main typed
 //
 //	object and deps are other kubernetes objects related with such main object
-func CollapseAll(mappings []*Mapping, main client.Object, deps []client.Object, req map[string]any) error {
-	ks := newKubeset(main, deps)
+func CollapseAll(scheme *runtime.Scheme, mappings []*Mapping, main client.Object, deps []client.Object, req map[string]any) error {
+	ks := newKubeset(scheme, main, deps)
 	for _, mapping := range mappings {
 		if err := mapping.collapse(ks, req); err != nil {
 			return fmt.Errorf("failed to expand reference for %q: %w", mapping.propertyName, err)
