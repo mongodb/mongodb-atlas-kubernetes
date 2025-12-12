@@ -24,7 +24,7 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string,
 			return nil
 		}
 	}
-	
+
 	referenceFields, err := ParseReferenceFields(resultPath, resourceName)
 	if err != nil {
 		return fmt.Errorf("failed to parse reference fields: %w", err)
@@ -86,22 +86,45 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 		{"HandleDeleting", "StateDeleted", "Deleted"},
 	}
 
+	resourceVarName := strings.ToLower(resourceName)
+
 	for _, handler := range handlers {
 		f.Comment(fmt.Sprintf("%s handles the %s state for version %s", handler.name, strings.ToLower(strings.TrimPrefix(handler.name, "Handle")), versionSuffix))
-		f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id(handler.name).Params(
-			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id(strings.ToLower(resourceName)).Op("*").Qual(apiPkg, resourceName),
-		).Params(
-			jen.Qual(pkgCtrlState, "Result"),
-			jen.Error(),
-		).Block(
-			jen.Comment("TODO: Implement "+strings.ToLower(strings.TrimPrefix(handler.name, "Handle"))+" state logic"),
+
+		// Build the method body with getDependencies call
+		methodBody := []jen.Code{
+			jen.List(jen.Id("_"), jen.Err()).Op(":=").Id("h").Dot("getDependencies").Call(
+				jen.Id("ctx"),
+				jen.Id(resourceVarName),
+			),
+			jen.If(jen.Err().Op("!=").Nil()).Block(
+				jen.Return(
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
+						jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "State"+strings.TrimPrefix(handler.name, "Handle")),
+						jen.Qual("fmt", "Errorf").Call(
+							jen.Lit(fmt.Sprintf("failed to resolve %s dependencies: %%w", resourceName)),
+							jen.Err(),
+						),
+					),
+				),
+			),
+			jen.Line(),
+			jen.Comment("TODO: Implement " + strings.ToLower(strings.TrimPrefix(handler.name, "Handle")) + " state logic"),
 			jen.Comment("TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client"),
+			jen.Comment("TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods"),
 			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
 				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", handler.nextState),
 				jen.Lit(handler.message),
 			)),
-		)
+		}
+
+		f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id(handler.name).Params(
+			jen.Id("ctx").Qual("context", "Context"),
+			jen.Id(resourceVarName).Op("*").Qual(apiPkg, resourceName),
+		).Params(
+			jen.Qual(pkgCtrlState, "Result"),
+			jen.Error(),
+		).Block(methodBody...)
 	}
 }
 
