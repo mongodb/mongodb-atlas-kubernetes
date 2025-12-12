@@ -207,6 +207,10 @@ type AdvancedConfiguration struct {
 	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
 	CustomOpensslCipherConfigTls12 *[]string `json:"customOpensslCipherConfigTls12,omitempty"`
 
+	// CustomOpensslCipherConfigTls13 The custom OpenSSL cipher suite list for TLS 1.3.
+	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	CustomOpensslCipherConfigTls13 *[]string `json:"customOpensslCipherConfigTls13,omitempty"`
+
 	// MinimumEnabledTlsProtocol Minimum Transport Layer Security (TLS) version that
 	// the cluster accepts for incoming connections. Clusters using TLS 1.0 or 1.1
 	// should consider setting TLS 1.2 as the minimum TLS protocol version.
