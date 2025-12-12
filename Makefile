@@ -604,9 +604,10 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 	git submodule update helm-charts
 
 .PHONY: install-crds
-install-crds: manifests gen-crds ## Install CRDs in Kubernetes
+install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
+	$(MAKE) clean gen-crds
 	kubectl apply -f config/generated/crd/bases/crds.yaml
 endif
 
