@@ -27,6 +27,7 @@ jobs:
       - name: Update Atlas SDK
         run: |
           ./scripts/update-sdk.sh
+          make clean gen-crds
       - name: Check for Changes
         id: check_changes
         run: |

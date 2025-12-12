@@ -16,7 +16,9 @@
 
 set -euo pipefail
 
-CURRENT_SDK_RELEASE=$(go list -m all | grep go.mongodb.org/atlas-sdk | awk -F '/| ' '{print $3}')
+CURRENT_SDK_TAG=$(go list -m all | grep go.mongodb.org/atlas-sdk | awk -F '/| ' '{print $4}')
+CURRENT_SDK_RELEASE=$(echo "${CURRENT_SDK_TAG}" | cut -d '.' -f 1)
+echo "CURRENT_SDK_TAG: $CURRENT_SDK_TAG"
 echo "CURRENT_SDK_RELEASE: $CURRENT_SDK_RELEASE"
 
 LATEST_SDK_TAG=$(curl -sSfL -X GET  https://api.github.com/repos/mongodb/atlas-sdk-go/releases/latest | jq -r '.tag_name')
@@ -28,5 +30,7 @@ echo  "==> Updating SDK to latest major version ${LATEST_SDK_TAG}"
 
 go tool --modfile tools/toolbox/go.mod gomajor get --rewrite "go.mongodb.org/atlas-sdk/${CURRENT_SDK_RELEASE}" "go.mongodb.org/atlas-sdk/${LATEST_SDK_RELEASE}@${LATEST_SDK_TAG}"
 go mod tidy
+
+sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" config/openapi2crd.yaml
 
 echo "Done"
