@@ -117,8 +117,8 @@ func TeamRolesToAtlas(atlasTeams []AssignedTeam) []admin.TeamRole {
 
 	for _, team := range atlasTeams {
 		result := admin.TeamRole{
-			TeamId:    pointer.MakePtrOrNil(team.TeamID),
-			RoleNames: &team.Roles,
+			TeamId:    team.TeamID,
+			RoleNames: team.Roles,
 		}
 		teams = append(teams, result)
 	}
