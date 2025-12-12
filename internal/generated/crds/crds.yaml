@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312009/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
@@ -229,7 +229,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312009/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -305,6 +305,13 @@ spec:
                           customOpensslCipherConfigTls12:
                             description: The custom OpenSSL cipher suite list for
                               TLS 1.2. This field is only valid when `tlsCipherConfigMode`
+                              is set to `CUSTOM`.
+                            items:
+                              type: string
+                            type: array
+                          customOpensslCipherConfigTls13:
+                            description: The custom OpenSSL cipher suite list for
+                              TLS 1.3. This field is only valid when `tlsCipherConfigMode`
                               is set to `CUSTOM`.
                             items:
                               type: string
@@ -997,6 +1004,13 @@ spec:
                         items:
                           type: string
                         type: array
+                      customOpensslCipherConfigTls13:
+                        description: The custom OpenSSL cipher suite list for TLS
+                          1.3. This field is only valid when `tlsCipherConfigMode`
+                          is set to `CUSTOM`.
+                        items:
+                          type: string
+                        type: array
                       minimumEnabledTlsProtocol:
                         description: Minimum Transport Layer Security (TLS) version
                           that the cluster accepts for incoming connections. Clusters
@@ -1559,7 +1573,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312009/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -1894,7 +1908,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312009/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
