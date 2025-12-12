@@ -71,12 +71,12 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 							{
-								RoleNames: &[]string{"role3", "role4"},
-								TeamId:    &testTeamID2,
+								RoleNames: []string{"role3", "role4"},
+								TeamId:    testTeamID2,
 							},
 						},
 					}, &http.Response{}, nil)
@@ -242,8 +242,8 @@ func TestTeamsAPI_Assign(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 						},
 					}, &http.Response{}, nil)
@@ -461,8 +461,8 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 						},
 					}, &http.Response{}, nil)
