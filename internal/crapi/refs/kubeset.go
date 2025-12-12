@@ -14,22 +14,26 @@
 
 package refs
 
-import "sigs.k8s.io/controller-runtime/pkg/client"
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
 
 // kubeset holds to the main Kubernetes object being translated,
 // and related existing & added Kubernetes dependencies
 type kubeset struct {
-	main  client.Object
-	m     map[client.ObjectKey]client.Object
-	added []client.Object
+	scheme *runtime.Scheme
+	main   client.Object
+	m      map[client.ObjectKey]client.Object
+	added  []client.Object
 }
 
-func newKubeset(main client.Object, deps []client.Object) *kubeset {
+func newKubeset(scheme *runtime.Scheme, main client.Object, deps []client.Object) *kubeset {
 	m := map[client.ObjectKey]client.Object{}
 	for _, obj := range deps {
 		m[client.ObjectKeyFromObject(obj)] = obj
 	}
-	return &kubeset{main: main, m: m}
+	return &kubeset{scheme: scheme, main: main, m: m}
 }
 
 func (mc *kubeset) find(name string) client.Object {

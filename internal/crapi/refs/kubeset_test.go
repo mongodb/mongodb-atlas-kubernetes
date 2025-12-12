@@ -21,7 +21,11 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	akoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 var (
@@ -38,7 +42,7 @@ var (
 )
 
 func TestNewKubeset(t *testing.T) {
-	ctx := newKubeset(mainObj, []client.Object{dep1, dep2})
+	ctx := newKubeset(testScheme(t), mainObj, []client.Object{dep1, dep2})
 
 	require.NotNil(t, ctx, "context should not be nil")
 	assert.Equal(t, mainObj, ctx.main, "main object should be set correctly")
@@ -53,7 +57,7 @@ func TestNewKubeset(t *testing.T) {
 }
 
 func TestKubesetFindAndHas(t *testing.T) {
-	ctx := newKubeset(mainObj, []client.Object{dep1})
+	ctx := newKubeset(testScheme(t), mainObj, []client.Object{dep1})
 
 	testCases := []struct {
 		name              string
@@ -93,7 +97,7 @@ func TestKubesetFindAndHas(t *testing.T) {
 }
 
 func TestKubesetAdd(t *testing.T) {
-	ctx := newKubeset(mainObj, []client.Object{dep1})
+	ctx := newKubeset(testScheme(t), mainObj, []client.Object{dep1})
 	require.Len(t, ctx.m, 1, "pre-condition failed: map should have 1 item")
 	require.Len(t, ctx.added, 0, "pre-condition failed: added slice should be empty")
 
@@ -121,4 +125,13 @@ func TestKubesetAdd(t *testing.T) {
 	assert.True(t, ctx.has(anotherDep.GetName()), "has() should find the second added object")
 	assert.Contains(t, ctx.added, newDep, "added slice should still contain the first added object")
 	assert.Contains(t, ctx.added, anotherDep, "added slice should contain the second added object")
+}
+
+func testScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, akov2.AddToScheme(scheme))
+	require.NoError(t, akoscheme.AddToScheme(scheme))
+	return scheme
 }
