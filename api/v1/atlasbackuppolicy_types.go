@@ -21,19 +21,19 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
-// AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
+// AtlasBackupPolicySpec defines the target state of AtlasBackupPolicy.
 type AtlasBackupPolicySpec struct {
 	// A list of BackupPolicy items.
 	Items []AtlasBackupPolicyItem `json:"items"`
 }
 
 type AtlasBackupPolicyItem struct {
-	// Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.
+	// Frequency associated with the backup policy item. You can specify only one each of hourly or daily backup policy items.
 	// +kubebuilder:validation:Enum:=hourly;daily;weekly;monthly;yearly
 	FrequencyType string `json:"frequencyType"`
 
-	// Desired frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
-	// The only accepted value you can set for frequency interval with NVMe clusters is 12.
+	// Frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
+	// You can set FrequencyInterval only to 12 for NVMe clusters.
 	// +kubebuilder:validation:Enum:=1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;40
 	FrequencyInterval int `json:"frequencyInterval"`
 

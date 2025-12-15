@@ -26,7 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
-// AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.
+// AtlasBackupScheduleSpec defines the target state of AtlasBackupSchedule.
 type AtlasBackupScheduleSpec struct {
 	// Specify true to enable automatic export of cloud backup snapshots to the AWS bucket. You must also define the export policy using export. If omitted, defaults to false.
 	// +optional

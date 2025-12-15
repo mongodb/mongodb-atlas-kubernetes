@@ -44,8 +44,8 @@ type Common struct {
 	// Conditions is the list of statuses showing the current state of the Atlas Custom Resource
 	Conditions []Condition `json:"conditions"`
 
-	// ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-	// The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.
+	// ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+	// The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 

@@ -28,7 +28,7 @@ func init() {
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 
-// AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
+// AtlasIPAccessListSpec defines the target state of AtlasIPAccessList.
 type AtlasIPAccessListSpec struct {
 	// ProjectReference is the dual external or kubernetes reference with access credentials.
 	ProjectDualReference `json:",inline"`

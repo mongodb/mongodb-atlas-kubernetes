@@ -49,7 +49,7 @@ type AtlasSearchIndexConfigList struct {
 	Items           []AtlasSearchIndexConfig `json:"items"`
 }
 
-// AtlasSearchIndexConfigSpec defines the desired state of AtlasSearchIndexConfig.
+// AtlasSearchIndexConfigSpec defines the target state of AtlasSearchIndexConfig.
 type AtlasSearchIndexConfigSpec struct {
 	// Specific pre-defined method chosen to convert database field text into searchable words. This conversion reduces the text of fields into the smallest units of text.
 	// These units are called a term or token. This process, known as tokenization, involves a variety of changes made to the text in fields:

@@ -30,7 +30,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasBackupCompliancePolicy{}, &AtlasBackupCompliancePolicyList{})
 }
 
-// AtlasBackupCompliancePolicy defines the desired state of a compliance policy in Atlas.
+// AtlasBackupCompliancePolicy defines the target state of a compliance policy in Atlas.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
@@ -46,29 +46,30 @@ type AtlasBackupCompliancePolicy struct {
 	Status status.BackupCompliancePolicyStatus `json:"status,omitempty"`
 }
 
-// AtlasBackupCompliancePolicySpec is the specification of the desired configuration of backup compliance policy
+// AtlasBackupCompliancePolicySpec is the specification of the desired backup compliance policy configuration.
 type AtlasBackupCompliancePolicySpec struct {
-	// Email address of the user who authorized to update the Backup Compliance Policy settings.
+	// Email address of the user authorized to update Backup Compliance Policy settings.
 	// +kubebuilder:validation:Required
 	AuthorizedEmail string `json:"authorizedEmail"`
-	// First name of the user who authorized to updated the Backup Compliance Policy settings.
+	// First name of the user authorized to update the Backup Compliance Policy settings.
 	// +kubebuilder:validation:Required
 	AuthorizedUserFirstName string `json:"authorizedUserFirstName"`
-	// Last name of the user who authorized to updated the Backup Compliance Policy settings.
+	// Last name of the user authorized to update the Backup Compliance Policy settings.
 	// +kubebuilder:validation:Required
 	AuthorizedUserLastName string `json:"authorizedUserLastName"`
 	// Flag that indicates whether to prevent cluster users from deleting backups copied to other regions, even if those additional snapshot regions are removed.
 	// +kubebuilder:validation:default:=false
 	CopyProtectionEnabled bool `json:"copyProtectionEnabled,omitempty"`
-	// Flag that indicates whether Encryption at Rest using Customer Key Management is required for all clusters with a Backup Compliance Policy.
+	// Flag that indicates whether to require Encryption at Rest using Customer Key Management for all clusters with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
 	EncryptionAtRestEnabled bool `json:"encryptionAtRestEnabled,omitempty"`
-	// Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings or not.
+	// Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings.
 	OverwriteBackupPolicies bool `json:"overwriteBackupPolicies,omitempty"`
 	// Flag that indicates whether the cluster uses Continuous Cloud Backups with a Backup Compliance Policy.
 	// +kubebuilder:validation:default:=false
 	PITEnabled bool `json:"pointInTimeEnabled,omitempty"`
-	// Number of previous days that you can restore back to with Continuous Cloud Backup with a Backup Compliance Policy. This parameter applies only to Continuous Cloud Backups with a Backup Compliance Policy.
+	// Number of previous days from which you can restore with Continuous Cloud Backup with a Backup Compliance Policy.
+	// This parameter applies only to Continuous Cloud Backups with a Backup Compliance Policy.
 	RestoreWindowDays int `json:"restoreWindowDays,omitempty"`
 	// List that contains the specifications for one scheduled policy.
 	ScheduledPolicyItems []AtlasBackupPolicyItem `json:"scheduledPolicyItems,omitempty"`

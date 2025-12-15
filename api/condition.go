@@ -134,7 +134,7 @@ const (
 type Condition struct {
 	// Type of Atlas Custom Resource condition.
 	Type ConditionType `json:"type"`
-	// Status of the condition, one of True, False, Unknown.
+	// Status of the condition; one of True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
 	// Last time the condition transitioned from one status to another.
 	// Represented in ISO 8601 format.
@@ -143,7 +143,7 @@ type Condition struct {
 	// The reason for the condition's last transition.
 	// +optional
 	Reason string `json:"reason,omitempty"`
-	// A human readable message indicating details about the transition.
+	// A message providing details about the transition.
 	// +optional
 	Message string `json:"message,omitempty"`
 }

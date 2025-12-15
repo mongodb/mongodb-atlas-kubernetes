@@ -39,7 +39,7 @@ const (
 	TypeGeoSharded DeploymentType = "GEOSHARDED"
 )
 
-// AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+// AtlasDeploymentSpec defines the target state of AtlasDeployment.
 // Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
@@ -185,7 +185,7 @@ func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymen
 	return result
 }
 
-// ServerlessSpec defines the desired state of Atlas Serverless Instance.
+// ServerlessSpec defines the target state of Atlas Serverless Instance.
 // DEPRECATED: Serverless instances are deprecated. See https://dochub.mongodb.org/core/atlas-flex-migration for details.
 type ServerlessSpec struct {
 	// Name of the serverless deployment as it appears in Atlas.
