@@ -189,7 +189,7 @@ func NewTranslator(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDe
 //
 // In the above case crdVersion is "v1" and versions can be "v20250312"
 // and/or "v20250810".
-func NewPerVersionTranslators(crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, versions ...string) (map[string]Translator, error) {
+func NewPerVersionTranslators(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, versions ...string) (map[string]Translator, error) {
 	translators := map[string]Translator{}
 	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
 	for _, version := range versions {
@@ -209,6 +209,7 @@ func NewPerVersionTranslators(crd *apiextensionsv1.CustomResourceDefinition, crd
 		}
 
 		translators[version] = &translator{
+			scheme:        scheme,
 			majorVersion:  version,
 			mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
 		}

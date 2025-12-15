@@ -2000,7 +2000,7 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 	crd, err := extractCRD(kind, bufio.NewScanner(crdsYML))
 	require.NoError(t, err)
-	trs, err := crapi.NewPerVersionTranslators(crd, version, sdkVersion)
+	trs, err := crapi.NewPerVersionTranslators(testScheme(t), crd, version, sdkVersion)
 	require.NoError(t, err)
 	tr := trs[sdkVersion]
 	require.NotNil(t, tr)

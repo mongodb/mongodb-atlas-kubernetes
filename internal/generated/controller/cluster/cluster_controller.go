@@ -74,7 +74,7 @@ func NewClusterReconciler(
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for Cluster: %w", err)
 	}
-	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
+	translators, err := crapi.NewPerVersionTranslators(c.GetScheme(), crd, crdVersion, sdkVersions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get translator set for Cluster: %w", err)
 	}

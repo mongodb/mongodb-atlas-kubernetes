@@ -74,7 +74,7 @@ func NewFlexClusterReconciler(
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for FlexCluster: %w", err)
 	}
-	translators, err := crapi.NewPerVersionTranslators(crd, crdVersion, sdkVersions...)
+	translators, err := crapi.NewPerVersionTranslators(c.GetScheme(), crd, crdVersion, sdkVersions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get translator set for FlexCluster: %w", err)
 	}
