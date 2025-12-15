@@ -58,7 +58,7 @@ type AtlasNetworkContainerList struct {
 // +kubebuilder:validation:XValidation:rule="(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id))",message="id is immutable"
 // +kubebuilder:validation:XValidation:rule="(self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region))",message="region is immutable"
 
-// AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.
+// AtlasNetworkContainerSpec defines the target state of an AtlasNetworkContainer.
 type AtlasNetworkContainerSpec struct {
 	ProjectDualReference `json:",inline"`
 

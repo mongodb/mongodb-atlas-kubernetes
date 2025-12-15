@@ -39,7 +39,7 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
-// ResourceSpec defines the desired state of Resource
+// ResourceSpec defines the target state of Resource.
 // +kubebuilder:validation:XValidation:rule=!has(self.deprecatedSet) || has(oldSelf.deprecatedSet), message="setting new deprecated set values is invalid: use the NewThing CRD instead."
 type ResourceSpec struct {
 	// DeprecatedField for the resource

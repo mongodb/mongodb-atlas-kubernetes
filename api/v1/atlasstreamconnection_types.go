@@ -22,7 +22,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
-// AtlasStreamConnectionSpec defines the desired state of AtlasStreamConnection.
+// AtlasStreamConnectionSpec defines the target state of AtlasStreamConnection.
 type AtlasStreamConnectionSpec struct {
 	// Human-readable label that uniquely identifies the stream connection.
 	Name string `json:"name"`

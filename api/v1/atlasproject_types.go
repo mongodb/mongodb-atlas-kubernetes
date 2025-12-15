@@ -39,7 +39,7 @@ func init() {
 	SchemeBuilder.Register(&AtlasProject{}, &AtlasProjectList{})
 }
 
-// AtlasProjectSpec defines the desired state of Project in Atlas
+// AtlasProjectSpec defines the target state of Project in Atlas
 type AtlasProjectSpec struct {
 
 	// Name is the name of the Project that is created in Atlas by the Operator if it doesn't exist yet.

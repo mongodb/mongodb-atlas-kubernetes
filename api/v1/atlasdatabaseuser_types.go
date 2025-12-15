@@ -48,7 +48,7 @@ const (
 	DataLakeScopeType   ScopeType = "DATA_LAKE"
 )
 
-// AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
+// AtlasDatabaseUserSpec defines the target state of Database User in Atlas
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef))",message="must define only one project reference through externalProjectRef or projectRef"
 // +kubebuilder:validation:XValidation:rule="(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef)",message="must define a local connection secret when referencing an external project"
 type AtlasDatabaseUserSpec struct {

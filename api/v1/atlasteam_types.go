@@ -45,7 +45,7 @@ type AtlasTeam struct {
 
 type TeamUser string
 
-// TeamSpec defines the desired state of a Team in Atlas.
+// TeamSpec defines the target state of a Team in Atlas.
 type TeamSpec struct {
 	// The name of the team you want to create.
 	Name string `json:"name"`
