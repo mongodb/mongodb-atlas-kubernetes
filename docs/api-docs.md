@@ -89,7 +89,7 @@ The AtlasBackupCompliancePolicy is a configuration that enforces specific backup
         <td><b><a href="#atlasbackupcompliancepolicyspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasBackupCompliancePolicySpec is the specification of the desired configuration of backup compliance policy<br/>
+          AtlasBackupCompliancePolicySpec is the specification of the desired backup compliance policy configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -108,7 +108,7 @@ The AtlasBackupCompliancePolicy is a configuration that enforces specific backup
 
 
 
-AtlasBackupCompliancePolicySpec is the specification of the desired configuration of backup compliance policy
+AtlasBackupCompliancePolicySpec is the specification of the desired backup compliance policy configuration.
 
 <table>
     <thead>
@@ -123,21 +123,21 @@ AtlasBackupCompliancePolicySpec is the specification of the desired configuratio
         <td><b>authorizedEmail</b></td>
         <td>string</td>
         <td>
-          Email address of the user who authorized to update the Backup Compliance Policy settings.<br/>
+          Email address of the user authorized to update Backup Compliance Policy settings.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>authorizedUserFirstName</b></td>
         <td>string</td>
         <td>
-          First name of the user who authorized to updated the Backup Compliance Policy settings.<br/>
+          First name of the user authorized to update the Backup Compliance Policy settings.<br/>
         </td>
         <td>true</td>
       </tr><tr>
         <td><b>authorizedUserLastName</b></td>
         <td>string</td>
         <td>
-          Last name of the user who authorized to updated the Backup Compliance Policy settings.<br/>
+          Last name of the user authorized to update the Backup Compliance Policy settings.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -151,7 +151,7 @@ AtlasBackupCompliancePolicySpec is the specification of the desired configuratio
         <td><b>encryptionAtRestEnabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether Encryption at Rest using Customer Key Management is required for all clusters with a Backup Compliance Policy.<br/>
+          Flag that indicates whether to require Encryption at Rest using Customer Key Management for all clusters with a Backup Compliance Policy.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -165,7 +165,7 @@ AtlasBackupCompliancePolicySpec is the specification of the desired configuratio
         <td><b>overwriteBackupPolicies</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings or not.<br/>
+          Flag that indicates whether to overwrite non-complying backup policies with the new data protection settings.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -179,7 +179,8 @@ AtlasBackupCompliancePolicySpec is the specification of the desired configuratio
         <td><b>restoreWindowDays</b></td>
         <td>integer</td>
         <td>
-          Number of previous days that you can restore back to with Continuous Cloud Backup with a Backup Compliance Policy. This parameter applies only to Continuous Cloud Backups with a Backup Compliance Policy.<br/>
+          Number of previous days from which you can restore with Continuous Cloud Backup with a Backup Compliance Policy.
+This parameter applies only to Continuous Cloud Backups with a Backup Compliance Policy.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -249,8 +250,8 @@ Specifications for on-demand policy.
         <td><b>frequencyInterval</b></td>
         <td>integer</td>
         <td>
-          Desired frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
-The only accepted value you can set for frequency interval with NVMe clusters is 12.<br/>
+          Frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
+You can set FrequencyInterval only to 12 for NVMe clusters.<br/>
           <br/>
             <i>Enum</i>: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 40<br/>
         </td>
@@ -259,7 +260,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>frequencyType</b></td>
         <td>enum</td>
         <td>
-          Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.<br/>
+          Frequency associated with the backup policy item. You can specify only one each of hourly or daily backup policy items.<br/>
           <br/>
             <i>Enum</i>: hourly, daily, weekly, monthly, yearly<br/>
         </td>
@@ -312,8 +313,8 @@ BackupCompliancePolicyStatus defines the observed state of AtlasBackupCompliance
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -342,7 +343,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -366,7 +367,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -419,7 +420,7 @@ AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
         <td><b><a href="#atlasbackuppolicyspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy<br/>
+          AtlasBackupPolicySpec defines the target state of AtlasBackupPolicy.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -438,7 +439,7 @@ AtlasBackupPolicy is the Schema for the atlasbackuppolicies API
 
 
 
-AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
+AtlasBackupPolicySpec defines the target state of AtlasBackupPolicy.
 
 <table>
     <thead>
@@ -480,8 +481,8 @@ AtlasBackupPolicySpec defines the desired state of AtlasBackupPolicy
         <td><b>frequencyInterval</b></td>
         <td>integer</td>
         <td>
-          Desired frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
-The only accepted value you can set for frequency interval with NVMe clusters is 12.<br/>
+          Frequency of the new backup policy item specified by FrequencyType. A value of 1 specifies the first instance of the corresponding FrequencyType.
+You can set FrequencyInterval only to 12 for NVMe clusters.<br/>
           <br/>
             <i>Enum</i>: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 40<br/>
         </td>
@@ -490,7 +491,7 @@ The only accepted value you can set for frequency interval with NVMe clusters is
         <td><b>frequencyType</b></td>
         <td>enum</td>
         <td>
-          Frequency associated with the backup policy item. You cannot specify multiple hourly and daily backup policy items.<br/>
+          Frequency associated with the backup policy item. You can specify only one each of hourly or daily backup policy items.<br/>
           <br/>
             <i>Enum</i>: hourly, daily, weekly, monthly, yearly<br/>
         </td>
@@ -550,8 +551,8 @@ BackupPolicyStatus defines the observed state of AtlasBackupPolicy.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -580,7 +581,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -604,7 +605,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -657,7 +658,7 @@ AtlasBackupSchedule is the Schema for the atlasbackupschedules API.
         <td><b><a href="#atlasbackupschedulespec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.<br/>
+          AtlasBackupScheduleSpec defines the target state of AtlasBackupSchedule.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -676,7 +677,7 @@ AtlasBackupSchedule is the Schema for the atlasbackupschedules API.
 
 
 
-AtlasBackupScheduleSpec defines the desired state of AtlasBackupSchedule.
+AtlasBackupScheduleSpec defines the target state of AtlasBackupSchedule.
 
 <table>
     <thead>
@@ -923,8 +924,8 @@ BackupScheduleStatus defines the observed state of AtlasBackupSchedule.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -953,7 +954,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -977,7 +978,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1030,7 +1031,7 @@ AtlasCustomRole is the Schema for the AtlasCustomRole API
         <td><b><a href="#atlascustomrolespec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas.<br/>
+          AtlasCustomRoleSpec defines the target state of CustomRole in Atlas.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -1052,7 +1053,7 @@ Not the one included in the AtlasProject<br/>
 
 
 
-AtlasCustomRoleSpec defines the desired state of CustomRole in Atlas.
+AtlasCustomRoleSpec defines the target state of CustomRole in Atlas.
 
 <table>
     <thead>
@@ -1366,8 +1367,8 @@ Not the one included in the AtlasProject
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -1396,7 +1397,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1420,7 +1421,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1473,7 +1474,7 @@ AtlasDatabaseUser is the Schema for the Atlas Database User API
         <td><b><a href="#atlasdatabaseuserspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasDatabaseUserSpec defines the desired state of Database User in Atlas<br/>
+          AtlasDatabaseUserSpec defines the target state of Database User in Atlas<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -1494,7 +1495,7 @@ AtlasDatabaseUser is the Schema for the Atlas Database User API
 
 
 
-AtlasDatabaseUserSpec defines the desired state of Database User in Atlas
+AtlasDatabaseUserSpec defines the target state of Database User in Atlas
 
 <table>
     <thead>
@@ -1900,8 +1901,8 @@ AtlasDatabaseUserStatus defines the observed state of AtlasProject
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -1937,7 +1938,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1961,7 +1962,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2014,7 +2015,7 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API.
         <td><b><a href="#atlasdatafederationspec">spec</a></b></td>
         <td>object</td>
         <td>
-          DataFederationSpec defines the desired state of AtlasDataFederation.<br/>
+          DataFederationSpec defines the target state of AtlasDataFederation.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2033,7 +2034,7 @@ AtlasDataFederation is the Schema for the Atlas Data Federation API.
 
 
 
-DataFederationSpec defines the desired state of AtlasDataFederation.
+DataFederationSpec defines the target state of AtlasDataFederation.
 
 <table>
     <thead>
@@ -2645,8 +2646,8 @@ DataFederationStatus defines the observed state of AtlasDataFederation.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -2675,7 +2676,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2699,7 +2700,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2752,7 +2753,7 @@ AtlasDeployment is the Schema for the atlasdeployments API
         <td><b><a href="#atlasdeploymentspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+          AtlasDeploymentSpec defines the target state of AtlasDeployment.
 Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li><li>!has(self.serverlessSpec) || (oldSelf.hasValue() && oldSelf.value().serverlessSpec != null): serverlessSpec cannot be added - serverless instances are deprecated</li>
@@ -2774,7 +2775,7 @@ Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be 
 
 
 
-AtlasDeploymentSpec defines the desired state of AtlasDeployment.
+AtlasDeploymentSpec defines the target state of AtlasDeployment.
 Only one of DeploymentSpec, AdvancedDeploymentSpec and ServerlessSpec should be defined.
 
 <table>
@@ -4765,8 +4766,8 @@ The connection string changes if you update any of the other values.<br/>
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -4825,7 +4826,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -4849,7 +4850,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5368,7 +5369,7 @@ AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
         <td><b><a href="#atlasfederatedauthspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasFederatedAuthSpec defines the desired state of AtlasFederatedAuth.<br/>
+          AtlasFederatedAuthSpec defines the target state of AtlasFederatedAuth.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5387,7 +5388,7 @@ AtlasFederatedAuth is the Schema for the Atlasfederatedauth API
 
 
 
-AtlasFederatedAuthSpec defines the desired state of AtlasFederatedAuth.
+AtlasFederatedAuthSpec defines the target state of AtlasFederatedAuth.
 
 <table>
     <thead>
@@ -5600,8 +5601,8 @@ AtlasFederatedAuthStatus defines the observed state of AtlasFederatedAuth.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -5630,7 +5631,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -5654,7 +5655,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5707,7 +5708,7 @@ AtlasIPAccessList is the Schema for the atlasipaccesslists API.
         <td><b><a href="#atlasipaccesslistspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.<br/>
+          AtlasIPAccessListSpec defines the target state of AtlasIPAccessList.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li>
         </td>
@@ -5728,7 +5729,7 @@ AtlasIPAccessList is the Schema for the atlasipaccesslists API.
 
 
 
-AtlasIPAccessListSpec defines the desired state of AtlasIPAccessList.
+AtlasIPAccessListSpec defines the target state of AtlasIPAccessList.
 
 <table>
     <thead>
@@ -5955,8 +5956,8 @@ AtlasIPAccessListStatus is the most recent observed status of the AtlasIPAccessL
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -5985,7 +5986,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -6009,7 +6010,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6096,7 +6097,7 @@ AtlasNetworkContainer is the Schema for the AtlasNetworkContainer API
         <td><b><a href="#atlasnetworkcontainerspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.<br/>
+          AtlasNetworkContainerSpec defines the target state of an AtlasNetworkContainer.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li><li>(self.provider == 'GCP' && !has(self.region)) || (self.provider != 'GCP'): must not set region for GCP containers</li><li>((self.provider == 'AWS' || self.provider == 'AZURE') && has(self.region)) || (self.provider == 'GCP'): must set region for AWS and Azure containers</li><li>(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id)): id is immutable</li><li>(self.region == oldSelf.region) || (!has(self.region) && !has(oldSelf.region)): region is immutable</li>
         </td>
@@ -6118,7 +6119,7 @@ Not the one included in the AtlasProject<br/>
 
 
 
-AtlasNetworkContainerSpec defines the desired state of an AtlasNetworkContainer.
+AtlasNetworkContainerSpec defines the target state of an AtlasNetworkContainer.
 
 <table>
     <thead>
@@ -6316,8 +6317,8 @@ Not the one included in the AtlasProject
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -6354,7 +6355,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -6378,7 +6379,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -6431,7 +6432,7 @@ AtlasNetworkPeering is the Schema for the AtlasNetworkPeering API
         <td><b><a href="#atlasnetworkpeeringspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering<br/>
+          AtlasNetworkPeeringSpec defines the target state of AtlasNetworkPeering.<br/>
           <br/>
             <i>Validations</i>:<li>(has(self.externalProjectRef) && !has(self.projectRef)) || (!has(self.externalProjectRef) && has(self.projectRef)): must define only one project reference through externalProjectRef or projectRef</li><li>(has(self.externalProjectRef) && has(self.connectionSecret)) || !has(self.externalProjectRef): must define a local connection secret when referencing an external project</li><li>(has(self.containerRef.name) && !has(self.containerRef.id)) || (!has(self.containerRef.name) && has(self.containerRef.id)): must either have a container Atlas id or Kubernetes name, but not both (or neither)</li><li>(self.containerRef.name == oldSelf.containerRef.name) || (!has(self.containerRef.name) && !has(oldSelf.containerRef.name)): container ref name is immutable</li><li>(self.containerRef.id == oldSelf.containerRef.id) || (!has(self.containerRef.id) && !has(oldSelf.containerRef.id)): container ref id is immutable</li><li>(self.id == oldSelf.id) || (!has(self.id) && !has(oldSelf.id)): id is immutable</li>
         </td>
@@ -6453,7 +6454,7 @@ Not the one included in the AtlasProject<br/>
 
 
 
-AtlasNetworkPeeringSpec defines the desired state of AtlasNetworkPeering
+AtlasNetworkPeeringSpec defines the target state of AtlasNetworkPeering.
 
 <table>
     <thead>
@@ -6849,8 +6850,8 @@ Not the one included in the AtlasProject
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -6886,7 +6887,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -6910,7 +6911,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7706,8 +7707,8 @@ AtlasPrivateEndpointStatus is the most recent observed status of the AtlasPrivat
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -7771,7 +7772,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -7795,7 +7796,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7937,7 +7938,7 @@ AtlasProject is the Schema for the atlasprojects API
         <td><b><a href="#atlasprojectspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasProjectSpec defines the desired state of Project in Atlas<br/>
+          AtlasProjectSpec defines the target state of Project in Atlas<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -7956,7 +7957,7 @@ AtlasProject is the Schema for the atlasprojects API
 
 
 
-AtlasProjectSpec defines the desired state of Project in Atlas
+AtlasProjectSpec defines the target state of Project in Atlas
 
 <table>
     <thead>
@@ -10455,8 +10456,8 @@ Note, that this field is updated by the Atlas Operator only after specification 
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -10507,7 +10508,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -10531,7 +10532,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11708,7 +11709,7 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
         <td><b><a href="#atlassearchindexconfigspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasSearchIndexConfigSpec defines the desired state of AtlasSearchIndexConfig.<br/>
+          AtlasSearchIndexConfigSpec defines the target state of AtlasSearchIndexConfig.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11727,7 +11728,7 @@ AtlasSearchIndexConfig is the Schema for the AtlasSearchIndexConfig API
 
 
 
-AtlasSearchIndexConfigSpec defines the desired state of AtlasSearchIndexConfig.
+AtlasSearchIndexConfigSpec defines the target state of AtlasSearchIndexConfig.
 
 <table>
     <thead>
@@ -11926,8 +11927,8 @@ AtlasSearchIndexConfigStatus defines the observed state of AtlasSearchIndexConfi
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -11956,7 +11957,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -11980,7 +11981,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12033,7 +12034,7 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
         <td><b><a href="#atlasstreamconnectionspec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasStreamConnectionSpec defines the desired state of AtlasStreamConnection.<br/>
+          AtlasStreamConnectionSpec defines the target state of AtlasStreamConnection.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12052,7 +12053,7 @@ AtlasStreamConnection is the Schema for the atlasstreamconnections API
 
 
 
-AtlasStreamConnectionSpec defines the desired state of AtlasStreamConnection.
+AtlasStreamConnectionSpec defines the target state of AtlasStreamConnection.
 
 <table>
     <thead>
@@ -12389,8 +12390,8 @@ AtlasStreamConnectionStatus defines the observed state of AtlasStreamConnection.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -12419,7 +12420,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12443,7 +12444,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12530,7 +12531,7 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
         <td><b><a href="#atlasstreaminstancespec">spec</a></b></td>
         <td>object</td>
         <td>
-          AtlasStreamInstanceSpec defines the desired state of AtlasStreamInstance.<br/>
+          AtlasStreamInstanceSpec defines the target state of AtlasStreamInstance.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12549,7 +12550,7 @@ AtlasStreamInstance is the Schema for the atlasstreaminstances API
 
 
 
-AtlasStreamInstanceSpec defines the desired state of AtlasStreamInstance.
+AtlasStreamInstanceSpec defines the target state of AtlasStreamInstance.
 
 <table>
     <thead>
@@ -12755,8 +12756,8 @@ AtlasStreamInstanceStatus defines the observed state of AtlasStreamInstance.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -12785,7 +12786,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12809,7 +12810,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -12930,7 +12931,7 @@ AtlasTeam is the Schema for the Atlas Teams API
         <td><b><a href="#atlasteamspec">spec</a></b></td>
         <td>object</td>
         <td>
-          TeamSpec defines the desired state of a Team in Atlas.<br/>
+          TeamSpec defines the target state of a Team in Atlas.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -12949,7 +12950,7 @@ AtlasTeam is the Schema for the Atlas Teams API
 
 
 
-TeamSpec defines the desired state of a Team in Atlas.
+TeamSpec defines the target state of a Team in Atlas.
 
 <table>
     <thead>
@@ -13012,8 +13013,8 @@ TeamStatus defines the observed state of AtlasTeam.
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>
-          ObservedGeneration indicates the generation of the resource specification that the Atlas Operator is aware of.
-The Atlas Operator updates this field to the 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
+          ObservedGeneration indicates the generation of the resource specification of which the Atlas Operator is aware.
+The Atlas Operator updates this field to the value of 'metadata.generation' as soon as it starts reconciliation of the resource.<br/>
           <br/>
             <i>Format</i>: int64<br/>
         </td>
@@ -13049,7 +13050,7 @@ Condition describes the state of an Atlas Custom Resource at a certain point.
         <td><b>status</b></td>
         <td>string</td>
         <td>
-          Status of the condition, one of True, False, Unknown.<br/>
+          Status of the condition; one of True, False, Unknown.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -13073,7 +13074,7 @@ Represented in ISO 8601 format.<br/>
         <td><b>message</b></td>
         <td>string</td>
         <td>
-          A human readable message indicating details about the transition.<br/>
+          A message providing details about the transition.<br/>
         </td>
         <td>false</td>
       </tr><tr>
