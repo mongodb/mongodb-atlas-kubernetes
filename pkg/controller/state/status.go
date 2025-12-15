@@ -36,8 +36,8 @@ type statusResource struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-func newStatusObject(statusObj StatusObject) *resource {
-	return &resource{Status: statusResource{Conditions: statusObj.GetConditions()}}
+func newStatusObject(conditions []metav1.Condition) *resource {
+	return &resource{Status: statusResource{Conditions: conditions}}
 }
 
 func patchStatus(ctx context.Context, c client.Client, obj client.Object, status any) error {

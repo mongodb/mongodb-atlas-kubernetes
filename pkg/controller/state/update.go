@@ -19,6 +19,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
@@ -27,13 +28,15 @@ import (
 // Note: a generation change or error status will only be detected if the object implements StatusObject interface.
 //
 // Returns an error if there is an issue checking the reapply period.
-func ShouldUpdate(obj metav1.Object) (bool, error) {
-	generationChanged, hasErrorState := false, false
+func ShouldUpdate(obj metav1.Object, dependencies ...client.Object) (bool, error) {
+	hasErrorState := false
+
+	stateChanged := true
+	if stateTracker, ok := obj.GetAnnotations()[AnnotationStateTracker]; ok {
+		stateChanged = stateTracker != ComputeStateTracker(obj, dependencies...)
+	}
 
 	if statusObj, ok := obj.(StatusObject); ok {
-		if stateCondition := meta.FindStatusCondition(statusObj.GetConditions(), state.StateCondition); stateCondition != nil {
-			generationChanged = stateCondition.ObservedGeneration != obj.GetGeneration()
-		}
 		if errorCondition := meta.FindStatusCondition(statusObj.GetConditions(), state.ReadyCondition); errorCondition != nil {
 			hasErrorState = errorCondition.Reason == ReadyReasonError
 		}
@@ -44,5 +47,5 @@ func ShouldUpdate(obj metav1.Object) (bool, error) {
 		return false, fmt.Errorf("failed to check reaply period: %w", err)
 	}
 
-	return generationChanged || shouldReapply || hasErrorState, nil
+	return stateChanged || shouldReapply || hasErrorState, nil
 }

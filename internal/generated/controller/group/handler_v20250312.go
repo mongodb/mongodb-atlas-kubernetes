@@ -70,8 +70,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2genera
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
-	if err != nil {
+	if err := ctrlstate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to patch group status: %w", err))
 	}
 
@@ -96,8 +95,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *ako
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
-	if err != nil {
+	if err := ctrlstate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Group status: %w", err))
 	}
 
@@ -203,9 +201,8 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		return result.Error(currentState, err)
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, groupCopy, client.MergeFrom(group))
-	if err != nil {
-		return result.Error(currentState, err)
+	if err := ctrlstate.NewPatcher(groupCopy).UpdateStateTracker().UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to patch group: %w", err))
 	}
 
 	return result.NextState(state.StateUpdated, "Group is updated.")

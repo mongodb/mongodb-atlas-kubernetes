@@ -231,18 +231,18 @@ func (h *Handlerv20250312) handleUpserting(ctx context.Context, flexcluster *ako
 
 // HandleIdle handles the creating and updating state for flex version v20250312
 func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState state.ResourceState) (ctrlstate.Result, error) {
-	update, err := ctrlstate.ShouldUpdate(flexcluster)
+	deps, err := h.getDependencies(ctx, flexcluster)
+	if err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to get dependencies: %w", err))
+	}
+
+	update, err := ctrlstate.ShouldUpdate(flexcluster, deps...)
 	if err != nil {
 		return result.Error(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
 		return result.NextState(currentState, "Flex cluster up to date. No update required.")
-	}
-
-	deps, err := h.getDependencies(ctx, flexcluster)
-	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to get dependencies: %w", err))
 	}
 
 	body := &v20250312sdk.FlexClusterDescriptionUpdate20241113{}
@@ -264,15 +264,20 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to get update cluster: %w", err))
 	}
+
 	flexclusterCopy := flexcluster.DeepCopy()
 	if _, err := h.translator.FromAPI(flexclusterCopy, atlasFlexCluster); err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to translate update cluster response: %w", err))
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, flexclusterCopy, client.MergeFrom(flexcluster))
-	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to patch cluster status: %w", err))
+	if err := ctrlstate.
+		NewPatcher(flexclusterCopy).
+		UpdateStateTracker(deps...).
+		UpdateStatus().
+		Patch(ctx, h.kubeClient); err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to patch cluster: %w", err))
 	}
+
 	return result.NextState(finalState, "Updating Flex Cluster.")
 }
 
@@ -296,9 +301,13 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, flexcluster *akov2ge
 		return nil, fmt.Errorf("failed to translate get cluster response: %w", err)
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, flexclusterCopy, client.MergeFrom(flexcluster))
-	if err != nil {
-		return nil, fmt.Errorf("failed to patch cluster status: %w", err)
+	if err := ctrlstate.
+		NewPatcher(flexclusterCopy).
+		UpdateStateTracker(deps...).
+		UpdateStatus().
+		Patch(ctx, h.kubeClient); err != nil {
+		return nil, fmt.Errorf("failed to patch cluster: %w", err)
 	}
+
 	return atlasFlexCluster, nil
 }

@@ -133,7 +133,7 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		return ctrl.Result{}, fmt.Errorf("unable to get object: %w", err)
 	}
 
-	currentStatus := newStatusObject(obj)
+	currentStatus := newStatusObject(obj.GetConditions())
 	currentState := state.GetState(currentStatus.Status.Conditions)
 
 	if customresource.ReconciliationShouldBeSkipped(clientObj) {
@@ -159,7 +159,7 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		stateStatus = false
 	}
 
-	newStatus := newStatusObject(obj)
+	newStatus := newStatusObject(obj.GetConditions())
 	observedGeneration := getObservedGeneration(clientObj, currentStatus.Status.Conditions, result.NextState)
 	newStatusConditions := newStatus.Status.Conditions
 	state.EnsureState(&newStatusConditions, observedGeneration, result.NextState, result.StateMsg, stateStatus)
@@ -270,7 +270,7 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 
 		err error
 	)
-	statusObj := newStatusObject(any(t).(StatusObject))
+	statusObj := newStatusObject(any(t).(StatusObject).GetConditions())
 	currentState := state.GetState(statusObj.Status.Conditions)
 
 	if currentState == state.StateInitial {

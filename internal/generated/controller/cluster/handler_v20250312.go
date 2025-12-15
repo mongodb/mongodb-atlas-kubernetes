@@ -254,18 +254,18 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 }
 
 func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	update, err := ctrlstate.ShouldUpdate(cluster)
+	deps, err := h.getDependencies(ctx, cluster)
+	if err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+	}
+
+	update, err := ctrlstate.ShouldUpdate(cluster, deps...)
 	if err != nil {
 		return result.Error(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
 		return result.NextState(currentState, "Cluster is up to date. No update required.")
-	}
-
-	deps, err := h.getDependencies(ctx, cluster)
-	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	body := &v20250312sdk.ClusterDescription20240805{}
@@ -319,12 +319,15 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, cluster *akov2genera
 		return fmt.Errorf("failed to translate Cluster from Atlas: %w", err)
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, clusterCopy, client.MergeFrom(cluster))
+	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return fmt.Errorf("failed to patch Cluster status: %w", err)
+		return fmt.Errorf("failed to resolve Cluster dependencies: %w", err)
 	}
 
-	return nil
+	return ctrlstate.NewPatcher(cluster).
+		UpdateStateTracker(deps...).
+		UpdateStatus().
+		Patch(ctx, h.kubeClient)
 }
 
 func (h *Handlerv20250312) handleAtlasClusterState(
