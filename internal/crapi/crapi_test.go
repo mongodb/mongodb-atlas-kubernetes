@@ -527,6 +527,7 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 				},
 			},
+			// nolint:dupl
 			want: admin2025.GroupAlertsConfig{
 				Enabled:       pointer.MakePtr(true),
 				EventTypeName: pointer.MakePtr("some-event"),

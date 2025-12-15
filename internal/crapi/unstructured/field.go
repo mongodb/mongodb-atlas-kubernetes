@@ -149,7 +149,7 @@ func GetOrCreateField[T any](obj map[string]any, defaultValue T, fields ...strin
 	}
 	var emptyValue T
 	if errors.Is(err, ErrNotFound) {
-		if err := CreateField(obj, defaultValue, fields...); err != nil {
+		if err := RecursiveCreateField(obj, defaultValue, fields...); err != nil {
 			return emptyValue, fmt.Errorf("failed to create field at path %v: %w", fields, err)
 		}
 		return defaultValue, nil

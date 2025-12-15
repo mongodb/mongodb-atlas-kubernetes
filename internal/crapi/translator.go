@@ -23,6 +23,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -31,15 +32,107 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
+// NewTranslator creates a translator for a particular CRD version. It is also
+// locked into a particular API majorVersion.
+//
+// Given the following example resource:
+//
+//	apiVersion: atlas.generated.mongodb.com/v1
+//	kind: SearchIndex
+//	metadata:
+//	  name: search-index
+//	spec:
+//	  v20250312:
+//
+// In the above case crdVersion is "v1" and majorVersion is "v20250312".
+func NewTranslator(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string) (Translator, error) {
+	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
+	if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
+		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
+	}
+	var mappingSchema openapi3.Schema
+	mappingString, ok := crd.Annotations["api-mappings"]
+	if ok && mappingString != "" {
+		jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
+		}
+		if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
+		}
+	}
+
+	return &translator{
+		scheme:        scheme,
+		majorVersion:  majorVersion,
+		gvk:           schema.GroupVersionKind{Group: crd.Spec.Group, Version: crdVersion, Kind: crd.Spec.Names.Kind},
+		mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
+	}, nil
+}
+
+// NewPerVersionTranslators creates a set of translators indexed by SDK versions
+//
+// Given the following example resource:
+//
+//		apiVersion: atlas.generated.mongodb.com/v1
+//		kind: SearchIndex
+//		metadata:
+//		  name: search-index
+//		spec:
+//		  v20250312:
+//	    ...
+//		  v20250810:
+//
+// In the above case crdVersion is "v1" and versions can be "v20250312"
+// and/or "v20250810".
+func NewPerVersionTranslators(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, versions ...string) (map[string]Translator, error) {
+	translators := map[string]Translator{}
+	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
+	for _, version := range versions {
+		if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, version); err != nil {
+			return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", version, err)
+		}
+		var mappingSchema openapi3.Schema
+		mappingString, ok := crd.Annotations["api-mappings"]
+		if ok && mappingString != "" {
+			jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
+			}
+			if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
+			}
+		}
+
+		translators[version] = &translator{
+			scheme:        scheme,
+			majorVersion:  version,
+			gvk:           schema.GroupVersionKind{Group: crd.Spec.Group, Version: crdVersion, Kind: crd.Spec.Names.Kind},
+			mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
+		}
+	}
+	return translators, nil
+}
+
 // translator implements Translator to translate from a given CRD to and from
 // a given SDK version using the same upstream OpenAPI schema
 type translator struct {
 	scheme        *runtime.Scheme
 	majorVersion  string
+	gvk           schema.GroupVersionKind
 	mappingSchema *openapi3.SchemaRef
 }
 
 func (tr *translator) ToAPI(target any, source client.Object, objs ...client.Object) error {
+	if isNil(source) {
+		return fmt.Errorf("source is nil")
+	}
+	if isNil(target) {
+		return fmt.Errorf("target is nil")
+	}
+	if err := checkGVK(tr.scheme, source, tr.gvk); err != nil {
+		return fmt.Errorf("Source GVK check failed: %w", err)
+	}
 	unstructuredSrc, err := unstructured.ToUnstructured(source)
 	if err != nil {
 		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
@@ -71,6 +164,15 @@ func (tr *translator) ToAPI(target any, source client.Object, objs ...client.Obj
 }
 
 func (tr *translator) FromAPI(target client.Object, source any, objs ...client.Object) ([]client.Object, error) {
+	if isNil(source) {
+		return nil, fmt.Errorf("source is nil")
+	}
+	if isNil(target) {
+		return nil, fmt.Errorf("target is nil")
+	}
+	if err := checkGVK(tr.scheme, target, tr.gvk); err != nil {
+		return nil, fmt.Errorf("Target GVK check failed: %w", err)
+	}
 	sourceUnstructured, err := unstructured.ToUnstructured(source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
@@ -137,86 +239,6 @@ func (tr *translator) Scheme() *runtime.Scheme {
 	return tr.scheme
 }
 
-// NewTranslator creates a translator for a particular CRD version. It is also
-// locked into a particular API majorVersion.
-//
-// Given the following example resource:
-//
-//	apiVersion: atlas.generated.mongodb.com/v1
-//	kind: SearchIndex
-//	metadata:
-//	  name: search-index
-//	spec:
-//	  v20250312:
-//
-// In the above case crdVersion is "v1" and majorVersion is "v20250312".
-func NewTranslator(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, majorVersion string) (Translator, error) {
-	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
-	if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, majorVersion); err != nil {
-		return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", majorVersion, err)
-	}
-	var mappingSchema openapi3.Schema
-	mappingString, ok := crd.Annotations["api-mappings"]
-	if ok && mappingString != "" {
-		jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
-		}
-		if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
-		}
-	}
-
-	return &translator{
-		scheme:        scheme,
-		majorVersion:  majorVersion,
-		mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
-	}, nil
-}
-
-// NewPerVersionTranslators creates a set of translators indexed by SDK versions
-//
-// Given the following example resource:
-//
-//		apiVersion: atlas.generated.mongodb.com/v1
-//		kind: SearchIndex
-//		metadata:
-//		  name: search-index
-//		spec:
-//		  v20250312:
-//	    ...
-//		  v20250810:
-//
-// In the above case crdVersion is "v1" and versions can be "v20250312"
-// and/or "v20250810".
-func NewPerVersionTranslators(scheme *runtime.Scheme, crd *apiextensionsv1.CustomResourceDefinition, crdVersion string, versions ...string) (map[string]Translator, error) {
-	translators := map[string]Translator{}
-	specVersion := crds.SelectVersion(&crd.Spec, crdVersion)
-	for _, version := range versions {
-		if err := crds.AssertMajorVersion(specVersion, crd.Spec.Names.Kind, version); err != nil {
-			return nil, fmt.Errorf("failed to assert major version %s in CRD: %w", version, err)
-		}
-		var mappingSchema openapi3.Schema
-		mappingString, ok := crd.Annotations["api-mappings"]
-		if ok && mappingString != "" {
-			jsonBytes, err := yaml.YAMLToJSON([]byte(mappingString))
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert 'api-mappings' YAML to JSON: %w", err)
-			}
-			if err := json.Unmarshal(jsonBytes, &mappingSchema); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal 'api-mappings' JSON into schema: %w", err)
-			}
-		}
-
-		translators[version] = &translator{
-			scheme:        scheme,
-			majorVersion:  version,
-			mappingSchema: &openapi3.SchemaRef{Value: &mappingSchema},
-		}
-	}
-	return translators, nil
-}
-
 // collapseReferences finds all Kubernetes references, solves them and collapses
 // them by replacing their values from the reference (e.g Kubernetes secret or
 // group), into the corresponding API request value
@@ -243,6 +265,35 @@ func propertyValueOrNil(schema *openapi3.Schema, propertyName string) *openapi3.
 	if schema.Properties != nil &&
 		schema.Properties[propertyName] != nil && schema.Properties[propertyName].Value != nil {
 		return schema.Properties[propertyName].Value
+	}
+	return nil
+}
+
+// isNil properly checks if an interface{} value is nil, including nil pointers
+// assigned to interfaces (which are not == nil in Go)
+func isNil(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return rv.IsNil()
+	}
+	return false
+}
+
+func checkGVK(scheme *runtime.Scheme, target client.Object, gvk schema.GroupVersionKind) error {
+	actualGVK := target.GetObjectKind().GroupVersionKind()
+	if actualGVK.Kind == "" || actualGVK.GroupVersion().String() == "" {
+		gvks, _, err := scheme.ObjectKinds(target)
+		if err != nil || len(gvks) == 0 {
+			return fmt.Errorf("failed to infer GroupVersionKind for resource from scheme: %w", err)
+		}
+		actualGVK = gvks[0]
+	}
+	if actualGVK.Kind != gvk.Kind || actualGVK.GroupVersion().String() != gvk.GroupVersion().String() {
+		return fmt.Errorf("target must be a %q but got %q", gvk, actualGVK)
 	}
 	return nil
 }

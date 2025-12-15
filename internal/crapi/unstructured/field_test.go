@@ -54,11 +54,11 @@ func TestGetOrCreateField(t *testing.T) {
 			want:         "some string",
 		},
 		{
-			title:        "fail to create branch",
+			title:        "creates deep branch",
 			obj:          map[string]any{},
 			path:         []string{"deep", "field"},
 			defaultValue: "some string",
-			wantErr:      "field \"deep\": not found",
+			want:         "some string",
 		},
 		{
 			title: "read existing",
