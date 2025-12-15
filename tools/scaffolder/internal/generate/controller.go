@@ -229,6 +229,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		jen.List(jen.Id("translators"), jen.Id("err")).Op(":=").Qual(
 			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "NewPerVersionTranslators",
 		).Call(
+			jen.Id("c").Dot("GetScheme").Call(),
 			jen.Id("crd"),
 			jen.Id("crdVersion"),
 			jen.Id("sdkVersions").Op("..."),

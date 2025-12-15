@@ -27,12 +27,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
+	samplesv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 )
 
 const (
@@ -90,10 +93,11 @@ func TestMappings(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
+			scheme := testScheme(t)
 			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
 			crd, err := extractCRD(tc.kind, bufio.NewScanner(crdsYML))
 			require.NoError(t, err)
-			tr, err := crapi.NewTranslator(crd, version, sdkVersion)
+			tr, err := crapi.NewTranslator(scheme, crd, version, sdkVersion)
 			require.NoError(t, err)
 			got, err := tr.Mappings()
 			require.NoError(t, err)
@@ -364,7 +368,7 @@ func TestExpandAll(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, refMappings)
 
-			added, err := refs.ExpandAll(refMappings, mainObj, tc.deps, tc.obj)
+			added, err := refs.ExpandAll(testScheme(t), refMappings, mainObj, tc.deps, tc.obj)
 
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
@@ -571,7 +575,7 @@ func TestCollapseReferences(t *testing.T) {
 			refMappings, err := refs.FindMappings(schema, []string{})
 			require.NoError(t, err)
 
-			err = refs.CollapseAll(refMappings, mainObj, tc.deps, tc.obj)
+			err = refs.CollapseAll(testScheme(t), refMappings, mainObj, tc.deps, tc.obj)
 
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
@@ -593,4 +597,13 @@ func mappingSchemaFrom(obj map[string]any) (*openapi3.Schema, error) {
 		return nil, fmt.Errorf("failed to unmarshal test JSON into schema: %w", err)
 	}
 	return &mappingSchema, nil
+}
+
+func testScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, k8sscheme.AddToScheme(scheme))
+	require.NoError(t, samplesv1.AddToScheme(scheme))
+	return scheme
 }
