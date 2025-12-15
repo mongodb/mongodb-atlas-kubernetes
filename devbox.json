@@ -33,6 +33,7 @@
       "version":   "latest",
       "platforms": ["aarch64-darwin", "x86_64-darwin"]
     },
-    "path:./flakes/go": {}
+    "path:./flakes/go": {},
+    "gnused":           "latest"
   }
 }
