@@ -29,14 +29,13 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	akoscheme "k8s.io/client-go/kubernetes/scheme"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
+	samplesv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
@@ -75,20 +74,20 @@ func TestFromAPI(t *testing.T) {
 					},
 					WithDefaultAlertsSettings: pointer.MakePtr(true),
 				}
-				target := v1.Group{
-					Spec: v1.GroupSpec{
-						V20250312: &v1.GroupSpecV20250312{
+				target := samplesv1.Group{
+					Spec: samplesv1.GroupSpec{
+						V20250312: &samplesv1.GroupSpecV20250312{
 							ProjectOwnerId: "",
 						},
 					},
 				}
-				want := &v1.Group{
-					Spec: v1.GroupSpec{
-						V20250312: &v1.GroupSpecV20250312{
-							Entry: &v1.V20250312Entry{
+				want := &samplesv1.Group{
+					Spec: samplesv1.GroupSpec{
+						V20250312: &samplesv1.GroupSpecV20250312{
+							Entry: &samplesv1.V20250312Entry{
 								Name:  "test-project",
 								OrgId: testProjectID,
-								Tags: &[]v1.Tags{
+								Tags: &[]samplesv1.Tags{
 									{
 										Key:   "key0",
 										Value: "value0",
@@ -102,8 +101,8 @@ func TestFromAPI(t *testing.T) {
 							},
 						},
 					},
-					Status: v1.GroupStatus{
-						V20250312: &v1.GroupStatusV20250312{
+					Status: samplesv1.GroupStatus{
+						V20250312: &samplesv1.GroupStatusV20250312{
 							Created: "2025-01-01T01:30:15Z",
 							Id:      pointer.MakePtr("6127378123219"),
 						},
@@ -152,17 +151,17 @@ func TestFromAPI(t *testing.T) {
 					Username: "dbuser",
 					X509Type: pointer.MakePtr("NONE X509"),
 				}
-				target := v1.DatabaseUser{}
-				want := &v1.DatabaseUser{
-					Spec: v1.DatabaseUserSpec{
-						V20250312: &v1.DatabaseUserSpecV20250312{
-							Entry: &v1.DatabaseUserSpecV20250312Entry{
+				target := samplesv1.DatabaseUser{}
+				want := &samplesv1.DatabaseUser{
+					Spec: samplesv1.DatabaseUserSpec{
+						V20250312: &samplesv1.DatabaseUserSpecV20250312{
+							Entry: &samplesv1.DatabaseUserSpecV20250312Entry{
 								AwsIAMType:      pointer.MakePtr("NONE AWS"),
 								DatabaseName:    "dbname",
 								DeleteAfterDate: pointer.MakePtr("2025-02-01T01:30:15Z"),
 								Description:     pointer.MakePtr("sample db user"),
 								GroupId:         testProjectID, // ID ref by default
-								Labels: &[]v1.Tags{
+								Labels: &[]samplesv1.Tags{
 									{
 										Key:   "key0",
 										Value: "value0",
@@ -174,14 +173,14 @@ func TestFromAPI(t *testing.T) {
 								},
 								LdapAuthType: pointer.MakePtr("NONE LDAP"),
 								OidcAuthType: pointer.MakePtr("NONE OIDC"),
-								Roles: &[]v1.Roles{
+								Roles: &[]samplesv1.Roles{
 									{
 										CollectionName: pointer.MakePtr("collection0"),
 										DatabaseName:   "mydb",
 										RoleName:       "admin",
 									},
 								},
-								Scopes: &[]v1.Scopes{
+								Scopes: &[]samplesv1.Scopes{
 									{
 										Name: "scopeName",
 										Type: "scopeType",
@@ -246,23 +245,23 @@ func TestFromAPI(t *testing.T) {
 						Units:      pointer.MakePtr("a unit"),
 					},
 				}
-				target := v1.GroupAlertsConfig{
+				target := samplesv1.GroupAlertsConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "groupalertscfg",
 						Namespace: "ns",
 					},
 				}
-				want := &v1.GroupAlertsConfig{
+				want := &samplesv1.GroupAlertsConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "groupalertscfg",
 						Namespace: "ns",
 					},
-					Spec: v1.GroupAlertsConfigSpec{
-						V20250312: &v1.GroupAlertsConfigSpecV20250312{
-							Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+					Spec: samplesv1.GroupAlertsConfigSpec{
+						V20250312: &samplesv1.GroupAlertsConfigSpecV20250312{
+							Entry: &samplesv1.GroupAlertsConfigSpecV20250312Entry{
 								Enabled:       pointer.MakePtr(true),
 								EventTypeName: pointer.MakePtr("OUTSIDE_STREAM_PROCESSOR_METRIC_THRESHOLD"),
-								Matchers: &[]v1.Matchers{
+								Matchers: &[]samplesv1.Matchers{
 									{
 										FieldName: "field0",
 										Operator:  "EQUALS",
@@ -274,16 +273,16 @@ func TestFromAPI(t *testing.T) {
 										Value:     "value1",
 									},
 								},
-								MetricThreshold: &v1.MetricThreshold{
+								MetricThreshold: &samplesv1.MetricThreshold{
 									MetricName: "metric",
 									Mode:       pointer.MakePtr("mode"),
 									Operator:   pointer.MakePtr("op"),
 									Threshold:  pointer.MakePtr(0.1),
 									Units:      pointer.MakePtr("unit"),
 								},
-								Notifications: &[]v1.Notifications{
+								Notifications: &[]samplesv1.Notifications{
 									{
-										DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+										DatadogApiKeySecretRef: &samplesv1.ApiTokenSecretRef{
 											Key:  pointer.MakePtr("datadogApiKey"),
 											Name: pointer.MakePtr("groupalertscfg-f4f4b5f9c849fc4cbdc"),
 										},
@@ -296,7 +295,7 @@ func TestFromAPI(t *testing.T) {
 									},
 								},
 								SeverityOverride: pointer.MakePtr("CRITICIAL"),
-								Threshold: &v1.MetricThreshold{
+								Threshold: &samplesv1.MetricThreshold{
 									MetricName: "anotherMetric",
 									Mode:       pointer.MakePtr("a mode"),
 									Operator:   pointer.MakePtr("an op"),
@@ -307,8 +306,8 @@ func TestFromAPI(t *testing.T) {
 							GroupId: pointer.MakePtr(testProjectID),
 						},
 					},
-					Status: v1.GroupAlertsConfigStatus{
-						V20250312: &v1.GroupAlertsConfigStatusV20250312{
+					Status: samplesv1.GroupAlertsConfigStatus{
+						V20250312: &samplesv1.GroupAlertsConfigStatusV20250312{
 							GroupId: pointer.MakePtr(testProjectID),
 							Id:      pointer.MakePtr("notification id"),
 						},
@@ -337,13 +336,13 @@ func TestFromAPI(t *testing.T) {
 					ChannelName: pointer.MakePtr("alert-channel"),
 					TeamName:    pointer.MakePtr("some-team"),
 				}
-				target := v1.ThirdPartyIntegration{
+				target := samplesv1.ThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "3rdparty-slack",
 						Namespace: "ns",
 					},
-					Spec: v1.ThirdPartyIntegrationSpec{
-						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+					Spec: samplesv1.ThirdPartyIntegrationSpec{
+						V20250312: &samplesv1.ThirdPartyIntegrationSpecV20250312{
 							// TODO: is this a valid trick?
 							// This API struct, unlike others, does NOT include the Group ID
 							// it is part of the parameters, but not the response
@@ -355,16 +354,16 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 				}
-				want := &v1.ThirdPartyIntegration{
+				want := &samplesv1.ThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "3rdparty-slack",
 						Namespace: "ns",
 					},
-					Spec: v1.ThirdPartyIntegrationSpec{
-						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
-							Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
+					Spec: samplesv1.ThirdPartyIntegrationSpec{
+						V20250312: &samplesv1.ThirdPartyIntegrationSpecV20250312{
+							Entry: &samplesv1.ThirdPartyIntegrationSpecV20250312Entry{
 								Type: pointer.MakePtr("SLACK"),
-								ApiTokenSecretRef: &v1.ApiTokenSecretRef{
+								ApiTokenSecretRef: &samplesv1.ApiTokenSecretRef{
 									Name: pointer.MakePtr("3rdparty-slack-5798d555ff4dc66f7c99"),
 									Key:  pointer.MakePtr("apiToken"),
 								},
@@ -377,8 +376,8 @@ func TestFromAPI(t *testing.T) {
 							IntegrationType: "SLACK",
 						},
 					},
-					Status: v1.ThirdPartyIntegrationStatus{
-						V20250312: &v1.ThirdPartyIntegrationStatusV20250312{
+					Status: samplesv1.ThirdPartyIntegrationStatus{
+						V20250312: &samplesv1.ThirdPartyIntegrationStatusV20250312{
 							Id:   pointer.MakePtr("SomeID"),
 							Type: pointer.MakePtr("SLACK"),
 						},
@@ -428,7 +427,7 @@ func TestToAPIAllRefs(t *testing.T) {
 		{
 			name: "group alert config with a groupRef and secrets",
 			crd:  "GroupAlertsConfig",
-			input: &v1.GroupAlertsConfig{
+			input: &samplesv1.GroupAlertsConfig{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "GroupAlertsConfig",
 					APIVersion: "atlas.generated.mongodb.com/v1",
@@ -437,12 +436,12 @@ func TestToAPIAllRefs(t *testing.T) {
 					Name:      "my-group-alerts-config",
 					Namespace: "ns",
 				},
-				Spec: v1.GroupAlertsConfigSpec{
-					V20250312: &v1.GroupAlertsConfigSpecV20250312{
-						Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+				Spec: samplesv1.GroupAlertsConfigSpec{
+					V20250312: &samplesv1.GroupAlertsConfigSpecV20250312{
+						Entry: &samplesv1.GroupAlertsConfigSpecV20250312Entry{
 							Enabled:       pointer.MakePtr(true),
 							EventTypeName: pointer.MakePtr("some-event"),
-							Matchers: &[]v1.Matchers{
+							Matchers: &[]samplesv1.Matchers{
 								{
 									FieldName: "field1",
 									Operator:  "op1",
@@ -454,34 +453,34 @@ func TestToAPIAllRefs(t *testing.T) {
 									Value:     "value2",
 								},
 							},
-							MetricThreshold: &v1.MetricThreshold{
+							MetricThreshold: &samplesv1.MetricThreshold{
 								MetricName: "metric",
 								Mode:       pointer.MakePtr("mode"),
 								Operator:   pointer.MakePtr("operator"),
 								Threshold:  pointer.MakePtr(1.0),
 								Units:      pointer.MakePtr("unit"),
 							},
-							Notifications: &[]v1.Notifications{
+							Notifications: &[]samplesv1.Notifications{
 								{
-									DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+									DatadogApiKeySecretRef: &samplesv1.ApiTokenSecretRef{
 										Name: pointer.MakePtr("alert-secrets-0"),
 										Key:  pointer.MakePtr("apiKey"),
 									},
 									DatadogRegion: pointer.MakePtr("US"),
 								},
 								{
-									WebhookSecretSecretRef: &v1.ApiTokenSecretRef{
+									WebhookSecretSecretRef: &samplesv1.ApiTokenSecretRef{
 										Name: pointer.MakePtr("alert-secrets-0"),
 										Key:  pointer.MakePtr("webhookSecret"),
 									},
-									WebhookUrlSecretRef: &v1.ApiTokenSecretRef{
+									WebhookUrlSecretRef: &samplesv1.ApiTokenSecretRef{
 										Name: pointer.MakePtr("alert-secrets-1"),
 										Key:  pointer.MakePtr("webhookUrl"),
 									},
 								},
 							},
 							SeverityOverride: pointer.MakePtr("severe"),
-							Threshold: &v1.MetricThreshold{
+							Threshold: &samplesv1.MetricThreshold{
 								MetricName: "metric",
 								Mode:       pointer.MakePtr("mode-t"),
 								Operator:   pointer.MakePtr("op-t"),
@@ -496,19 +495,19 @@ func TestToAPIAllRefs(t *testing.T) {
 				},
 			},
 			deps: []client.Object{
-				&v1.Group{
+				&samplesv1.Group{
 					TypeMeta:   metav1.TypeMeta{Kind: "Group", APIVersion: "atlas.generated.mongodb.com/v1"},
 					ObjectMeta: metav1.ObjectMeta{Name: "my-project", Namespace: "ns"},
-					Spec: v1.GroupSpec{
-						V20250312: &v1.GroupSpecV20250312{
-							Entry: &v1.V20250312Entry{
+					Spec: samplesv1.GroupSpec{
+						V20250312: &samplesv1.GroupSpecV20250312{
+							Entry: &samplesv1.V20250312Entry{
 								Name:  "some-project",
 								OrgId: "621454123423x125235142",
 							},
 						},
 					},
-					Status: v1.GroupStatus{
-						V20250312: &v1.GroupStatusV20250312{
+					Status: samplesv1.GroupStatus{
+						V20250312: &samplesv1.GroupStatusV20250312{
 							Id: pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
 						},
 					},
@@ -602,16 +601,16 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "sample backup compliance policy",
 			test: func(t *testing.T) {
-				input := &v1.BackupCompliancePolicy{
-					Spec: v1.BackupCompliancePolicySpec{
-						V20250312: &v1.BackupCompliancePolicySpecV20250312{
-							Entry: &v1.BackupCompliancePolicySpecV20250312Entry{
+				input := &samplesv1.BackupCompliancePolicy{
+					Spec: samplesv1.BackupCompliancePolicySpec{
+						V20250312: &samplesv1.BackupCompliancePolicySpecV20250312{
+							Entry: &samplesv1.BackupCompliancePolicySpecV20250312Entry{
 								AuthorizedEmail:         "user@example.com",
 								CopyProtectionEnabled:   pointer.MakePtr(true),
 								EncryptionAtRestEnabled: pointer.MakePtr(true),
 								AuthorizedUserFirstName: "first-name",
 								AuthorizedUserLastName:  "last-name",
-								OnDemandPolicyItem: &v1.OnDemandPolicyItem{
+								OnDemandPolicyItem: &samplesv1.OnDemandPolicyItem{
 									FrequencyInterval: 1,
 									FrequencyType:     "some-freq",
 									RetentionUnit:     "some-unit",
@@ -620,7 +619,7 @@ func TestToAPI(t *testing.T) {
 								PitEnabled:        pointer.MakePtr(true),
 								ProjectId:         pointer.MakePtr("project-id"),
 								RestoreWindowDays: pointer.MakePtr(3),
-								ScheduledPolicyItems: &[]v1.OnDemandPolicyItem{
+								ScheduledPolicyItems: &[]samplesv1.OnDemandPolicyItem{
 									{
 										FrequencyInterval: 3,
 										FrequencyType:     "some-freq",
@@ -678,16 +677,16 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "backup schedule all fields",
 			test: func(t *testing.T) {
-				input := &v1.BackupSchedule{
-					Spec: v1.BackupScheduleSpec{
-						V20250312: &v1.BackupScheduleSpecV20250312{
-							Entry: &v1.BackupScheduleSpecV20250312Entry{
+				input := &samplesv1.BackupSchedule{
+					Spec: samplesv1.BackupScheduleSpec{
+						V20250312: &samplesv1.BackupScheduleSpecV20250312{
+							Entry: &samplesv1.BackupScheduleSpecV20250312Entry{
 								ReferenceHourOfDay:    pointer.MakePtr(2),
 								ReferenceMinuteOfHour: pointer.MakePtr(30),
 								RestoreWindowDays:     pointer.MakePtr(7),
 								UpdateSnapshots:       pointer.MakePtr(true),
 								AutoExportEnabled:     pointer.MakePtr(true),
-								CopySettings: &[]v1.CopySettings{
+								CopySettings: &[]samplesv1.CopySettings{
 									{
 										CloudProvider:    pointer.MakePtr("AWS"),
 										Frequencies:      &[]string{"freq-1", "freq-2"},
@@ -703,18 +702,18 @@ func TestToAPI(t *testing.T) {
 										ZoneId:           "zone-id-0",
 									},
 								},
-								DeleteCopiedBackups: &[]v1.DeleteCopiedBackups{
+								DeleteCopiedBackups: &[]samplesv1.DeleteCopiedBackups{
 									{
 										CloudProvider: pointer.MakePtr("Azure"),
 										RegionName:    pointer.MakePtr("us-west-2"),
 										ZoneId:        pointer.MakePtr("zone-id"),
 									},
 								},
-								Export: &v1.Export{
+								Export: &samplesv1.Export{
 									ExportBucketId: pointer.MakePtr("ExportBucketId"),
 									FrequencyType:  pointer.MakePtr("FrequencyType"),
 								},
-								ExtraRetentionSettings: &[]v1.ExtraRetentionSettings{
+								ExtraRetentionSettings: &[]samplesv1.ExtraRetentionSettings{
 									{
 										FrequencyType: pointer.MakePtr("FrequencyType0"),
 										RetentionDays: pointer.MakePtr(1),
@@ -724,10 +723,10 @@ func TestToAPI(t *testing.T) {
 										RetentionDays: pointer.MakePtr(2),
 									},
 								},
-								Policies: &[]v1.Policies{
+								Policies: &[]samplesv1.Policies{
 									{
 										Id: pointer.MakePtr("id0"),
-										PolicyItems: &[]v1.OnDemandPolicyItem{
+										PolicyItems: &[]samplesv1.OnDemandPolicyItem{
 											{
 												FrequencyInterval: 1,
 												FrequencyType:     "freq-type0",
@@ -824,12 +823,12 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "cluster all fields",
 			test: func(t *testing.T) {
-				input := &v1.Cluster{
-					Spec: v1.ClusterSpec{
-						V20250312: &v1.ClusterSpecV20250312{
-							Entry: &v1.ClusterSpecV20250312Entry{
+				input := &samplesv1.Cluster{
+					Spec: samplesv1.ClusterSpec{
+						V20250312: &samplesv1.ClusterSpecV20250312{
+							Entry: &samplesv1.ClusterSpecV20250312Entry{
 								AcceptDataRisksAndForceReplicaSetReconfig: pointer.MakePtr("2025-01-01T00:00:00Z"),
-								AdvancedConfiguration: &v1.AdvancedConfiguration{
+								AdvancedConfiguration: &samplesv1.AdvancedConfiguration{
 									CustomOpensslCipherConfigTls12: &[]string{
 										"TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
 									},
@@ -837,7 +836,7 @@ func TestToAPI(t *testing.T) {
 									TlsCipherConfigMode:       pointer.MakePtr("Custom"),
 								},
 								BackupEnabled:                             pointer.MakePtr(true),
-								BiConnector:                               &v1.BiConnector{Enabled: pointer.MakePtr(true)},
+								BiConnector:                               &samplesv1.BiConnector{Enabled: pointer.MakePtr(true)},
 								ClusterType:                               pointer.MakePtr("ReplicaSet"),
 								ConfigServerManagementMode:                pointer.MakePtr("Managed"),
 								ConfigServerType:                          pointer.MakePtr("ReplicaSet"),
@@ -846,11 +845,11 @@ func TestToAPI(t *testing.T) {
 								FeatureCompatibilityVersion:               pointer.MakePtr("7.0"),
 								FeatureCompatibilityVersionExpirationDate: pointer.MakePtr("2025-12-31T00:00:00Z"),
 								GlobalClusterSelfManagedSharding:          pointer.MakePtr(true),
-								Labels: &[]v1.Tags{
+								Labels: &[]samplesv1.Tags{
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
 								},
-								MongoDBEmployeeAccessGrant: &v1.MongoDBEmployeeAccessGrant{
+								MongoDBEmployeeAccessGrant: &samplesv1.MongoDBEmployeeAccessGrant{
 									ExpirationTime: "2025-12-31T00:00:00Z",
 									GrantType:      "Temporary",
 								},
@@ -860,46 +859,46 @@ func TestToAPI(t *testing.T) {
 								PitEnabled:                pointer.MakePtr(true),
 								RedactClientLogData:       pointer.MakePtr(true),
 								ReplicaSetScalingStrategy: pointer.MakePtr("Auto"),
-								ReplicationSpecs: &[]v1.ReplicationSpecs{
+								ReplicationSpecs: &[]samplesv1.ReplicationSpecs{
 									{
 										ZoneId:   pointer.MakePtr("zone-id-1"),
 										ZoneName: pointer.MakePtr("zone-name-1"),
-										RegionConfigs: &[]v1.RegionConfigs{
+										RegionConfigs: &[]samplesv1.RegionConfigs{
 											{
 												RegionName: pointer.MakePtr("us-east-1"),
-												AnalyticsSpecs: &v1.AnalyticsSpecs{
+												AnalyticsSpecs: &samplesv1.AnalyticsSpecs{
 													DiskIOPS:      pointer.MakePtr(1000),
 													DiskSizeGB:    pointer.MakePtr(10.0),
 													EbsVolumeType: pointer.MakePtr("gp2"),
 													InstanceSize:  pointer.MakePtr("M10"),
 													NodeCount:     pointer.MakePtr(3),
 												},
-												AutoScaling: &v1.AnalyticsAutoScaling{
-													Compute: &v1.Compute{
+												AutoScaling: &samplesv1.AnalyticsAutoScaling{
+													Compute: &samplesv1.Compute{
 														Enabled:           pointer.MakePtr(true),
 														ScaleDownEnabled:  pointer.MakePtr(true),
 														MaxInstanceSize:   pointer.MakePtr("M20"),
 														MinInstanceSize:   pointer.MakePtr("M10"),
 														PredictiveEnabled: pointer.MakePtr(true),
 													},
-													DiskGB: &v1.DiskGB{
+													DiskGB: &samplesv1.DiskGB{
 														Enabled: pointer.MakePtr(true),
 													},
 												},
-												AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
-													Compute: &v1.Compute{
+												AnalyticsAutoScaling: &samplesv1.AnalyticsAutoScaling{
+													Compute: &samplesv1.Compute{
 														Enabled:           pointer.MakePtr(true),
 														ScaleDownEnabled:  pointer.MakePtr(true),
 														MaxInstanceSize:   pointer.MakePtr("M30"),
 														MinInstanceSize:   pointer.MakePtr("M10"),
 														PredictiveEnabled: pointer.MakePtr(true),
 													},
-													DiskGB: &v1.DiskGB{
+													DiskGB: &samplesv1.DiskGB{
 														Enabled: pointer.MakePtr(true),
 													},
 												},
 												BackingProviderName: pointer.MakePtr("AWS"),
-												ElectableSpecs: &v1.ElectableSpecs{
+												ElectableSpecs: &samplesv1.ElectableSpecs{
 													DiskIOPS:              pointer.MakePtr(1000),
 													DiskSizeGB:            pointer.MakePtr(10.0),
 													EbsVolumeType:         pointer.MakePtr("gp2"),
@@ -909,7 +908,7 @@ func TestToAPI(t *testing.T) {
 												},
 												Priority:     pointer.MakePtr(1),
 												ProviderName: pointer.MakePtr("AWS"),
-												ReadOnlySpecs: &v1.AnalyticsSpecs{
+												ReadOnlySpecs: &samplesv1.AnalyticsSpecs{
 													DiskIOPS:      pointer.MakePtr(1000),
 													DiskSizeGB:    pointer.MakePtr(10.0),
 													EbsVolumeType: pointer.MakePtr("gp2"),
@@ -919,39 +918,39 @@ func TestToAPI(t *testing.T) {
 											},
 											{
 												RegionName: pointer.MakePtr("us-east-2"),
-												AnalyticsSpecs: &v1.AnalyticsSpecs{
+												AnalyticsSpecs: &samplesv1.AnalyticsSpecs{
 													DiskIOPS:      pointer.MakePtr(2000),
 													DiskSizeGB:    pointer.MakePtr(10.0),
 													EbsVolumeType: pointer.MakePtr("gp3"),
 													InstanceSize:  pointer.MakePtr("M20"),
 													NodeCount:     pointer.MakePtr(3),
 												},
-												AutoScaling: &v1.AnalyticsAutoScaling{
-													Compute: &v1.Compute{
+												AutoScaling: &samplesv1.AnalyticsAutoScaling{
+													Compute: &samplesv1.Compute{
 														Enabled:           pointer.MakePtr(true),
 														ScaleDownEnabled:  pointer.MakePtr(true),
 														MaxInstanceSize:   pointer.MakePtr("M50"),
 														MinInstanceSize:   pointer.MakePtr("M20"),
 														PredictiveEnabled: pointer.MakePtr(true),
 													},
-													DiskGB: &v1.DiskGB{
+													DiskGB: &samplesv1.DiskGB{
 														Enabled: pointer.MakePtr(true),
 													},
 												},
-												AnalyticsAutoScaling: &v1.AnalyticsAutoScaling{
-													Compute: &v1.Compute{
+												AnalyticsAutoScaling: &samplesv1.AnalyticsAutoScaling{
+													Compute: &samplesv1.Compute{
 														Enabled:           pointer.MakePtr(true),
 														ScaleDownEnabled:  pointer.MakePtr(true),
 														MaxInstanceSize:   pointer.MakePtr("M40"),
 														MinInstanceSize:   pointer.MakePtr("M10"),
 														PredictiveEnabled: pointer.MakePtr(true),
 													},
-													DiskGB: &v1.DiskGB{
+													DiskGB: &samplesv1.DiskGB{
 														Enabled: pointer.MakePtr(true),
 													},
 												},
 												BackingProviderName: pointer.MakePtr("AWS"),
-												ElectableSpecs: &v1.ElectableSpecs{
+												ElectableSpecs: &samplesv1.ElectableSpecs{
 													DiskIOPS:              pointer.MakePtr(1000),
 													DiskSizeGB:            pointer.MakePtr(10.0),
 													EbsVolumeType:         pointer.MakePtr("gp2"),
@@ -961,7 +960,7 @@ func TestToAPI(t *testing.T) {
 												},
 												Priority:     pointer.MakePtr(1),
 												ProviderName: pointer.MakePtr("AWS"),
-												ReadOnlySpecs: &v1.AnalyticsSpecs{
+												ReadOnlySpecs: &samplesv1.AnalyticsSpecs{
 													DiskIOPS:      pointer.MakePtr(1000),
 													DiskSizeGB:    pointer.MakePtr(10.0),
 													EbsVolumeType: pointer.MakePtr("gp2"),
@@ -973,7 +972,7 @@ func TestToAPI(t *testing.T) {
 									},
 								},
 								RootCertType: pointer.MakePtr("X509"),
-								Tags: &[]v1.Tags{
+								Tags: &[]samplesv1.Tags{
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
 								},
@@ -1143,33 +1142,33 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "data federation all fields",
 			test: func(t *testing.T) {
-				input := &v1.DataFederation{
-					Spec: v1.DataFederationSpec{
-						V20250312: &v1.DataFederationSpecV20250312{
-							Entry: &v1.DataFederationSpecV20250312Entry{
-								CloudProviderConfig: &v1.CloudProviderConfig{
-									Aws: &v1.Aws{
+				input := &samplesv1.DataFederation{
+					Spec: samplesv1.DataFederationSpec{
+						V20250312: &samplesv1.DataFederationSpecV20250312{
+							Entry: &samplesv1.DataFederationSpecV20250312Entry{
+								CloudProviderConfig: &samplesv1.CloudProviderConfig{
+									Aws: &samplesv1.Aws{
 										RoleId:       "aws-role-id-123",
 										TestS3Bucket: "my-s3-bucket",
 									},
-									Azure: &v1.Azure{
+									Azure: &samplesv1.Azure{
 										RoleId: "azure-role-id-456",
 									},
-									Gcp: &v1.Azure{
+									Gcp: &samplesv1.Azure{
 										RoleId: "gcp-role-id-789",
 									},
 								},
-								DataProcessRegion: &v1.DataProcessRegion{
+								DataProcessRegion: &samplesv1.DataProcessRegion{
 									CloudProvider: "GCE",
 									Region:        "eu-north-2",
 								},
 								Name: pointer.MakePtr("some-name"),
-								Storage: &v1.Storage{
-									Databases: &[]v1.Databases{
+								Storage: &samplesv1.Storage{
+									Databases: &[]samplesv1.Databases{
 										{
-											Collections: &[]v1.Collections{
+											Collections: &[]samplesv1.Collections{
 												{
-													DataSources: &[]v1.DataSources{
+													DataSources: &[]samplesv1.DataSources{
 														{
 															AllowInsecure:       pointer.MakePtr(true),
 															Collection:          pointer.MakePtr("some-name"),
@@ -1191,7 +1190,7 @@ func TestToAPI(t *testing.T) {
 											},
 											MaxWildcardCollections: pointer.MakePtr(3),
 											Name:                   pointer.MakePtr("db0"),
-											Views: &[]v1.Views{
+											Views: &[]samplesv1.Views{
 												{
 													Name:     pointer.MakePtr("view0"),
 													Pipeline: pointer.MakePtr("pipeline0"),
@@ -1200,7 +1199,7 @@ func TestToAPI(t *testing.T) {
 											},
 										},
 									},
-									Stores: &[]v1.Stores{
+									Stores: &[]samplesv1.Stores{
 										{
 											AdditionalStorageClasses: &[]string{"stc1", "stc2"},
 											AllowInsecure:            pointer.MakePtr(true),
@@ -1214,10 +1213,10 @@ func TestToAPI(t *testing.T) {
 											Prefix:                   pointer.MakePtr("prefix"),
 											Provider:                 "AWS",
 											Public:                   pointer.MakePtr(true),
-											ReadConcern: &v1.ReadConcern{
+											ReadConcern: &samplesv1.ReadConcern{
 												Level: pointer.MakePtr("local"),
 											},
-											ReadPreference: &v1.ReadPreference{
+											ReadPreference: &samplesv1.ReadPreference{
 												Mode: pointer.MakePtr("primary"),
 											},
 											Region:               pointer.MakePtr("us-east-1"),
@@ -1321,27 +1320,27 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "sample database user",
 			test: func(t *testing.T) {
-				input := &v1.DatabaseUser{
-					Spec: v1.DatabaseUserSpec{
-						V20250312: &v1.DatabaseUserSpecV20250312{
-							Entry: &v1.DatabaseUserSpecV20250312Entry{
+				input := &samplesv1.DatabaseUser{
+					Spec: samplesv1.DatabaseUserSpec{
+						V20250312: &samplesv1.DatabaseUserSpecV20250312{
+							Entry: &samplesv1.DatabaseUserSpecV20250312Entry{
 								Username:     "test-user",
 								DatabaseName: "admin",
 								GroupId:      "32b6e34b3d91647abb20e7b8",
-								Roles: &[]v1.Roles{
+								Roles: &[]samplesv1.Roles{
 									{DatabaseName: "admin", RoleName: "readWrite"},
 								},
 								AwsIAMType:      pointer.MakePtr("aws-iam-type"),
 								DeleteAfterDate: pointer.MakePtr("2025-07-01T00:00:00Z"),
 								Description:     pointer.MakePtr("description"),
-								Labels: &[]v1.Tags{
+								Labels: &[]samplesv1.Tags{
 									{Key: "key-1", Value: "value-1"},
 									{Key: "key-2", Value: "value-2"},
 								},
 								LdapAuthType: pointer.MakePtr("ldap-auth-type"),
 								OidcAuthType: pointer.MakePtr("oidc-auth-type"),
 								Password:     pointer.MakePtr("password"),
-								Scopes: &[]v1.Scopes{
+								Scopes: &[]samplesv1.Scopes{
 									{Name: "scope-1", Type: "type-1"},
 									{Name: "scope-2", Type: "type-2"},
 								},
@@ -1382,16 +1381,16 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "flex cluster with all fields",
 			test: func(t *testing.T) {
-				input := &v1.FlexCluster{
-					Spec: v1.FlexClusterSpec{
-						V20250312: &v1.FlexClusterSpecV20250312{
-							Entry: &v1.FlexClusterSpecV20250312Entry{
+				input := &samplesv1.FlexCluster{
+					Spec: samplesv1.FlexClusterSpec{
+						V20250312: &samplesv1.FlexClusterSpecV20250312{
+							Entry: &samplesv1.FlexClusterSpecV20250312Entry{
 								Name: "flex-cluster-name",
-								ProviderSettings: v1.ProviderSettings{
+								ProviderSettings: samplesv1.ProviderSettings{
 									BackingProviderName: "AWS",
 									RegionName:          "us-east-1",
 								},
-								Tags: &[]v1.Tags{
+								Tags: &[]samplesv1.Tags{
 									{Key: "key1", Value: "value1"},
 									{Key: "key2", Value: "value2"},
 								},
@@ -1421,15 +1420,15 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "simple group",
 			test: func(t *testing.T) {
-				input := &v1.Group{
-					Spec: v1.GroupSpec{
-						V20250312: &v1.GroupSpecV20250312{
-							Entry: &v1.V20250312Entry{
+				input := &samplesv1.Group{
+					Spec: samplesv1.GroupSpec{
+						V20250312: &samplesv1.GroupSpecV20250312{
+							Entry: &samplesv1.V20250312Entry{
 								Name:                      "project-name",
 								OrgId:                     "60987654321654321",
 								RegionUsageRestrictions:   pointer.MakePtr("fake-restriction"),
 								WithDefaultAlertsSettings: pointer.MakePtr(true),
-								Tags: &[]v1.Tags{
+								Tags: &[]samplesv1.Tags{
 									{Key: "key", Value: "value"},
 								},
 							},
@@ -1455,16 +1454,16 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "group alert config with project and credential references",
 			test: func(t *testing.T) {
-				input := &v1.GroupAlertsConfig{
+				input := &samplesv1.GroupAlertsConfig{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "ns",
 					},
-					Spec: v1.GroupAlertsConfigSpec{
-						V20250312: &v1.GroupAlertsConfigSpecV20250312{
-							Entry: &v1.GroupAlertsConfigSpecV20250312Entry{
+					Spec: samplesv1.GroupAlertsConfigSpec{
+						V20250312: &samplesv1.GroupAlertsConfigSpecV20250312{
+							Entry: &samplesv1.GroupAlertsConfigSpecV20250312Entry{
 								Enabled:       pointer.MakePtr(true),
 								EventTypeName: pointer.MakePtr("event-type"),
-								Matchers: &[]v1.Matchers{
+								Matchers: &[]samplesv1.Matchers{
 									{
 										FieldName: "field-name-1",
 										Operator:  "operator-1",
@@ -1476,23 +1475,23 @@ func TestToAPI(t *testing.T) {
 										Value:     "value-2",
 									},
 								},
-								MetricThreshold: &v1.MetricThreshold{
+								MetricThreshold: &samplesv1.MetricThreshold{
 									MetricName: "metric-1",
 									Mode:       pointer.MakePtr("mode"),
 									Operator:   pointer.MakePtr("operator"),
 									Threshold:  pointer.MakePtr(1.1),
 									Units:      pointer.MakePtr("units"),
 								},
-								Threshold: &v1.MetricThreshold{
+								Threshold: &samplesv1.MetricThreshold{
 									MetricName: "metric-t",
 									Mode:       pointer.MakePtr("mode-t"),
 									Operator:   pointer.MakePtr("operator-t"),
 									Threshold:  pointer.MakePtr(2.2),
 									Units:      pointer.MakePtr("units-t"),
 								},
-								Notifications: &[]v1.Notifications{
+								Notifications: &[]samplesv1.Notifications{
 									{
-										DatadogApiKeySecretRef: &v1.ApiTokenSecretRef{
+										DatadogApiKeySecretRef: &samplesv1.ApiTokenSecretRef{
 											Name: pointer.MakePtr("datadog-secret"),
 										},
 										DatadogRegion: pointer.MakePtr("US"),
@@ -1559,10 +1558,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "sample network peering connection",
 			test: func(t *testing.T) {
-				input := &v1.NetworkPeeringConnection{
-					Spec: v1.NetworkPeeringConnectionSpec{
-						V20250312: &v1.NetworkPeeringConnectionSpecV20250312{
-							Entry: &v1.NetworkPeeringConnectionSpecV20250312Entry{
+				input := &samplesv1.NetworkPeeringConnection{
+					Spec: samplesv1.NetworkPeeringConnectionSpec{
+						V20250312: &samplesv1.NetworkPeeringConnectionSpecV20250312{
+							Entry: &samplesv1.NetworkPeeringConnectionSpecV20250312Entry{
 								AccepterRegionName:  pointer.MakePtr("accepter-region-name"),
 								AwsAccountId:        pointer.MakePtr("aws-account-id"),
 								AzureDirectoryId:    pointer.MakePtr("azure-dir-id"),
@@ -1602,10 +1601,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "network permission entries all fields",
 			test: func(t *testing.T) {
-				input := &v1.NetworkPermissionEntries{
-					Spec: v1.NetworkPermissionEntriesSpec{
-						V20250312: &v1.NetworkPermissionEntriesSpecV20250312{
-							Entry: &[]v1.NetworkPermissionEntriesSpecV20250312Entry{
+				input := &samplesv1.NetworkPermissionEntries{
+					Spec: samplesv1.NetworkPermissionEntriesSpec{
+						V20250312: &samplesv1.NetworkPermissionEntriesSpecV20250312{
+							Entry: &[]samplesv1.NetworkPermissionEntriesSpecV20250312Entry{
 								{
 									AwsSecurityGroup: pointer.MakePtr("sg-12345678"),
 									CidrBlock:        pointer.MakePtr("cird"),
@@ -1637,11 +1636,11 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "sample organization",
 			test: func(t *testing.T) {
-				input := &v1.Organization{
-					Spec: v1.OrganizationSpec{
-						V20250312: &v1.V20250312{
-							Entry: &v1.Entry{
-								ApiKey: &v1.ApiKey{
+				input := &samplesv1.Organization{
+					Spec: samplesv1.OrganizationSpec{
+						V20250312: &samplesv1.V20250312{
+							Entry: &samplesv1.Entry{
+								ApiKey: &samplesv1.ApiKey{
 									Desc:  "description",
 									Roles: []string{"role-1", "role-2"},
 								},
@@ -1665,10 +1664,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "Organization setting with all fields",
 			test: func(t *testing.T) {
-				input := &v1.OrganizationSetting{
-					Spec: v1.OrganizationSettingSpec{
-						V20250312: &v1.OrganizationSettingSpecV20250312{
-							Entry: &v1.OrganizationSettingSpecV20250312Entry{
+				input := &samplesv1.OrganizationSetting{
+					Spec: samplesv1.OrganizationSettingSpec{
+						V20250312: &samplesv1.OrganizationSettingSpecV20250312{
+							Entry: &samplesv1.OrganizationSettingSpecV20250312Entry{
 								ApiAccessListRequired:                  pointer.MakePtr(true),
 								GenAIFeaturesEnabled:                   pointer.MakePtr(true),
 								MaxServiceAccountSecretValidityInHours: pointer.MakePtr(24),
@@ -1699,15 +1698,15 @@ func TestToAPI(t *testing.T) {
 			name: "customrole with all fields",
 			test: func(t *testing.T) {
 				input :=
-					&v1.CustomRole{
-						Spec: v1.CustomRoleSpec{
-							V20250312: &v1.CustomRoleSpecV20250312{
-								Entry: &v1.CustomRoleSpecV20250312Entry{
+					&samplesv1.CustomRole{
+						Spec: samplesv1.CustomRoleSpec{
+							V20250312: &samplesv1.CustomRoleSpecV20250312{
+								Entry: &samplesv1.CustomRoleSpecV20250312Entry{
 									RoleName: "custom-role-name",
-									Actions: &[]v1.Actions{
+									Actions: &[]samplesv1.Actions{
 										{
 											Action: "action1",
-											Resources: &[]v1.Resources{
+											Resources: &[]samplesv1.Resources{
 												{
 													Collection: "collection0",
 													Cluster:    true,
@@ -1721,7 +1720,7 @@ func TestToAPI(t *testing.T) {
 											},
 										},
 									},
-									InheritedRoles: &[]v1.InheritedRoles{
+									InheritedRoles: &[]samplesv1.InheritedRoles{
 										{
 											Db:   "inherited-db-name1",
 											Role: "inherited-role-name1",
@@ -1773,17 +1772,17 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "searchindex create request fields",
 			test: func(t *testing.T) {
-				input := &v1.SearchIndex{
-					Spec: v1.SearchIndexSpec{
-						V20250312: &v1.SearchIndexSpecV20250312{
-							Entry: &v1.SearchIndexSpecV20250312Entry{
+				input := &samplesv1.SearchIndex{
+					Spec: samplesv1.SearchIndexSpec{
+						V20250312: &samplesv1.SearchIndexSpecV20250312{
+							Entry: &samplesv1.SearchIndexSpecV20250312Entry{
 								Database:       "database-name",
 								CollectionName: "collection-name",
 								Name:           "index-name",
 								Type:           pointer.MakePtr("search-index-type"),
-								Definition: &v1.Definition{
+								Definition: &samplesv1.Definition{
 									Analyzer: pointer.MakePtr("lucene.standard"),
-									Analyzers: &[]v1.Analyzers{
+									Analyzers: &[]samplesv1.Analyzers{
 										{
 											Name: "custom-analyzer",
 											CharFilters: &[]apiextensionsv1.JSON{
@@ -1804,7 +1803,7 @@ func TestToAPI(t *testing.T) {
 										{Raw: []byte(`{"field2":"value2"}`)},
 										{Raw: []byte(`{"field3":"value3"}`)},
 									},
-									Mappings: &v1.Mappings{
+									Mappings: &samplesv1.Mappings{
 										Dynamic: pointer.MakePtr(true),
 										Fields: &map[string]apiextensionsv1.JSON{
 											"field1": {Raw: []byte(`{"key4":"value4"}`)},
@@ -1815,11 +1814,11 @@ func TestToAPI(t *testing.T) {
 									StoredSource: &apiextensionsv1.JSON{
 										Raw: []byte(`{"enabled": true}`),
 									},
-									Synonyms: &[]v1.Synonyms{
+									Synonyms: &[]samplesv1.Synonyms{
 										{
 											Analyzer: "synonym-analyzer",
 											Name:     "synonym-name",
-											Source: v1.Source{
+											Source: samplesv1.Source{
 												Collection: "synonym-collection",
 											},
 										},
@@ -1891,10 +1890,10 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "team all fields",
 			test: func(t *testing.T) {
-				input := &v1.Team{
-					Spec: v1.TeamSpec{
-						V20250312: &v1.TeamSpecV20250312{
-							Entry: &v1.TeamSpecV20250312Entry{
+				input := &samplesv1.Team{
+					Spec: samplesv1.TeamSpec{
+						V20250312: &samplesv1.TeamSpecV20250312{
+							Entry: &samplesv1.TeamSpecV20250312Entry{
 								Name:      "team-name",
 								Usernames: []string{"user1", "user2"},
 							},
@@ -1916,26 +1915,26 @@ func TestToAPI(t *testing.T) {
 		{
 			name: "third party integration all fields",
 			test: func(t *testing.T) {
-				input := &v1.ThirdPartyIntegration{
+				input := &samplesv1.ThirdPartyIntegration{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "ns",
 					},
-					Spec: v1.ThirdPartyIntegrationSpec{
-						V20250312: &v1.ThirdPartyIntegrationSpecV20250312{
+					Spec: samplesv1.ThirdPartyIntegrationSpec{
+						V20250312: &samplesv1.ThirdPartyIntegrationSpecV20250312{
 							IntegrationType: "ANY",
-							Entry: &v1.ThirdPartyIntegrationSpecV20250312Entry{
+							Entry: &samplesv1.ThirdPartyIntegrationSpecV20250312Entry{
 								AccountId: pointer.MakePtr("account-id"),
-								ApiKeySecretRef: &v1.ApiTokenSecretRef{
+								ApiKeySecretRef: &samplesv1.ApiTokenSecretRef{
 									Key:  pointer.MakePtr("apiKey"),
 									Name: pointer.MakePtr("multi-secret0"),
 								},
-								ApiTokenSecretRef: &v1.ApiTokenSecretRef{
+								ApiTokenSecretRef: &samplesv1.ApiTokenSecretRef{
 									Key:  pointer.MakePtr("apiToken"),
 									Name: pointer.MakePtr("multi-secret0"),
 								},
 								ChannelName: pointer.MakePtr("channel-name"),
 								Enabled:     pointer.MakePtr(true),
-								LicenseKeySecretRef: &v1.ApiTokenSecretRef{
+								LicenseKeySecretRef: &samplesv1.ApiTokenSecretRef{
 									Key:  pointer.MakePtr("licenseKey"),
 									Name: pointer.MakePtr("multi-secret1"),
 								},
@@ -2024,7 +2023,7 @@ func testScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 
 	scheme := runtime.NewScheme()
-	require.NoError(t, akov2.AddToScheme(scheme))
-	require.NoError(t, akoscheme.AddToScheme(scheme))
+	require.NoError(t, k8sscheme.AddToScheme(scheme))
+	require.NoError(t, samplesv1.AddToScheme(scheme))
 	return scheme
 }

@@ -22,10 +22,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	akoscheme "k8s.io/client-go/kubernetes/scheme"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	samplesv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 )
 
 var (
@@ -131,7 +131,7 @@ func testScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 
 	scheme := runtime.NewScheme()
-	require.NoError(t, akov2.AddToScheme(scheme))
-	require.NoError(t, akoscheme.AddToScheme(scheme))
+	require.NoError(t, k8sscheme.AddToScheme(scheme))
+	require.NoError(t, samplesv1.AddToScheme(scheme))
 	return scheme
 }
