@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 
-package unstructured_test
+package objmap_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 )
 
 func TestAsPath(t *testing.T) {
@@ -51,7 +51,7 @@ func TestAsPath(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			assert.Equal(t, tc.want, unstructured.AsPath(tc.input))
+			assert.Equal(t, tc.want, objmap.AsPath(tc.input))
 		})
 	}
 }
@@ -79,7 +79,7 @@ func TestBase(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			assert.Equal(t, tc.want, unstructured.Base(tc.input))
+			assert.Equal(t, tc.want, objmap.Base(tc.input))
 		})
 	}
 }

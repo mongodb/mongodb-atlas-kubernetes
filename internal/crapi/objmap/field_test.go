@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package unstructured_test
+package objmap_test
 
 import (
 	"sort"
@@ -22,15 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 )
 
 func TestCreateAndAccessField(t *testing.T) {
-	sampleMap, err := unstructured.ToUnstructured(sample)
+	sampleMap, err := objmap.ToObjectMap(sample)
 	require.NoError(t, err)
 	want := "value"
-	require.NoError(t, unstructured.RecursiveCreateField(sampleMap, "value", "SubObj", "field"))
-	got, err := unstructured.GetField[string](sampleMap, "SubObj", "field")
+	require.NoError(t, objmap.RecursiveCreateField(sampleMap, "value", "SubObj", "field"))
+	got, err := objmap.GetField[string](sampleMap, "SubObj", "field")
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -152,7 +152,7 @@ func TestGetOrCreateField(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got, err := unstructured.GetOrCreateField(tc.obj, tc.defaultValue, tc.path...)
+			got, err := objmap.GetOrCreateField(tc.obj, tc.defaultValue, tc.path...)
 			if tc.wantErr != "" {
 				require.Nil(t, got)
 				assert.ErrorContains(t, err, tc.wantErr)
@@ -186,7 +186,7 @@ func TestRecursiveCreateField(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			err := unstructured.RecursiveCreateField(tc.obj, tc.value, tc.path...)
+			err := objmap.RecursiveCreateField(tc.obj, tc.value, tc.path...)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.want, tc.obj)
@@ -272,7 +272,7 @@ func TestGetFieldObject(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got, err := unstructured.GetFieldObject(tc.obj, tc.path...)
+			got, err := objmap.GetFieldObject(tc.obj, tc.path...)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.want, got)
@@ -284,9 +284,9 @@ func TestGetFieldObject(t *testing.T) {
 }
 
 func TestFieldsOf(t *testing.T) {
-	sampleMap, err := unstructured.ToUnstructured(sample)
+	sampleMap, err := objmap.ToObjectMap(sample)
 	require.NoError(t, err)
-	fields := unstructured.FieldsOf(sampleMap)
+	fields := objmap.FieldsOf(sampleMap)
 	want := []string{"SubStruct", "ID", "YesNo", "Text", "Data", "Timestamp"}
 	sort.Strings(want)
 	sort.Strings(fields)

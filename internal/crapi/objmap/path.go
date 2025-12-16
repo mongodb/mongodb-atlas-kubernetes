@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package unstructured
+package objmap
 
 import "strings"
 

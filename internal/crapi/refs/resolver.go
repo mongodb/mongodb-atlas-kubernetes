@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 )
 
 type encodeDecodeFunc func(any) (any, error)
@@ -83,7 +83,7 @@ func newKubeObjectFactory[T any]() func(map[string]any) (client.Object, error) {
 
 func initObject[T any](obj *T, unstructuredObj map[string]any) (*T, error) {
 	if unstructuredObj != nil {
-		if err := unstructured.FromUnstructured(obj, unstructuredObj); err != nil {
+		if err := objmap.FromObjectMap(obj, unstructuredObj); err != nil {
 			return nil, err
 		}
 	}
@@ -93,9 +93,9 @@ func initObject[T any](obj *T, unstructuredObj map[string]any) (*T, error) {
 func unstructuredKubeObjectFor(refSolver *resolver, gvr string) (map[string]any, error) {
 	objCopy, err := kubeObjectFor(refSolver, gvr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get unstructured kube object for GVR %q: %w", gvr, err)
+		return nil, fmt.Errorf("failed to get object map kube object for GVR %q: %w", gvr, err)
 	}
-	return unstructured.ToUnstructured(objCopy)
+	return objmap.ToObjectMap(objCopy)
 }
 
 func kubeObjectFor(refSolver *resolver, gvr string) (client.Object, error) {
