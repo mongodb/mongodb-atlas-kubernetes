@@ -126,7 +126,7 @@ jobs:
           cache: false
 
       - name: Setup cache (Non Devbox)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: steps.check-devbox.outputs.devbox-build == 'false'
         with:
           path: |
