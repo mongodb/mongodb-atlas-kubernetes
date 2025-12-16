@@ -79,6 +79,8 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 			NewAtlasDataFederationByProjectIDIndexer(ctx, c.GetClient(), logger),
 			indexer.NewFlexClusterByGroupIndexer(logger),
 			indexer.NewClusterByGroupIndexer(logger),
+			indexer.NewDatabaseUserBySecretIndexer(logger),
+			indexer.NewDatabaseUserByGroupIndexer(logger),
 		)
 	}
 	return Register(ctx, c, indexers...)

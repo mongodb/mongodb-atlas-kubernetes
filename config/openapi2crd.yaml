@@ -211,5 +211,7 @@ spec:
             schema: 'CloudDatabaseUser'
             filters:
               readWriteOnly: true
+              skipProperties:
+                - $.groupId
               sensitiveProperties:
                 - $.password
