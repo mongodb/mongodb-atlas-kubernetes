@@ -15,7 +15,6 @@
 package state
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
