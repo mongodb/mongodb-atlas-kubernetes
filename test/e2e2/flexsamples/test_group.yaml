@@ -1,0 +1,13 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: __GROUP_NAME__
+  namespace: __OPERATOR_NAMESPACE__
+spec:
+  connectionSecretRef:
+    name: __CREDENTIALS_SECRET_NAME__
+  v20250312:
+    entry:
+      orgId: __ORG_ID__
+      name: __GROUP_NAME__
+

@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 const (
@@ -59,6 +61,10 @@ func NewTestClient() (client.Client, error) {
 	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
 	utilruntime.Must(akov2.AddToScheme(testScheme))
 	utilruntime.Must(appsv1.AddToScheme(testScheme))
+	// Add experimental nextapi types (e.g., FlexCluster, Group) only when experimental features are enabled
+	if version.IsExperimental() {
+		utilruntime.Must(generatedv1.AddToScheme(testScheme))
+	}
 	return getKubeClient(testScheme)
 }
 

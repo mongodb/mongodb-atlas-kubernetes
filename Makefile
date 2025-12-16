@@ -491,10 +491,13 @@ post-install-hook:
 x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 	go run scripts/create_x509.go
 
-clean: ## Clean built binaries
+.PHONY: clean-gen-crds
+clean-gen-crds: ## Clean only generated CRD files
+	rm -f config/generated/crd/bases/crds.yaml
+
+clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
 	rm -rf config/manifests/bases/
-	rm -f config/generated/crd/bases/crds.yaml
 	rm -f config/crd/bases/*.yaml
 	rm -f helm-charts/atlas-operator-crds/templates/*.yaml
 	rm -f config/rbac/clusterwide/role.yaml
@@ -607,7 +610,7 @@ clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
 install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
-	$(MAKE) clean gen-crds
+	$(MAKE) regen-crds
 	kubectl apply -f config/generated/crd/bases/crds.yaml
 endif
 
@@ -880,6 +883,9 @@ gen-crds: tools/openapi2crd/bin/openapi2crd
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
+
+.PHONY: regen-crds
+regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
