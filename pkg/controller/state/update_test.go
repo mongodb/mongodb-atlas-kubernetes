@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -35,10 +36,27 @@ type statusObj struct {
 
 func (s *statusObj) GetConditions() []metav1.Condition { return s.conditions }
 
-func newStatusObj(gen int64, conditions []metav1.Condition) *statusObj {
+func newStatusObj(gen int64, setStateTracker bool, conditions []metav1.Condition, annotations ...string) *statusObj {
 	u := &unstructured.Unstructured{}
+
+	if previousState := meta.FindStatusCondition(conditions, state.StateCondition); previousState != nil {
+		u.SetGeneration(previousState.ObservedGeneration)
+		if setStateTracker {
+			u.SetAnnotations(map[string]string{
+				AnnotationStateTracker: ComputeStateTracker(u),
+			})
+		}
+	}
+
+	for i := 0; i < len(annotations)-1; i += 2 {
+		anns := u.GetAnnotations()
+		anns[annotations[i]] = annotations[i+1]
+		u.SetAnnotations(anns)
+	}
+
 	u.SetGeneration(gen)
-	return &statusObj{Unstructured: u, conditions: conditions}
+	obj := &statusObj{Unstructured: u, conditions: conditions}
+	return obj
 }
 
 func TestShouldUpdate(t *testing.T) {
@@ -53,7 +71,7 @@ func TestShouldUpdate(t *testing.T) {
 	}{
 		{
 			name: "generation changed",
-			obj: newStatusObj(2, []metav1.Condition{
+			obj: newStatusObj(2, true, []metav1.Condition{
 				{
 					Type:               state.StateCondition,
 					ObservedGeneration: 1,
@@ -63,7 +81,7 @@ func TestShouldUpdate(t *testing.T) {
 		},
 		{
 			name: "generation did not change",
-			obj: newStatusObj(1, []metav1.Condition{
+			obj: newStatusObj(1, true, []metav1.Condition{
 				{
 					Type:               state.StateCondition,
 					ObservedGeneration: 1,
@@ -73,26 +91,33 @@ func TestShouldUpdate(t *testing.T) {
 		},
 		{
 			name: "error status (ready reason error)",
-			obj: newStatusObj(1, []metav1.Condition{
+			obj: newStatusObj(1, true, []metav1.Condition{
 				{
 					Type:   state.ReadyCondition,
 					Reason: ReadyReasonError,
+				},
+				{
+					Type:               state.StateCondition,
+					ObservedGeneration: 1,
 				},
 			}),
 			shouldUpdate: true,
 		},
 		{
 			name: "reapply due (old timestamp + period)",
-			obj: newUnstructuredObj(map[string]string{
-				AnnotationReapplyTimestamp:   pastMillis,
-				"mongodb.com/reapply-period": "1h",
-			}),
+			obj: newStatusObj(1, true, []metav1.Condition{
+				{
+					Type:               state.StateCondition,
+					ObservedGeneration: 1,
+				},
+			}, AnnotationReapplyTimestamp, pastMillis,
+				"mongodb.com/reapply-period", "1h"),
 			shouldUpdate: true,
 		},
 		{
-			name:         "no update needed",
+			name:         "no state tracker set",
 			obj:          newUnstructuredObj(map[string]string{}),
-			shouldUpdate: false,
+			shouldUpdate: true, // no state tracker set, hence update
 		},
 	}
 

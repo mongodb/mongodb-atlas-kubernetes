@@ -87,7 +87,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create cluster: %w", err))
 	}
 
-	err = h.patchStatus(ctx, cluster, response)
+	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
 		return result.Error(state.StateInitial, err)
 	}
@@ -121,7 +121,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *a
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Cluster with id %s: %w", id, err))
 	}
 
-	err = h.patchStatus(ctx, cluster, response)
+	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Cluster status: %w", err))
 	}
@@ -155,7 +155,7 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateCreating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateCreating, state.StateCreated)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateCreating, state.StateCreated, deps...)
 }
 
 // HandleCreated handles the created state for version v20250312
@@ -184,7 +184,7 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateUpdating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateUpdating, state.StateUpdated)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateUpdating, state.StateUpdated, deps...)
 }
 
 // HandleUpdated handles the updated state for version v20250312
@@ -250,22 +250,22 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete Cluster: %w", err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateDeleting, state.StateDeleted)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateDeleting, state.StateDeleted, deps...)
 }
 
 func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	update, err := ctrlstate.ShouldUpdate(cluster)
+	deps, err := h.getDependencies(ctx, cluster)
+	if err != nil {
+		return result.Error(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+	}
+
+	update, err := ctrlstate.ShouldUpdate(cluster, deps...)
 	if err != nil {
 		return result.Error(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
 		return result.NextState(currentState, "Cluster is up to date. No update required.")
-	}
-
-	deps, err := h.getDependencies(ctx, cluster)
-	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	body := &v20250312sdk.ClusterDescription20240805{}
@@ -293,7 +293,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		return result.Error(currentState, err)
 	}
 
-	err = h.patchStatus(ctx, cluster, response)
+	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
 		return result.Error(currentState, err)
 	}
@@ -312,28 +312,21 @@ func (h *Handlerv20250312) SetupWithManager(_ controllerruntime.Manager, _ recon
 	return nil
 }
 
-func (h *Handlerv20250312) patchStatus(ctx context.Context, cluster *akov2generated.Cluster, atlasCluster *v20250312sdk.ClusterDescription20240805) error {
+func (h *Handlerv20250312) patchStatus(ctx context.Context, cluster *akov2generated.Cluster, atlasCluster *v20250312sdk.ClusterDescription20240805, deps ...client.Object) error {
 	clusterCopy := cluster.DeepCopy()
 	_, err := h.translator.FromAPI(clusterCopy, atlasCluster)
 	if err != nil {
 		return fmt.Errorf("failed to translate Cluster from Atlas: %w", err)
 	}
 
-	err = h.kubeClient.Status().Patch(ctx, clusterCopy, client.MergeFrom(cluster))
-	if err != nil {
-		return fmt.Errorf("failed to patch Cluster status: %w", err)
-	}
-
-	return nil
+	return ctrlstate.NewPatcher(cluster).
+		UpdateStateTracker(deps...).
+		UpdateStatus().
+		Patch(ctx, h.kubeClient)
 }
 
-func (h *Handlerv20250312) handleAtlasClusterState(
-	ctx context.Context,
-	cluster *akov2generated.Cluster,
-	atlasCluster *v20250312sdk.ClusterDescription20240805,
-	currentState, nextState state.ResourceState,
-) (ctrlstate.Result, error) {
-	err := h.patchStatus(ctx, cluster, atlasCluster)
+func (h *Handlerv20250312) handleAtlasClusterState(ctx context.Context, cluster *akov2generated.Cluster, atlasCluster *v20250312sdk.ClusterDescription20240805, currentState, nextState state.ResourceState, deps ...client.Object) (ctrlstate.Result, error) {
+	err := h.patchStatus(ctx, cluster, atlasCluster, deps...)
 	if err != nil {
 		return result.Error(currentState, err)
 	}

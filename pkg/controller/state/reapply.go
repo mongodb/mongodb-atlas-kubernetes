@@ -19,15 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const AnnotationReapplyTimestamp = "mongodb.internal.com/reapply-timestamp"
 
 func ShouldReapply(obj metav1.Object) (bool, error) {
 	timestamp, hasTimestamp, err := ReapplyTimestamp(obj)
@@ -106,13 +103,11 @@ func PatchReapplyTimestamp(ctx context.Context, kubeClient client.Client, obj cl
 		return diff, nil
 	}
 
-	escapedAnnotation := strings.ReplaceAll(AnnotationReapplyTimestamp, "/", "~1")
-
 	patch := []byte(fmt.Sprintf(`[{
 	"op":    "replace",
 	"path":  "/metadata/annotations/%v",
 	"value": "%v"
-}]`, escapedAnnotation, now.UnixMilli()))
+}]`, jsonPatchReplacer.Replace(AnnotationReapplyTimestamp), now.UnixMilli()))
 
 	if err := kubeClient.Patch(ctx, obj, client.RawPatch(types.JSONPatchType, patch)); err != nil {
 		return 0, fmt.Errorf("failed to patch object: %w", err)
