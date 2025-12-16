@@ -38,7 +38,6 @@ type statusObj struct {
 func (s *statusObj) GetConditions() []metav1.Condition { return s.conditions }
 
 func newStatusObj(gen int64, setStateTracker bool, conditions []metav1.Condition, annotations ...string) *statusObj {
-	fmt.Println("boo")
 	u := &unstructured.Unstructured{}
 
 	if previousState := meta.FindStatusCondition(conditions, state.StateCondition); previousState != nil {
