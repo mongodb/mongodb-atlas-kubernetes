@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 

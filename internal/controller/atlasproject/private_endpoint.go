@@ -19,7 +19,7 @@ import (
 	"errors"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 	"golang.org/x/exp/slices"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
