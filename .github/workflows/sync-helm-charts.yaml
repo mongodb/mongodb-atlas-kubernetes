@@ -9,7 +9,9 @@ on:
 
 jobs:
   verify-helm-changes:
-    if: github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'dependabot') || github.event_name == 'workflow_dispatch'
+    if: >-
+      (github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'dependabot'))
+      || github.event_name == 'workflow_dispatch'
     name: Verify if AKO helm charts need updates
     runs-on: ubuntu-latest
     environment: release
@@ -87,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-      run: |
+        run: |
           cd ./helm-charts-cloned
 
           if [[ -n $(git status --porcelain) ]]; then
