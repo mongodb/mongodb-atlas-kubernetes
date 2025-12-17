@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package unstructured_test
+package objmap_test
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312009/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
@@ -69,7 +69,7 @@ var sample = testStruct{
 }
 
 func TestParamsFill(t *testing.T) {
-	unstructuredSample := map[string]any{
+	objMapSample := map[string]any{
 		"groupid": "62b6e34b3d91647abb20e7b8",
 		"groupalertsconfig": map[string]any{
 			"enabled":       true,
@@ -77,7 +77,7 @@ func TestParamsFill(t *testing.T) {
 		},
 	}
 	result := admin2025.CreateAlertConfigApiParams{}
-	require.NoError(t, unstructured.FromUnstructured(&result, unstructuredSample))
+	require.NoError(t, objmap.FromObjectMap(&result, objMapSample))
 	assert.Equal(t, admin2025.CreateAlertConfigApiParams{
 		GroupId: "62b6e34b3d91647abb20e7b8",
 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
@@ -87,12 +87,12 @@ func TestParamsFill(t *testing.T) {
 	}, result)
 }
 
-func TestToAndFromAndCopyUnstructured(t *testing.T) {
-	sampleMap, err := unstructured.ToUnstructured(sample)
+func TestToAndFromAndCopyObjectMap(t *testing.T) {
+	sampleMap, err := objmap.ToObjectMap(sample)
 	require.NoError(t, err)
 	clone := map[string]any{}
-	unstructured.CopyFields(clone, sampleMap)
+	objmap.CopyFields(clone, sampleMap)
 	result := testStruct{}
-	require.NoError(t, unstructured.FromUnstructured(&result, sampleMap))
+	require.NoError(t, objmap.FromObjectMap(&result, sampleMap))
 	assert.Equal(t, sample, result)
 }

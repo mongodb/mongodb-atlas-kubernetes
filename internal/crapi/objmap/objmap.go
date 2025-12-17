@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package unstructured
+package objmap
 
 import (
 	"encoding/json"
@@ -35,9 +35,9 @@ var (
 	ErrNotArray = errors.New("not an array")
 )
 
-// ToUnstructured returns an unstructured map holding the public field values
+// ToObjectMap returns an object map holding the public field values
 // from the original input obj value
-func ToUnstructured(obj any) (map[string]any, error) {
+func ToObjectMap(obj any) (map[string]any, error) {
 	js, err := json.Marshal(obj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal object into JSON: %w", err)
@@ -49,9 +49,9 @@ func ToUnstructured(obj any) (map[string]any, error) {
 	return result, nil
 }
 
-// FromUnstructured fills a target value with the field values from an
-// unstructured map
-func FromUnstructured(target any, source map[string]any) error {
+// FromObjectMap fills a target value with the field values from an
+// object map
+func FromObjectMap(target any, source map[string]any) error {
 	js, err := json.Marshal(source)
 	if err != nil {
 		return fmt.Errorf("failed to marshal map into JSON: %w", err)

@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 )
 
 const (
@@ -145,7 +145,7 @@ func extractMapping(schema *openapi3.Schema, path []string) (*Mapping, error) {
 			fmt.Errorf("failed to coerce open api extension type, expected map[string]any got %T", oamExt)
 	}
 	oam := OpenAPIMapping{}
-	if err := unstructured.FromUnstructured(&oam, oamMap); err != nil {
+	if err := objmap.FromObjectMap(&oam, oamMap); err != nil {
 		return nil, fmt.Errorf("failed to parse a reference mapping: %w", err)
 	}
 
@@ -155,7 +155,7 @@ func extractMapping(schema *openapi3.Schema, path []string) (*Mapping, error) {
 			fmt.Errorf("failed to coerce Kubernetes mapping extension type, expected map[string]any got %T", kubeExt)
 	}
 	km := KubeMapping{}
-	if err := unstructured.FromUnstructured(&km, kmMap); err != nil {
+	if err := objmap.FromObjectMap(&km, kmMap); err != nil {
 		return nil, fmt.Errorf("failed to parse a reference mapping: %w", err)
 	}
 
@@ -169,14 +169,14 @@ func extractMapping(schema *openapi3.Schema, path []string) (*Mapping, error) {
 // create a reference and insert it as a new Kubernetes Object in the kubeset
 func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 	collapsedPath := mapping.collapsedPath()
-	holder, err := unstructured.GetFieldObject(obj, collapsedPath...)
-	if errors.Is(err, unstructured.ErrNotFound) {
+	holder, err := objmap.GetFieldObject(obj, collapsedPath...)
+	if errors.Is(err, objmap.ErrNotFound) {
 		return nil
 	}
-	rawValue, found := holder[unstructured.Base(collapsedPath)]
+	rawValue, found := holder[objmap.Base(collapsedPath)]
 	if !found {
 		return fmt.Errorf("failed to access rawValue at %v: %w",
-			collapsedPath, unstructured.ErrNotFound)
+			collapsedPath, objmap.ErrNotFound)
 	}
 	if err != nil {
 		return fmt.Errorf("failed accessing value at path %v: %w", mapping.path, err)
@@ -208,9 +208,9 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 	refData := map[string]any{refName: dep.GetName()}
 	if mapping.xOpenAPIMapping.Property != "" {
 		path := resolveXPath(mapping.xOpenAPIMapping.Property)
-		refData[refKey] = unstructured.Base(path)
+		refData[refKey] = objmap.Base(path)
 	}
-	holder[unstructured.Base(mapping.path)] = refData
+	holder[objmap.Base(mapping.path)] = refData
 	ks.add(dep)
 	return nil
 }
@@ -218,16 +218,16 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 // collapse processes the unstructured (API request) object at the given path to
 // follow a reference and extract its value onto the object at the expected path
 func (mapping *Mapping) collapse(ks *kubeset, obj map[string]any) error {
-	holder, err := unstructured.GetFieldObject(obj, mapping.path...)
-	if errors.Is(err, unstructured.ErrNotFound) {
+	holder, err := objmap.GetFieldObject(obj, mapping.path...)
+	if errors.Is(err, objmap.ErrNotFound) {
 		return nil
 	}
-	rawValue, found := holder[unstructured.Base(mapping.path)]
+	rawValue, found := holder[objmap.Base(mapping.path)]
 	if !found {
 		return fmt.Errorf("failed to access rawValue at %v: %w",
-			mapping.path, unstructured.ErrNotFound)
+			mapping.path, objmap.ErrNotFound)
 	}
-	if errors.Is(err, unstructured.ErrNotFound) {
+	if errors.Is(err, objmap.ErrNotFound) {
 		return nil
 	}
 	if err != nil {
@@ -240,20 +240,20 @@ func (mapping *Mapping) collapse(ks *kubeset, obj map[string]any) error {
 	targetPath := mapping.xOpenAPIMapping.targetPath()
 	key, ok := reference[refKey].(string)
 	if !ok || key == "" {
-		key = unstructured.Base(targetPath)
+		key = objmap.Base(targetPath)
 	}
 	value, err := mapping.xKubernetesMapping.fetchReferencedValue(ks, key, reference)
 	if err != nil {
 		return fmt.Errorf("failed to fetch referenced value %s: %w", key, err)
 	}
-	holder[unstructured.Base(targetPath)] = value
+	holder[objmap.Base(targetPath)] = value
 	return nil
 }
 
 func (mapping *Mapping) collapsedPath() []string {
 	path := make([]string, len(mapping.path))
 	copy(path, mapping.path)
-	return append(unstructured.Dir(path), unstructured.AsPath(mapping.xOpenAPIMapping.Property)...)
+	return append(objmap.Dir(path), objmap.AsPath(mapping.xOpenAPIMapping.Property)...)
 }
 
 func (mapping *Mapping) nameFor(prefix string, path []string) string {

@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 )
 
 // ErrNoMatchingPropertySelector when no property selectors matched the value
@@ -66,7 +66,7 @@ func (km KubeMapping) fetchReferencedValue(mc *kubeset, target string, reference
 	if refPath == "" {
 		return nil, fmt.Errorf("cannot solve reference without a %s.nameSelector", xKubeMappingKey)
 	}
-	refName, err := unstructured.GetField[string](reference, unstructured.AsPath(refPath)...)
+	refName, err := objmap.GetField[string](reference, objmap.AsPath(refPath)...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access field %q at %v: %w", refPath, reference, err)
 	}
@@ -85,18 +85,18 @@ func (km KubeMapping) fetchReferencedValue(mc *kubeset, target string, reference
 	if km.Type.Kind != "" && !km.equal(gvk) {
 		return nil, fmt.Errorf("resource %q had to be a %q but got %q", refName, km.gvk(), gvk)
 	}
-	resourceMap, err := unstructured.ToUnstructured(resource)
+	resourceMap, err := objmap.ToObjectMap(resource)
 	if err != nil {
-		return nil, fmt.Errorf("failed to turn resource %q into an unstuctued map: %w", refName, err)
+		return nil, fmt.Errorf("failed to turn resource %q into an object map: %w", refName, err)
 	}
 	value, err := km.fetchFromProperties(resourceMap)
-	if err != nil && !errors.Is(err, unstructured.ErrNotFound) {
+	if err != nil && !errors.Is(err, objmap.ErrNotFound) {
 		return nil, fmt.Errorf("failed to resolve reference properties: %w", err)
 	}
-	if errors.Is(err, unstructured.ErrNotFound) {
+	if errors.Is(err, objmap.ErrNotFound) {
 		var err error
 		value, err = km.fetchFromPropertySelectors(resourceMap, target)
-		if errors.Is(err, unstructured.ErrNotFound) {
+		if errors.Is(err, objmap.ErrNotFound) {
 			return nil, fmt.Errorf("failed to resolve reference properties or property selectors: %w", err)
 		}
 		if err != nil {
@@ -126,8 +126,8 @@ func (km KubeMapping) encode(refSolver *resolver, value any) (any, error) {
 func (km KubeMapping) fetchFromProperties(resource map[string]any) (any, error) {
 	for _, prop := range km.Properties {
 		path := resolveXPath(prop)
-		value, err := unstructured.GetField[any](resource, path...)
-		if errors.Is(err, unstructured.ErrNotFound) {
+		value, err := objmap.GetField[any](resource, path...)
+		if errors.Is(err, objmap.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -135,7 +135,7 @@ func (km KubeMapping) fetchFromProperties(resource map[string]any) (any, error) 
 		}
 		return value, nil
 	}
-	return nil, unstructured.ErrNotFound
+	return nil, objmap.ErrNotFound
 }
 
 func (km KubeMapping) fetchFromPropertySelectors(resource map[string]any, target string) (any, error) {
@@ -145,8 +145,8 @@ func (km KubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], target)
 		}
 		path := resolveXPath(prop)
-		value, err := unstructured.GetField[any](resource, path...)
-		if errors.Is(err, unstructured.ErrNotFound) {
+		value, err := objmap.GetField[any](resource, path...)
+		if errors.Is(err, objmap.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -154,7 +154,7 @@ func (km KubeMapping) fetchFromPropertySelectors(resource map[string]any, target
 		}
 		return value, nil
 	}
-	return nil, unstructured.ErrNotFound
+	return nil, objmap.ErrNotFound
 }
 
 func (km KubeMapping) setAtPropertySelectors(refSolver *resolver, gvr string, obj map[string]any, target string, value any) (client.Object, error) {
@@ -162,25 +162,25 @@ func (km KubeMapping) setAtPropertySelectors(refSolver *resolver, gvr string, ob
 		prop := selector
 		if strings.HasSuffix(prop, propertySelectorSuffix) {
 			targetPath := resolveXPath(target)
-			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], unstructured.Base(targetPath))
+			prop = fmt.Sprintf("%s.%s", prop[:len(prop)-2], objmap.Base(targetPath))
 		}
 		path := resolveXPath(prop)
-		if err := unstructured.RecursiveCreateField(obj, value, path...); err != nil {
+		if err := objmap.RecursiveCreateField(obj, value, path...); err != nil {
 			return nil, fmt.Errorf("failed to set value at %q: %w", path, err)
 		}
 		obj, err := initializedKubeObjectFor(refSolver, gvr, obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize Kubernetes object: %w", err)
 		}
-		unstructuredCopy, err := unstructured.ToUnstructured(obj)
+		objMapCopy, err := objmap.ToObjectMap(obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read Kubernetes object contents: %w", err)
 		}
-		valueCopy, err := unstructured.GetField[any](unstructuredCopy, path...)
+		valueCopy, err := objmap.GetField[any](objMapCopy, path...)
 		if reflect.DeepEqual(value, valueCopy) {
 			return obj, nil
 		}
-		if err != nil && !errors.Is(err, unstructured.ErrNotFound) {
+		if err != nil && !errors.Is(err, objmap.ErrNotFound) {
 			return nil, fmt.Errorf("failed to check Kubernetes object contents: %w", err)
 		}
 	}

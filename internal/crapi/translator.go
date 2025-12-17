@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/unstructured"
 )
 
 // NewTranslator creates a translator for a particular CRD version. It is also
@@ -133,13 +133,13 @@ func (tr *translator) ToAPI(target any, source client.Object, objs ...client.Obj
 	if err := checkGVK(tr.scheme, source, tr.gvk); err != nil {
 		return fmt.Errorf("Source GVK check failed: %w", err)
 	}
-	unstructuredSrc, err := unstructured.ToUnstructured(source)
+	objMapSrc, err := objmap.ToObjectMap(source)
 	if err != nil {
-		return fmt.Errorf("failed to convert k8s source value to unstructured: %w", err)
+		return fmt.Errorf("failed to convert k8s source value to object map: %w", err)
 	}
-	targetUnstructured := map[string]any{}
+	targetObjMap := map[string]any{}
 
-	if err := collapseReferences(tr, unstructuredSrc, source, objs); err != nil {
+	if err := collapseReferences(tr, objMapSrc, source, objs); err != nil {
 		return fmt.Errorf("failed to process API mappings: %w", err)
 	}
 
@@ -148,17 +148,17 @@ func (tr *translator) ToAPI(target any, source client.Object, objs ...client.Obj
 		return fmt.Errorf("target must be a struct but got %v", targetType.Kind())
 	}
 
-	value, err := unstructured.GetField[map[string]any](unstructuredSrc, "spec", tr.MajorVersion())
+	value, err := objmap.GetField[map[string]any](objMapSrc, "spec", tr.MajorVersion())
 	if err != nil {
 		return fmt.Errorf("failed to access source spec value: %w", err)
 	}
-	unstructured.CopyFields(targetUnstructured, value)
+	objmap.CopyFields(targetObjMap, value)
 	rawEntry := value["entry"]
 	if entry, ok := rawEntry.(map[string]any); ok {
-		unstructured.CopyFields(targetUnstructured, entry)
+		objmap.CopyFields(targetObjMap, entry)
 	}
-	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
-		return fmt.Errorf("failed to set structured value from unstructured: %w", err)
+	if err := objmap.FromObjectMap(target, targetObjMap); err != nil {
+		return fmt.Errorf("failed to set structured value from object map: %w", err)
 	}
 	return nil
 }
@@ -173,39 +173,39 @@ func (tr *translator) FromAPI(target client.Object, source any, objs ...client.O
 	if err := checkGVK(tr.scheme, target, tr.gvk); err != nil {
 		return nil, fmt.Errorf("Target GVK check failed: %w", err)
 	}
-	sourceUnstructured, err := unstructured.ToUnstructured(source)
+	sourceObjMap, err := objmap.ToObjectMap(source)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert API source value to unstructured: %w", err)
+		return nil, fmt.Errorf("failed to convert API source value to object map: %w", err)
 	}
 
-	targetUnstructured, err := unstructured.ToUnstructured(target)
+	targetObjMap, err := objmap.ToObjectMap(target)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert target value to unstructured: %w", err)
+		return nil, fmt.Errorf("failed to convert target value to object map: %w", err)
 	}
 
-	versionedSpec, err := unstructured.GetOrCreateField(
-		targetUnstructured, map[string]any{}, "spec", tr.MajorVersion())
+	versionedSpec, err := objmap.GetOrCreateField(
+		targetObjMap, map[string]any{}, "spec", tr.MajorVersion())
 	if err != nil {
-		return nil, fmt.Errorf("failed to ensure versioned spec object in unstructured target: %w", err)
+		return nil, fmt.Errorf("failed to ensure versioned spec object in target: %w", err)
 	}
-	versionedStatus, err := unstructured.GetOrCreateField(
-		targetUnstructured, map[string]any{}, "status", tr.MajorVersion())
+	versionedStatus, err := objmap.GetOrCreateField(
+		targetObjMap, map[string]any{}, "status", tr.MajorVersion())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create versioned status object in unstructured target: %w", err)
+		return nil, fmt.Errorf("failed to create versioned status object in target: %w", err)
 	}
 
-	unstructured.CopyFields(versionedSpec, sourceUnstructured)
+	objmap.CopyFields(versionedSpec, sourceObjMap)
 	versionedSpecEntry := map[string]any{}
-	unstructured.CopyFields(versionedSpecEntry, sourceUnstructured)
+	objmap.CopyFields(versionedSpecEntry, sourceObjMap)
 	versionedSpec["entry"] = versionedSpecEntry
-	unstructured.CopyFields(versionedStatus, sourceUnstructured)
+	objmap.CopyFields(versionedStatus, sourceObjMap)
 
-	extraObjects, err := expandReferences(tr, targetUnstructured, target, objs)
+	extraObjects, err := expandReferences(tr, targetObjMap, target, objs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process API mappings: %w", err)
 	}
-	if err := unstructured.FromUnstructured(target, targetUnstructured); err != nil {
-		return nil, fmt.Errorf("failed set structured kubernetes object from unstructured: %w", err)
+	if err := objmap.FromObjectMap(target, targetObjMap); err != nil {
+		return nil, fmt.Errorf("failed set structured kubernetes object from object map: %w", err)
 	}
 	return extraObjects, nil
 }
