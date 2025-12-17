@@ -36,10 +36,6 @@ func TestPatcher(t *testing.T) {
 	_ = appsv1.AddToScheme(scheme)
 
 	baseDeployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Deployment",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "default",
@@ -71,10 +67,6 @@ func TestPatcher(t *testing.T) {
 			},
 			wantErr: "",
 			wantObj: &appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "Deployment",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test",
 					Namespace:   "default",
@@ -91,10 +83,6 @@ func TestPatcher(t *testing.T) {
 			},
 			wantErr: "",
 			wantObj: &appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "Deployment",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
@@ -113,10 +101,6 @@ func TestPatcher(t *testing.T) {
 			},
 			wantErr: "",
 			wantObj: &appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "Deployment",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test",
 					Namespace:   "default",
@@ -136,10 +120,6 @@ func TestPatcher(t *testing.T) {
 			},
 			wantErr: "",
 			wantObj: &appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "v1",
-					Kind:       "Deployment",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "default",
