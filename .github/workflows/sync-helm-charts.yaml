@@ -86,13 +86,14 @@ jobs:
       - name: Create PR for helm-charts repo
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
+          PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
           cd ./helm-charts-cloned
 
           if [[ -n $(git status --porcelain) ]]; then
             jobname=${{ github.run_id }}
-            if [[ -n "${{ github.event.pull_request.title }}" ]]; then
-              jobname=$(echo "${{ github.event.pull_request.title }}" | tr -c '[:alnum:]-_' '_')
+            if [[ -n "${PR_TITLE}" ]]; then
+              jobname=$(echo "${PR_TITLE}" | tr -c '[:alnum:]-_' '_')
             fi
 
             export BRANCH=ako-helm-update-"${jobname}"
