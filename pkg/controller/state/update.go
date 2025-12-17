@@ -44,7 +44,7 @@ func ShouldUpdate(obj metav1.Object, dependencies ...client.Object) (bool, error
 
 	shouldReapply, err := ShouldReapply(obj)
 	if err != nil {
-		return false, fmt.Errorf("failed to check reaply period: %w", err)
+		return false, fmt.Errorf("failed to check reapply period: %w", err)
 	}
 
 	return stateChanged || shouldReapply || hasErrorState, nil
