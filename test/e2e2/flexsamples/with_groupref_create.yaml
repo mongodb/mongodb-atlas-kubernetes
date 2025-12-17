@@ -1,31 +1,28 @@
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Group
 metadata:
-  name: test-flexy
-  namespace: mongodb-atlas-system
+  name: __GROUP_NAME__
 spec:
   connectionSecretRef:
     name: mongodb-atlas-operator-api-key
   v20250312:
     entry:
       orgId: __ORG_ID__
-      name: test-flexy
+      name: __GROUP_NAME__
 ---
 apiVersion: atlas.generated.mongodb.com/v1
 kind: FlexCluster
 metadata:
   name: flexy
-  namespace: mongodb-atlas-system
   annotations:
     some-tag: tag
 spec:
   v20250312:
     groupRef:
-      name: test-flexy
+      name: __GROUP_NAME__
     entry:
       name: flexy
       terminationProtectionEnabled: true
       providerSettings:
         backingProviderName: GCP
         regionName: CENTRAL_US
-

@@ -42,6 +42,18 @@ type ObjectWithStatus interface {
 	GetConditions() []metav1.Condition
 }
 
+// AssertCRDNames check that the given names are CRDs installed in the accesible cluster
+func AssertCRDNames(ctx context.Context, kubeClient client.Client, crdNames ... string) error {
+	crds := make([]*apiextensionsv1.CustomResourceDefinition, 0, len(crdNames))
+	for _, crdName := range crdNames {
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{Name: crdName},
+		}
+		crds = append(crds, crd)
+	}
+	return AssertCRDs(ctx, kubeClient, crds...)
+}
+
 // AssertCRDs check that the given CRDs are installed in the accesible cluster
 func AssertCRDs(ctx context.Context, kubeClient client.Client, crds ...*apiextensionsv1.CustomResourceDefinition) error {
 	for _, targetCRD := range crds {

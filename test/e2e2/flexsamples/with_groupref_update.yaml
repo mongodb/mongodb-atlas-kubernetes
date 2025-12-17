@@ -2,7 +2,6 @@ apiVersion: atlas.generated.mongodb.com/v1
 kind: FlexCluster
 metadata:
   name: flexy
-  namespace: mongodb-atlas-system
   annotations:
     some-tag: tag
 spec:
@@ -10,11 +9,10 @@ spec:
     name: mongodb-atlas-operator-api-key
   v20250312:
     groupRef:
-      name: test-flexy
+      name: __GROUP_NAME__
     entry:
       name: flexy
       terminationProtectionEnabled: false
       providerSettings:
         backingProviderName: GCP
         regionName: CENTRAL_US
-

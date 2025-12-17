@@ -23,10 +23,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nextapiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
@@ -45,14 +43,25 @@ const (
 	GroupCRDName       = "groups.atlas.generated.mongodb.com"
 )
 
+// yamlPlaceholders holds all placeholder values for YAML template replacement.
+type yamlPlaceholders struct {
+	GroupID               string
+	OrgID                 string
+	GroupName             string
+	OperatorNamespace     string
+	CredentialsSecretName string
+}
+
 var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	var sharedGroupNamespace *corev1.Namespace
 	var testGroup *nextapiv1.Group
 	var groupID string
 	var orgID string
+	var sharedPlaceholders yamlPlaceholders
 
 	_ = BeforeAll(func() {
 		if !version.IsExperimental() {
@@ -70,23 +79,27 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient
-		Expect(kube.AssertCRDs(ctx, kubeClient,
-			&apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: v1.ObjectMeta{Name: FlexClusterCRDName},
-			},
-			&apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: v1.ObjectMeta{Name: GroupCRDName},
-			},
-		)).To(Succeed())
+		Expect(kube.AssertCRDNames(ctx, kubeClient, FlexClusterCRDName, GroupCRDName)).To(Succeed())
+
+		By("Create namespace and credentials for shared test Group", func() {
+			sharedGroupNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+				Name: utils.RandomName("flex-shared-grp-ns"),
+			}}
+			Expect(kubeClient.Create(ctx, sharedGroupNamespace)).To(Succeed())
+			copyCredentialsToNamespace(ctx, kubeClient, sharedGroupNamespace.Name)
+		})
 
 		By("Create test Group", func() {
-			operatorNamespace := control.MustEnvVar("OPERATOR_NAMESPACE")
 			groupName := utils.RandomName("flexcluster-test-group")
+			// Set up shared placeholders for Group YAML template
+			sharedPlaceholders = yamlPlaceholders{
+				GroupName:             groupName,
+				OperatorNamespace:     sharedGroupNamespace.Name,
+				CredentialsSecretName: DefaultGlobalCredentials,
+				OrgID:                 orgID,
+			}
 			// Replace placeholders in the Group YAML template
-			groupYAML := strings.ReplaceAll(string(flexsamples.TestGroup), "__GROUP_NAME__", groupName)
-			groupYAML = strings.ReplaceAll(groupYAML, "__OPERATOR_NAMESPACE__", operatorNamespace)
-			groupYAML = strings.ReplaceAll(groupYAML, "__CREDENTIALS_SECRET_NAME__", DefaultGlobalCredentials)
-			groupYAML = strings.ReplaceAll(groupYAML, "__ORG_ID__", orgID)
+			groupYAML := replaceYAMLPlaceholders(string(flexsamples.TestGroup), sharedPlaceholders)
 			objs := yml.MustParseObjects(strings.NewReader(groupYAML))
 			Expect(len(objs)).To(Equal(1))
 			testGroup = objs[0].(*nextapiv1.Group)
@@ -94,21 +107,13 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		})
 
 		By("Wait for Group to be Ready and get its ID", func() {
-			Eventually(func(g Gomega) bool {
-				g.Expect(
-					kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup),
-				).To(Succeed())
-				if condition := meta.FindStatusCondition(testGroup.GetConditions(), "Ready"); condition != nil {
-					if condition.Status == metav1.ConditionTrue {
-						if testGroup.Status.V20250312 != nil && testGroup.Status.V20250312.Id != nil {
-							groupID = *testGroup.Status.V20250312.Id
-							return true
-						}
-					}
-				}
-				return false
-			}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+			waitForResourceReady(ctx, kubeClient, testGroup)
+			Expect(testGroup.Status.V20250312).NotTo(BeNil())
+			Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
+			groupID = *testGroup.Status.V20250312.Id
 			Expect(groupID).NotTo(BeEmpty())
+			// Update shared placeholders with groupID now that it's available
+			sharedPlaceholders.GroupID = groupID
 		})
 	})
 
@@ -120,6 +125,14 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
 				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+			})
+		}
+		if kubeClient != nil && sharedGroupNamespace != nil {
+			By("Clean up shared group namespace", func() {
+				Expect(kubeClient.Delete(ctx, sharedGroupNamespace)).To(Succeed())
+				Eventually(func(g Gomega) bool {
+					return kubeClient.Get(ctx, client.ObjectKeyFromObject(sharedGroupNamespace), sharedGroupNamespace) == nil
+				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 			})
 		}
 		if ako != nil {
@@ -149,49 +162,33 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 
 	DescribeTable("FlexCluster CRUD lifecycle",
 		func(createYAML, updateYAML []byte, clusterName string) {
+			// Generate randomized group name for this test run (cluster names are unique per group)
+			groupName := utils.RandomName("flex-grp")
+
+			// Set up placeholders for this test case (reuse shared values, override groupName)
+			testPlaceholders := sharedPlaceholders
+			testPlaceholders.GroupName = groupName
+
+			// Track created objects for cleanup
+			var createdObjects []client.Object
+
 			By("Copy credentials secret to test namespace", func() {
-				globalCredsKey := client.ObjectKey{
-					Name:      DefaultGlobalCredentials,
-					Namespace: control.MustEnvVar("OPERATOR_NAMESPACE"),
-				}
-				credentialsSecret, err := copySecretToNamespace(ctx, kubeClient, globalCredsKey, testNamespace.Name)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(
-					kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
-				).To(Succeed())
+				copyCredentialsToNamespace(ctx, kubeClient, testNamespace.Name)
 			})
 
 			By("Create resources from YAML", func() {
-				// Replace placeholders with actual values
-				createYAMLStr := strings.ReplaceAll(string(createYAML), "__GROUP_ID__", groupID)
-				createYAMLStr = strings.ReplaceAll(createYAMLStr, "__ORG_ID__", orgID)
-				objs := yml.MustParseObjects(strings.NewReader(createYAMLStr))
-				for _, obj := range objs {
-					objToApply := kube.WithRenamedNamespace(obj, testNamespace.Name)
-					Expect(
-						kubeClient.Patch(ctx, objToApply, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
-					).To(Succeed())
-				}
+				objs := applyYAMLToNamespace(ctx, kubeClient, createYAML, testPlaceholders, testNamespace.Name)
+				createdObjects = append(createdObjects, objs...)
 			})
 
 			By("Wait for Group to be Ready (if using groupRef)", func() {
-				createYAMLStr := strings.ReplaceAll(string(createYAML), "__GROUP_ID__", groupID)
-				createYAMLStr = strings.ReplaceAll(createYAMLStr, "__ORG_ID__", orgID)
+				createYAMLStr := replaceYAMLPlaceholders(string(createYAML), testPlaceholders)
 				objs := yml.MustParseObjects(strings.NewReader(createYAMLStr))
 				for _, obj := range objs {
 					if group, ok := obj.(*nextapiv1.Group); ok {
-						groupInKube := nextapiv1.Group{
+						waitForResourceReady(ctx, kubeClient, &nextapiv1.Group{
 							ObjectMeta: metav1.ObjectMeta{Name: group.Name, Namespace: testNamespace.Name},
-						}
-						Eventually(func(g Gomega) bool {
-							g.Expect(
-								kubeClient.Get(ctx, client.ObjectKeyFromObject(&groupInKube), &groupInKube),
-							).To(Succeed())
-							if condition := meta.FindStatusCondition(groupInKube.GetConditions(), "Ready"); condition != nil {
-								return condition.Status == metav1.ConditionTrue
-							}
-							return false
-						}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+						})
 					}
 				}
 			})
@@ -201,15 +198,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 			}
 
 			By("Wait for FlexCluster to be Ready", func() {
-				Eventually(func(g Gomega) bool {
-					g.Expect(
-						kubeClient.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster),
-					).To(Succeed())
-					if condition := meta.FindStatusCondition(cluster.GetConditions(), "Ready"); condition != nil {
-						return condition.Status == metav1.ConditionTrue
-					}
-					return false
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+				waitForResourceReady(ctx, kubeClient, &cluster)
 			})
 
 			By("Verify cluster was created", func() {
@@ -220,48 +209,26 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 
 			By("Update FlexCluster", func() {
 				if len(updateYAML) > 0 {
-					// Replace placeholders with actual values
-					updateYAMLStr := strings.ReplaceAll(string(updateYAML), "__GROUP_ID__", groupID)
-					updateYAMLStr = strings.ReplaceAll(updateYAMLStr, "__ORG_ID__", orgID)
-					updateObjs := yml.MustParseObjects(strings.NewReader(updateYAMLStr))
-					for _, obj := range updateObjs {
-						objToPatch := kube.WithRenamedNamespace(obj, testNamespace.Name)
-						Expect(
-							kubeClient.Patch(ctx, objToPatch, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
-						).To(Succeed())
-					}
+					applyYAMLToNamespace(ctx, kubeClient, updateYAML, testPlaceholders, testNamespace.Name)
 				}
 			})
 
 			By("Wait for FlexCluster to be Ready & updated", func() {
 				if len(updateYAML) > 0 {
-					Eventually(func(g Gomega) bool {
-						g.Expect(
-							kubeClient.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster),
-						).To(Succeed())
-						ready := false
-						if condition := meta.FindStatusCondition(cluster.GetConditions(), "Ready"); condition != nil {
-							ready = (condition.Status == metav1.ConditionTrue)
-						}
-						if ready {
-							if condition := meta.FindStatusCondition(cluster.GetConditions(), "State"); condition != nil {
-								return state.ResourceState(condition.Reason) == state.StateUpdated
-							}
-						}
-						return false
-					}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+					waitForResourceUpdated(ctx, kubeClient, &cluster)
 				}
 			})
 
-			By("Delete FlexCluster", func() {
-				Expect(kubeClient.Delete(ctx, &cluster)).To(Succeed())
+			By("Delete all created resources", func() {
+				for _, obj := range createdObjects {
+					_ = kubeClient.Delete(ctx, obj)
+				}
 			})
 
-			By("Wait for FlexCluster to be deleted", func() {
-				Eventually(func(g Gomega) error {
-					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster)
-					return err
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+			By("Wait for all resources to be deleted", func() {
+				for _, obj := range createdObjects {
+					waitForResourceDeleted(ctx, kubeClient, obj)
+				}
 			})
 		},
 		Entry("With direct groupId",
@@ -276,3 +243,80 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		),
 	)
 })
+
+// replaceYAMLPlaceholders replaces placeholders in YAML templates with actual values from the struct.
+func replaceYAMLPlaceholders(yaml string, p yamlPlaceholders) string {
+	result := yaml
+	result = strings.ReplaceAll(result, "__GROUP_ID__", p.GroupID)
+	result = strings.ReplaceAll(result, "__ORG_ID__", p.OrgID)
+	result = strings.ReplaceAll(result, "__GROUP_NAME__", p.GroupName)
+	result = strings.ReplaceAll(result, "__OPERATOR_NAMESPACE__", p.OperatorNamespace)
+	result = strings.ReplaceAll(result, "__CREDENTIALS_SECRET_NAME__", p.CredentialsSecretName)
+	return result
+}
+
+// copyCredentialsToNamespace copies the default global credentials secret to the specified namespace.
+func copyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, namespace string) {
+	globalCredsKey := client.ObjectKey{
+		Name:      DefaultGlobalCredentials,
+		Namespace: control.MustEnvVar("OPERATOR_NAMESPACE"),
+	}
+	credentialsSecret, err := copySecretToNamespace(ctx, kubeClient, globalCredsKey, namespace)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(
+		kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+	).To(Succeed())
+}
+
+// applyYAMLToNamespace applies YAML objects to a namespace after replacing placeholders.
+// Returns the list of applied objects.
+func applyYAMLToNamespace(ctx context.Context, kubeClient client.Client, yaml []byte, placeholders yamlPlaceholders, namespace string) []client.Object {
+	yamlStr := replaceYAMLPlaceholders(string(yaml), placeholders)
+	objs := yml.MustParseObjects(strings.NewReader(yamlStr))
+	for _, obj := range objs {
+		obj.SetNamespace(namespace)
+		Expect(
+			kubeClient.Patch(ctx, obj, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+		).To(Succeed())
+	}
+	return objs
+}
+
+// waitForResourceReady waits for a resource to have Ready condition set to True.
+func waitForResourceReady(ctx context.Context, kubeClient client.Client, obj kube.ObjectWithStatus) {
+	Eventually(func(g Gomega) bool {
+		g.Expect(
+			kubeClient.Get(ctx, client.ObjectKeyFromObject(obj), obj),
+		).To(Succeed())
+		if condition := meta.FindStatusCondition(obj.GetConditions(), "Ready"); condition != nil {
+			return condition.Status == metav1.ConditionTrue
+		}
+		return false
+	}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+}
+
+// waitForResourceUpdated waits for a resource to be Ready and in Updated state.
+func waitForResourceUpdated(ctx context.Context, kubeClient client.Client, obj kube.ObjectWithStatus) {
+	Eventually(func(g Gomega) bool {
+		g.Expect(
+			kubeClient.Get(ctx, client.ObjectKeyFromObject(obj), obj),
+		).To(Succeed())
+		ready := false
+		if condition := meta.FindStatusCondition(obj.GetConditions(), "Ready"); condition != nil {
+			ready = (condition.Status == metav1.ConditionTrue)
+		}
+		if ready {
+			if condition := meta.FindStatusCondition(obj.GetConditions(), "State"); condition != nil {
+				return state.ResourceState(condition.Reason) == state.StateUpdated
+			}
+		}
+		return false
+	}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).To(BeTrue())
+}
+
+// waitForResourceDeleted waits for a resource to be deleted from the cluster.
+func waitForResourceDeleted(ctx context.Context, kubeClient client.Client, obj client.Object) {
+	Eventually(func(g Gomega) error {
+		return kubeClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+	}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).ShouldNot(Succeed())
+}
