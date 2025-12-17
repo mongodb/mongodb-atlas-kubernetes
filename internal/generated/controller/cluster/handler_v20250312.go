@@ -319,7 +319,7 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, cluster *akov2genera
 		return fmt.Errorf("failed to translate Cluster from Atlas: %w", err)
 	}
 
-	return ctrlstate.NewPatcher(cluster).
+	return ctrlstate.NewPatcher(clusterCopy).
 		UpdateStateTracker(deps...).
 		UpdateStatus().
 		Patch(ctx, h.kubeClient)
