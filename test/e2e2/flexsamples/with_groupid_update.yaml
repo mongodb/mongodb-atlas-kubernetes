@@ -2,7 +2,6 @@ apiVersion: atlas.generated.mongodb.com/v1
 kind: FlexCluster
 metadata:
   name: flexy
-  namespace: mongodb-atlas-system
 spec:
   connectionSecretRef:
     name: mongodb-atlas-operator-api-key
@@ -14,4 +13,3 @@ spec:
       providerSettings:
         backingProviderName: GCP
         regionName: CENTRAL_US
-
