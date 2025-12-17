@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
@@ -61,6 +62,7 @@ func TestHandleInitial(t *testing.T) {
 		flexCluster                *akov2generated.FlexCluster
 		kubeObjects                []client.Object
 		atlasCreateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
+		interceptorFuncs           *interceptor.Funcs
 		want                       ctrlstate.Result
 		wantErr                    string
 	}{
@@ -123,9 +125,26 @@ func TestHandleInitial(t *testing.T) {
 			want:    ctrlstate.Result{NextState: state.StateInitial},
 			wantErr: "failed to create flex cluster",
 		},
+		{
+			title:       "patch status fails",
+			flexCluster: defaultTestFlexCluster(testClusterName, testNamespace),
+			kubeObjects: []client.Object{
+				defaultTestGroup(testGroupName, testNamespace, nil),
+			},
+			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				return &v20250312sdk.FlexClusterDescription20241113{Id: pointer.MakePtr(testClusterName)}, nil, nil
+			},
+			interceptorFuncs: &interceptor.Funcs{
+				SubResourcePatch: func(ctx context.Context, client client.Client, subResourceName string, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+					return fmt.Errorf("simulated status patch failure")
+				},
+			},
+			want:    ctrlstate.Result{NextState: state.StateInitial},
+			wantErr: "failed to patch flex cluster status",
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.interceptorFuncs)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasCreateFlexClusterFunc != nil {
@@ -215,7 +234,7 @@ func TestHandleImportRequested(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasGetFlexClusterFunc != nil {
@@ -284,7 +303,7 @@ func TestHandleCreating(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasGetFlexClusterFunc != nil {
@@ -347,7 +366,7 @@ func TestHandleUpdating(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasGetFlexClusterFunc != nil {
@@ -377,19 +396,19 @@ func TestHandleCreated(t *testing.T) {
 		flexCluster                *akov2generated.FlexCluster
 		kubeObjects                []client.Object
 		atlasUpdateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		skipStatusSubresource      bool
+		interceptorFuncs           *interceptor.Funcs
 		want                       ctrlstate.Result
 		wantErr                    string
 	}{
 		{
 			title: "no update needed",
-			flexCluster: withObservedGeneration(
+			flexCluster: withStateTracker(withObservedGeneration(
 				withGeneration(
 					setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 					1,
 				),
 				1,
-			),
+			)),
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
 			},
@@ -510,13 +529,17 @@ func TestHandleCreated(t *testing.T) {
 					StateName: pointer.MakePtr("IDLE"),
 				}, nil, nil
 			},
-			skipStatusSubresource: true,
-			want:                  errorResult(state.StateCreated),
-			wantErr:               "failed to patch cluster status",
+			interceptorFuncs: &interceptor.Funcs{
+				SubResourcePatch: func(ctx context.Context, client client.Client, subResourceName string, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+					return fmt.Errorf("simulated status patch failure")
+				},
+			},
+			want:    errorResult(state.StateCreated),
+			wantErr: "failed to patch cluster",
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.skipStatusSubresource)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.interceptorFuncs)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
@@ -551,13 +574,13 @@ func TestHandleImported(t *testing.T) {
 	}{
 		{
 			title: "no update needed",
-			flexCluster: withObservedGeneration(
+			flexCluster: withStateTracker(withObservedGeneration(
 				withGeneration(
 					setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 					1,
 				),
 				1,
-			),
+			)),
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
 			},
@@ -585,7 +608,7 @@ func TestHandleImported(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
@@ -620,13 +643,13 @@ func TestHandleUpdated(t *testing.T) {
 	}{
 		{
 			title: "no update needed",
-			flexCluster: withObservedGeneration(
+			flexCluster: withStateTracker(withObservedGeneration(
 				withGeneration(
 					setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 					1,
 				),
 				1,
-			),
+			)),
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
 			},
@@ -654,7 +677,7 @@ func TestHandleUpdated(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
@@ -795,7 +818,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasDeleteFlexClusterFunc != nil {
@@ -888,7 +911,7 @@ func TestHandleDeleting(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, false)
+			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
 			flexAPI := mockadmin.NewFlexClustersApi(t)
 			if tc.atlasGetFlexClusterFunc != nil {
@@ -930,17 +953,18 @@ func setupTestFixture(t *testing.T) *testFixture {
 	return fixture
 }
 
-// buildFakeClient creates a fake Kubernetes client with the given objects
-func (f *testFixture) buildFakeClient(flexCluster *akov2generated.FlexCluster, kubeObjects []client.Object, skipStatusSubresource bool) client.Client {
+// buildFakeClient creates a fake Kubernetes client with the given objects and optional interceptor
+func (f *testFixture) buildFakeClient(flexCluster *akov2generated.FlexCluster, kubeObjects []client.Object, funcs *interceptor.Funcs) client.Client {
 	allObjects := kubeObjects
 	clientBuilder := fake.NewClientBuilder().WithScheme(f.scheme)
 
+	if funcs != nil {
+		clientBuilder = clientBuilder.WithInterceptorFuncs(*funcs)
+	}
+
 	if flexCluster != nil {
 		allObjects = append([]client.Object{flexCluster}, kubeObjects...)
-		clientBuilder = clientBuilder.WithObjects(allObjects...)
-		if !skipStatusSubresource {
-			clientBuilder = clientBuilder.WithStatusSubresource(flexCluster)
-		}
+		clientBuilder = clientBuilder.WithObjects(allObjects...).WithStatusSubresource(flexCluster)
 	} else {
 		clientBuilder = clientBuilder.WithObjects(allObjects...)
 	}
@@ -1111,5 +1135,14 @@ func withResourcePolicyKeep(flexCluster *akov2generated.FlexCluster) *akov2gener
 		flexCluster.Annotations = make(map[string]string)
 	}
 	flexCluster.Annotations["mongodb.com/atlas-resource-policy"] = "keep"
+	return flexCluster
+}
+
+// withStateTracker adds the state tracker annotation to simulate a previously reconciled object
+func withStateTracker(flexCluster *akov2generated.FlexCluster, deps ...client.Object) *akov2generated.FlexCluster {
+	if flexCluster.Annotations == nil {
+		flexCluster.Annotations = make(map[string]string)
+	}
+	flexCluster.Annotations[ctrlstate.AnnotationStateTracker] = ctrlstate.ComputeStateTracker(flexCluster, deps...)
 	return flexCluster
 }
