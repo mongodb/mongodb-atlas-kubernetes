@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 const FieldOwner = "mongodb-atlas-kubernetes"
@@ -89,8 +90,14 @@ func (p *Patcher) patchObject(ctx context.Context, c client.Client) {
 		return
 	}
 
-	applyConfig := client.ApplyConfigurationFromUnstructured(p.patchedObj)
-	err := c.Apply(ctx, applyConfig, client.FieldOwner(FieldOwner), client.ForceOwnership)
+	patchedCopy, err := p.copyPatchedObject(c)
+	if err != nil {
+		p.err = err
+		return
+	}
+
+	applyConfig := client.ApplyConfigurationFromUnstructured(patchedCopy)
+	err = c.Apply(ctx, applyConfig, client.FieldOwner(FieldOwner), client.ForceOwnership)
 	p.err = err
 }
 
@@ -99,11 +106,29 @@ func (p *Patcher) patchStatus(ctx context.Context, c client.Client) {
 		return
 	}
 
+	patchedCopy, err := p.copyPatchedObject(c)
+	if err != nil {
+		p.err = err
+		return
+	}
+
 	// SSA Apply() method for sub-resources is not yet supported, so we use Patch here.
 	// See the following issue for more details: https://github.com/kubernetes-sigs/controller-runtime/issues/3183
-	patchedCopy := p.patchedObj.DeepCopy()
-	err := c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(FieldOwner), client.ForceOwnership)
+	err = c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(FieldOwner), client.ForceOwnership)
 	p.err = err
+}
+
+func (p *Patcher) copyPatchedObject(c client.Client) (*unstructured.Unstructured, error) {
+	patchedCopy := p.patchedObj.DeepCopy()
+	if patchedCopy.GetObjectKind().GroupVersionKind().Empty() {
+		gvk, err := apiutil.GVKForObject(p.obj, c.Scheme())
+		if err != nil {
+			return nil, err
+		}
+		patchedCopy.SetAPIVersion(gvk.GroupVersion().String())
+		patchedCopy.SetKind(gvk.Kind)
+	}
+	return patchedCopy, nil
 }
 
 // Patch applies the patches to the given object and updates both status and the annotations if they were modified.
