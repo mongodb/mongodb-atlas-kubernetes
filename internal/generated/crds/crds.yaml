@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312011/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
@@ -226,7 +226,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312011/admin
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -1567,7 +1567,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312011/admin
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -1899,7 +1899,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312010/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312011/admin
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
