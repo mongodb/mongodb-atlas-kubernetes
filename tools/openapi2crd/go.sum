@@ -196,8 +196,8 @@ go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0 h1:uKOtHXCP/Gwuj+IF1hsKtI
 go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0/go.mod h1:UeRE741z+kDGH00qQasZmthQxJMeA6PmAtY/2dStW+Q=
 go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0 h1:Pzrb2bPXtkw1vDTiFxovZyYD4BIA4l0o6c2/HBqxe0I=
 go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0/go.mod h1:o1ExR4zmunAhRHXF5hlkVUNoJNkmyQ9vRScDGahstyQ=
-go.mongodb.org/atlas-sdk/v20250312009 v20250312009.1.0 h1:iaFFJcOkT7U5WcuOl8XVAOkPwBlP27coQGJUiDVd3+8=
-go.mongodb.org/atlas-sdk/v20250312009 v20250312009.1.0/go.mod h1:fusey5SPjrcmUiJ+MxvYtEgV7N/lkW3SjacSYYejlAc=
+go.mongodb.org/atlas-sdk/v20250312011 v20250312011.0.0 h1:yIb9nnhXfF62m6s83pZvGJpPUOQZtAgDWp2b0dgKHmo=
+go.mongodb.org/atlas-sdk/v20250312011 v20250312011.0.0/go.mod h1:uP/+Tal6pOGcRMAptkDxULKvpI6frOux17vs+rRza/s=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 h1:r6I7RJCN86bpD/FQwedZ0vSixDpwuWREjW9oRMsmqDc=
@@ -245,8 +245,8 @@ golang.org/x/net v0.0.0-20200226121028-0de0cce0169b/go.mod h1:z5CRVTTTmAJ677TzLL
 golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
 golang.org/x/net v0.46.0 h1:giFlY12I07fugqwPuWJi68oOnpfqFnJIJzaIIm2JVV4=
 golang.org/x/net v0.46.0/go.mod h1:Q9BGdFy1y4nkUwiLvT5qtyhAnEHgnQ/zd8PfU6nc210=
-golang.org/x/oauth2 v0.32.0 h1:jsCblLleRMDrxMN29H3z/k1KliIvpLgCkE6R8FXXNgY=
-golang.org/x/oauth2 v0.32.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
+golang.org/x/oauth2 v0.33.0 h1:4Q+qn+E5z8gPRJfmRy7C2gGG3T4jIprK6aSYgTXGRpo=
+golang.org/x/oauth2 v0.33.0/go.mod h1:lzm5WQJQwKZ3nwavOZ3IS5Aulzxi68dUSgRHujetwEA=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
