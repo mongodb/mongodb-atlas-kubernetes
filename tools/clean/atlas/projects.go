@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 )
 
 func (c *Cleaner) listProjectsByOrg(ctx context.Context, orgID string) []admin.Group {
