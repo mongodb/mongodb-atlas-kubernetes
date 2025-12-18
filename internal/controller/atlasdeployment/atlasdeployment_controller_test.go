@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312010/admin"
-	"go.mongodb.org/atlas-sdk/v20250312010/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -494,7 +494,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{
+				SdkClient20250312011: &admin.APIClient{
 					FlexClustersApi:   flexAPI,
 					ClustersApi:       clusterAPI,
 					AtlasSearchApi:    searchAPI,
@@ -620,7 +620,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{
+				SdkClient20250312011: &admin.APIClient{
 					FlexClustersApi: flexAPI,
 					ClustersApi:     clusterAPI,
 					ProjectsApi:     projectAPI,
@@ -746,7 +746,7 @@ func TestFlexClusterReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{
+				SdkClient20250312011: &admin.APIClient{
 					FlexClustersApi: flexAPI,
 					ClustersApi:     clusterAPI,
 					ProjectsApi:     projectAPI,
@@ -922,7 +922,7 @@ func TestDeletionReconciliation(t *testing.T) {
 				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{
+				SdkClient20250312011: &admin.APIClient{
 					FlexClustersApi: flexAPI,
 					ClustersApi:     clusterAPI,
 					ProjectsApi:     projectAPI,
@@ -1295,7 +1295,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312009: &admin.APIClient{
+						SdkClient20250312011: &admin.APIClient{
 							ClustersApi: clusterAPI,
 							ProjectsApi: projectAPI,
 						},
@@ -1377,7 +1377,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312009: &admin.APIClient{
+						SdkClient20250312011: &admin.APIClient{
 							ClustersApi: clusterAPI,
 							ProjectsApi: projectAPI,
 						},
@@ -1448,7 +1448,7 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312009: &admin.APIClient{
+						SdkClient20250312011: &admin.APIClient{
 							ClustersApi:     clusterAPI,
 							FlexClustersApi: flexAPI,
 							ProjectsApi:     projectAPI,

@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312010/admin"
-	"go.mongodb.org/atlas-sdk/v20250312010/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -170,7 +170,7 @@ func TestReconcile(t *testing.T) {
 		atlasProvider := atlasmock.TestProvider{
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
-					SdkClient20250312009: &admin.APIClient{
+					SdkClient20250312011: &admin.APIClient{
 						ProjectsApi:                groupAPI,
 						FederatedAuthenticationApi: fedAuthAPI,
 					},
