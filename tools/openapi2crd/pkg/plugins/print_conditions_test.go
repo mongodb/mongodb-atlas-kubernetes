@@ -43,13 +43,16 @@ func TestPrintConditions_Process(t *testing.T) {
 
 				// Verify columns were added
 				require.NotEmpty(t, targetVersion.Name, "Should have found the target version")
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
+				require.Len(t, targetVersion.AdditionalPrinterColumns, 3)
 
 				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
 				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, targetVersion.AdditionalPrinterColumns[0].JSONPath)
 
-				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[1].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+				assert.Equal(t, "Reason", targetVersion.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+
+				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[2].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[2].JSONPath)
 			},
 		},
 		{
@@ -77,8 +80,10 @@ func TestPrintConditions_Process(t *testing.T) {
 			},
 			validate: func(t *testing.T, crd *apiextensions.CustomResourceDefinition) {
 				targetVersion := crd.Spec.Versions[0]
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
+				require.Len(t, targetVersion.AdditionalPrinterColumns, 3)
 				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
+				assert.Equal(t, "Reason", targetVersion.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[2].Name)
 			},
 		},
 		{
@@ -99,13 +104,16 @@ func TestPrintConditions_Process(t *testing.T) {
 
 				// Verify columns were added
 				require.NotEmpty(t, targetVersion.Name, "Should have found the target version")
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
+				require.Len(t, targetVersion.AdditionalPrinterColumns, 3)
 
 				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
 				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, targetVersion.AdditionalPrinterColumns[0].JSONPath)
 
-				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[1].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+				assert.Equal(t, "Reason", targetVersion.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+
+				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[2].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[2].JSONPath)
 			},
 		},
 	}

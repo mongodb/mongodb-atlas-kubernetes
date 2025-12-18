@@ -24,6 +24,11 @@ func (p *PrintConditions) Process(req *MappingProcessorRequest) error {
 			Type:     "string",
 		},
 		{
+			JSONPath: `.status.conditions[?(@.type=="Ready")].reason`,
+			Name:     "Reason",
+			Type:     "string",
+		},
+		{
 			JSONPath: `.status.conditions[?(@.type=="State")].reason`,
 			Name:     "State",
 			Type:     "string",
