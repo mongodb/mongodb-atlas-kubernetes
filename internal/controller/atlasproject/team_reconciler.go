@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20250312010/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -112,7 +112,7 @@ func (r *AtlasProjectReconciler) teamReconcile(team *akov2.AtlasTeam, workflowCt
 				return workflow.OK().ReconcileResult()
 			} else {
 				log.Infow("-> Starting AtlasTeam deletion", "spec", team.Spec)
-				_, err := teamCtx.SdkClientSet.SdkClient20250312009.TeamsApi.DeleteOrgTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
+				_, err := teamCtx.SdkClientSet.SdkClient20250312011.TeamsApi.DeleteOrgTeam(teamCtx.Context, teamCtx.OrgID, team.Status.ID).Execute()
 				if admin.IsErrorCode(err, atlas.NotInGroup) {
 					log.Infow("team does not exist", "projectID", team.Status.ID)
 					return workflow.Terminate(workflow.TeamDoesNotExist, err).ReconcileResult()
@@ -209,7 +209,7 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 		username := team.Spec.Usernames[i]
 		if _, ok := atlasUsernamesMap[string(username)]; !ok {
 			g.Go(func() error {
-				user, _, err := workflowCtx.SdkClientSet.SdkClient20250312009.MongoDBCloudUsersApi.GetUser(taskContext, string(username)).Execute()
+				user, _, err := workflowCtx.SdkClientSet.SdkClient20250312011.MongoDBCloudUsersApi.GetUser(taskContext, string(username)).Execute()
 
 				if err != nil {
 					return err

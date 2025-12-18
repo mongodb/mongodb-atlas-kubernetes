@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312010/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -104,7 +104,7 @@ func failedPeerStatus(errMessage string, peer akov2.NetworkPeer) status.AtlasNet
 func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses []status.AtlasNetworkPeer, peerSpecs []akov2.NetworkPeer, lastAppliedPeers []akov2.NetworkPeer) (workflow.DeprecatedResult, api.ConditionType) {
 	defer workflowCtx.EnsureStatusOption(status.AtlasProjectSetNetworkPeerOption(&peerStatuses))
 	logger := workflowCtx.Log
-	mongoClient := workflowCtx.SdkClientSet.SdkClient20250312009
+	mongoClient := workflowCtx.SdkClientSet.SdkClient20250312011
 	logger.Debugf("syncing network peers for project %v", groupID)
 	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID)
 	if err != nil {

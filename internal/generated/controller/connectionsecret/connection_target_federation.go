@@ -107,7 +107,7 @@ func (e DataFederationConnectionTarget) BuildConnectionData(ctx context.Context,
 		return ConnectionSecretData{}, err
 	}
 
-	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312009.DataFederationApi)
+	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312011.DataFederationApi)
 	df, err := dataFederationService.Get(ctx, project.ID(), e.obj.Spec.Name)
 	if err != nil {
 		return ConnectionSecretData{}, fmt.Errorf("atlas DF get: %w", err)
