@@ -16,6 +16,7 @@ package testparams
 
 import (
 	k8s "github.com/crd2go/crd2go/k8s"
+
 	nextapiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 )
 

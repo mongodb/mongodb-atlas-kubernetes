@@ -1,27 +1,27 @@
 apiVersion: atlas.generated.mongodb.com/v1
 kind: Group
 metadata:
-  name: my-group
+  name: my-group-for-flexcluster
 spec:
   connectionSecretRef:
     name: mongodb-atlas-operator-api-key
   v20250312:
     entry:
       orgId: "60f1b3c4e4b0e8b8c8b8c8b"
-      name: my-group
+      name: my-group-for-flexcluster
 ---
 apiVersion: atlas.generated.mongodb.com/v1
 kind: FlexCluster
 metadata:
-  name: flexy
+  name: flexy-with-groupref
   annotations:
     some-tag: tag
 spec:
   v20250312:
     groupRef:
-      name: my-group
+      name: my-group-for-flexcluster
     entry:
-      name: flexy
+      name: flexy-with-groupref
       terminationProtectionEnabled: true
       providerSettings:
         backingProviderName: GCP
