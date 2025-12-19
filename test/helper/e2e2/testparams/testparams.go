@@ -14,12 +14,15 @@
 
 package testparams
 
-import "strings"
+import (
+	k8s "github.com/crd2go/crd2go/k8s"
+	nextapiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+)
 
 // TestParams holds all test parameters for test isolation purposes.
 // Shared values (OrgID, OperatorNamespace, CredentialsSecretName) are typically
 // set from input config and remain constant across tests. Per-test values
-// (GroupID, GroupName) are set per test case.
+// (GroupID, GroupName, Namespace) are set per test case.
 type TestParams struct {
 	// GroupID is the Atlas group ID, assigned by Atlas after Group creation.
 	// This is per-test and may be empty initially.
@@ -28,6 +31,8 @@ type TestParams struct {
 	OrgID string
 	// GroupName is a randomized name for test isolation, per test case.
 	GroupName string
+	// Namespace is the Kubernetes namespace where test resources are created, per test case.
+	Namespace string
 	// OperatorNamespace is the namespace where the operator is running, set from input config.
 	OperatorNamespace string
 	// CredentialsSecretName is the name of the credentials secret, set from input config.
@@ -40,7 +45,7 @@ type TestParams struct {
 //   - operatorNamespace: Namespace where operator is running (from OPERATOR_NAMESPACE env var)
 //   - credentialsSecretName: Name of the credentials secret (e.g., DefaultGlobalCredentials)
 //
-// Per-test values (GroupID, GroupName) should be set using WithGroupID and WithGroupName.
+// Per-test values (GroupID, GroupName, Namespace) should be set using WithGroupID, WithGroupName, and WithNamespace.
 func New(orgID, operatorNamespace, credentialsSecretName string) *TestParams {
 	return &TestParams{
 		OrgID:                 orgID,
@@ -65,19 +70,30 @@ func (p *TestParams) WithGroupName(groupName string) *TestParams {
 	return &copy
 }
 
-// ReplaceYAML replaces all placeholders in the YAML template with actual values.
-// Supported placeholders:
-//   - __GROUP_ID__ -> GroupID
-//   - __ORG_ID__ -> OrgID
-//   - __GROUP_NAME__ -> GroupName
-//   - __OPERATOR_NAMESPACE__ -> OperatorNamespace
-//   - __CREDENTIALS_SECRET_NAME__ -> CredentialsSecretName
-func (p *TestParams) ReplaceYAML(yaml string) string {
-	result := yaml
-	result = strings.ReplaceAll(result, "__GROUP_ID__", p.GroupID)
-	result = strings.ReplaceAll(result, "__ORG_ID__", p.OrgID)
-	result = strings.ReplaceAll(result, "__GROUP_NAME__", p.GroupName)
-	result = strings.ReplaceAll(result, "__OPERATOR_NAMESPACE__", p.OperatorNamespace)
-	result = strings.ReplaceAll(result, "__CREDENTIALS_SECRET_NAME__", p.CredentialsSecretName)
-	return result
+// WithNamespace returns a copy of the TestParams with Namespace set.
+// Namespace is the Kubernetes namespace where test resources are created.
+func (p *TestParams) WithNamespace(namespace string) *TestParams {
+	copy := *p
+	copy.Namespace = namespace
+	return &copy
+}
+
+// ApplyToGroup mutates a Group object with test parameters.
+func (p *TestParams) ApplyToGroup(group *nextapiv1.Group) {
+	group.SetNamespace(p.Namespace)
+	group.SetName(p.GroupName)
+
+	if group.Spec.ConnectionSecretRef == nil {
+		group.Spec.ConnectionSecretRef = &k8s.LocalReference{}
+	}
+	group.Spec.ConnectionSecretRef.Name = p.CredentialsSecretName
+
+	if group.Spec.V20250312 == nil {
+		group.Spec.V20250312 = &nextapiv1.V20250312{}
+	}
+	if group.Spec.V20250312.Entry == nil {
+		group.Spec.V20250312.Entry = &nextapiv1.Entry{}
+	}
+	group.Spec.V20250312.Entry.OrgId = p.OrgID
+	group.Spec.V20250312.Entry.Name = p.GroupName
 }

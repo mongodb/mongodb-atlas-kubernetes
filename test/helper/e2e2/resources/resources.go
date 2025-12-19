@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -27,8 +26,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/testparams"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/yml"
 )
 
 // CopySecretToNamespace copies a secret from one namespace to another.
@@ -63,11 +60,9 @@ func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, c
 	return kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, fieldOwner)
 }
 
-// ApplyYAMLToNamespace applies YAML objects to a namespace after replacing placeholders.
-// Returns the list of applied objects.
-func ApplyYAMLToNamespace(ctx context.Context, kubeClient client.Client, yaml []byte, params *testparams.TestParams, namespace string, fieldOwner client.FieldOwner) ([]client.Object, error) {
-	yamlStr := params.ReplaceYAML(string(yaml))
-	objs := yml.MustParseObjects(strings.NewReader(yamlStr))
+// ApplyObjectsToNamespace applies a list of objects to a namespace.
+// All objects will be set to the specified namespace before applying.
+func ApplyObjectsToNamespace(ctx context.Context, kubeClient client.Client, objs []client.Object, namespace string, fieldOwner client.FieldOwner) ([]client.Object, error) {
 	for _, obj := range objs {
 		obj.SetNamespace(namespace)
 		if err := kubeClient.Patch(ctx, obj, client.Apply, client.ForceOwnership, fieldOwner); err != nil {
