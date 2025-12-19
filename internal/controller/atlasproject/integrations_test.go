@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
-	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -543,10 +543,10 @@ func TestEnsureIntegration(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312009: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+					SdkClient20250312011: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
 				},
 			}
-			workflowCtx.SdkClientSet.SdkClient20250312009.ThirdPartyIntegrationsApi = tt.apiMock()
+			workflowCtx.SdkClientSet.SdkClient20250312011.ThirdPartyIntegrationsApi = tt.apiMock()
 			reconciler := &AtlasProjectReconciler{
 				Client: fake.NewClientBuilder().
 					WithScheme(testScheme).
@@ -773,7 +773,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312009: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+					SdkClient20250312011: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
 				},
 			}
 			reconciler := IntegrationReconciler{

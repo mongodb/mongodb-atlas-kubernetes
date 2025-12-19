@@ -65,7 +65,7 @@ func (r *AtlasNetworkContainerReconciler) handleCustomResource(ctx context.Conte
 	if err != nil {
 		return r.terminate(workflowCtx, networkContainer, workflow.NetworkContainerNotConfigured, err)
 	}
-	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312009, networkContainer)
+	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312011, networkContainer)
 	if err != nil {
 		return r.release(workflowCtx, networkContainer, err)
 	}

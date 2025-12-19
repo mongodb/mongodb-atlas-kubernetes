@@ -165,10 +165,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.SdkClientSet = atlasSdkClient
 	workflowCtx.OrgID = connectionConfig.OrgID
 	services := AtlasProjectServices{}
-	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20250312009.ProjectsApi)
-	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20250312009.TeamsApi, atlasSdkClient.SdkClient20250312009.MongoDBCloudUsersApi)
-	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20250312009.MaintenanceWindowsApi)
-	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20250312009.EncryptionAtRestUsingCustomerKeyManagementApi)
+	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20250312011.ProjectsApi)
+	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20250312011.TeamsApi, atlasSdkClient.SdkClient20250312011.MongoDBCloudUsersApi)
+	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20250312011.MaintenanceWindowsApi)
+	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20250312011.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	return r.handleProject(workflowCtx, connectionConfig.OrgID, atlasProject, &services)
 }

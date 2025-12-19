@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
@@ -36,7 +36,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{},
+				SdkClient20250312011: &admin.APIClient{},
 			},
 			Context: context.Background(),
 		}
@@ -50,7 +50,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &admin.APIClient{},
+				SdkClient20250312011: &admin.APIClient{},
 			},
 			Context: context.Background(),
 		}
@@ -70,7 +70,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &atlasClient,
+				SdkClient20250312011: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -100,7 +100,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &atlasClient,
+				SdkClient20250312011: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -131,7 +131,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID-1",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &atlasClient,
+				SdkClient20250312011: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -175,7 +175,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID-1",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312009: &atlasClient,
+				SdkClient20250312011: &atlasClient,
 			},
 			Context: context.Background(),
 		}

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
@@ -135,7 +135,7 @@ func (tm *TeamsAPI) UpdateRoles(ctx context.Context, at *AssignedTeam, projectID
 		roles = append(roles, string(role))
 	}
 
-	_, _, err := tm.teamsAPI.UpdateGroupTeam(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: &roles}).Execute()
+	_, _, err := tm.teamsAPI.UpdateGroupTeam(ctx, projectID, at.TeamID, &admin.TeamRole{RoleNames: roles}).Execute()
 	return err
 }
 
