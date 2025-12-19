@@ -74,5 +74,4 @@ func (e *EmbeddedOperator) Stop(t testingT) {
 	t.Logf("canceling operator context to force it to stop")
 	e.cancelFn()
 	e.Wait(t)
-	return
 }

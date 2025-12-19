@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312011/admin"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,6 +70,26 @@ func (h *Handlerv20250312) getDependencies(ctx context.Context, flexcluster *ako
 	}
 
 	return result, nil
+}
+
+// getMinimalGroupFromStatusOrSpec creates a minimal Group object with group ID from status (preferred) or spec (fallback).
+// Returns nil if no group ID is available. This allows deletion to proceed even if the Group CR is gone from Kubernetes.
+func (h *Handlerv20250312) getMinimalGroupFromStatusOrSpec(flexcluster *akov2generated.FlexCluster) *akov2generated.Group {
+	var groupID *string
+	if flexcluster.Status.V20250312 != nil {
+		groupID = flexcluster.Status.V20250312.GroupId
+	}
+	if groupID == nil && flexcluster.Spec.V20250312 != nil {
+		groupID = flexcluster.Spec.V20250312.GroupId
+	}
+	if groupID == nil || *groupID == "" {
+		return nil
+	}
+	return &akov2generated.Group{
+		Status: akov2generated.GroupStatus{
+			V20250312: &akov2generated.GroupStatusV20250312{Id: groupID},
+		},
+	}
 }
 
 // HandleInitial handles the initial state for version v20250312
@@ -165,7 +186,18 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
+		// Race condition: Group CR may be deleted from K8s before FlexCluster finishes deletion.
+		// If Group is not found but we have group ID in status, use it to proceed with deletion.
+		var statusErr *apierrors.StatusError
+		if errors.As(err, &statusErr) && apierrors.IsNotFound(statusErr) {
+			if group := h.getMinimalGroupFromStatusOrSpec(flexcluster); group != nil {
+				deps = []client.Object{group}
+			} else {
+				return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
+			}
+		} else {
+			return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
+		}
 	}
 
 	params := &v20250312sdk.DeleteFlexClusterApiParams{}
@@ -189,7 +221,18 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
+		// Race condition: Group CR may be deleted from K8s before FlexCluster finishes deletion.
+		// If Group is not found but we have group ID in status, use it to proceed with deletion.
+		var statusErr *apierrors.StatusError
+		if errors.As(err, &statusErr) && apierrors.IsNotFound(statusErr) {
+			if group := h.getMinimalGroupFromStatusOrSpec(flexcluster); group != nil {
+				deps = []client.Object{group}
+			} else {
+				return result.Error(state.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
+			}
+		} else {
+			return result.Error(state.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
+		}
 	}
 
 	params := &v20250312sdk.GetFlexClusterApiParams{}
