@@ -1,8 +1,6 @@
 package plugins
 
 import (
-	"fmt"
-
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
@@ -13,14 +11,26 @@ func (p *PrintConditions) Name() string {
 }
 
 func (p *PrintConditions) Process(req *MappingProcessorRequest) error {
-	index := findVersionIndex(req.CRD.Spec.Versions, req.CRD.APIVersion)
-	if index == -1 {
-		return fmt.Errorf("apiVersion %q not listed in spec", req.CRD.APIVersion)
-	}
-	req.CRD.Spec.Versions[index].AdditionalPrinterColumns = []apiextensions.CustomResourceColumnDefinition{
+	// Given that new SDK versions are supported by different spec subfields, it
+	// is unlikely there will be more than one supported Kubernetes version.
+	//
+	// The CRD validation fails if all versions use the same print columns, in
+	// such case they have to be set at the top level to avoid errors.
+	// Note that the produced YAML still places the print columns at the version 
+	// level anyways.
+	//
+	// Check out the upstream code for more details:
+	// https://github.com/kubernetes/apiextensions-apiserver/blob/a780e0393511161d7ef1e6466035181a4f84f347/pkg/apis/apiextensions/validation/validation.go#L438C5-L438C34
+	// https://github.com/kubernetes/apiextensions-apiserver/blob/a780e0393511161d7ef1e6466035181a4f84f347/pkg/apis/apiextensions/validation/validation.go#L762
+	req.CRD.Spec.AdditionalPrinterColumns = []apiextensions.CustomResourceColumnDefinition{
 		{
 			JSONPath: `.status.conditions[?(@.type=="Ready")].status`,
 			Name:     "Ready",
+			Type:     "string",
+		},
+		{
+			JSONPath: `.status.conditions[?(@.type=="Ready")].reason`,
+			Name:     "Reason",
 			Type:     "string",
 		},
 		{
@@ -30,16 +40,4 @@ func (p *PrintConditions) Process(req *MappingProcessorRequest) error {
 		},
 	}
 	return nil
-}
-
-func findVersionIndex(versions []apiextensions.CustomResourceDefinitionVersion, version string) int {
-	if len(versions) == 1 && version == "" {
-		return 0
-	}
-	for i, v := range versions {
-		if v.Name == version {
-			return i
-		}
-	}
-	return -1
 }

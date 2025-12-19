@@ -25,87 +25,57 @@ func TestPrintConditions_Process(t *testing.T) {
 		validate func(t *testing.T, crd *apiextensions.CustomResourceDefinition)
 	}{
 		{
-			title:      "version updated",
+			title:      "columns added to spec",
 			apiVersion: "v1",
 			versions: []apiextensions.CustomResourceDefinitionVersion{
 				{Name: "v1beta1", Served: true, Storage: false},
 				{Name: "v1", Served: true, Storage: true},
 			},
 			validate: func(t *testing.T, crd *apiextensions.CustomResourceDefinition) {
-				// Find the v1 version
-				var targetVersion apiextensions.CustomResourceDefinitionVersion
-				for _, v := range crd.Spec.Versions {
-					if v.Name == "v1" {
-						targetVersion = v
-						break
-					}
-				}
+				// Verify columns were added at the spec level
+				require.Len(t, crd.Spec.AdditionalPrinterColumns, 3)
 
-				// Verify columns were added
-				require.NotEmpty(t, targetVersion.Name, "Should have found the target version")
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
+				assert.Equal(t, "Ready", crd.Spec.AdditionalPrinterColumns[0].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, crd.Spec.AdditionalPrinterColumns[0].JSONPath)
 
-				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, targetVersion.AdditionalPrinterColumns[0].JSONPath)
+				assert.Equal(t, "Reason", crd.Spec.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].reason`, crd.Spec.AdditionalPrinterColumns[1].JSONPath)
 
-				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[1].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+				assert.Equal(t, "State", crd.Spec.AdditionalPrinterColumns[2].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, crd.Spec.AdditionalPrinterColumns[2].JSONPath)
 			},
 		},
 		{
-			title:      "missing version",
-			apiVersion: "v2",
+			title:      "replace existing columns",
+			apiVersion: "v1",
 			versions: []apiextensions.CustomResourceDefinitionVersion{
 				{Name: "v1", Served: true, Storage: true},
 			},
-			wantErr: "apiVersion \"v2\" not listed in spec",
 			validate: func(t *testing.T, crd *apiextensions.CustomResourceDefinition) {
-				// Ensure no weird side effects happened to existing versions
-				assert.Empty(t, crd.Spec.Versions[0].AdditionalPrinterColumns)
+				require.Len(t, crd.Spec.AdditionalPrinterColumns, 3)
+				assert.Equal(t, "Ready", crd.Spec.AdditionalPrinterColumns[0].Name)
+				assert.Equal(t, "Reason", crd.Spec.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, "State", crd.Spec.AdditionalPrinterColumns[2].Name)
 			},
 		},
 		{
-			title:      "replace columns",
-			apiVersion: "v1",
-			versions: []apiextensions.CustomResourceDefinitionVersion{
-				{
-					Name: "v1",
-					AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{
-						{Name: "OldColumn", JSONPath: ".old"},
-					},
-				},
-			},
-			validate: func(t *testing.T, crd *apiextensions.CustomResourceDefinition) {
-				targetVersion := crd.Spec.Versions[0]
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
-				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
-			},
-		},
-		{
-			title:      "unique version updated",
+			title:      "columns added with single version",
 			apiVersion: "",
 			versions: []apiextensions.CustomResourceDefinitionVersion{
 				{Name: "v1", Served: true, Storage: true},
 			},
 			validate: func(t *testing.T, crd *apiextensions.CustomResourceDefinition) {
-				// Find the v1 version
-				var targetVersion apiextensions.CustomResourceDefinitionVersion
-				for _, v := range crd.Spec.Versions {
-					if v.Name == "v1" {
-						targetVersion = v
-						break
-					}
-				}
+				// Verify columns were added at the spec level
+				require.Len(t, crd.Spec.AdditionalPrinterColumns, 3)
 
-				// Verify columns were added
-				require.NotEmpty(t, targetVersion.Name, "Should have found the target version")
-				require.Len(t, targetVersion.AdditionalPrinterColumns, 2)
+				assert.Equal(t, "Ready", crd.Spec.AdditionalPrinterColumns[0].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, crd.Spec.AdditionalPrinterColumns[0].JSONPath)
 
-				assert.Equal(t, "Ready", targetVersion.AdditionalPrinterColumns[0].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].status`, targetVersion.AdditionalPrinterColumns[0].JSONPath)
+				assert.Equal(t, "Reason", crd.Spec.AdditionalPrinterColumns[1].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="Ready")].reason`, crd.Spec.AdditionalPrinterColumns[1].JSONPath)
 
-				assert.Equal(t, "State", targetVersion.AdditionalPrinterColumns[1].Name)
-				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, targetVersion.AdditionalPrinterColumns[1].JSONPath)
+				assert.Equal(t, "State", crd.Spec.AdditionalPrinterColumns[2].Name)
+				assert.Equal(t, `.status.conditions[?(@.type=="State")].reason`, crd.Spec.AdditionalPrinterColumns[2].JSONPath)
 			},
 		},
 	}
