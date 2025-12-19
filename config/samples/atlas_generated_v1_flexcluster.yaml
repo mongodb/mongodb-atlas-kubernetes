@@ -6,10 +6,11 @@ spec:
   connectionSecretRef:
     name: mongodb-atlas-operator-api-key
   v20250312:
-    groupId: __GROUP_ID__
+    groupId: "60f1b3c4e4b0e8b8c8b8c8b"
     entry:
       name: flexy
-      terminationProtectionEnabled: false
+      terminationProtectionEnabled: true
       providerSettings:
         backingProviderName: GCP
         regionName: CENTRAL_US
+
