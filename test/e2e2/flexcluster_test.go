@@ -72,6 +72,14 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
+		// Register cleanup - this should even when the process is interrupted with Ctrl+C
+		// AfterAll is not reliable in such cases.
+		DeferCleanup(func() {
+			if ako != nil {
+				ako.Stop(GinkgoT())
+			}
+		})
+
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient
@@ -113,26 +121,25 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 	})
 
 	_ = AfterAll(func(ctx context.Context) {
-		if kubeClient != nil && testGroup != nil {
-			By("Clean up test Group", func() {
+		By("Clean up test Group", func() {
+			if kubeClient != nil && testGroup != nil {
+
 				Expect(kubeClient.Delete(ctx, testGroup)).To(Succeed())
 				Eventually(func(g Gomega) error {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
 				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
-			})
-		}
-		if kubeClient != nil && sharedGroupNamespace != nil {
-			By("Clean up shared group namespace", func() {
+			}
+		})
+		By("Clean up shared group namespace", func() {
+			if kubeClient != nil && sharedGroupNamespace != nil {
+
 				Expect(kubeClient.Delete(ctx, sharedGroupNamespace)).To(Succeed())
 				Eventually(func(g Gomega) bool {
 					return kubeClient.Get(ctx, client.ObjectKeyFromObject(sharedGroupNamespace), sharedGroupNamespace) == nil
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
-			})
-		}
-		if ako != nil {
-			ako.Stop(GinkgoT())
-		}
+			}
+		})
 	})
 
 	_ = BeforeEach(func(ctx context.Context) {
