@@ -58,6 +58,14 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
+		// Register cleanup - this should even when the process is interrupted with Ctrl+C
+		// AfterAll is not reliable in such cases.
+		DeferCleanup(func() {
+			if ako != nil {
+				ako.Stop(GinkgoT())
+			}
+		})
+
 		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
@@ -65,12 +73,6 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: v1.ObjectMeta{Name: AtlasThirdPartyIntegrationsCRDName},
 		})).To(Succeed())
-	})
-
-	_ = AfterAll(func() {
-		if ako != nil {
-			ako.Stop(GinkgoT())
-		}
 	})
 
 	_ = BeforeEach(func() {
