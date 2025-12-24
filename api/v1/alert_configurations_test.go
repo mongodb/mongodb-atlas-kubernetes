@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )

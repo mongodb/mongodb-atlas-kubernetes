@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
