@@ -37,7 +37,7 @@ func TestPeeringCELChecks(t *testing.T) {
 			obj: &AtlasNetworkPeering{
 				Spec: AtlasNetworkPeeringSpec{},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must either have a container Atlas id or Kubernetes name, but not both (or neither)"},
+			expectedErrors: []string{"spec: Invalid value: must either have a container Atlas id or Kubernetes name, but not both (or neither)"},
 		},
 
 		{
@@ -72,7 +72,7 @@ func TestPeeringCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must either have a container Atlas id or Kubernetes name, but not both (or neither)"},
+			expectedErrors: []string{"spec: Invalid value: must either have a container Atlas id or Kubernetes name, but not both (or neither)"},
 		},
 
 		{
@@ -155,7 +155,7 @@ func TestPeeringCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": id is immutable"},
+			expectedErrors: []string{"spec: Invalid value: id is immutable"},
 		},
 
 		{
@@ -204,7 +204,7 @@ func TestPeeringCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": container ref id is immutable"},
+			expectedErrors: []string{"spec: Invalid value: container ref id is immutable"},
 		},
 
 		{
@@ -229,7 +229,7 @@ func TestPeeringCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": container ref name is immutable"},
+			expectedErrors: []string{"spec: Invalid value: container ref name is immutable"},
 		},
 
 		{

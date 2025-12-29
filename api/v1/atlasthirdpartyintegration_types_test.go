@@ -39,7 +39,7 @@ func TestIntegrationCELChecks(t *testing.T) {
 		{
 			title:          "fails with no type",
 			obj:            &AtlasThirdPartyIntegration{},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must define a type of integration"},
+			expectedErrors: []string{"spec: Invalid value: must define a type of integration"},
 		},
 		{
 			title: "Datadog works",
@@ -179,7 +179,7 @@ func TestIntegrationCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": only PROMETHEUS type may set prometheus fields"},
+			expectedErrors: []string{"spec: Invalid value: only PROMETHEUS type may set prometheus fields"},
 		},
 		{
 			title: "Datadog on Webhook type fails",
@@ -199,7 +199,7 @@ func TestIntegrationCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": only DATADOG type may set datadog fields"},
+			expectedErrors: []string{"spec: Invalid value: only DATADOG type may set datadog fields"},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
