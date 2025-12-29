@@ -37,7 +37,7 @@ func TestParseCRD(t *testing.T) {
 		},
 		"not a CRD": {
 			scanner:     bufio.NewScanner(strings.NewReader("apiVersion: autoscaling/__internal\nkind: Scale\nmetadata:\n  name: test-scale\n")),
-			expectedErr: "failed to decode YAML: no kind \"Scale\" is registered for the internal version of group \"autoscaling\" in scheme \"pkg/runtime/scheme.go:110\"",
+			expectedErr: "failed to decode YAML: no kind \"Scale\" is registered for the internal version of group \"autoscaling\" in scheme \"pkg/runtime/scheme.go:111\"",
 		},
 		"empty input": {
 			scanner: bufio.NewScanner(strings.NewReader("")),

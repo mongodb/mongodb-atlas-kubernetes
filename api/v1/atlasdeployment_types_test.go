@@ -47,7 +47,7 @@ func TestDeploymentCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec.deploymentSpec.name: Invalid value: \"string\": Name cannot be modified after deployment creation"},
+			expectedErrors: []string{"spec.deploymentSpec.name: Invalid value: \"name-new\": Name cannot be modified after deployment creation"},
 		},
 		{
 			title: "Cannot add a serverless deployment",
@@ -59,7 +59,7 @@ func TestDeploymentCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec.serverlessSpec: Invalid value: \"object\": serverlessSpec cannot be added - serverless instances are deprecated"},
+			expectedErrors: []string{"spec.serverlessSpec: Invalid value: serverlessSpec cannot be added - serverless instances are deprecated"},
 		},
 		{
 			title: "Can modify to a serverless deployment",

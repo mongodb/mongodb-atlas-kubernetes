@@ -72,7 +72,7 @@ func TestCEL(t *testing.T) {
 				},
 			},
 			wantErrs: []string{
-				`spec: Invalid value: "object": setting new deprecated set values is invalid: use the NewThing CRD instead.`,
+				`spec: Invalid value: setting new deprecated set values is invalid: use the NewThing CRD instead.`,
 			},
 		},
 		{
@@ -88,7 +88,7 @@ func TestCEL(t *testing.T) {
 				},
 			},
 			wantErrs: []string{
-				`spec: Invalid value: "object": setting new deprecated set values is invalid: use the NewThing CRD instead.`,
+				`spec: Invalid value: setting new deprecated set values is invalid: use the NewThing CRD instead.`,
 			},
 		},
 		{

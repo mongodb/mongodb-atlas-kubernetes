@@ -87,7 +87,7 @@ var testCases = []struct {
 	{
 		title:          "no project reference is set",
 		ref:            &ProjectDualReference{},
-		expectedErrors: []string{"spec: Invalid value: \"object\": must define only one project reference through externalProjectRef or projectRef"},
+		expectedErrors: []string{"spec: Invalid value: must define only one project reference through externalProjectRef or projectRef"},
 	},
 	{
 		title: "both project references are set",
@@ -100,8 +100,8 @@ var testCases = []struct {
 			},
 		},
 		expectedErrors: []string{
-			"spec: Invalid value: \"object\": must define only one project reference through externalProjectRef or projectRef",
-			"spec: Invalid value: \"object\": must define a local connection secret when referencing an external project",
+			"spec: Invalid value: must define only one project reference through externalProjectRef or projectRef",
+			"spec: Invalid value: must define a local connection secret when referencing an external project",
 		},
 	},
 	{
@@ -112,7 +112,7 @@ var testCases = []struct {
 			},
 		},
 		expectedErrors: []string{
-			"spec: Invalid value: \"object\": must define a local connection secret when referencing an external project",
+			"spec: Invalid value: must define a local connection secret when referencing an external project",
 		},
 	},
 	{
@@ -131,7 +131,7 @@ var testCases = []struct {
 			},
 		},
 		expectedErrors: []string{
-			"spec: Invalid value: \"object\": must define a local connection secret when referencing an external project",
+			"spec: Invalid value: must define a local connection secret when referencing an external project",
 		},
 	},
 	{

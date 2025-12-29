@@ -42,7 +42,7 @@ func TestContainerCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must not set region for GCP containers"},
+			expectedErrors: []string{"spec: Invalid value: must not set region for GCP containers"},
 		},
 		{
 			title: "GCP succeeds without a region",
@@ -81,7 +81,7 @@ func TestContainerCELChecks(t *testing.T) {
 					Provider: string(provider.ProviderAWS),
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must set region for AWS and Azure containers"},
+			expectedErrors: []string{"spec: Invalid value: must set region for AWS and Azure containers"},
 		},
 		{
 			title: "Azure fails without a region",
@@ -90,7 +90,7 @@ func TestContainerCELChecks(t *testing.T) {
 					Provider: string(provider.ProviderAzure),
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": must set region for AWS and Azure containers"},
+			expectedErrors: []string{"spec: Invalid value: must set region for AWS and Azure containers"},
 		},
 		{
 			title: "ID cannot be changed",
@@ -110,7 +110,7 @@ func TestContainerCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": id is immutable"},
+			expectedErrors: []string{"spec: Invalid value: id is immutable"},
 		},
 		{
 			title: "ID can be unset",
@@ -154,7 +154,7 @@ func TestContainerCELChecks(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: []string{"spec: Invalid value: \"object\": region is immutable"},
+			expectedErrors: []string{"spec: Invalid value: region is immutable"},
 		},
 		{
 			title: "Region can be unset (for GCP)",

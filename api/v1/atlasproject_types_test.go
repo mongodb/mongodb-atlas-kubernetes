@@ -161,7 +161,7 @@ func TestProjectCELChecks(t *testing.T) {
 					Name: "name-new",
 				},
 			},
-			expectedErrors: []string{"spec.name: Invalid value: \"string\": Name cannot be modified after project creation"},
+			expectedErrors: []string{"spec.name: Invalid value: \"name-new\": Name cannot be modified after project creation"},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
