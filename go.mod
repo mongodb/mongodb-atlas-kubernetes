@@ -15,7 +15,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go-v2 v1.41.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.6
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.277.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.49.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
