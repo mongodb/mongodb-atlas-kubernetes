@@ -51,16 +51,18 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
 		ako.Start(GinkgoT())
 
+		// Register cleanup - this should even when the process is interrupted with Ctrl+C
+		// AfterAll is not reliable in such cases.
+		DeferCleanup(func() {
+			if ako != nil {
+				ako.Stop(GinkgoT())
+			}
+		})
+
 		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).ToNot(HaveOccurred())
 		kubeClient = client
-	})
-
-	_ = AfterAll(func() {
-		if ako != nil {
-			ako.Stop(GinkgoT())
-		}
 	})
 
 	_ = BeforeEach(func() {

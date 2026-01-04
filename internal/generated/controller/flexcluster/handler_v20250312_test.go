@@ -1114,7 +1114,8 @@ func withGeneration(flexCluster *akov2generated.FlexCluster, generation int64) *
 // withObservedGeneration sets the observed generation in status conditions
 func withObservedGeneration(flexCluster *akov2generated.FlexCluster, observedGen int64) *akov2generated.FlexCluster {
 	if flexCluster.Status.Conditions == nil {
-		flexCluster.Status.Conditions = &[]metav1.Condition{}
+		// Allocate a new empty slice pointer to avoid storing a pointer to a temporary value
+		flexCluster.Status.Conditions = new([]metav1.Condition)
 	}
 	conditions := *flexCluster.Status.Conditions
 	conditions = append(conditions, metav1.Condition{
@@ -1122,10 +1123,11 @@ func withObservedGeneration(flexCluster *akov2generated.FlexCluster, observedGen
 		ObservedGeneration: observedGen,
 		Status:             metav1.ConditionTrue,
 	})
-	// Allocate a new slice to avoid storing a pointer to a local variable
+	// Allocate a new slice pointer that persists beyond function scope
 	newConditions := make([]metav1.Condition, len(conditions))
 	copy(newConditions, conditions)
-	flexCluster.Status.Conditions = &newConditions
+	flexCluster.Status.Conditions = new([]metav1.Condition)
+	*flexCluster.Status.Conditions = newConditions
 	return flexCluster
 }
 

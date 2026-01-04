@@ -75,6 +75,7 @@ func initTestLogging(t *testing.T) {
 	ctrllog.SetLogger(logrLogger.WithName("test"))
 }
 
+// nolint:unparam
 func runTestAKO(globalCreds, ns string, deletionprotection bool) operator.Operator {
 	args := []string{
 		"--log-level=-9",

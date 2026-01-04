@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 const (
@@ -38,6 +40,18 @@ const (
 type ObjectWithStatus interface {
 	client.Object
 	GetConditions() []metav1.Condition
+}
+
+// AssertCRDNames check that the given names are CRDs installed in the accesible cluster
+func AssertCRDNames(ctx context.Context, kubeClient client.Client, crdNames ...string) error {
+	crds := make([]*apiextensionsv1.CustomResourceDefinition, 0, len(crdNames))
+	for _, crdName := range crdNames {
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{Name: crdName},
+		}
+		crds = append(crds, crd)
+	}
+	return AssertCRDs(ctx, kubeClient, crds...)
 }
 
 // AssertCRDs check that the given CRDs are installed in the accesible cluster
@@ -59,6 +73,10 @@ func NewTestClient() (client.Client, error) {
 	utilruntime.Must(apiextensionsv1.AddToScheme(testScheme))
 	utilruntime.Must(akov2.AddToScheme(testScheme))
 	utilruntime.Must(appsv1.AddToScheme(testScheme))
+	// Add experimental nextapi types (e.g., FlexCluster, Group) only when experimental features are enabled
+	if version.IsExperimental() {
+		utilruntime.Must(generatedv1.AddToScheme(testScheme))
+	}
 	return getKubeClient(testScheme)
 }
 
