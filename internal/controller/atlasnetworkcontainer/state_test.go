@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
-	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -262,7 +262,7 @@ func TestHandleCustomResource(t *testing.T) {
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20250312009: &admin.APIClient{ProjectsApi: pAPI},
+						SdkClient20250312011: &admin.APIClient{ProjectsApi: pAPI},
 					}, nil
 				},
 			},
@@ -326,7 +326,7 @@ func TestHandleCustomResource(t *testing.T) {
 						}, nil, nil,
 					)
 					return &atlas.ClientSet{
-						SdkClient20250312009: &admin.APIClient{
+						SdkClient20250312011: &admin.APIClient{
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},

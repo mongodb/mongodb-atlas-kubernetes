@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
-	"go.mongodb.org/atlas-sdk/v20250312009/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -71,12 +71,12 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 							{
-								RoleNames: &[]string{"role3", "role4"},
-								TeamId:    &testTeamID2,
+								RoleNames: []string{"role3", "role4"},
+								TeamId:    testTeamID2,
 							},
 						},
 					}, &http.Response{}, nil)
@@ -242,8 +242,8 @@ func TestTeamsAPI_Assign(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 						},
 					}, &http.Response{}, nil)
@@ -461,8 +461,8 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 					Return(&admin.PaginatedTeamRole{
 						Results: &[]admin.TeamRole{
 							{
-								RoleNames: &[]string{"role1", "role2"},
-								TeamId:    &testTeamID1,
+								RoleNames: []string{"role1", "role2"},
+								TeamId:    testTeamID1,
 							},
 						},
 					}, &http.Response{}, nil)

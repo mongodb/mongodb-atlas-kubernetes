@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312009/admin"
+	"go.mongodb.org/atlas-sdk/v20250312011/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
@@ -44,8 +44,8 @@ type Team struct {
 func (in *Team) ToAtlas(teamID string) admin.TeamRole {
 	roleNames := make([]string, 0, len(in.Roles))
 	result := admin.TeamRole{
-		TeamId:    &teamID,
-		RoleNames: &roleNames,
+		TeamId:    teamID,
+		RoleNames: roleNames,
 	}
 
 	for _, role := range in.Roles {

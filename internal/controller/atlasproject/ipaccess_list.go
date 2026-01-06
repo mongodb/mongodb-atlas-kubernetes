@@ -150,7 +150,7 @@ func handleIPAccessList(ctx *workflow.Context, project *akov2.AtlasProject) work
 	c := ipAccessListController{
 		ctx:         ctx,
 		project:     project,
-		service:     ipaccesslist.NewIPAccessList(ctx.SdkClientSet.SdkClient20250312009.ProjectIPAccessListApi),
+		service:     ipaccesslist.NewIPAccessList(ctx.SdkClientSet.SdkClient20250312011.ProjectIPAccessListApi),
 		lastApplied: lastApplied,
 	}
 
