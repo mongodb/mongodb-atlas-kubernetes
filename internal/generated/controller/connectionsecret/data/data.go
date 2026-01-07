@@ -12,12 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package state
+package data
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+// ConnectionData contains all connection information required to populate
+// the Kubernetes Secret, including standard and SRV URLs and optional Private Link URLs.
+type ConnectionSecret struct {
+	DBUserName            string
+	Password              string
+	ConnectionURL         string
+	SrvConnectionURL      string
+	PrivateConnectionURLs []PrivateLinkConnectionURLs
+}
 
-type StatusObject interface {
-	GetConditions() []metav1.Condition
+type PrivateLinkConnectionURLs struct {
+	ConnectionURL      string
+	SrvConnectionURL   string
+	ShardConnectionURL string
+}
+
+type DatabaseUser struct {
+	Username string
+	Password string
 }

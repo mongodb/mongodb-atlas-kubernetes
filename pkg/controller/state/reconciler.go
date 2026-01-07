@@ -133,8 +133,7 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		return ctrl.Result{}, fmt.Errorf("unable to get object: %w", err)
 	}
 
-	currentStatus := newStatusObject(obj.GetConditions())
-	currentState := state.GetState(currentStatus.Status.Conditions)
+	currentState := state.GetState(obj.GetConditions())
 
 	if customresource.ReconciliationShouldBeSkipped(clientObj) {
 		logger.Info(fmt.Sprintf("Skipping reconciliation by annotation %s=%s", customresource.ReconciliationPolicyAnnotation, customresource.ReconciliationPolicySkip))
@@ -159,9 +158,15 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 		stateStatus = false
 	}
 
-	newStatus := newStatusObject(obj.GetConditions())
-	observedGeneration := getObservedGeneration(clientObj, currentStatus.Status.Conditions, result.NextState)
-	newStatusConditions := newStatus.Status.Conditions
+	observedGeneration := getObservedGeneration(clientObj, obj.GetConditions(), result.NextState)
+	newStatusConditions := make([]metav1.Condition, 0, len(obj.GetConditions()))
+	for _, typ := range []string{"State", "Ready"} {
+		c := meta.FindStatusCondition(obj.GetConditions(), typ)
+		if c == nil {
+			continue
+		}
+		newStatusConditions = append(newStatusConditions, *c)
+	}
 	state.EnsureState(&newStatusConditions, observedGeneration, result.NextState, result.StateMsg, stateStatus)
 
 	logger.Info("reconcile finished", "nextState", result.NextState)
@@ -176,16 +181,15 @@ func (r *Reconciler[T]) Reconcile(ctx context.Context, req ctrl.Request) (reconc
 
 	ready := NewReadyCondition(result)
 	ready.ObservedGeneration = observedGeneration
-
 	if reconcileErr != nil {
 		ready.Status = metav1.ConditionFalse
 		ready.Reason = ReadyReasonError
 		ready.Message = reconcileErr.Error()
 	}
-
 	meta.SetStatusCondition(&newStatusConditions, ready)
-	newStatus.Status.Conditions = newStatusConditions
-	if err := patchStatus(ctx, r.cluster.GetClient(), clientObj, newStatus); err != nil {
+
+	patcher := NewPatcher(clientObj).WithFieldOwner("mongodb-atlas-kubernetes-state-handler").UpdateConditions(newStatusConditions)
+	if err := patcher.Patch(ctx, r.cluster.GetClient()); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to patch status: %w", err)
 	}
 
@@ -270,8 +274,7 @@ func (r *Reconciler[T]) ReconcileState(ctx context.Context, t *T) (Result, error
 
 		err error
 	)
-	statusObj := newStatusObject(any(t).(StatusObject).GetConditions())
-	currentState := state.GetState(statusObj.Status.Conditions)
+	currentState := state.GetState(any(t).(StatusObject).GetConditions())
 
 	if currentState == state.StateInitial {
 		for key := range obj.GetAnnotations() {
