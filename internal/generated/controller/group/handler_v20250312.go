@@ -28,6 +28,7 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -127,6 +128,14 @@ func (h *Handlerv20250312) HandleUpdated(ctx context.Context, group *akov2genera
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
 func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	var dependents []reconcile.Request
+	dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	dependents = append(dependents, indexers.NewDatabaseUserByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	if len(dependents) > 0 {
+		return result.NextState(state.StateDeletionRequested, fmt.Sprintf("failed to delete group because %v resources depend on it.", len(dependents)))
+	}
+
 	if customresource.IsResourcePolicyKeepOrDefault(group, h.deletionProtection) {
 		return result.NextState(state.StateDeleted, "Group deleted.")
 	}

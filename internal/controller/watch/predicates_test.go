@@ -18,12 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
@@ -209,67 +207,6 @@ func TestDefaultPredicates(t *testing.T) {
 	}
 }
 
-func TestReadyTransitionPredicate(t *testing.T) {
-	for _, tc := range []struct {
-		title       string
-		old         *akov2.AtlasProject
-		new         *akov2.AtlasProject
-		wantCreate  bool
-		wantUpdate  bool
-		wantDelete  bool
-		wantGeneric bool
-	}{
-		{
-			title:       "no changes",
-			old:         sampleObj(),
-			new:         sampleObj(),
-			wantCreate:  false,
-			wantUpdate:  false,
-			wantDelete:  true,
-			wantGeneric: false,
-		},
-		{
-			title:       "ready now",
-			old:         sampleObj(ready(corev1.ConditionFalse)),
-			new:         sampleObj(ready(corev1.ConditionTrue)),
-			wantCreate:  false,
-			wantUpdate:  true,
-			wantDelete:  true,
-			wantGeneric: false,
-		},
-		{
-			title:       "no longer ready",
-			old:         sampleObj(ready(corev1.ConditionTrue)),
-			new:         sampleObj(ready(corev1.ConditionFalse)),
-			wantCreate:  false,
-			wantUpdate:  false,
-			wantDelete:  true,
-			wantGeneric: false,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			f := watch.ReadyTransitionPredicate(projectReady)
-			assert.Equal(t, tc.wantCreate,
-				f.Create(event.CreateEvent{Object: tc.new}), "on create")
-			assert.Equal(t, tc.wantUpdate,
-				f.Update(event.UpdateEvent{ObjectOld: tc.old, ObjectNew: tc.new}), "on update")
-			assert.Equal(t, tc.wantDelete,
-				f.Delete(event.DeleteEvent{Object: tc.new}), "on delete")
-			assert.Equal(t, tc.wantGeneric,
-				f.Generic(event.GenericEvent{Object: tc.new}), "on generic event")
-		})
-	}
-}
-
-func projectReady(p *akov2.AtlasProject) bool {
-	for _, c := range p.Status.Conditions {
-		if c.Type == api.ReadyType && c.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-	return false
-}
-
 type optionFunc func(*akov2.AtlasProject) *akov2.AtlasProject
 
 func sampleObj(opts ...optionFunc) *akov2.AtlasProject {
@@ -307,18 +244,6 @@ func skipAnnotation() optionFunc {
 func finalizers(f []string) optionFunc {
 	return func(p *akov2.AtlasProject) *akov2.AtlasProject {
 		p.Finalizers = f
-		return p
-	}
-}
-
-func ready(status corev1.ConditionStatus) optionFunc {
-	return func(p *akov2.AtlasProject) *akov2.AtlasProject {
-		p.Status.Conditions = append(p.Status.Conditions,
-			api.Condition{
-				Type:   api.ReadyType,
-				Status: status,
-			},
-		)
 		return p
 	}
 }

@@ -107,28 +107,3 @@ func DefaultPredicates[T metav1.Object]() predicate.TypedPredicate[T] {
 }
 
 type ReadyFunc[T any] func(obj T) bool
-
-// ReadyTransitionPredicate filters out only those objects where the previous
-// oldObject was not ready, but the new one is, or the object was deleted.
-func ReadyTransitionPredicate[T any](ready ReadyFunc[T]) predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc:  func(e event.CreateEvent) bool { return false },
-		GenericFunc: func(e event.GenericEvent) bool { return false },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return true },
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if e.ObjectNew == nil || e.ObjectOld == nil {
-				return false
-			}
-
-			newObj, ok := e.ObjectNew.(T)
-			if !ok {
-				return false
-			}
-			oldObj, ok := e.ObjectOld.(T)
-			if !ok {
-				return false
-			}
-			return !ready(oldObj) && ready(newObj)
-		},
-	}
-}

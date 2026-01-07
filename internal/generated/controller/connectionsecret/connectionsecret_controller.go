@@ -17,108 +17,112 @@ package connectionsecret
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"reflect"
+	"time"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	ctrlcluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
-	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/cluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/data"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/flexcluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
+	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
+	controllerstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
+const (
+	FieldOwner            = "mongodb-atlas-kubernetes-connection-secret-handler"
+	ConnectionSecretReady = "ConnectionSecretReady"
+
+	ProjectLabelKey      = "atlas.mongodb.com/project-id"
+	TargetLabelKey       = "atlas.mongodb.com/target-name"
+	TypeLabelKey         = "atlas.mongodb.com/type"
+	DatabaseUserLabelKey = "atlas.mongodb.com/database-user-name"
+	ConnectionTypelKey   = "atlas.mongodb.com/connection-type"
+	CredLabelVal         = "credentials"
+
+	userNameKey     = "username"
+	passwordKey     = "password"
+	standardKey     = "connectionStringStandard"
+	standardKeySrv  = "connectionStringStandardSrv"
+	privateKey      = "connectionStringPrivate"
+	privateSrvKey   = "connectionStringPrivateSrv"
+	privateShardKey = "connectionStringPrivateShard"
+)
+
+var (
+	ConnectionSecretGoFieldOwner = client.FieldOwner("connectionsecret")
+)
+
+// ConnnSecretIdentifiers stores all the necessary information that will
+// be needed to identiy and get a K8s connection secret
+type ConnectionSecretIdentifiers struct {
+	ProjectID        string
+	ProjectName      string
+	TargetName       string
+	DatabaseUsername string
+	ConnectionType   string
+}
+
 type ConnectionSecretReconciler struct {
-	reconciler.AtlasReconciler
+	AtlasProvider         atlas.Provider
+	Client                client.Client
 	Scheme                *runtime.Scheme
-	EventRecorder         record.EventRecorder
 	GlobalPredicates      []predicate.Predicate
-	ConnectionTargetKinds []ConnectionTarget
+	ConnectionTargetKinds []target.ConnectionTarget
+	GlobalSecretRef       client.ObjectKey
+	Logger                *zap.Logger
 }
 
-// Each connectionTarget would have to implement this interface (e.g. AtlasDeployment, AtlasDataFederation)
-type ConnectionTarget interface {
-	GetConnectionTargetType() string
-	GetName() string
-	IsReady() bool
-	GetScopeType() akov2.ScopeType
-	GetProjectID(ctx context.Context) (string, error)
-	SelectorByProjectID(projectID string) fields.Selector
-	BuildConnectionData(ctx context.Context, user *akov2.AtlasDatabaseUser) (ConnectionSecretData, error)
-}
-
-func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With("namespace", req.Namespace, "name", req.Name)
-
-	// Fetch the AtlasDatabaseUser resource.
-	user := &akov2.AtlasDatabaseUser{}
-	err := r.Client.Get(ctx, req.NamespacedName, user)
-	objectNotFound := err != nil && apiErrors.IsNotFound(err)
-	failedToRetrieve := err != nil && !objectNotFound
-
-	switch {
-	case failedToRetrieve:
-		return workflow.Terminate(workflow.ConnectionSecretInvalidUsername, err).ReconcileResult()
-	case objectNotFound:
-		log.Debugw("user not found; nothing to reconcile")
-		return workflow.TerminateSilently(nil).WithoutRetry().ReconcileResult()
+func NewConnectionSecretReconciler(c ctrlcluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, logger *zap.Logger, globalSecretRef client.ObjectKey) *ConnectionSecretReconciler {
+	r := &ConnectionSecretReconciler{
+		Client:           c.GetClient(),
+		AtlasProvider:    atlasProvider,
+		Scheme:           c.GetScheme(),
+		GlobalPredicates: predicates,
+		Logger:           logger,
+		GlobalSecretRef:  globalSecretRef,
 	}
 
-	// Retrieve the project ID associated with the user.
-	projectID, err := r.getUserProjectID(ctx, user)
-	if err != nil {
-		return workflow.Terminate(workflow.ConnectionSecretProjectIDNotLoaded, err).ReconcileResult()
+	// Register all the connectionTarget types
+	r.ConnectionTargetKinds = []target.ConnectionTarget{
+		flexcluster.NewFlexClusterTarget(r.Client),
+		cluster.NewClusterTarget(r.Client),
 	}
 
-	// Load the connection targets for the project.
-	connectionTargets, err := r.listConnectionTargetsByProject(ctx, projectID)
-	if err != nil {
-		return workflow.Terminate(workflow.ConnectionSecretConnectionTargetsNotLoaded, err).ReconcileResult()
-	}
-
-	// Cleanup stale Secrets
-	if err := r.cleanupStaleSecrets(ctx, req.Namespace, connectionTargets, projectID); err != nil {
-		return workflow.Terminate(workflow.ConnectionSecretStaleSecretsNotCleaned, err).ReconcileResult()
-	}
-
-	// Verify if the AtlasDatabaseUser is ready.
-	isUserReady := api.HasReadyCondition(user.Status.Conditions)
-	if !isUserReady {
-		log.Debugw("AtlasDatabaseUser not ready; nothing to reconcile")
-		return workflow.InProgress(workflow.ConnectionSecretNotReady, "resources not ready").ReconcileResult()
-	}
-
-	// Delegate the batch upsert logic to handleBatchUpsert.
-	return r.handleBatchUpsert(ctx, req, user, projectID, connectionTargets)
+	return r
 }
 
 func (r *ConnectionSecretReconciler) For() (client.Object, builder.Predicates) {
-	return &akov2.AtlasDatabaseUser{}, builder.WithPredicates(
-		predicate.Or(
-			watch.ReadyTransitionPredicate(func(d *akov2.AtlasDatabaseUser) bool {
-				return api.HasReadyCondition(d.Status.Conditions)
-			}),
-			predicate.GenerationChangedPredicate{},
-		),
+	return &generatedv1.DatabaseUser{}, builder.WithPredicates(
+		predicate.GenerationChangedPredicate{},
+		mckpredicate.IgnoreDeletedPredicate[client.Object](),
 	)
 }
 
@@ -126,26 +130,17 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("ConnectionSecret").
 		For(r.For()).
-		Owns(&corev1.Secret{}).
+		Owns(&corev1.Secret{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserBySecretMapFunc(r.Client))).
 		Watches(
-			&akov2.AtlasDeployment{},
+			&generatedv1.FlexCluster{},
 			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
-			builder.WithPredicates(predicate.Or(
-				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDeployment) bool {
-					return api.HasReadyCondition(d.Status.Conditions)
-				}),
-				predicate.GenerationChangedPredicate{},
-			)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(
-			&akov2.AtlasDataFederation{},
+			&generatedv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
-			builder.WithPredicates(predicate.Or(
-				watch.ReadyTransitionPredicate(func(d *akov2.AtlasDataFederation) bool {
-					return api.HasReadyCondition(d.Status.Conditions)
-				}),
-				predicate.GenerationChangedPredicate{},
-			)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
@@ -154,17 +149,75 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		Complete(r)
 }
 
-func allowsByScopes(u *akov2.AtlasDatabaseUser, epName string, epType akov2.ScopeType) bool {
-	scopes := u.Spec.Scopes
-	filtered_scopes := u.GetScopes(epType)
-	if len(scopes) == 0 || stringutil.Contains(filtered_scopes, epName) {
-		return true
+func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	result, err := r.reconcile(ctx, req)
+
+	if err != nil {
+		user := &generatedv1.DatabaseUser{}
+		user.SetName(req.Name)
+		user.SetNamespace(req.Namespace)
+
+		errorCondition := metav1.Condition{
+			Type:               ConnectionSecretReady,
+			Status:             metav1.ConditionFalse,
+			LastTransitionTime: metav1.Now(),
+			Reason:             "Error",
+			Message:            err.Error(),
+		}
+
+		patcher := controllerstate.NewPatcher(user).
+			WithFieldOwner(FieldOwner).
+			UpdateConditions([]metav1.Condition{errorCondition})
+
+		if err := patcher.Patch(ctx, r.Client); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update status condition on error: %w", err)
+		}
 	}
 
-	return false
+	return result, err
 }
 
-func (r *ConnectionSecretReconciler) generateConnectionSecretRequests(users []akov2.AtlasDatabaseUser) []reconcile.Request {
+func (r *ConnectionSecretReconciler) reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// Fetch the DatabaseUser resource.
+	user := &generatedv1.DatabaseUser{}
+	err := r.Client.Get(ctx, req.NamespacedName, user)
+	if apierrors.IsNotFound(err) {
+		// object is already gone, nothing to do.
+		return reconcile.Result{}, nil
+	}
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to get object: %w", err)
+	}
+
+	// Retrieve the project ID associated with the user.
+	projectID, err := r.getUserGroupId(ctx, user)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to get project ID: %w", err)
+	}
+
+	// Load the connection targets for the project.
+	connectionTargetInstances, err := r.listConnectionTargetsByProject(ctx, projectID)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to list connection targets: %w", err)
+	}
+
+	// Cleanup stale Secrets
+	if err := r.cleanupStaleSecrets(ctx, req.Namespace, connectionTargetInstances, projectID); err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to list connection targets: %w", err)
+	}
+
+	// Verify if the AtlasDatabaseUser is ready.
+	ready := meta.FindStatusCondition(user.GetConditions(), state.ReadyCondition)
+	isUserReady := ready != nil && ready.Status == metav1.ConditionTrue
+	if !isUserReady {
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	// Delegate the batch upsert logic to handleBatchUpsert.
+	return r.handleBatchUpsert(ctx, req, user, projectID, connectionTargetInstances)
+}
+
+func (r *ConnectionSecretReconciler) generateConnectionSecretRequests(users []generatedv1.DatabaseUser) []reconcile.Request {
 	reqs := make([]reconcile.Request, 0, len(users))
 	for _, u := range users {
 		reqs = append(reqs, reconcile.Request{
@@ -175,55 +228,21 @@ func (r *ConnectionSecretReconciler) generateConnectionSecretRequests(users []ak
 }
 
 // listConnectionTargetsByProject retrieves all of the connectionTargets that live under an AtlasProject
-func (r *ConnectionSecretReconciler) listConnectionTargetsByProject(ctx context.Context, projectID string) ([]ConnectionTarget, error) {
-	var out []ConnectionTarget
+func (r *ConnectionSecretReconciler) listConnectionTargetsByProject(ctx context.Context, projectID string) ([]target.ConnectionTargetInstance, error) {
+	var out []target.ConnectionTargetInstance
 
 	for _, kind := range r.ConnectionTargetKinds {
-		switch kind.(type) {
-		case DataFederationConnectionTarget:
-			list := &akov2.AtlasDataFederationList{}
-			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectID(projectID),
-			}); err != nil {
-				return nil, err
-			}
-
-			for i := range list.Items {
-				out = append(out, DataFederationConnectionTarget{
-					obj:             &list.Items[i],
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-				})
-			}
-
-		case DeploymentConnectionTarget:
-			list := &akov2.AtlasDeploymentList{}
-			if err := r.Client.List(ctx, list, &client.ListOptions{
-				FieldSelector: kind.SelectorByProjectID(projectID),
-			}); err != nil {
-				return nil, err
-			}
-
-			for i := range list.Items {
-				out = append(out, DeploymentConnectionTarget{
-					obj:             &list.Items[i],
-					client:          r.Client,
-					provider:        r.AtlasProvider,
-					globalSecretRef: r.GlobalSecretRef,
-					log:             r.Log,
-				})
-			}
+		targets, err := kind.ListForProject(ctx, projectID)
+		if err != nil {
+			return nil, err
 		}
+		out = append(out, targets...)
 	}
 
 	return out, nil
 }
 
-func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, namespace string, connectionTargets []ConnectionTarget, projectID string) error {
-	log := r.Log.With("namespace", namespace)
-
+func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, namespace string, connectionTargets []target.ConnectionTargetInstance, projectID string) error {
 	// Define the label selector to find relevant secrets.
 	labelSelector := &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -249,7 +268,6 @@ func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, na
 	// Iterate through secrets and delete any that are stale.
 	for _, secret := range secretList.Items {
 		if err := r.checkAndDeleteStaleSecret(ctx, &secret, connectionTargets); err != nil {
-			log.Errorw("Error cleaning up stale secret", "secretName", secret.Name, "error", err)
 			return err
 		}
 	}
@@ -258,7 +276,7 @@ func (r *ConnectionSecretReconciler) cleanupStaleSecrets(ctx context.Context, na
 }
 
 // checkAndDeleteStaleSecret deletes a secret if its associated user or connected resource no longer exists.
-func (r *ConnectionSecretReconciler) checkAndDeleteStaleSecret(ctx context.Context, secret *corev1.Secret, connectionTargets []ConnectionTarget) error {
+func (r *ConnectionSecretReconciler) checkAndDeleteStaleSecret(ctx context.Context, secret *corev1.Secret, connectionTargets []target.ConnectionTargetInstance) error {
 	pendingDeletion := true
 	for _, connectionTarget := range connectionTargets {
 		if connectionTarget.GetName() == secret.Labels[TargetLabelKey] && connectionTarget.GetConnectionTargetType() == secret.Annotations[ConnectionTypelKey] {
@@ -268,8 +286,7 @@ func (r *ConnectionSecretReconciler) checkAndDeleteStaleSecret(ctx context.Conte
 
 	if pendingDeletion {
 		if err := r.Client.Delete(ctx, secret); err != nil {
-			if apiErrors.IsNotFound(err) {
-				r.Log.Debugw("Secret already deleted", "secretName", secret.Name)
+			if apierrors.IsNotFound(err) {
 				return nil
 			}
 			return fmt.Errorf("failed to delete secret: %w", err)
@@ -281,38 +298,28 @@ func (r *ConnectionSecretReconciler) checkAndDeleteStaleSecret(ctx context.Conte
 
 // newConnectionTargetMapFunc maps a ConnectionTarget to requests by fetching all AtlasDatabaseUsers and creating a request for each
 func (r *ConnectionSecretReconciler) newConnectionTargetMapFunc(ctx context.Context, obj client.Object) []reconcile.Request {
-	var ep ConnectionTarget
+	var ep target.ConnectionTargetInstance
 
-	// Case on the type of connectionTarget
-	switch o := obj.(type) {
-	case *akov2.AtlasDeployment:
-		ep = DeploymentConnectionTarget{
-			obj:             o,
-			client:          r.Client,
-			provider:        r.AtlasProvider,
-			globalSecretRef: r.GlobalSecretRef,
-			log:             r.Log,
+	// Find the matching connection target kind for this object
+	for _, kind := range r.ConnectionTargetKinds {
+		if wrapped := kind.GetConnectionTargetInstance(obj); wrapped != nil {
+			ep = wrapped
+			break
 		}
-	case *akov2.AtlasDataFederation:
-		ep = DataFederationConnectionTarget{
-			obj:             o,
-			client:          r.Client,
-			provider:        r.AtlasProvider,
-			globalSecretRef: r.GlobalSecretRef,
-			log:             r.Log,
-		}
-	default:
+	}
+
+	if ep == nil {
 		return nil
 	}
 
-	projectID, err := ep.GetProjectID(ctx)
-	if err != nil || projectID == "" {
+	projectID := ep.GetProjectID(ctx)
+	if projectID == "" {
 		return nil
 	}
 
-	users := &akov2.AtlasDatabaseUserList{}
+	users := &generatedv1.DatabaseUserList{}
 	if err := r.Client.List(ctx, users, &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(indexer.AtlasDatabaseUserByProject, projectID),
+		FieldSelector: fields.OneTermEqualSelector(indexer.DatabaseUserByGroupId, projectID),
 	}); err != nil {
 		return nil
 	}
@@ -320,50 +327,174 @@ func (r *ConnectionSecretReconciler) newConnectionTargetMapFunc(ctx context.Cont
 	return r.generateConnectionSecretRequests(users.Items)
 }
 
-func NewConnectionSecretReconciler(
-	c cluster.Cluster,
-	predicates []predicate.Predicate,
-	atlasProvider atlas.Provider,
-	logger *zap.Logger,
-	globalSecretRef types.NamespacedName,
-) *ConnectionSecretReconciler {
-	r := &ConnectionSecretReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("ConnectionSecret").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
-		Scheme:           c.GetScheme(),
-		EventRecorder:    c.GetEventRecorderFor("ConnectionSecret"),
-		GlobalPredicates: predicates,
+func (r *ConnectionSecretReconciler) getSDKClientSet(ctx context.Context, databaseuser *generatedv1.DatabaseUser) (*atlas.ClientSet, error) {
+	var connectionSecretRef *client.ObjectKey
+	if databaseuser.Spec.ConnectionSecretRef != nil {
+		connectionSecretRef = &client.ObjectKey{
+			Name:      databaseuser.Spec.ConnectionSecretRef.Name,
+			Namespace: databaseuser.Namespace,
+		}
 	}
 
-	// Register all the connectionTarget types
-	r.ConnectionTargetKinds = []ConnectionTarget{
-		DeploymentConnectionTarget{
-			client:          r.Client,
-			provider:        r.AtlasProvider,
-			globalSecretRef: r.GlobalSecretRef,
-			log:             r.Log,
-		},
-		DataFederationConnectionTarget{
-			client:          r.Client,
-			provider:        r.AtlasProvider,
-			globalSecretRef: r.GlobalSecretRef,
-			log:             r.Log,
-		},
+	connectionConfig, err := reconciler.GetConnectionConfig(ctx, r.Client, connectionSecretRef, &r.GlobalSecretRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve Atlas credentials: %w", err)
 	}
 
-	return r
+	clientSet, err := r.AtlasProvider.SdkClientSet(ctx, connectionConfig.Credentials, r.Logger.Sugar())
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup Atlas SDK client: %w", err)
+	}
+
+	return clientSet, nil
 }
 
-func (r *ConnectionSecretReconciler) getUserProjectID(ctx context.Context, user *akov2.AtlasDatabaseUser) (string, error) {
-	if user == nil {
-		return "", fmt.Errorf("nil user")
+// ensureSecret creates or updates the Secret for the given identifiers and connection data
+func (r *ConnectionSecretReconciler) ensureSecret(
+	ctx context.Context,
+	ids *ConnectionSecretIdentifiers,
+	user *generatedv1.DatabaseUser,
+	connectionTarget target.ConnectionTargetInstance,
+	connData *data.ConnectionSecret,
+) error {
+	namespace := user.GetNamespace()
+	name := K8sConnectionSecretName(ids.ProjectName, ids.TargetName, ids.DatabaseUsername, connectionTarget.GetConnectionTargetType())
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
-	if user.Spec.ExternalProjectRef != nil && user.Spec.ExternalProjectRef.ID != "" {
-		return user.Spec.ExternalProjectRef.ID, nil
+
+	// Fills the secret.stringData with the information stored in ConnectionSecretData
+	if err := fillConnSecretData(secret, ids, connData, connectionTarget.GetConnectionTargetType()); err != nil {
+		return err
 	}
-	return resolveProjectIDByKey(ctx, r.Client, user.AtlasProjectObjectKey())
+
+	// Add the owner to be the AtlasDatabaseUser for garbage collection
+	if err := controllerutil.SetControllerReference(user, secret, r.Scheme); err != nil {
+		return err
+	}
+
+	currentSecret := &corev1.Secret{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, currentSecret)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	if reflect.DeepEqual(secret.Data, currentSecret.Data) {
+		return nil // nothing to do
+	}
+
+	// Apply the secret
+	if err := r.Client.Patch(ctx, secret, client.Apply, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//nolint:unparam
+func (r *ConnectionSecretReconciler) handleDelete(ctx context.Context, req ctrl.Request, ids *ConnectionSecretIdentifiers) (ctrl.Result, error) {
+	name := K8sConnectionSecretName(ids.ProjectName, ids.TargetName, ids.DatabaseUsername, ids.ConnectionType)
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: req.Namespace,
+		},
+	}
+
+	// delete secret in k8s
+	err := r.Client.Delete(ctx, secret)
+	if err != nil && apierrors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to delete connection secret: %w", err)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func K8sConnectionSecretName(projectName, targetName, userName, connectionTargetType string) string {
+	name := fmt.Sprintf("%s-%s-%s",
+		kube.NormalizeIdentifier(projectName),
+		kube.NormalizeIdentifier(targetName),
+		kube.NormalizeIdentifier(userName))
+	return kube.NormalizeIdentifier(name)
+}
+
+// CreateURL creates the connection urls given a hostname, user, and password
+func CreateURL(hostname, username, password string) (string, error) {
+	if hostname == "" {
+		return "", nil
+	}
+	u, err := url.Parse(hostname)
+	if err != nil {
+		return "", err
+	}
+	u.User = url.UserPassword(username, password)
+	return u.String(), nil
+}
+
+// fillConnSecretData converts the ConnectionSecretData into secret.stringData
+func fillConnSecretData(secret *corev1.Secret, ids *ConnectionSecretIdentifiers, data *data.ConnectionSecret, connectionTargetType string) error {
+	var err error
+	username := data.DBUserName
+	password := data.Password
+
+	if data.ConnectionURL, err = CreateURL(data.ConnectionURL, username, password); err != nil {
+		return err
+	}
+	if data.SrvConnectionURL, err = CreateURL(data.SrvConnectionURL, username, password); err != nil {
+		return err
+	}
+	for i, pe := range data.PrivateConnectionURLs {
+		if data.PrivateConnectionURLs[i].ConnectionURL, err = CreateURL(pe.ConnectionURL, username, password); err != nil {
+			return err
+		}
+		if data.PrivateConnectionURLs[i].SrvConnectionURL, err = CreateURL(pe.SrvConnectionURL, username, password); err != nil {
+			return err
+		}
+		if data.PrivateConnectionURLs[i].ShardConnectionURL, err = CreateURL(pe.ShardConnectionURL, username, password); err != nil {
+			return err
+		}
+	}
+
+	secret.Labels = map[string]string{
+		TypeLabelKey:         CredLabelVal,
+		ProjectLabelKey:      ids.ProjectID,
+		TargetLabelKey:       ids.TargetName,
+		DatabaseUserLabelKey: ids.DatabaseUsername,
+	}
+
+	secret.Annotations = map[string]string{
+		ConnectionTypelKey: connectionTargetType,
+	}
+
+	secret.Data = map[string][]byte{
+		userNameKey:    []byte(data.DBUserName),
+		passwordKey:    []byte(data.Password),
+		standardKey:    []byte(data.ConnectionURL),
+		standardKeySrv: []byte(data.SrvConnectionURL),
+		privateKey:     []byte(""),
+		privateSrvKey:  []byte(""),
+	}
+
+	for i, pe := range data.PrivateConnectionURLs {
+		suffix := ""
+		if i != 0 {
+			suffix = fmt.Sprint(i)
+		}
+		secret.Data[privateKey+suffix] = []byte(pe.ConnectionURL)
+		secret.Data[privateSrvKey+suffix] = []byte(pe.SrvConnectionURL)
+		secret.Data[privateShardKey+suffix] = []byte(pe.ShardConnectionURL)
+	}
+
+	return nil
 }
