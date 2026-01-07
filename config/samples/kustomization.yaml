@@ -20,7 +20,4 @@ resources:
   - atlas_v1_atlasbackupcompliancepolicy.yaml
   - atlas_v1_atlascustomrole.yaml
   - atlas_v1_atlasthirdpartyintegration.yaml
-  - atlas_generated_v1_group.yaml
-  - atlas_generated_v1_flexcluster.yaml
-  - atlas_generated_v1_flexcluster_with_groupref.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

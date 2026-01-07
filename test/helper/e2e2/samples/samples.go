@@ -54,7 +54,7 @@ func LoadSampleObjects(filename string) ([]client.Object, error) {
 		return nil, err
 	}
 
-	absPath := filepath.Join(repoRoot, "config", "samples", filename)
+	absPath := filepath.Join(repoRoot, "config", "generated", "samples", filename)
 	f, err := os.Open(filepath.Clean(absPath))
 	if err != nil {
 		return nil, err
