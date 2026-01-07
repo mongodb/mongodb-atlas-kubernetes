@@ -15,39 +15,9 @@
 package state
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type StatusObject interface {
 	GetConditions() []metav1.Condition
-}
-
-type resource struct {
-	Status statusResource `json:"status,omitempty"`
-}
-
-type statusResource struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
-func newStatusObject(conditions []metav1.Condition) *resource {
-	return &resource{Status: statusResource{Conditions: conditions}}
-}
-
-func patchStatus(ctx context.Context, c client.Client, obj client.Object, status any) error {
-	statusJSON, err := json.Marshal(status)
-	if err != nil {
-		return fmt.Errorf("failed to marshal status: %w", err)
-	}
-	patchErr := c.Status().Patch(ctx, obj, client.RawPatch(types.MergePatchType, statusJSON))
-	if patchErr != nil {
-		return fmt.Errorf("failed to patch status: %w", patchErr)
-	}
-	return nil
 }

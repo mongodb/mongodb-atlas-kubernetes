@@ -17,13 +17,14 @@ package state
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-const FieldOwner = "mongodb-atlas-kubernetes"
+const FieldOwner = "mongodb-atlas-kubernetes-resource-handler"
 
 type Patcher struct {
 	patchedObj                   *unstructured.Unstructured
@@ -63,6 +64,8 @@ func (p *Patcher) UpdateStateTracker(dependencies ...client.Object) *Patcher {
 }
 
 // UpdateStatus updates the status of the given object.
+//
+// Note: this method omits the "conditions" field from the status. To update conditions, use UpdateConditions().
 func (p *Patcher) UpdateStatus() *Patcher {
 	if p.err != nil {
 		return p
@@ -85,6 +88,41 @@ func (p *Patcher) UpdateStatus() *Patcher {
 	return p
 }
 
+// WithFieldOwner sets the field owner for the patch operation.
+func (p *Patcher) WithFieldOwner(fieldOwner string) *Patcher {
+	p.fieldOwner = fieldOwner
+	return p
+}
+
+// UpdateConditions updates the status conditions of the given object.
+//
+// Note: this method only updates the "conditions" field in the status. To update remaining status fields, use UpdateStatus().
+func (p *Patcher) UpdateConditions(conditions []metav1.Condition) *Patcher {
+	if p.err != nil {
+		return p
+	}
+
+	content := make([]interface{}, 0, len(conditions))
+	for i := range conditions {
+		c, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&conditions[i])
+		if err != nil {
+			p.err = err
+			return p
+		}
+		content = append(content, c)
+	}
+
+	unstructured.RemoveNestedField(p.patchedObj.Object, "status")
+
+	if err := unstructured.SetNestedSlice(p.patchedObj.Object, content, "status", "conditions"); err != nil {
+		p.err = err
+		return p
+	}
+
+	p.statusChanged = true
+	return p
+}
+
 func (p *Patcher) patchObject(ctx context.Context, c client.Client) {
 	if p.err != nil || !p.objectChanged {
 		return
@@ -97,7 +135,7 @@ func (p *Patcher) patchObject(ctx context.Context, c client.Client) {
 	}
 
 	applyConfig := client.ApplyConfigurationFromUnstructured(patchedCopy)
-	err = c.Apply(ctx, applyConfig, client.FieldOwner(FieldOwner), client.ForceOwnership)
+	err = c.Apply(ctx, applyConfig, client.FieldOwner(p.fieldOwner), client.ForceOwnership)
 	p.err = err
 }
 
@@ -114,7 +152,7 @@ func (p *Patcher) patchStatus(ctx context.Context, c client.Client) {
 
 	// SSA Apply() method for sub-resources is not yet supported, so we use Patch here.
 	// See the following issue for more details: https://github.com/kubernetes-sigs/controller-runtime/issues/3183
-	err = c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(FieldOwner), client.ForceOwnership)
+	err = c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(p.fieldOwner), client.ForceOwnership)
 	p.err = err
 }
 

@@ -170,6 +170,94 @@ func TestPatcher(t *testing.T) {
 			// Status patch fails first, object patch should be skipped
 			wantErr: "status patch failed first",
 		},
+		{
+			name: "patches conditions only",
+			obj:  baseDeployment.DeepCopy(),
+			setupPatcher: func(p *Patcher) {
+				p.UpdateConditions([]metav1.Condition{
+					{
+						Type:   "Ready",
+						Status: metav1.ConditionTrue,
+						Reason: "TestReason",
+					},
+				})
+			},
+			wantErr: "",
+			wantObj: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test",
+					Namespace:   "default",
+					Annotations: nil,
+				},
+				Status: appsv1.DeploymentStatus{
+					Conditions: []appsv1.DeploymentCondition{
+						{
+							Type:   appsv1.DeploymentConditionType("Ready"),
+							Status: corev1.ConditionTrue,
+							Reason: "TestReason",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "UpdateStatus then UpdateConditions - conditions are set",
+			obj:  baseDeployment.DeepCopy(),
+			setupPatcher: func(p *Patcher) {
+				// UpdateStatus removes conditions, but UpdateConditions adds them back
+				p.UpdateStatus().UpdateConditions([]metav1.Condition{
+					{
+						Type:   "Available",
+						Status: metav1.ConditionTrue,
+						Reason: "MinimumReplicasAvailable",
+					},
+				})
+			},
+			wantErr: "",
+			wantObj: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test",
+					Namespace:   "default",
+					Annotations: nil,
+				},
+				Status: appsv1.DeploymentStatus{
+					// ReadyReplicas removed by UpdateConditions
+					Conditions: []appsv1.DeploymentCondition{
+						{
+							Type:   appsv1.DeploymentConditionType("Available"),
+							Status: corev1.ConditionTrue,
+							Reason: "MinimumReplicasAvailable",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "UpdateConditions then UpdateStatus - conditions are removed",
+			obj:  baseDeployment.DeepCopy(),
+			setupPatcher: func(p *Patcher) {
+				// UpdateConditions sets conditions, but UpdateStatus removes them
+				p.UpdateConditions([]metav1.Condition{
+					{
+						Type:   "Available",
+						Status: metav1.ConditionTrue,
+						Reason: "MinimumReplicasAvailable",
+					},
+				}).UpdateStatus()
+			},
+			wantErr: "",
+			wantObj: &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test",
+					Namespace:   "default",
+					Annotations: nil,
+				},
+				Status: appsv1.DeploymentStatus{
+					ReadyReplicas: 5,
+					Conditions:    nil, // removed by UpdateStatus
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
