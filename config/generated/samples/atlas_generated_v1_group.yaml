@@ -1,0 +1,12 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: Group
+metadata:
+  name: my-group
+spec:
+  connectionSecretRef:
+    name: mongodb-atlas-operator-api-key
+  v20250312:
+    entry:
+      orgId: "60f1b3c4e4b0e8b8c8b8c8b"
+      name: my-group
+

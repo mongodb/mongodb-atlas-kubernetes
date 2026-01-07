@@ -48,6 +48,14 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
+		// Register cleanup - this should even when the process is interrupted with Ctrl+C
+		// AfterAll is not reliable in such cases.
+		DeferCleanup(func() {
+			if ako != nil {
+				ako.Stop(GinkgoT())
+			}
+		})
+
 		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
@@ -55,10 +63,6 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: v1.ObjectMeta{Name: AtlasProjectCRDName},
 		})).To(Succeed())
-	})
-
-	_ = AfterAll(func() {
-		ako.Stop(GinkgoT())
 	})
 
 	_ = BeforeEach(func() {

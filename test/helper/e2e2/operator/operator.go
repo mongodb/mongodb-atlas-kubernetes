@@ -149,6 +149,12 @@ func (o *OperatorProcess) Wait(t testingT) {
 }
 
 func (o *OperatorProcess) Stop(t testingT) {
+	// Check if process is already terminated
+	if !o.Running() {
+		// Process has already terminated, nothing to do
+		return
+	}
+
 	// Ensure child process is killed on cleanup - send the negative of the pid, which is the process group id.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	pid := 0
@@ -160,6 +166,11 @@ func (o *OperatorProcess) Stop(t testingT) {
 	terminated := false
 	if pid != 0 {
 		if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
+			// If process doesn't exist, it's already gone - that's fine
+			if err == syscall.ESRCH {
+				// Process doesn't exist (already terminated), which is what we want
+				return
+			}
 			t.Errorf("error trying to kill command: %v", err)
 		}
 		terminated = true
