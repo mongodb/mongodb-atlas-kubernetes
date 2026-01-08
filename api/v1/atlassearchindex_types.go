@@ -82,6 +82,7 @@ type Mappings struct {
 	// Set to **true** to enable dynamic mapping with default type set or define object to specify the name of the configured type sets for dynamic mapping.
 	// If you specify configurable dynamic mappings, you must define the referred type sets in the **typeSets** field.
 	// Set to **false** to use only static mappings through **mappings.fields**.
+	// See https://www.mongodb.com/docs/atlas/atlas-search/define-field-mappings/#configure-a-typeset for more details.
 	Dynamic *apiextensions.JSON `json:"dynamic,omitempty"`
 	// One or more field specifications for the Atlas Search index. Required if mapping.dynamic is omitted or set to false.
 	Fields *apiextensions.JSON `json:"fields,omitempty"`
