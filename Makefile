@@ -711,7 +711,8 @@ tools/scandeprecation/scandeprecation: tools/scandeprecation/*.go
 .PHONY: slack-deprecations
 slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githubjobs
 	@echo "Computing and sending deprecation report to Slack..."
-	GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep "javaMethod" | ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
+	set -o pipefail; GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep --text "javaMethod" \
+	| ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
 
 .PHONY: bump-version-file
 bump-version-file:

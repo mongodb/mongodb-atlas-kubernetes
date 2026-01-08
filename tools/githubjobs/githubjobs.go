@@ -2,13 +2,19 @@ package main
 
 import (
 	"context"
-	"github.com/google/go-github/v57/github"
-	"go.uber.org/zap"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/google/go-github/v57/github"
+	"go.uber.org/zap"
+)
+
+const (
+	maxFailures = 7
 )
 
 func main() {
@@ -60,11 +66,15 @@ func main() {
 		page++
 	}
 
+	fmt.Printf("Showing logs for %v jobs\n", len(jobList))
+	failures := 0
 	for _, job := range jobList {
+		fmt.Printf("--------------------------------- Logs for job # %v\n", job)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		url, _, err := client.Actions.GetWorkflowJobLogs(ctx, "mongodb", "mongodb-atlas-kubernetes", job, 1)
 		if err != nil {
+			failures += 1
 			log.Errorf("failed to get job logs for %v: %v", job, err)
 			continue
 		}
@@ -78,5 +88,14 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to print job logs to stdout for %v: %v", job, err)
 		}
+		fmt.Printf("-------------------------- End of logs for job # %v\n", job)
+	}
+	allowedFailures := maxFailures
+	if allowedFailures > len(jobList) {
+		allowedFailures = len(jobList)
+	}
+	if failures > allowedFailures {
+		log.Fatalf("too many failures downloading job logs: got %d expected up to %d", failures, allowedFailures)
+		os.Exit(1)
 	}
 }
