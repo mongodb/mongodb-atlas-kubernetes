@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
-	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -131,7 +130,6 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		Named("ConnectionSecret").
 		For(r.For()).
 		Owns(&corev1.Secret{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserBySecretMapFunc(r.Client))).
 		Watches(
 			&generatedv1.FlexCluster{},
 			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
