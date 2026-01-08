@@ -21,4 +21,6 @@ if [ -z "${MESSAGE}" ]; then
   exit
 fi
 
-curl -X POST -d "{\"text\":\"${MESSAGE}\"}" "${WEBHOOK}"
+# Use jq to properly escape the JSON payload
+PAYLOAD=$(echo -n "${MESSAGE}" | jq -Rs '{text: .}')
+curl -X POST -H "Content-Type: application/json" -d "${PAYLOAD}" "${WEBHOOK}"
