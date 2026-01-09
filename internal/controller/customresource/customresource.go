@@ -49,7 +49,7 @@ func PrepareResource(ctx context.Context, client client.Client, request reconcil
 		if apierrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
-			log.Debugf("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
+			log.Infof("Object %s doesn't exist, was it deleted after reconcile request?", request.NamespacedName)
 			return workflow.TerminateSilently(err).WithoutRetry()
 		}
 		// Error reading the object - requeue the request. Note, that we don't intend to update resource status

@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -76,15 +75,9 @@ type AtlasDatabaseUserReconciler struct {
 func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	atlasDatabaseUser := &akov2.AtlasDatabaseUser{}
 
-	err := r.Client.Get(ctx, req.NamespacedName, atlasDatabaseUser)
-	objectNotFound := err != nil && apiErrors.IsNotFound(err)
-	failedToRetrieve := err != nil && !objectNotFound
-
-	switch {
-	case failedToRetrieve:
-		return r.fail(req, err)
-	case objectNotFound:
-		return r.notFound(req)
+	result := customresource.PrepareResource(ctx, r.Client, req, atlasDatabaseUser, r.Log)
+	if !result.IsOk() {
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasDatabaseUser) {
@@ -99,19 +92,6 @@ func (r *AtlasDatabaseUserReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}()
 
 	return r.handleDatabaseUser(workflowCtx, atlasDatabaseUser)
-}
-
-// notFound terminates the reconciliation silently(no updates on conditions) and without retry
-func (r *AtlasDatabaseUserReconciler) notFound(req ctrl.Request) (ctrl.Result, error) {
-	err := fmt.Errorf("object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
-	r.Log.Infof(err.Error())
-	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
-}
-
-// fail terminates the reconciliation silently(no updates on conditions)
-func (r *AtlasDatabaseUserReconciler) fail(req ctrl.Request, err error) (ctrl.Result, error) {
-	r.Log.Errorf("Failed to query object %s: %s", req.NamespacedName, err)
-	return workflow.TerminateSilently(err).ReconcileResult()
 }
 
 // skip prevents the reconciliation to start and successfully return
