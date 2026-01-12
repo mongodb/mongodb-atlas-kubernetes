@@ -183,47 +183,6 @@ func TestReconcile(t *testing.T) {
 	}
 }
 
-func TestNotFound(t *testing.T) {
-	t.Run("custom resource was not found", func(t *testing.T) {
-		core, logs := observer.New(zap.DebugLevel)
-		c := &AtlasDatabaseUserReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log: zap.New(core).Sugar(),
-			},
-		}
-
-		res, err := c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}})
-		assert.NoError(t, err)
-		assert.Equal(t, ctrl.Result{}, res)
-		//assert.Equal(t, ctrl.Result{}, c.notFound(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}))
-		assert.Equal(t, 1, logs.Len())
-		assert.Equal(t, zapcore.Level(0), logs.All()[0].Level)
-		assert.Equal(t, "object test/object doesn't exist, was it deleted after reconcile request?", logs.All()[0].Message)
-	})
-}
-
-func TestFail(t *testing.T) {
-	t.Run("failed to retrieve custom resource", func(t *testing.T) {
-		core, logs := observer.New(zap.DebugLevel)
-		c := &AtlasDatabaseUserReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log: zap.New(core).Sugar(),
-			},
-		}
-
-		_, err := c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource"))
-		assert.Error(t, err)
-		//assert.Equal(
-		//	t,
-		//	ctrl.Result{RequeueAfter: workflow.DefaultRetry},
-		//	c.fail(ctrl.Request{NamespacedName: types.NamespacedName{Name: "object", Namespace: "test"}}, errors.New("failed to retrieve custom resource")),
-		//)
-		assert.Equal(t, 1, logs.Len())
-		assert.Equal(t, zapcore.Level(2), logs.All()[0].Level)
-		assert.Equal(t, "Failed to query object test/object: failed to retrieve custom resource", logs.All()[0].Message)
-	})
-}
-
 func TestSkip(t *testing.T) {
 	t.Run("skip reconciliation of custom resource", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)

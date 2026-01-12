@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -88,15 +87,9 @@ func NewAtlasCustomRoleReconciler(c cluster.Cluster, predicates []predicate.Pred
 func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	atlasCustomRole := &akov2.AtlasCustomRole{}
 
-	err := r.Client.Get(ctx, req.NamespacedName, atlasCustomRole)
-	objectNotFound := err != nil && apiErrors.IsNotFound(err)
-	failedToRetrieve := err != nil && !objectNotFound
-
-	switch {
-	case failedToRetrieve:
-		return r.fail(req, err)
-	case objectNotFound:
-		return r.notFound(req)
+	result := customresource.PrepareResource(ctx, r.Client, req, atlasCustomRole, r.Log)
+	if !result.IsOk() {
+		return result.ReconcileResult()
 	}
 
 	if customresource.ReconciliationShouldBeSkipped(atlasCustomRole) {
@@ -190,13 +183,6 @@ func (r *AtlasCustomRoleReconciler) skip() (ctrl.Result, error) {
 		customresource.ReconciliationPolicyAnnotation,
 		customresource.ReconciliationPolicySkip))
 	return workflow.OK().ReconcileResult()
-}
-
-// notFound terminates the reconciliation silently(no updates on conditions) and without retry
-func (r *AtlasCustomRoleReconciler) notFound(req ctrl.Request) (ctrl.Result, error) {
-	err := fmt.Errorf("object %s doesn't exist, was it deleted after reconcile request?", req.NamespacedName)
-	r.Log.Infof(err.Error())
-	return workflow.TerminateSilently(err).WithoutRetry().ReconcileResult()
 }
 
 func (r *AtlasCustomRoleReconciler) For() (client.Object, builder.Predicates) {
