@@ -15,9 +15,15 @@
 
 set -euo pipefail
 MESSAGE=$(cat)
-WEBHOOK=${1}
+WEBHOOK="${1:-${SLACK_WEBHOOK:-}}"
+
+if [ -z "${WEBHOOK}" ]; then
+  echo "Error: No webhook URL provided. Pass it as an argument or set SLACK_WEBHOOK."
+  exit 1
+fi
 
 if [ -z "${MESSAGE}" ]; then
+  echo "Error: No message to send"
   exit
 fi
 

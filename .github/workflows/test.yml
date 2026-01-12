@@ -38,7 +38,12 @@ jobs:
     # Contributions do NOT run any testing by default
     # A label is needed to allow testing after every contributor code post
     # This check makes pull_request_target event triggering by contributions safe
+    # Other than that, manual runs, pushes and scheduled are trusted because
+    # only maintainers can trigger them
     if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
       github.event.pull_request.base.repo.full_name == github.event.pull_request.head.repo.full_name ||
       github.event.label.name == 'safe-to-test' ||
       github.event.label.name == 'cloud-tests' ||
@@ -89,3 +94,48 @@ jobs:
     if: github.ref_name == 'main' && github.event_name != 'pull_request_target' && github.event_name != 'pull_request'
     uses: ./.github/workflows/promote-image.yml
     secrets: inherit
+
+  failure-alert:
+    name: Slack Alert on Failure
+    runs-on: ubuntu-latest
+    needs:
+      - ci
+      - e2e2
+      - tests-selectable
+      - cloud-tests
+      - start-promote-image
+    if: >-
+      always() &&
+      contains(needs.*.result, 'failure') &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch')
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Send Slack Notification
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          chmod +x scripts/slackit.sh
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Detect which job specifically failed for the message
+          FAILED_JOBS=""
+          if [[ "${{ needs.ci.result }}" == "failure" ]]; then FAILED_JOBS+="[CI] "; fi
+          if [[ "${{ needs.e2e2.result }}" == "failure" ]]; then FAILED_JOBS+="[E2E] "; fi
+          if [[ "${{ needs.cloud-tests.result }}" == "failure" ]]; then FAILED_JOBS+="[Cloud] "; fi
+          if [[ "${{ needs.tests-selectable.result }}" == "failure" ]]; then FAILED_JOBS+="[Selectable] "; fi
+          if [[ "${{ needs.start-promote-image.result }}" == "failure" ]]; then FAILED_JOBS+="[Promote] "; fi
+
+          MSG="❌ *Critical Failure on Main* | ${{ github.repository }}
+          Type: ${{ github.event_name }}
+          Failed: $FAILED_JOBS
+          <$RUN_URL|View Failing Logs>"
+
+          echo "$MSG" | ./scripts/slackit.sh
