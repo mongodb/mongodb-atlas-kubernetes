@@ -24,50 +24,80 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSplitArrayPath(t *testing.T) {
+func TestParseAllArrayBoundaries(t *testing.T) {
 	tests := []struct {
-		name                string
-		fieldPath           string
-		expectedBeforeArray string
-		expectedAfterArray  string
-		expectedIsArray     bool
+		name               string
+		fieldPath          string
+		expectedBoundaries []ArrayBoundary
 	}{
 		{
-			name:                "single array",
-			fieldPath:           "properties.spec.properties.entries.items.properties.secretRef",
-			expectedBeforeArray: "properties.spec.properties.entries",
-			expectedAfterArray:  "properties.secretRef",
-			expectedIsArray:     true,
+			name:               "no array",
+			fieldPath:          "properties.spec.properties.secretRef",
+			expectedBoundaries: nil,
 		},
 		{
-			name:                "no array",
-			fieldPath:           "properties.spec.properties.secretRef",
-			expectedBeforeArray: "",
-			expectedAfterArray:  "properties.spec.properties.secretRef",
-			expectedIsArray:     false,
+			name:      "single array",
+			fieldPath: "properties.spec.properties.entries.items.properties.secretRef",
+			expectedBoundaries: []ArrayBoundary{
+				{
+					ArrayPath: "properties.spec.properties.entries",
+					ItemPath:  "properties.secretRef",
+				},
+			},
 		},
 		{
-			name:                "nested array",
-			fieldPath:           "properties.entries.items.properties.nested.items.properties.ref",
-			expectedBeforeArray: "properties.entries",
-			expectedAfterArray:  "properties.nested.items.properties.ref",
-			expectedIsArray:     true,
+			name:      "nested array - two levels",
+			fieldPath: "properties.spec.properties.regions.items.properties.notifications.items.properties.secretRef",
+			expectedBoundaries: []ArrayBoundary{
+				{
+					ArrayPath: "properties.spec.properties.regions",
+					ItemPath:  "properties.notifications",
+				},
+				{
+					ArrayPath: "properties.notifications",
+					ItemPath:  "properties.secretRef",
+				},
+			},
 		},
 		{
-			name:                "array at root",
-			fieldPath:           "items.properties.ref",
-			expectedBeforeArray: "",
-			expectedAfterArray:  "items.properties.ref", // No ".items." just "items" at start
-			expectedIsArray:     false,                  // Not detected as array
+			name:      "nested array - three levels",
+			fieldPath: "properties.spec.properties.level1.items.properties.level2.items.properties.level3.items.properties.ref",
+			expectedBoundaries: []ArrayBoundary{
+				{
+					ArrayPath: "properties.spec.properties.level1",
+					ItemPath:  "properties.level2",
+				},
+				{
+					ArrayPath: "properties.level2",
+					ItemPath:  "properties.level3",
+				},
+				{
+					ArrayPath: "properties.level3",
+					ItemPath:  "properties.ref",
+				},
+			},
+		},
+		{
+			name:      "nested array with deeper item path",
+			fieldPath: "properties.spec.properties.regions.items.properties.config.properties.notifications.items.properties.secretRef",
+			expectedBoundaries: []ArrayBoundary{
+				{
+					ArrayPath: "properties.spec.properties.regions",
+					ItemPath:  "properties.config.properties.notifications",
+				},
+				{
+					// ArrayPath contains the array field name for loop variable derivation
+					ArrayPath: "properties.notifications",
+					ItemPath:  "properties.secretRef",
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			beforeArray, afterArray, isArray := splitArrayPath(tt.fieldPath)
-			assert.Equal(t, tt.expectedBeforeArray, beforeArray)
-			assert.Equal(t, tt.expectedAfterArray, afterArray)
-			assert.Equal(t, tt.expectedIsArray, isArray)
+			boundaries := parseAllArrayBoundaries(tt.fieldPath)
+			assert.Equal(t, tt.expectedBoundaries, boundaries)
 		})
 	}
 }
@@ -160,9 +190,9 @@ spec:
 	ref := refs[0]
 	assert.Equal(t, "secretRef", ref.FieldName)
 	assert.Equal(t, "Secret", ref.ReferencedKind)
-	assert.True(t, ref.IsArrayBased, "Reference should be marked as array-based")
-	assert.Equal(t, "properties.spec.properties.v20250312.properties.replicas", ref.ArrayPath)
-	assert.Equal(t, "properties.secretRef", ref.ItemPath)
+	assert.True(t, ref.IsArrayBased(), "Reference should be marked as array-based")
+	assert.Equal(t, "properties.spec.properties.v20250312.properties.replicas", ref.ArrayPath())
+	assert.Equal(t, "properties.secretRef", ref.ItemPath())
 	assert.Contains(t, ref.FieldPath, ".items.")
 }
 
@@ -352,7 +382,7 @@ spec:
 	}
 }
 
-func TestSkipNestedArrayReferences(t *testing.T) {
+func TestNestedArrayReferences(t *testing.T) {
 	testYAML := `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -395,6 +425,13 @@ spec:
                       properties:
                         notifications:
                           type: array
+                          items:
+                            properties:
+                              secretRef:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
 `
 
 	tmpDir := t.TempDir()
@@ -406,51 +443,24 @@ spec:
 	err = GenerateIndexers(testFile, "AlertConfig", outputDir)
 	require.NoError(t, err)
 
-	// Should not generate any indexers (nested arrays skipped)
-	files, err := os.ReadDir(outputDir)
-	if err == nil {
-		assert.Empty(t, files, "No indexer files should be generated for nested arrays")
-	}
-}
+	// Should generate indexer for nested arrays
+	indexerFile := filepath.Join(outputDir, "alertconfigbysecret.go")
+	assert.FileExists(t, indexerFile)
 
-func TestSplitRequiredSegments(t *testing.T) {
-	tests := []struct {
-		name                string
-		fieldPath           string
-		requiredSegments    []bool
-		expectedBeforeArray []bool
-		expectedInArray     []bool
-	}{
-		{
-			name:                "simple array reference",
-			fieldPath:           "properties.spec.properties.v20250312.properties.entries.items.properties.secretRef",
-			requiredSegments:    []bool{false, true, false, false}, // spec, v20250312, entries, secretRef
-			expectedBeforeArray: []bool{false, true, false},        // up to entries
-			expectedInArray:     []bool{false},                     // secretRef within item
-		},
-		{
-			name:                "no array",
-			fieldPath:           "properties.spec.properties.groupRef",
-			requiredSegments:    []bool{false, false},
-			expectedBeforeArray: []bool{false, false},
-			expectedInArray:     nil,
-		},
-		{
-			name:                "empty required segments",
-			fieldPath:           "properties.spec.properties.entries.items.properties.ref",
-			requiredSegments:    []bool{},
-			expectedBeforeArray: nil,
-			expectedInArray:     nil,
-		},
-	}
+	content, err := os.ReadFile(indexerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			beforeArray, inArray := splitRequiredSegments(tt.fieldPath, tt.requiredSegments)
-			assert.Equal(t, tt.expectedBeforeArray, beforeArray)
-			assert.Equal(t, tt.expectedInArray, inArray)
-		})
-	}
+	// Verify nested for-loops are present
+	assert.Contains(t, contentStr, "for _, region := range", "Should have outer for-loop over regions")
+	assert.Contains(t, contentStr, "for _, notification := range", "Should have inner for-loop over notifications")
+
+	// Verify nil checks
+	assert.Contains(t, contentStr, "Regions != nil")
+	assert.Contains(t, contentStr, "Notifications != nil")
+
+	// Verify it appends keys with the innermost variable
+	assert.Contains(t, contentStr, "notification.SecretRef")
 }
 
 func TestGenerateArrayFieldExtractionCode_WithOptionalFields(t *testing.T) {
@@ -460,9 +470,12 @@ func TestGenerateArrayFieldExtractionCode_WithOptionalFields(t *testing.T) {
 		FieldPath:        "properties.spec.properties.v20250312.properties.entries.items.properties.config.properties.secretRef",
 		ReferencedKind:   "Secret",
 		RequiredSegments: []bool{false, true, false, false, false}, // spec, v20250312, entries, config, secretRef
-		IsArrayBased:     true,
-		ArrayPath:        "properties.spec.properties.v20250312.properties.entries",
-		ItemPath:         "properties.config.properties.secretRef",
+		ArrayBoundaries: []ArrayBoundary{
+			{
+				ArrayPath: "properties.spec.properties.v20250312.properties.entries",
+				ItemPath:  "properties.config.properties.secretRef",
+			},
+		},
 	}
 
 	code := generateArrayFieldExtractionCode(field)
@@ -530,7 +543,7 @@ spec:
 
 	// Verify basic structure is present
 	assert.Contains(t, contentStr, "for _, ")
-	assert.Contains(t, contentStr, "range resource.Spec.V20250312")
+	assert.Contains(t, contentStr, "resource.Spec.V20250312.Items")
 }
 
 func TestArrayIndexerGenerationLoopVariable(t *testing.T) {
@@ -593,6 +606,96 @@ spec:
 	// Verify loop variable is "policy" (singular of "policies")
 	assert.Contains(t, contentStr, "for _, policy := range")
 	assert.Contains(t, contentStr, "policy.SecretRef")
+}
+
+func TestThreeLevelNestedArrayReferences(t *testing.T) {
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: apps.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                clusters:
+                  items:
+                    properties:
+                      shards:
+                        items:
+                          properties:
+                            replicas:
+                              items:
+                                properties:
+                                  secretRef:
+                                    x-kubernetes-mapping:
+                                      type:
+                                        kind: Secret
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: App
+    plural: apps
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  clusters:
+                    type: array
+                    items:
+                      properties:
+                        shards:
+                          type: array
+                          items:
+                            properties:
+                              replicas:
+                                type: array
+                                items:
+                                  properties:
+                                    secretRef:
+                                      type: object
+                                      properties:
+                                        name:
+                                          type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	outputDir := filepath.Join(tmpDir, "indexers")
+	err = GenerateIndexers(testFile, "App", outputDir)
+	require.NoError(t, err)
+
+	// Should generate indexer for three-level nested arrays
+	indexerFile := filepath.Join(outputDir, "appbysecret.go")
+	assert.FileExists(t, indexerFile)
+
+	content, err := os.ReadFile(indexerFile)
+	require.NoError(t, err)
+	contentStr := string(content)
+
+	// Verify three nested for-loops are present
+	assert.Contains(t, contentStr, "for _, cluster := range", "Should have outer for-loop over clusters")
+	assert.Contains(t, contentStr, "for _, shard := range", "Should have middle for-loop over shards")
+	assert.Contains(t, contentStr, "for _, replica := range", "Should have inner for-loop over replicas")
+
+	// Verify nil checks for all arrays
+	assert.Contains(t, contentStr, "Clusters != nil")
+	assert.Contains(t, contentStr, "Shards != nil")
+	assert.Contains(t, contentStr, "Replicas != nil")
+
+	// Verify it appends keys with the innermost variable
+	assert.Contains(t, contentStr, "replica.SecretRef")
 }
 
 func TestArrayIndexerWithRequiredArrayContainer(t *testing.T) {

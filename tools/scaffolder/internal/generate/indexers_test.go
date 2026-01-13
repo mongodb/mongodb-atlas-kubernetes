@@ -140,7 +140,7 @@ spec:
 
 	// Array references are now supported (single-level)
 	assert.Contains(t, refs[0].FieldPath, ".items.")
-	assert.True(t, refs[0].IsArrayBased, "Should be marked as array-based")
+	assert.True(t, refs[0].IsArrayBased(), "Should be marked as array-based")
 	assert.Equal(t, "secretRef", refs[0].FieldName)
 }
 
