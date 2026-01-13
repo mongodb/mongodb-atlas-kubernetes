@@ -60,7 +60,7 @@ jobs:
         enable-cache: 'true'
 
     - name: Gen All checks
-      run: devbox run -- make clean gen-all fail-on-dirty
+      run: devbox run -- make clean gen-all check-missing-files
 
   failure-alert:
     name: Slack Alert on Failure
