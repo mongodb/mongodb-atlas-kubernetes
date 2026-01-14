@@ -35,7 +35,7 @@ for repo in "${repos[@]}"; do
 	pushd "${repo}"
 	git config --local --unset-all http.https://github.com/.extraheader || true
 	set +x
-	git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${repo}.git"
+	git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/mongodb-forks/${repo}.git"
 	# set -x # if needed
 	popd
 done
