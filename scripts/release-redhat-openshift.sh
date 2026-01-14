@@ -33,7 +33,7 @@ git reset --hard upstream/main
 
 cp -r "${operatorhub}" "${openshift}"
 
-git checkout -b "mongodb-atlas-operator-community-${version}"
+git checkout -b "mongodb-atlas-operator-community-${version}" || git checkout "mongodb-atlas-operator-community-${version}"
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "MongoDB Atlas Operator ${version}" --signoff
 if [ "${RH_DRYRUN}" == "false" ]; then

@@ -52,7 +52,7 @@ cd -
 pwd
 
 pushd "${REPO}"
-git checkout -b "mongodb-atlas-kubernetes-operator-${version}" origin/main
+git checkout -b "mongodb-atlas-kubernetes-operator-${version}" origin/main || git checkout "mongodb-atlas-kubernetes-operator-${version}"
 git pull --rebase upstream main
 popd
 
@@ -85,7 +85,7 @@ yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-
 
 pushd "${REPO}"
 git add "${REPO}/${version}"
-git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
+git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff || true
 if [ "${RH_DRYRUN}" == "false" ]; then
   git push -u origin "mongodb-atlas-kubernetes-operator-${version}"
 else
