@@ -16,10 +16,6 @@ on:
         - true
         - false
 
-  push:
-    branches:
-      - 'CLOUDP-361606/automate-rh-release'
-
 jobs:
   release-rh:
     runs-on: ubuntu-latest
@@ -52,8 +48,8 @@ jobs:
       env:
         RH_REPOS_DIR: ${{ runner.temp }}/rh-repos
         GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-        RH_DRYRUN: ${{ github.event.inputs.dryrun || 'true' }}
-        VERSION: ${{ github.event.inputs.version || '2.12.0' }}
+        RH_DRYRUN: ${{ github.event.inputs.dryrun }}
+        VERSION: ${{ github.event.inputs.version }}
       run: |
         git config --global user.name "release-bot[bot]"
         git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
