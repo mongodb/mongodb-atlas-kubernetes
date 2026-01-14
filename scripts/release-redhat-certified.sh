@@ -18,6 +18,16 @@ set -eou pipefail
 
 version=${1:-$VERSION}
 
+if [ -z "${version}" ]; then
+	echo "version is not set as arguiment or VERSION env var"
+	exit 1
+fi
+
+if [ -z "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}" ]; then
+	echo "RH_CERTIFIED_OPENSHIFT_REPO_PATH is not set"
+	exit 1
+fi
+
 echo -n "Determining SHA for arm64 ... "
 IMG_SHA_ARM64=$(docker \
   manifest inspect "quay.io/mongodb/mongodb-atlas-kubernetes-operator:${version}-certified" |
@@ -41,7 +51,15 @@ cd -
 
 pwd
 
-cp -r "releases/v${version}/bundle.Dockerfile releases/v${version}/bundle/manifests releases/v${version}/bundle/metadata" "releases/v${version}/bundle/tests" "${REPO}/${version}"
+pushd "${REPO}"
+git checkout -b "mongodb-atlas-kubernetes-operator-${version}" origin/main
+git pull --rebase upstream main
+popd
+
+cp -r "releases/v${version}/bundle.Dockerfile" \
+      "releases/v${version}/bundle/manifests" \
+      "releases/v${version}/bundle/metadata" \
+      "releases/v${version}/bundle/tests" "${REPO}/${version}"
 
 # Replace deployment image version with SHA256
 value="${IMG_SHA_AMD64}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
@@ -65,10 +83,13 @@ value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.i
 yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-v4.18" }' \
   "${REPO}/${version}"/metadata/annotations.yaml
 
-cd "${REPO}"
-git checkout -b "mongodb-atlas-kubernetes-operator-${version}" origin/main
-git pull --rebase upstream main
+pushd "${REPO}"
 git add "${REPO}/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
-git push -u origin "mongodb-atlas-kubernetes-operator-${version}"
+if [ "${RH_DRYRUN}" == "false" ]; then
+  git push -u origin "mongodb-atlas-kubernetes-operator-${version}"
+else
+  echo "DRYRUN Push (set RH_DRYRUN=true to push for real)"
+  git push -fu --dry-run -u origin "mongodb-atlas-kubernetes-operator-${version}"
+fi
 cd -

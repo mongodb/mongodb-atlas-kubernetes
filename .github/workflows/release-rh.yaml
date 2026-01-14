@@ -1,0 +1,57 @@
+name: Push release PRs to Redhat
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the operator to release"
+        required: true
+        type: string
+      dryrun:
+        description: "Dryrun would run everything local and dry-run the PR push"
+        default: true 
+        type: choice
+        required: true
+        options:
+        - true
+        - false
+
+  push:
+    branches:
+      - 'CLOUDP-361606/automate-rh-release'
+
+jobs:
+  release-rh:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+
+    - name: Generate GitHub App Token
+      id: generate_token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ secrets.AKO_RELEASER_APP_ID }}
+        private-key: ${{ secrets.AKO_RELEASER_RSA_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: mongodb-atlas-kubernetes
+    
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
+      with:
+        enable-cache: 'true'
+
+    - name: Push release PRs to Redhat
+      env:
+        RH_REPOS_DIR: ${{ runner.temp }}/rh-repos
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        RH_DRYRUN: ${{ github.event.inputs.dryrun || 'true' }}
+        VERSION: ${{ github.event.inputs.version || '2.12.0' }}
+      run: |
+        git config --global user.name "release-bot[bot]"
+        git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
+        devbox run -- 'make create-rh-repos reset-rh-creds release-rh'
