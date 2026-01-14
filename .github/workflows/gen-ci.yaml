@@ -1,0 +1,99 @@
+name: Generation CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'tools/scaffolder/**'
+      - 'tools/openapi2crd/**'
+      - 'config/openapi2crd.yaml'
+      - '.github/workflows/gen-ci.yaml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'tools/scaffolder/**'
+      - 'tools/openapi2crd/**'
+      - 'config/openapi2crd.yaml'
+      - '.github/workflows/gen-ci.yaml'
+
+jobs:
+
+  scaffolder:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+         go-version-file: "./tools/scaffolder/go.mod"
+
+    - name: Scaffolder CI checks
+      working-directory: ./tools/scaffolder
+      run: make ci
+
+  openapi2crd:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
+      with:
+        enable-cache: 'true'
+
+    - name: OpenAPI2CRD CI checks
+      working-directory: ./tools/openapi2crd
+      run: devbox run -- make ci
+
+  check-gen-all:
+    runs-on: ubuntu-latest
+    needs:
+    - scaffolder
+    - openapi2crd
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
+      with:
+        enable-cache: 'true'
+
+    - name: Gen All checks
+      run: devbox run -- make clean gen-all check-missing-files
+
+  failure-alert:
+    name: Slack Alert on Failure
+    environment: test
+    runs-on: ubuntu-latest
+    needs:
+      - scaffolder
+      - openapi2crd
+      - check-gen-all
+    if: failure()
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Send Slack Notification
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          chmod +x scripts/slackit.sh
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Detect which job specifically failed for the message
+          FAILED_JOBS=""
+          if [[ "${{ needs.scaffolder.result }}" == "failure" ]]; then FAILED_JOBS+="[Scaffolder] "; fi
+          if [[ "${{ needs.openapi2crd.result }}" == "failure" ]]; then FAILED_JOBS+="[OpenAPI2CRD] "; fi
+          if [[ "${{ needs.check-gen-all.result }}" == "failure" ]]; then FAILED_JOBS+="[GenAllChecks] "; fi
+
+          MSG="❌ *Critical Failure on Gen CI* | ${{ github.repository }}
+          Type: ${{ github.event_name }}
+          Failed: $FAILED_JOBS
+          <$RUN_URL|View Failing Logs>"
+
+          echo "$MSG" | ./scripts/slackit.sh
