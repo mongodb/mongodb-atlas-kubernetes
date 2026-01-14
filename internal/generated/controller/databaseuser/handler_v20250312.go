@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312011/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312012/admin"
 	v1 "k8s.io/api/core/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
