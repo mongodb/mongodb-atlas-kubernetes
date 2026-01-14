@@ -40,6 +40,34 @@ type ReferenceField struct {
 	ReferencedGroup   string
 	ReferencedVersion string
 	RequiredSegments  []bool
+	ArrayBoundaries   []ArrayBoundary // all array boundaries (empty if not array-based)
+}
+
+// ArrayBoundary represents a single array level in a nested array path
+type ArrayBoundary struct {
+	ArrayPath string // path to the array container
+	ItemPath  string // path within array item to the next array or final field
+}
+
+// IsArrayBased returns true if the reference is inside an array
+func (r ReferenceField) IsArrayBased() bool {
+	return len(r.ArrayBoundaries) > 0
+}
+
+// ArrayPath returns the path to the first array container (for backwards compatibility)
+func (r ReferenceField) ArrayPath() string {
+	if len(r.ArrayBoundaries) == 0 {
+		return ""
+	}
+	return r.ArrayBoundaries[0].ArrayPath
+}
+
+// ItemPath returns the path within the last array item (for backwards compatibility)
+func (r ReferenceField) ItemPath() string {
+	if len(r.ArrayBoundaries) == 0 {
+		return ""
+	}
+	return r.ArrayBoundaries[len(r.ArrayBoundaries)-1].ItemPath
 }
 
 type IndexerInfo struct {
@@ -223,6 +251,9 @@ func processKubernetesMapping(v map[string]any, path string, requiredSegments []
 		reqCopy := make([]bool, len(requiredSegments))
 		copy(reqCopy, requiredSegments)
 
+		// Parse all array boundaries for array support (single-level and nested)
+		arrayBoundaries := parseAllArrayBoundaries(path)
+
 		ref := ReferenceField{
 			FieldName:         fieldName,
 			FieldPath:         path,
@@ -230,6 +261,7 @@ func processKubernetesMapping(v map[string]any, path string, requiredSegments []
 			ReferencedGroup:   group,
 			ReferencedVersion: version,
 			RequiredSegments:  reqCopy,
+			ArrayBoundaries:   arrayBoundaries,
 		}
 		*references = append(*references, ref)
 	}
@@ -328,14 +360,9 @@ func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
 	}
 
 	// Group references by target kind (e.g., all Secret refs together, all Group refs together)
-	// Skip array-based references for now as they require iteration logic
+	// Both single-level and nested arrays are now supported
 	refsByKind := make(map[string][]ReferenceField)
 	for _, ref := range references {
-		// Skip references that are arrays for now
-		if strings.Contains(ref.FieldPath, ".items.") {
-			fmt.Printf("Skipping array-based reference %s in %s (array indexing not yet supported)\n", ref.FieldName, crdKind)
-			continue
-		}
 		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
 	}
 
@@ -464,36 +491,132 @@ func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 	code := make([]jen.Code, 0)
 
 	for _, field := range fields {
-		// Build the field path from the FieldPath
-		// FieldPath looks like: "properties.spec.properties.<version>.properties.groupRef"
-		// We need to convert this to: resource.Spec.<version>.GroupRef
-		fieldAccessPath := buildFieldAccessPath(field.FieldPath)
+		// Check if this is an array-based reference
+		if field.IsArrayBased() {
+			code = append(code, generateArrayFieldExtractionCode(field))
+		} else {
+			// Original non-array logic
+			fieldAccessPath := buildFieldAccessPath(field.FieldPath)
 
-		// Nil check if conditions
-		nilCheckCondition := buildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
+			// Nil check if conditions
+			nilCheckCondition := buildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
 
-		// Add check that the Name field is not empty
-		condition := nilCheckCondition.Op("&&").Add(
-			jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
-		)
+			// Add check that the Name field is not empty
+			condition := nilCheckCondition.Op("&&").Add(
+				jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
+			)
 
-		// Generate: if <nil checks> && resource.Spec.<version>.GroupRef.Name != "" {
-		//   keys = append(keys, types.NamespacedName{...}.String())
-		// }
-		code = append(code,
-			jen.If(condition).Block(
-				jen.Id("keys").Op("=").Append(
-					jen.Id("keys"),
-					jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
-						jen.Id("Name"):      jen.Id(fieldAccessPath).Dot("Name"),
-						jen.Id("Namespace"): jen.Id("resource").Dot("Namespace"),
-					}).Dot("String").Call(),
+			// Generate: if <nil checks> && resource.Spec.<version>.GroupRef.Name != "" {
+			//   keys = append(keys, types.NamespacedName{...}.String())
+			// }
+			code = append(code,
+				jen.If(condition).Block(
+					jen.Id("keys").Op("=").Append(
+						jen.Id("keys"),
+						jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+							jen.Id("Name"):      jen.Id(fieldAccessPath).Dot("Name"),
+							jen.Id("Namespace"): jen.Id("resource").Dot("Namespace"),
+						}).Dot("String").Call(),
+					),
 				),
-			),
-		)
+			)
+		}
 	}
 
 	return code
+}
+
+// generateArrayFieldExtractionCode generates code for extracting keys from array-based references.
+// This handles both single-level and nested arrays by generating appropriate nested loops.
+// Example for nested path: properties.spec.properties.regions.items.properties.notifications.items.properties.secretRef
+// Generates:
+//
+//	if resource.Spec.Regions != nil {
+//	    for _, region := range *resource.Spec.Regions {
+//	        if region.Notifications != nil {
+//	            for _, notification := range *region.Notifications {
+//	                if notification.SecretRef != nil && notification.SecretRef.Name != "" {
+//	                    keys = append(keys, ...)
+//	                }
+//	            }
+//	        }
+//	    }
+//	}
+func generateArrayFieldExtractionCode(field ReferenceField) jen.Code {
+	boundaries := field.ArrayBoundaries
+
+	// Build the nested structure from innermost to outermost
+	// Start with the innermost block (the append statement)
+	lastBoundary := boundaries[len(boundaries)-1]
+	lastItemPath := buildFieldAccessPath(lastBoundary.ItemPath)
+
+	// Determine the last loop variable name (from this boundary's array)
+	lastArrayParts := strings.Split(lastBoundary.ArrayPath, ".")
+	lastArrayFieldName := lastArrayParts[len(lastArrayParts)-1]
+	lastLoopVar := generateLoopVariableName(lastArrayFieldName)
+
+	// Build the final field path using the last loop variable
+	finalFieldPath := strings.Replace(lastItemPath, "resource", lastLoopVar, 1)
+
+	// Create the innermost block: if check and keys append
+	innermostBlock := jen.If(
+		jen.Id(finalFieldPath).Op("!=").Nil().Op("&&").Add(
+			jen.Id(finalFieldPath).Dot("Name").Op("!=").Lit(""),
+		),
+	).Block(
+		jen.Id("keys").Op("=").Append(
+			jen.Id("keys"),
+			jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+				jen.Id("Name"):      jen.Id(finalFieldPath).Dot("Name"),
+				jen.Id("Namespace"): jen.Id("resource").Dot("Namespace"),
+			}).Dot("String").Call(),
+		),
+	)
+
+	// Now build the nested loops from innermost to outermost
+	currentBlock := innermostBlock
+
+	// Process boundaries from the last down to index 1 (skip the first boundary for now)
+	for i := len(boundaries) - 1; i >= 1; i-- {
+		boundary := boundaries[i]
+		prevBoundary := boundaries[i-1]
+
+		// Get the previous loop variable name
+		prevArrayParts := strings.Split(prevBoundary.ArrayPath, ".")
+		prevArrayFieldName := prevArrayParts[len(prevArrayParts)-1]
+		prevLoopVar := generateLoopVariableName(prevArrayFieldName)
+
+		// Get the current loop variable name from this boundary's array
+		arrayParts := strings.Split(boundary.ArrayPath, ".")
+		arrayFieldName := arrayParts[len(arrayParts)-1]
+		loopVar := generateLoopVariableName(arrayFieldName)
+
+		// Build the array access path from the previous boundary's ItemPath
+		// This tells us how to get from the previous loop variable to this array
+		arrayAccessFromPrev := buildFieldAccessPath(prevBoundary.ItemPath)
+		arrayAccessInLoop := strings.Replace(arrayAccessFromPrev, "resource", prevLoopVar, 1)
+
+		// Wrap current block in a for loop with nil check
+		currentBlock = jen.If(jen.Id(arrayAccessInLoop).Op("!=").Nil()).Block(
+			jen.For(
+				jen.List(jen.Id("_"), jen.Id(loopVar)).Op(":=").Range().Op("*").Id(arrayAccessInLoop),
+			).Block(currentBlock),
+		)
+	}
+
+	// Handle the first/outermost boundary
+	firstBoundary := boundaries[0]
+	firstArrayAccessPath := buildFieldAccessPath(firstBoundary.ArrayPath)
+	firstArrayParts := strings.Split(firstBoundary.ArrayPath, ".")
+	firstArrayFieldName := firstArrayParts[len(firstArrayParts)-1]
+	firstLoopVar := generateLoopVariableName(firstArrayFieldName)
+
+	// Wrap in the outermost nil check and for loop
+	return jen.If(jen.Id(firstArrayAccessPath).Op("!=").Nil()).Block(
+		jen.For(
+			jen.List(jen.Id("_"), jen.Id(firstLoopVar)).Op(":=").Range().Op("*").Id(firstArrayAccessPath),
+		).Block(currentBlock),
+	)
 }
 
 func buildFieldAccessPath(fieldPath string) string {
@@ -503,9 +626,20 @@ func buildFieldAccessPath(fieldPath string) string {
 	for i := 0; i < len(parts); i++ {
 		part := parts[i]
 
-		// Skip "properties" and "items" keywords. Array based indexers are not supported for now
-		if part == "properties" || part == "items" {
+		// Skip "properties" keyword
+		if part == "properties" {
 			continue
+		}
+
+		// Skip "items" only if it's the schema marker (followed by "properties")
+		// Keep "items" if it's an actual field name (last part or followed by something other than "properties")
+		if part == "items" {
+			// Check if this is the schema marker: ".items.properties."
+			if i+1 < len(parts) && parts[i+1] == "properties" {
+				// This is the schema marker, skip it
+				continue
+			}
+			// Otherwise, it's a field name, keep it
 		}
 
 		// Capitalize the first letter
@@ -520,6 +654,88 @@ func capitalizeFirst(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// parseAllArrayBoundaries parses a field path and returns all array boundaries.
+// This supports nested arrays by finding all .items.properties. patterns.
+// Example: "properties.spec.properties.regions.items.properties.notifications.items.properties.secretRef"
+// Returns: [
+//
+//	{ArrayPath: "properties.spec.properties.regions", ItemPath: "properties.notifications"},
+//	{ArrayPath: "properties.notifications", ItemPath: "properties.secretRef"}
+//
+// ]
+func parseAllArrayBoundaries(fieldPath string) []ArrayBoundary {
+	var boundaries []ArrayBoundary
+
+	// Split by ".items.properties." to find all array boundaries
+	const delimiter = ".items.properties."
+	parts := strings.Split(fieldPath, delimiter)
+
+	if len(parts) <= 1 {
+		// No arrays found
+		return nil
+	}
+
+	// Each part except the last represents an array container
+	// The item path is derived from the next part
+	for i := 0; i < len(parts)-1; i++ {
+		arrayPath := parts[i]
+
+		// For nested arrays (i > 0), we need to get just the array field name
+		// from the previous item path
+		if i > 0 {
+			// The arrayPath here is relative to the previous loop variable
+			// Extract just the array field name
+			arrayPath = "properties." + extractArrayFieldFromItemPath(parts[i])
+		}
+
+		// The item path is the next part (after splitting, parts won't contain ".items.")
+		itemPath := "properties." + parts[i+1]
+
+		boundaries = append(boundaries, ArrayBoundary{
+			ArrayPath: arrayPath,
+			ItemPath:  itemPath,
+		})
+	}
+
+	return boundaries
+}
+
+// extractArrayFieldFromItemPath extracts the array field name from an item path
+// For "config.properties.notifications", it returns "notifications" (the last field - the array)
+// For "notifications", it returns "notifications"
+func extractArrayFieldFromItemPath(path string) string {
+	// Handle paths like "notifications" or "config.properties.notifications"
+	path = strings.TrimPrefix(path, "properties.")
+
+	// For nested paths like "config.properties.notifications", we want the last segment (the array name)
+	lastPropertiesIdx := strings.LastIndex(path, ".properties.")
+	if lastPropertiesIdx >= 0 {
+		return path[lastPropertiesIdx+len(".properties."):] // skip ".properties."
+	}
+
+	return path
+}
+
+func generateLoopVariableName(arrayFieldName string) string {
+	if arrayFieldName == "" {
+		return "item"
+	}
+
+	name := strings.ToLower(arrayFieldName)
+
+	if strings.HasSuffix(name, "ies") {
+		return name[:len(name)-3] + "y"
+	}
+	if strings.HasSuffix(name, "ses") || strings.HasSuffix(name, "ches") || strings.HasSuffix(name, "xes") {
+		return name[:len(name)-2]
+	}
+	if strings.HasSuffix(name, "s") {
+		return name[:len(name)-1]
+	}
+
+	return name + "Item"
 }
 
 // buildNilCheckConditions creates a compound nil check condition for a field access path

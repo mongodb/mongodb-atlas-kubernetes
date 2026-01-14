@@ -138,7 +138,10 @@ spec:
 	require.NoError(t, err)
 	require.Len(t, refs, 1)
 
+	// Array references are now supported (single-level)
 	assert.Contains(t, refs[0].FieldPath, ".items.")
+	assert.True(t, refs[0].IsArrayBased(), "Should be marked as array-based")
+	assert.Equal(t, "secretRef", refs[0].FieldName)
 }
 
 func TestParseReferenceFields_RequiredSegments(t *testing.T) {
@@ -374,7 +377,7 @@ spec:
 		assert.Contains(t, contentStr, `"sigs.k8s.io/controller-runtime/pkg/reconcile"`)
 	})
 
-	t.Run("SkipArrayReferences", func(t *testing.T) {
+	t.Run("GenerateSingleLevelArrayIndexers", func(t *testing.T) {
 		arrayYAML := `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -422,10 +425,16 @@ spec:
 		err = GenerateIndexers(arrayFile, "AlertConfig", arrayOutputDir)
 		require.NoError(t, err)
 
+		// Single-level arrays should now generate indexers
 		files, err := os.ReadDir(arrayOutputDir)
-		if err == nil {
-			assert.Empty(t, files, "No indexer files should be generated for array references")
-		}
+		require.NoError(t, err)
+		assert.NotEmpty(t, files, "Indexer files should be generated for single-level arrays")
+
+		// Verify the generated indexer has loop code
+		indexerFile := filepath.Join(arrayOutputDir, "alertconfigbysecret.go")
+		content, err := os.ReadFile(indexerFile)
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "for _, ", "Should have for-loop for array iteration")
 	})
 }
 
