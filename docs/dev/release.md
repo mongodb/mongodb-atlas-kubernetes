@@ -198,105 +198,18 @@ All bundles/package manifests for Operators for operatorhub.io reside in the fol
 * https://github.com/redhat-openshift-ecosystem/community-operators-prod - Kubernetes Operators that appear on [OpenShift](https://openshift.com/) and [OKD](https://www.okd.io/)
 * https://github.com/redhat-openshift-ecosystem/certified-operators - Red Hat certified Kubernetes Operators
 
-### Fork/Update the community operators repositories
+All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHat](../../.github/workflows/release-rh.yaml). This can also be run from the CLI using make, please look [at the code](../../.github/workflows/release-rh.yaml) for more details.
 
-**Note**: this has to be done once only. 
+The workflow needs 2 parameters:
+- The `version` to release, which is **required**.
+- Whether or not this is a `dryrun`. Set to `false` to do the actual release.
 
-First ensure your SSH keys in [https://github.com/settings/keys] are authorized for `mongodb-forks` MongoDB SSO.
+Note when the dryrun is `true` the workflow does everything, except the `git push` is dry run, which should test access credentials, but not make the push really happen.
 
-Execute the following steps:
-
-1. Clone each of the above forked OLM repositories from https://github.com/mongodb-forks
-2. Add `upstream` remotes
-3. Export each cloned repository directory in environment variables
-
-#### community-operators repository
-```
-git clone git@github.com:mongodb-forks/community-operators.git
-git remote add upstream https://github.com/k8s-operatorhub/community-operators.git
-export RH_COMMUNITY_OPERATORHUB_REPO_PATH=$PWD/community-operators
-```
-#### community-operators-prod repository
-```
-git clone git@github.com:mongodb-forks/community-operators-prod.git
-git remote add upstream https://github.com/redhat-openshift-ecosystem/community-operators-prod.git
-export RH_COMMUNITY_OPENSHIFT_REPO_PATH=$PWD/community-operators-prod
-```
-#### certified-operators repository
-```
-git clone git@github.com:mongodb-forks/certified-operators.git
-git remote add upstream https://github.com/redhat-openshift-ecosystem/certified-operators
-export RH_CERTIFIED_OPENSHIFT_REPO_PATH=$PWD/certified-operators
-```
-
-### Create a Pull Request for the `community-operators` repository
-
-1. Ensure the `RH_COMMUNITY_OPERATORHUB_REPO_PATH` environment variable is set.
-2. Invoke the following script with `<version>` set to `1.0.0` (don't use a `v` prefix):
-```
-./scripts/release-redhat.sh <version>
-```
-
-You can see an [example fixed PR here on Community Operators for version 1.9.1](https://github.com/k8s-operatorhub/community-operators/pull/3457).
-
-Create the PR to the main repository and wait until CI jobs get green. 
-After the PR is approved and merged - it will soon get available on https://operatorhub.io
-
-### Create a Pull Request for the `community-operators-prod` repository
-
-1. Ensure the `RH_COMMUNITY_OPENSHIFT_REPO_PATH` environment variable is set.
-2. Invoke the following script with `<version>` set to `1.0.0` (don't use a `v` prefix):
-```
-./scripts/release-redhat-openshift.sh <version>
-```
-
-Submit the PR to the upstream repository and wait until CI jobs get green.
-
-**Note**: It is required that the PR consists of only one commit - you may need to do
-`git rebase -i HEAD~2; git push origin +mongodb-atlas-operator-community-<version>` if you need to squash multiple commits into one and perform force push)
-
-After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
-
-### Create a Pull Request for the `certified-operators` repository
-
-This is necessary for the Operator to appear on "operators" tab in Openshift clusters in the "certified" section.
-Ensure the `RH_CERTIFIED_OPENSHIFT_REPO_PATH` environment variable is set.
-
-Invoke the following script and ensure to have the `VERSION` variable set from above:
-```
-./scripts/release-redhat-certified.sh
-```
-
-Then go the GitHub and create a PR
-from the `mongodb-fork` repository to https://github.com/redhat-openshift-ecosystem/certified-operators (`origin`).
-
-Note: For some reason, the certified OpenShift metadata does not use the multi arch image reference at all, and only understand direct architecture image references.
-
-You can see an [example fixed PR here for certified version 1.9.1](https://github.com/redhat-openshift-ecosystem/certified-operators/pull/3020).
-
-After the PR is approved it will soon appear in the [Atlas Operator openshift cluster](https://console-openshift-console.apps.atlas.operator.mongokubernetes.com)
-
-### Fix a RedHat PR
-
-If there is a bug in the Redhat PRs, those are best fixed by closing the wrong PR in review and re-issuing a new one from a freshly made branch.
-
-In order to redo a PR:
-
-1. Close the broken PR(s) at Github.
-1. Fix the isue in the AKO code and merge it.
-1. Reset the local repo copy to re-issue the release using `./script/reset-rh.sh`
-1. Issue the PR again following the normal instructions above for each PR.
-
-The `./script/reset-rh.sh` script usage is:
-
-```shell
-$ ./script/reset-rh.sh all # to reset all 3 repos
-```
-Or select one or more of `community`, `openshift` or `certified` separated by commas to reset one or more selectively. For example:
-```shell
-$ ./script/reset-rh.sh community,certified # to reset community and certified repos only
-```
-
+Once the workflow ends sucessfully, pleasego to the projects PR tabs and complete the PRs to review at:
+* https://github.com/k8s-operatorhub/community-operators/pulls
+* https://github.com/redhat-openshift-ecosystem/community-operators-prod/pulls
+* https://github.com/redhat-openshift-ecosystem/certified-operators/pulls
 
 # Post install hook release
 
