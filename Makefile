@@ -945,4 +945,3 @@ send-sboms: ## Send the SBOMs to Kondukto
 .PHONY: check-kubernetes-versions
 check-kubernetes-versions: ## Check the Kubernetes versions are supported
 	./scripts/check-kube-versions.sh
-

@@ -4,9 +4,6 @@ on:
   schedule:
     - cron: '0 0 * * 1'  # Run every Monday at 00:00 UTC (midnight)
   workflow_dispatch:
-  push:
-    branches:
-      - 'CLOUDP-361606/autocheck-kube-versions'  # Temporary: for testing this PR
 
 jobs:
   check-kubernetes-versions:
