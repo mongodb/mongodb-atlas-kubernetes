@@ -58,17 +58,22 @@ Once release notes and documentation are approved, trigger the [`release-image.y
 
 You will be prompted to enter:
 
-| Input       | Description                                                                                         | Required | Default  | Example                               |
-|-------------|-----------------------------------------------------------------------------------------------------|----------|----------|---------------------------------------|
-| `version`   | The version to be released in the samiliar X.Y.Z formmat, without the `v` prefix. | Yes | None| 2.11.0
-| `authors`   | A comma-separated list of MongoDB email addresses responsible for the release                       | Yes      | None     | `alice@mongodb.com,bob@mongodb.com`   |
-| `image_sha` | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest` | `3e79a3f`.                            |
+| Input          | Description                                                                                         | Required | Default       | Example                               |
+|----------------|-----------------------------------------------------------------------------------------------------|----------|---------------|---------------------------------------|
+| `version`      | The version to be released in the similar X.Y.Z format, without the `v` prefix                    | Yes      | None          | 2.11.0                                |
+| `authors`      | A comma-separated list of MongoDB email addresses responsible for the release                       | Yes      | None          | `alice@mongodb.com,bob@mongodb.com`   |
+| `image_sha`    | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest`      | `3e79a3f`                             |
+| `release_type` | Either `pre-release` or `official-release`. Official releases post to official registries           | No       | `pre-release` | `official-release`                    |
 
-The input `version` is just **safety check** to ensure the intent is to release the same version that was already tagged in the image already tested and ready for release. The workflow will fail if the input does not match the expected version.
+The input `version` is a **safety check** to ensure the intent is to release the same version that was already tagged in the image already tested and ready for release. The workflow will fail if the input does not match the expected version from `version.json`.
 
 The input `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
 
 The `image_sha` corresponds exactly to the 7-character Git commit SHA used to build the operator image; for example, `image_sha: 3e79a3f` means the image was built from Git commit `3e79a3f`. Using `latest` as the `image_sha` means the workflow will release the most recently promoted and tested operator image—not necessarily the latest Git commit—and when `latest` is used, the workflow will echo the corresponding Git commit during the internal steps so the user knows exactly which source is being released.
+
+The `release_type` input determines which Docker registries the images are published to:
+- `pre-release` (default): Images are published to `mongodb/mongodb-atlas-kubernetes-operator-prerelease` registries
+- `official-release`: Images are published to `mongodb/mongodb-atlas-kubernetes-operator` registries (official release registries)
 
 ### Example Release Input
 
@@ -88,14 +93,22 @@ image_sha: latest
 
 ### What Happens Next
 
-Once triggered:
+Once triggered, the release workflow performs the following automated steps:
 
-- A release PR is created that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` directories)
-- The directories `deploy/` and `helm-charts/` are also updated at the root of the repository with the same contents as in the `release/<version>`. This is because both the [helm charts repository](https://github.com/mongodb/helm-charts/) and the [Kubernetes CLI plugin|https://github.com/mongodb/atlas-cli-plugin-kubernetes] require the versions referenced in there to be the source of truth for the latest release matching the tagged version.
-- A Git tag of the form `v<version>` is created and pushed on GitHub
-- A GitHub release is published with:
-  - Zipped `all-in-one.yml`
-  - SDLC-compliant artifacts: SBOMs and compliance reports
+1. **Image Promotion**: Moves the promoted image from prerelease registries to official release registries (for official releases)
+2. **OpenShift Certification**: Creates OpenShift certified images on Quay.io (tagged with `-certified` suffix) and optionally submits them for certification (for official releases)
+3. **Image Signing**: Signs all released images using PKCS11 signing for security and compliance
+4. **SBOM Generation**: Generates SBOMs for both `linux-amd64` and `linux-arm64` platforms
+5. **SDLC Compliance**: Creates SDLC compliance reports
+6. **Artifact Generation**: Generates deployment configurations (bundle, helm charts, all-in-one.yml)
+7. **Version Management**: Automatically bumps the `version.json` file (sets `current` to the released version and `next` to the next minor version)
+8. **Helm Charts Sync**: Triggers the Helm charts sync workflow to automatically update the [helm-charts repository](https://github.com/mongodb/helm-charts)
+9. **Release PR Creation**: Creates a release PR that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` directories)
+10. **Root Updates**: Updates the directories `deploy/` and `helm-charts/` at the root of the repository with the same contents as in the `release/<version>`. This is because both the [helm charts repository](https://github.com/mongodb/helm-charts/) and the [Kubernetes CLI plugin](https://github.com/mongodb/atlas-cli-plugin-kubernetes) require the versions referenced in there to be the source of truth for the latest release matching the tagged version.
+11. **Git Tagging**: Creates and pushes a Git tag of the form `v<version>` on GitHub
+12. **GitHub Release**: Publishes a GitHub release (as draft) with:
+    - Zipped `all-in-one.yml`
+    - SDLC-compliant artifacts: SBOMs and compliance reports
 
 The only manual step is to **review and merge** the release PR. This PR does **not** re-run any of the expensive tests on cloud-qa.
 
@@ -152,6 +165,8 @@ The SBOM upload and augmentation process is automated via the [Send SBOMs to Kon
    - Download the SBOM files from the GitHub release for both `linux-amd64` and `linux-arm64` platforms
    - Augment both SBOMs with Kondukto scan results using Silkbomb 2.0
    - Complete the SSDLC compliance process
+
+**Note**: SBOMs are automatically generated during the release process, but the Kondukto upload must be triggered manually after the release is published.
 
 ## Synchronize configuration changes with the Helm Charts
 
