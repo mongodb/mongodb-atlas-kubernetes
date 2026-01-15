@@ -1,0 +1,32 @@
+name: Send SBOMs to Kondukto
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the operator to send SBOMs for"
+        required: true
+        type: string
+
+jobs:
+  send-sboms:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Install devbox
+      uses: jetify-com/devbox-install-action@v0.14.0
+      with:
+        enable-cache: 'true'
+
+    - name: Send SBOMs to Kondukto
+      env:
+        VERSION: ${{ github.event.inputs.version }}
+        KONDUKTO_TOKEN: ${{ secrets.KONDUKTO_TOKEN }}
+      run: |
+        devbox run -- make send-sboms
+

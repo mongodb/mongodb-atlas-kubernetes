@@ -143,7 +143,7 @@ CONTAINER_SPEC=.spec.template.spec.containers[0]
 
 KONDUKTO_REPO="mongodb/mongodb-atlas-kubernetes"
 # branch prefix 'main' is always used currently
-KONDUKTO_BRANCH_PREFIX=$(shell git rev-parse --abbrev-ref HEAD)
+KONDUKTO_BRANCH_PREFIX=main
 
 HELM_REPO_URL = "https://mongodb.github.io/helm-charts"
 HELM_AKO_INSTALL_NAME = local-ako-install
@@ -218,6 +218,12 @@ RH_REPOS_DIR ?= $(TMPDIR)/rh-repos
 RH_COMMUNITY_OPERATORHUB_REPO_PATH := $(RH_REPOS_DIR)/community-operators
 RH_COMMUNITY_OPENSHIFT_REPO_PATH := $(RH_REPOS_DIR)/community-operators-prod
 RH_CERTIFIED_OPENSHIFT_REPO_PATH := $(RH_REPOS_DIR)/certified-operators
+
+RELEASES_URL = https://github.com/mongodb/mongodb-atlas-kubernetes/releases/
+RELEASE_SBOM_INTEL = $(RELEASES_URL)/download/v$(VERSION)/linux_amd64.sbom.json
+RELEASE_SBOM_ARM = $(RELEASES_URL)/download/v$(VERSION)/linux_arm64.sbom.json
+RELEASE_SBOM_FILE_INTEL = $(TMPDIR)/linux_amd64.sbom.json
+RELEASE_SBOM_FILE_ARM = $(TMPDIR)/linux_arm64.sbom.json
 
 .DEFAULT_GOAL := help
 .PHONY: help
@@ -929,3 +935,10 @@ release-rh: ## Push the release PRs to the Red Hat repos
 	RH_COMMUNITY_OPENSHIFT_REPO_PATH=$(RH_COMMUNITY_OPENSHIFT_REPO_PATH) \
 	RH_CERTIFIED_OPENSHIFT_REPO_PATH=$(RH_CERTIFIED_OPENSHIFT_REPO_PATH) \
 	VERSION=$(VERSION) RH_DRYRUN=$(RH_DRYRUN) ./scripts/release-rh.sh
+
+.PHONY: send-sboms
+send-sboms: ## Send the SBOMs to Kondukto
+	curl -L $(RELEASE_SBOM_INTEL) > $(RELEASE_SBOM_FILE_INTEL)
+	curl -L $(RELEASE_SBOM_ARM) > $(RELEASE_SBOM_FILE_ARM)
+	make augment-sbom SBOM_JSON_FILE="$(RELEASE_SBOM_FILE_INTEL)"
+	make augment-sbom SBOM_JSON_FILE="$(RELEASE_SBOM_FILE_ARM)"
