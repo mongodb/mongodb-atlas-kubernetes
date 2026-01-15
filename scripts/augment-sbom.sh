@@ -54,7 +54,7 @@ echo "Computed Kondukto branch: ${kondukto_branch}"
 
 # Download
 mkdir -p "${target_dir}"
-docker run --platform="${docker_platform}" -it --rm -v "${PWD}":/pwd \
+docker run --platform="${docker_platform}" --rm -v "${PWD}":/pwd \
   -e KONDUKTO_TOKEN="${kondukto_token}" \
   "${silkbomb_img}" augment --sbom-in "/pwd/${sbom_lite_json}" \
   --repo "${kondukto_repo}" --branch "${kondukto_branch}" --sbom-out "/pwd/${target}"
