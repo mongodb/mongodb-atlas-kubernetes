@@ -291,7 +291,8 @@ func TestRegularDeployment(t *testing.T) {
 			},
 			expectedError: "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
 		},
-		"Instance size is misconfigured": {
+		// No error expected here. See: https://jira.mongodb.org/browse/CLOUDP-373560
+		"Instance sizes are different": {
 			spec: &akov2.AdvancedDeploymentSpec{
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
@@ -310,7 +311,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
+			expectedError: "",
 		},
 		"Instance size is out of autoscaling range": {
 			spec: &akov2.AdvancedDeploymentSpec{
