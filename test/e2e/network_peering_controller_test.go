@@ -314,7 +314,7 @@ func networkPeerControllerFlow(ctx context.Context, userData *model.TestDataProv
 
 	By("Create network containers from CRs and update their IDs", func() {
 		for i, pair := range pairs {
-			container := pair.container
+			container := pair.container.DeepCopy()
 			container.Spec.ProjectRef = &common.ResourceRefNamespaced{
 				Name:      userData.Project.Name,
 				Namespace: userData.Project.Namespace,
@@ -337,7 +337,7 @@ func networkPeerControllerFlow(ctx context.Context, userData *model.TestDataProv
 
 	By("Create network peer from CRs", func() {
 		for i, pair := range pairs {
-			peer := pair.peering
+			peer := pair.peering.DeepCopy()
 			peer.Spec.ProjectRef = &common.ResourceRefNamespaced{
 				Name:      userData.Project.Name,
 				Namespace: userData.Project.Namespace,
