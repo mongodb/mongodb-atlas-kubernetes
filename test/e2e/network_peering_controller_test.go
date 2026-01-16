@@ -313,8 +313,8 @@ func networkPeerControllerFlow(ctx context.Context, userData *model.TestDataProv
 	})
 
 	By("Create network containers from CRs and update their IDs", func() {
-		for i, pair := range pairs {
-			container := pair.container
+		for i := range pairs {
+			container := pairs[i].container.DeepCopy()
 			container.Spec.ProjectRef = &common.ResourceRefNamespaced{
 				Name:      userData.Project.Name,
 				Namespace: userData.Project.Namespace,
@@ -322,12 +322,14 @@ func networkPeerControllerFlow(ctx context.Context, userData *model.TestDataProv
 			container.Name = fmt.Sprintf("container-%s-item-%d", userData.Prefix, i)
 			container.Namespace = userData.Project.Namespace
 			Expect(userData.K8SClient.Create(userData.Context, container)).Should(Succeed())
+			// Update original pair with the created container's metadata for later reference
+			pairs[i].container = container
 		}
-		for _, pair := range pairs {
-			key := client.ObjectKeyFromObject(pair.container)
+		for i := range pairs {
+			key := client.ObjectKeyFromObject(pairs[i].container)
 			Eventually(func(g Gomega) bool {
-				Expect(userData.K8SClient.Get(userData.Context, key, pair.container)).Should(Succeed())
-				return pair.container.Status.ID != ""
+				Expect(userData.K8SClient.Get(userData.Context, key, pairs[i].container)).Should(Succeed())
+				return pairs[i].container.Status.ID != ""
 			}).WithTimeout(3*time.Minute).WithPolling(20*time.Second).Should(
 				BeTrue(),
 				"Network Containers CRs should be created with an Atlas ID set in the status",
@@ -336,16 +338,18 @@ func networkPeerControllerFlow(ctx context.Context, userData *model.TestDataProv
 	})
 
 	By("Create network peer from CRs", func() {
-		for i, pair := range pairs {
-			peer := pair.peering
+		for i := range pairs {
+			peer := pairs[i].peering.DeepCopy()
 			peer.Spec.ProjectRef = &common.ResourceRefNamespaced{
 				Name:      userData.Project.Name,
 				Namespace: userData.Project.Namespace,
 			}
 			peer.Name = fmt.Sprintf("%s-item-%d", userData.Prefix, i)
 			peer.Namespace = userData.Project.Namespace
-			peer.Spec.ContainerRef.ID = pair.container.Status.ID
+			peer.Spec.ContainerRef.ID = pairs[i].container.Status.ID
 			Expect(userData.K8SClient.Create(userData.Context, peer)).Should(Succeed())
+			// Update original pair with the created peering's metadata for later reference
+			pairs[i].peering = peer
 		}
 	})
 
