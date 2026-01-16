@@ -49,7 +49,7 @@ yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].imag
 # commit
 git checkout -b "mongodb-atlas-operator-community-${version}" || git checkout "mongodb-atlas-operator-community-${version}"
 git add "${version}"
-git commit -m "MongoDB Atlas Operator ${version}" --signoff
+git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
 if [ "${RH_DRYRUN}" == "false" ]; then
   git push origin "mongodb-atlas-operator-community-${version}"
 else
