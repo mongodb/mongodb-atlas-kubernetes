@@ -1,0 +1,55 @@
+name: Check Kubernetes Versions
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Run every Monday at 00:00 UTC (midnight)
+  workflow_dispatch:
+
+jobs:
+  check-kubernetes-versions:
+    name: Check Kubernetes Versions
+    runs-on: ubuntu-latest
+    environment: test
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
+        with:
+          enable-cache: 'true'
+      
+      - name: Check Kubernetes Versions
+        run: devbox run -- 'make check-kubernetes-versions'
+
+  failure-alert:
+    name: Slack Alert on Failure
+    environment: test
+    runs-on: ubuntu-latest
+    needs:
+      - check-kubernetes-versions
+    if: >-
+      always() &&
+      needs.check-kubernetes-versions.result == 'failure' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Send Slack Notification
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          chmod +x scripts/slackit.sh
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          MSG="❌ *Kubernetes Versions Check Failed* | ${{ github.repository }}
+          Type: ${{ github.event_name }}
+          <$RUN_URL|View Failing Logs>
+
+          echo "$MSG" | ./scripts/slackit.sh

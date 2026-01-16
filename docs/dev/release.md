@@ -21,11 +21,15 @@ Most tools are automatically installed for you. Most of them are Go binaries and
 - [devbox](https://www.jetify.com/devbox) to be able to enter a sandbox development environment that includes necessary tools for the release process.
 - [Docker](https://www.docker.com/) to be able to deal with containers.
 
-## Release preparations (minimum n-1 weeks before the actual release)
+## Kubernetes version updates
 
-At least **one** (1) week before the release the Kubernetes Version testing matrix has to be updated both in this repository and the CLI repository https://github.com/mongodb/mongodb-atlas-cli.
+The Kubernetes Version testing matrix is automatically checked via CI, Every week an automated workflow:
+- Monitors Kubernetes and OpenShift version support policy compliance
+- Alerts the team via Slack when version updates are required or the check fails
 
-Please refer to the [CI documentation](ci.md#kubernetes-version-matrix) and submit a pull request, example: https://github.com/mongodb/mongodb-atlas-kubernetes/pull/2161 or https://github.com/mongodb/mongodb-atlas-kubernetes/pull/2082.
+**No manual action is required** unless you receive an alert or the automated check fails. If an alert is received or the check fails, please refer to the [Updating Kubernetes Versions documentation](update-kubernetes-version.md)
+
+Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yaml) ran successfully recently to ensure versions are up to date.
 
 ## A Note on Versioning with `version.json`
 

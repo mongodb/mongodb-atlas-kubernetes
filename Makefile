@@ -941,3 +941,7 @@ send-sboms: ## Send the SBOMs to Kondukto
 	curl -L $(RELEASE_SBOM_ARM) > $(RELEASE_SBOM_FILE_ARM)
 	make augment-sbom SBOM_JSON_FILE="$(RELEASE_SBOM_FILE_INTEL)"
 	make augment-sbom SBOM_JSON_FILE="$(RELEASE_SBOM_FILE_ARM)"
+
+.PHONY: check-kubernetes-versions
+check-kubernetes-versions: ## Check the Kubernetes versions are supported
+	./scripts/check-kube-versions.sh
