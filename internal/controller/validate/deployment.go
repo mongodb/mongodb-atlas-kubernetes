@@ -77,7 +77,6 @@ func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment) error {
 
 func regularDeployment(spec *akov2.AdvancedDeploymentSpec) error {
 	var autoscaling akov2.AdvancedAutoScalingSpec
-	var instanceSize string
 	for _, replicaSetSpec := range spec.ReplicationSpecs {
 		for _, regionConfig := range replicaSetSpec.RegionConfigs {
 			if err := providerConfig(regionConfig); err != nil {
@@ -85,10 +84,6 @@ func regularDeployment(spec *akov2.AdvancedDeploymentSpec) error {
 			}
 
 			if err := autoscalingForDeployment(regionConfig.AutoScaling, firstSetAutoscaling(&autoscaling, regionConfig)); err != nil {
-				return err
-			}
-
-			if err := instanceSizeForDeployment(regionConfig, firstNonEmptyInstanceSize(&instanceSize, regionConfig)); err != nil {
 				return err
 			}
 
@@ -127,24 +122,6 @@ func autoscalingForDeployment(autoscaling, previousAutoscaling *akov2.AdvancedAu
 
 	if cmp.Diff(autoscaling, previousAutoscaling, cmpopts.EquateEmpty()) != "" {
 		return errors.New("autoscaling must be the same for all regions and across all replication specs for advanced deployment")
-	}
-
-	return nil
-}
-
-func instanceSizeForDeployment(regionConfig *akov2.AdvancedRegionConfig, instanceSize string) error {
-	err := errors.New("instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment")
-
-	if regionConfig.ElectableSpecs != nil && regionConfig.ElectableSpecs.InstanceSize != instanceSize {
-		return err
-	}
-
-	if regionConfig.ReadOnlySpecs != nil && regionConfig.ReadOnlySpecs.InstanceSize != instanceSize {
-		return err
-	}
-
-	if regionConfig.AnalyticsSpecs != nil && regionConfig.AnalyticsSpecs.InstanceSize != instanceSize {
-		return err
 	}
 
 	return nil

@@ -291,7 +291,8 @@ func TestRegularDeployment(t *testing.T) {
 			},
 			expectedError: "autoscaling must be the same for all regions and across all replication specs for advanced deployment",
 		},
-		"Instance size is misconfigured": {
+		// No error expected here. See: https://jira.mongodb.org/browse/CLOUDP-373560
+		"Instance sizes are different": {
 			spec: &akov2.AdvancedDeploymentSpec{
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
@@ -310,7 +311,7 @@ func TestRegularDeployment(t *testing.T) {
 					},
 				},
 			},
-			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
+			expectedError: "",
 		},
 		"Instance size is out of autoscaling range": {
 			spec: &akov2.AdvancedDeploymentSpec{
@@ -486,61 +487,6 @@ func TestAutoscalingForDeployment(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := autoscalingForDeployment(tt.autoscaling, tt.previousAutoscaling)
-			if tt.expectedError != "" {
-				assert.EqualError(t, err, tt.expectedError)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestInstanceSizeForDeployment(t *testing.T) {
-	tests := map[string]struct {
-		regionConfig  *akov2.AdvancedRegionConfig
-		instanceSize  string
-		expectedError string
-	}{
-		"All specs are nil": {
-			regionConfig:  &akov2.AdvancedRegionConfig{},
-			instanceSize:  "M3",
-			expectedError: "",
-		},
-		"ElectableSpecs instance size mismatch": {
-			regionConfig: &akov2.AdvancedRegionConfig{
-				ElectableSpecs: &akov2.Specs{InstanceSize: "M20"},
-			},
-			instanceSize:  "M30",
-			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
-		},
-		"ReadOnlySpecs instance size mismatch": {
-			regionConfig: &akov2.AdvancedRegionConfig{
-				ReadOnlySpecs: &akov2.Specs{InstanceSize: "M20"},
-			},
-			instanceSize:  "M30",
-			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
-		},
-		"AnalyticsSpecs instance size mismatch": {
-			regionConfig: &akov2.AdvancedRegionConfig{
-				AnalyticsSpecs: &akov2.Specs{InstanceSize: "M20"},
-			},
-			instanceSize:  "M30",
-			expectedError: "instance size must be the same for all nodes in all regions and across all replication specs for advanced deployment",
-		},
-		"All specs match the instance size": {
-			regionConfig: &akov2.AdvancedRegionConfig{
-				ElectableSpecs: &akov2.Specs{InstanceSize: "M30"},
-				ReadOnlySpecs:  &akov2.Specs{InstanceSize: "M30"},
-				AnalyticsSpecs: &akov2.Specs{InstanceSize: "M30"},
-			},
-			instanceSize:  "M30",
-			expectedError: "",
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := instanceSizeForDeployment(tt.regionConfig, tt.instanceSize)
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
 			} else {
