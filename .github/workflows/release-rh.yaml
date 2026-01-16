@@ -15,6 +15,14 @@ on:
         options:
         - true
         - false
+      author:
+        description: "Author of the release as registered in RedHat Connect"
+        required: true
+        type: string
+      email:
+        description: "Email of the author of the release as registered in RedHat Connect"
+        required: true
+        type: string
 
 jobs:
   release-rh:
@@ -51,6 +59,6 @@ jobs:
         RH_DRYRUN: ${{ github.event.inputs.dryrun }}
         VERSION: ${{ github.event.inputs.version }}
       run: |
-        git config --global user.name "release-bot[bot]"
-        git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
+        git config --global user.name "${{github.event.inputs.author}}"
+        git config --global user.email "${{github.event.inputs.email}}"
         devbox run -- 'make create-rh-repos reset-rh-creds release-rh'
