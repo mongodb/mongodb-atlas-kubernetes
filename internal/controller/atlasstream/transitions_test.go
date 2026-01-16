@@ -811,7 +811,7 @@ func TestUpdate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
 			UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
@@ -920,7 +920,7 @@ func TestUpdate(t *testing.T) {
 		}
 		streamsAPI := mockadmin.NewStreamsApi(t)
 		streamsAPI.EXPECT().
-			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().
 			UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).

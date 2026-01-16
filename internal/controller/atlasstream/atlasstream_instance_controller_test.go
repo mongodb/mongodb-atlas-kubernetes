@@ -985,7 +985,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		streamsAPI.EXPECT().UpdateStreamWorkspace(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+		streamsAPI.EXPECT().UpdateStreamWorkspace(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
