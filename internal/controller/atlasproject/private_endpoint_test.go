@@ -354,7 +354,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312011: &admin.APIClient{
+					SdkClient20250312012: &admin.APIClient{
 						PrivateEndpointServicesApi: privateEndpointsAPI,
 					},
 				},

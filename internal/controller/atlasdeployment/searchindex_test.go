@@ -434,7 +434,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312011: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312012: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -451,7 +451,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312011: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312012: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,

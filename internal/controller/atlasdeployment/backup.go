@@ -170,7 +170,7 @@ func (r *AtlasDeploymentReconciler) ensureBackupPolicy(service *workflow.Context
 
 func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(ctx context.Context, service *workflow.Context, deploymentService deployment.AtlasDeploymentsService, projectID string, deployment *akov2.AtlasDeployment, bSchedule *akov2.AtlasBackupSchedule, bPolicy *akov2.AtlasBackupPolicy, zoneID string) transitionFn {
 	clusterName := deployment.GetDeploymentName()
-	currentSchedule, response, err := service.SdkClientSet.SdkClient20250312011.CloudBackupsApi.GetBackupSchedule(ctx, projectID, clusterName).Execute()
+	currentSchedule, response, err := service.SdkClientSet.SdkClient20250312012.CloudBackupsApi.GetBackupSchedule(ctx, projectID, clusterName).Execute()
 	if err != nil {
 		errMessage := "unable to get current backup configuration for project"
 		r.Log.Debugf("%s: %s:%s, %v", errMessage, projectID, clusterName, err)
@@ -201,7 +201,7 @@ func (r *AtlasDeploymentReconciler) updateBackupScheduleAndPolicy(ctx context.Co
 	}
 
 	r.Log.Debugf("applying backup configuration: %v", *bSchedule)
-	if _, _, err := service.SdkClientSet.SdkClient20250312011.CloudBackupsApi.UpdateBackupSchedule(ctx, projectID, clusterName, apiScheduleReq).Execute(); err != nil {
+	if _, _, err := service.SdkClientSet.SdkClient20250312012.CloudBackupsApi.UpdateBackupSchedule(ctx, projectID, clusterName, apiScheduleReq).Execute(); err != nil {
 		return r.transitionFromLegacy(service, deploymentService, projectID, deployment, fmt.Errorf("unable to create backup schedule %s. e: %w", client.ObjectKeyFromObject(bSchedule).String(), err))
 	}
 	r.Log.Infof("successfully updated backup configuration for deployment %v", clusterName)

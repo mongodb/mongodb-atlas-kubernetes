@@ -252,7 +252,7 @@ func (ir IntegrationReconciler) reconcile(ctx *workflow.Context) workflow.Deprec
 	if _, found := ir.integrationsInAKO["PROMETHEUS"]; found {
 		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
 			Scheme:       "https",
-			DiscoveryURL: fmt.Sprintf("https://%s/prometheus/v1.0/groups/%s/discovery", ctx.SdkClientSet.SdkClient20250312011.GetConfig().Host, ir.project.ID()),
+			DiscoveryURL: fmt.Sprintf("https://%s/prometheus/v1.0/groups/%s/discovery", ctx.SdkClientSet.SdkClient20250312012.GetConfig().Host, ir.project.ID()),
 		}))
 	} else {
 		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
@@ -271,7 +271,7 @@ func NewIntegrationReconciler(
 		project:                     project,
 		integrationsInAKO:           mapIntegrationsPerType(integrations),
 		lasAppliedIntegrationsTypes: lastAppliedIntegrationsTypes,
-		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312011.ThirdPartyIntegrationsApi),
+		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312012.ThirdPartyIntegrationsApi),
 	}
 }
 

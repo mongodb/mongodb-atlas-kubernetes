@@ -397,7 +397,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312011: &admin.APIClient{
+					SdkClient20250312012: &admin.APIClient{
 						CustomDatabaseRolesApi: tc.roleAPI,
 					},
 				},
@@ -481,7 +481,7 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312011: &admin.APIClient{
+					SdkClient20250312012: &admin.APIClient{
 						CustomDatabaseRolesApi: roleAPI,
 					},
 				},

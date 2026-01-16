@@ -194,7 +194,7 @@ func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *encryption
 
 	// This endpoint does not offer paginated responses.
 	// Assume that role ID is set as AWS ARN.
-	resp, _, err := ctx.SdkClientSet.SdkClient20250312011.CloudProviderAccessApi.ListCloudProviderAccess(ctx.Context, projectID).Execute()
+	resp, _, err := ctx.SdkClientSet.SdkClient20250312012.CloudProviderAccessApi.ListCloudProviderAccess(ctx.Context, projectID).Execute()
 	if err != nil {
 		return err
 	}

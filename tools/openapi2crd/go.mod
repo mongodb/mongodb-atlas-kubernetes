@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	go.mongodb.org/atlas-sdk/v20250312008 v20250312008.0.0
-	go.mongodb.org/atlas-sdk/v20250312011 v20250312011.0.0
+	go.mongodb.org/atlas-sdk/v20250312012 v20250312012.0.0
 	k8s.io/api v0.32.9
 	k8s.io/apiextensions-apiserver v0.32.9
 	k8s.io/apimachinery v0.32.9
@@ -109,7 +109,7 @@ require (
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/mod v0.29.0 // indirect
 	golang.org/x/net v0.46.0 // indirect
-	golang.org/x/oauth2 v0.33.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/term v0.36.0 // indirect

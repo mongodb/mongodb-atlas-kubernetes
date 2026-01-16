@@ -63,7 +63,7 @@ func ensureCloudProviderIntegration(workflowCtx *workflow.Context, project *akov
 
 func syncCloudProviderIntegration(workflowCtx *workflow.Context, projectID string, cpaSpecs []akov2.CloudProviderIntegration) (bool, error) {
 	// this endpoint does not offer paginated responses
-	atlasCPAs, _, err := workflowCtx.SdkClientSet.SdkClient20250312011.CloudProviderAccessApi.
+	atlasCPAs, _, err := workflowCtx.SdkClientSet.SdkClient20250312012.CloudProviderAccessApi.
 		ListCloudProviderAccess(workflowCtx.Context, projectID).
 		Execute()
 	if err != nil {
@@ -259,7 +259,7 @@ func copyCloudProviderAccessData(cpiStatus *status.CloudProviderIntegration, atl
 }
 
 func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312011.CloudProviderAccessApi.CreateCloudProviderAccess(
+	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312012.CloudProviderAccessApi.CreateCloudProviderAccess(
 		workflowCtx.Context,
 		projectID,
 		&admin.CloudProviderAccessRoleRequest{
@@ -280,7 +280,7 @@ func createCloudProviderAccess(workflowCtx *workflow.Context, projectID string, 
 }
 
 func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) *status.CloudProviderIntegration {
-	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312011.CloudProviderAccessApi.AuthorizeProviderAccessRole(
+	cpa, _, err := workflowCtx.SdkClientSet.SdkClient20250312012.CloudProviderAccessApi.AuthorizeProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.RoleID,
@@ -303,7 +303,7 @@ func authorizeCloudProviderAccess(workflowCtx *workflow.Context, projectID strin
 }
 
 func deleteCloudProviderAccess(workflowCtx *workflow.Context, projectID string, cpiStatus *status.CloudProviderIntegration) {
-	_, err := workflowCtx.SdkClientSet.SdkClient20250312011.CloudProviderAccessApi.DeauthorizeProviderAccessRole(
+	_, err := workflowCtx.SdkClientSet.SdkClient20250312012.CloudProviderAccessApi.DeauthorizeProviderAccessRole(
 		workflowCtx.Context,
 		projectID,
 		cpiStatus.ProviderName,
