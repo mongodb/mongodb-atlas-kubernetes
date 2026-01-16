@@ -197,7 +197,7 @@ DEFAULT_IMAGE_URL := $(TEST_REGISTRY)/mongodb-atlas-kubernetes-operator:$(NEXT_V
 export IMAGE_URL
 
 ifndef IMAGE_URL
-    IMAGE_URL := $(DEFAULT_IMAGE_URL)
+	IMAGE_URL := $(DEFAULT_IMAGE_URL)
 	BUILD_DEPENDENCY := test-docker-image
 else
     $(info --- IMAGE_URL is set externally: $(IMAGE_URL))
