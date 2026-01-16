@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312011/admin"
-	"go.mongodb.org/atlas-sdk/v20250312011/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312012/admin"
+	"go.mongodb.org/atlas-sdk/v20250312012/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -985,7 +985,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		streamsAPI.EXPECT().UpdateStreamWorkspace(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsDataProcessRegion")).
+		streamsAPI.EXPECT().UpdateStreamWorkspace(mock.Anything, "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(

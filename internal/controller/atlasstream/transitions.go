@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312011/admin"
+	"go.mongodb.org/atlas-sdk/v20250312012/admin"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -58,13 +58,13 @@ func (r *AtlasStreamsInstanceReconciler) create(
 }
 
 func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) (ctrl.Result, error) {
-	dataProcessRegion := admin.StreamsDataProcessRegion{
-		CloudProvider: streamInstance.Spec.Config.Provider,
-		Region:        streamInstance.Spec.Config.Region,
+	updateRequest := admin.StreamsTenantUpdateRequest{
+		CloudProvider: &streamInstance.Spec.Config.Provider,
+		Region:        &streamInstance.Spec.Config.Region,
 	}
 
 	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312011.StreamsApi.
-		UpdateStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name, &dataProcessRegion).
+		UpdateStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name, &updateRequest).
 		Execute()
 
 	if err != nil {
