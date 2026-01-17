@@ -202,7 +202,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 
 					return &atlas.ClientSet{
-						SdkClient20250312011: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
+						SdkClient20250312012: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
 					}, nil
 				},
 			},
@@ -2316,7 +2316,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 				Return(&admin.Group{Id: pointer.MakePtr("my-project")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					ProjectsApi:      projectAPI,
 					ClustersApi:      clusterAPI,
 					DatabaseUsersApi: userAPI,

@@ -149,7 +149,7 @@ func (b *backupComplianceController) upsert(atlasBCP *admin.DataProtectionSettin
 	}
 
 	if !equal {
-		atlasBCP, _, err = b.ctx.SdkClientSet.SdkClient20250312011.CloudBackupsApi.UpdateCompliancePolicy(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
+		atlasBCP, _, err = b.ctx.SdkClientSet.SdkClient20250312012.CloudBackupsApi.UpdateCompliancePolicy(b.ctx.Context, b.project.ID(), akoBCP.ToAtlas(b.project.ID())).OverwriteBackupPolicies(akoBCP.Spec.OverwriteBackupPolicies).Execute()
 		if err != nil {
 			if admin.IsErrorCode(err, atlas.BackupComplianceNotMet) {
 				return b.terminate(workflow.ProjectBackupCompliancePolicyNotMet, err)
@@ -210,7 +210,7 @@ func (b *backupComplianceController) idle() workflow.DeprecatedResult {
 }
 
 func (b *backupComplianceController) getAtlasBackupCompliancePolicy() (*admin.DataProtectionSettings20231001, bool, error) {
-	bcp, _, err := b.ctx.SdkClientSet.SdkClient20250312011.CloudBackupsApi.GetCompliancePolicy(b.ctx.Context, b.project.ID()).Execute()
+	bcp, _, err := b.ctx.SdkClientSet.SdkClient20250312012.CloudBackupsApi.GetCompliancePolicy(b.ctx.Context, b.project.ID()).Execute()
 	if err != nil {
 		// NOTE: getting backup compliance policies never yields a 404
 		return nil, false, fmt.Errorf("error finding backup compliance policy: %w", err)

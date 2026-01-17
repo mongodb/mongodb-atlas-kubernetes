@@ -480,7 +480,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312011: &admin.APIClient{
+					SdkClient20250312012: &admin.APIClient{
 						ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t)),
 					},
 				},
@@ -629,7 +629,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312011: &admin.APIClient{
+					SdkClient20250312012: &admin.APIClient{
 						ProjectIPAccessListApi: ipAccessAPI,
 					},
 				},

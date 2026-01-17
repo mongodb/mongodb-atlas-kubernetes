@@ -70,7 +70,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		return terminateX509(ctx, err)
 	}
 
-	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312011.LDAPConfigurationApi.GetUserSecurity(ctx.Context, atlasProject.ID()).Execute()
+	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312012.LDAPConfigurationApi.GetUserSecurity(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {
 		return terminateX509(ctx, err)
 	}
@@ -84,7 +84,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		}
 		r.Log.Infow("Saving new x509 cert", "projectID", atlasProject.ID())
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312011.LDAPConfigurationApi.UpdateUserSecurity(ctx.Context, atlasProject.ID(), &conf).Execute()
+		_, _, err = ctx.SdkClientSet.SdkClient20250312012.LDAPConfigurationApi.UpdateUserSecurity(ctx.Context, atlasProject.ID(), &conf).Execute()
 		if err != nil {
 			return terminateX509(ctx, err)
 		}
@@ -98,7 +98,7 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 
 func (r *AtlasProjectReconciler) disableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	r.Log.Infow("Disable x509 auth", "projectID", atlasProject.ID())
-	_, _, err := ctx.SdkClientSet.SdkClient20250312011.X509AuthenticationApi.DisableSecurityCustomerX509(ctx.Context, atlasProject.ID()).Execute()
+	_, _, err := ctx.SdkClientSet.SdkClient20250312012.X509AuthenticationApi.DisableSecurityCustomerX509(ctx.Context, atlasProject.ID()).Execute()
 	if err != nil {
 		return terminateX509(ctx, err)
 	}

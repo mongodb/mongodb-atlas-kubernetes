@@ -164,7 +164,7 @@ func TestRenconcile(t *testing.T) {
 					},
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
-							SdkClient20250312011: tt.atlasSDKMocker(),
+							SdkClient20250312012: tt.atlasSDKMocker(),
 						}, nil
 					},
 				},

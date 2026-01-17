@@ -185,7 +185,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -270,7 +270,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -356,7 +356,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -453,7 +453,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -533,7 +533,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312011: &admin.APIClient{
+				SdkClient20250312012: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
