@@ -17,6 +17,7 @@ var (
 	allCRDs          bool
 	controllerOutDir string
 	indexerOutDir    string
+	exporterOutDir   string
 	typesPath        string
 	override         bool
 )
@@ -49,10 +50,10 @@ func main() {
 			}
 
 			if allCRDs {
-				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, typesPath, override)
+				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
 			}
 
-			return generate.FromConfig(inputPath, crdKind, controllerOutDir, indexerOutDir, typesPath, override)
+			return generate.FromConfig(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
 		},
 	}
 
@@ -62,6 +63,7 @@ func main() {
 	rootCmd.Flags().BoolVar(&allCRDs, "all", false, "Generate controllers for all CRDs in the input file. Can not be set together with --crd")
 	rootCmd.Flags().StringVar(&controllerOutDir, "controller-out", "", "Output directory for controller files (default: ../mongodb-atlas-kubernetes/internal/controller)")
 	rootCmd.Flags().StringVar(&indexerOutDir, "indexer-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/indexer)")
+	rootCmd.Flags().StringVar(&exporterOutDir, "exporter-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/exporter)")
 	rootCmd.Flags().StringVar(&typesPath, "types-path", "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Full import path to the API types package")
 	rootCmd.Flags().BoolVar(&override, "override", false, "Override existing versioned handler files (default: false)")
 
@@ -95,7 +97,7 @@ func validateGoImportPath(path string) error {
 	return nil
 }
 
-func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, typesPath string, override bool) error {
+func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath string, override bool) error {
 	crds, err := generate.ListCRDs(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to list CRDs: %w", err)
@@ -109,7 +111,7 @@ func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, typesPath strin
 	for _, crd := range crds {
 		fmt.Printf("Generating for CRD: %s...\n", crd.Kind)
 
-		err := generate.FromConfig(inputPath, crd.Kind, controllerOutDir, indexerOutDir, typesPath, override)
+		err = generate.FromConfig(inputPath, crd.Kind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
 
 		result := CRDGenerationResult{
 			CRDKind: crd.Kind,
