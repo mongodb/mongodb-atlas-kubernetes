@@ -900,7 +900,8 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	$(SCAFFOLDER_FLAGS) \
 	--indexer-out $(realpath .)/internal/generated/indexers \
-	--controller-out $(realpath .)/internal/generated/controller
+	--controller-out $(realpath .)/internal/generated/controller \
+	--exporter-out $(realpath .)/pkg/generated/exporter
 
 gen-all: gen-crds gen-go-types run-scaffolder fmt ## Generate all CRDs, Go types, and scaffolding
 
