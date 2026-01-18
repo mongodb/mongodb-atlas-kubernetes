@@ -71,8 +71,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	clusterControllerDir := filepath.Join(controllerDir, "cluster")
@@ -135,8 +136,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "cluster", "handler.go")
@@ -205,8 +207,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Integration", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Integration", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "integration", "handler.go")
@@ -278,8 +281,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Team", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Team", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "team", "handler.go")
@@ -329,8 +333,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	controllerFile := filepath.Join(controllerDir, "resource", "resource_controller.go")

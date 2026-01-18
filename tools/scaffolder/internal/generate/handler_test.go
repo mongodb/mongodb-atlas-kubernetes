@@ -49,8 +49,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "resource", "handler.go")
@@ -106,8 +107,9 @@ spec:
 
 	controllerDir := filepath.Join(tmpDir, "controllers")
 	indexerDir := filepath.Join(tmpDir, "indexers")
+	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Group", controllerDir, indexerDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	err = FromConfig(testFile, "Group", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
 	require.NoError(t, err)
 
 	// Test handler.go contains certain package-level functions
