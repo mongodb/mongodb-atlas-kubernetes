@@ -76,21 +76,12 @@ jobs:
     uses: ./.github/workflows/tests-e2e2.yaml
     secrets: inherit
 
-  cloud-tests:
-    needs:
-      - ci
-      - cloud-tests-filter
-    if: |
-      github.event_name == 'merge_group' || needs.cloud-tests-filter.outputs.run-cloud-tests == 'true'
-    uses: ./.github/workflows/cloud-tests.yml
-    secrets: inherit
-    
   start-promote-image:
     name: Start Promote Image
     needs:
       - ci
+      - tests-selectable
       - e2e2
-      - cloud-tests
     if: github.ref_name == 'main' && github.event_name != 'pull_request_target' && github.event_name != 'pull_request'
     uses: ./.github/workflows/promote-image.yml
     secrets: inherit
@@ -103,7 +94,6 @@ jobs:
       - ci
       - e2e2
       - tests-selectable
-      - cloud-tests
       - start-promote-image
     if: >-
       always() &&
