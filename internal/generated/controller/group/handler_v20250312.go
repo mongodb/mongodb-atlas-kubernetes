@@ -128,10 +128,7 @@ func (h *Handlerv20250312) HandleUpdated(ctx context.Context, group *akov2genera
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
 func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	var dependents []reconcile.Request
-	dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
-	dependents = append(dependents, indexers.NewDatabaseUserByGroupMapFunc(h.kubeClient)(ctx, group)...)
-	dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	dependents := h.getDependents(ctx, group)
 	if len(dependents) > 0 {
 		return result.NextState(state.StateDeletionRequested, fmt.Sprintf("failed to delete group because %v resources depend on it.", len(dependents)))
 	}
@@ -165,6 +162,18 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2gener
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
 	}
 	return result.NextState(state.StateDeleting, "Deleting Group.")
+}
+
+// getDependents returns all resources that reference this resource.
+// It uses the generated indexer MapFunc functions to find dependent resources.
+func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2generated.Group) []reconcile.Request {
+	var dependents []reconcile.Request
+
+	dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+	dependents = append(dependents, indexers.NewDatabaseUserByGroupMapFunc(h.kubeClient)(ctx, group)...)
+
+	return dependents
 }
 
 // For returns the resource and predicates for the controller
