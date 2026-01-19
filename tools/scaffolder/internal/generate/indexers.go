@@ -909,3 +909,59 @@ func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {
 
 // TODO: UpdateIndexerRegistry needs to be reimplemented to work with the new kind-based indexer approach
 // For now, indexers need to be manually registered in the indexer registry
+
+// DependentInfo represents a resource that depends on another resource (has a reference to it)
+type DependentInfo struct {
+	// DependentKind is the kind of the resource that has the reference (e.g., "FlexCluster")
+	DependentKind string
+	// TargetKind is the kind being referenced (e.g., "Group")
+	TargetKind string
+	// IndexerConstantName is the constant name for the indexer (e.g., "FlexClusterByGroupIndex")
+	IndexerConstantName string
+	// MapFuncName is the name of the MapFunc function (e.g., "NewFlexClusterByGroupMapFunc")
+	MapFuncName string
+}
+
+// ParseDependentReferences finds all resources that have references to the given targetKind.
+// It parses all CRDs in the result file and returns information about resources that depend on targetKind.
+// For example, if targetKind is "Group", it will find FlexCluster, Cluster, DatabaseUser etc. that reference Group.
+func ParseDependentReferences(resultPath, targetKind string) ([]DependentInfo, error) {
+	// List all CRDs in the result file
+	crds, err := ListCRDs(resultPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list CRDs: %w", err)
+	}
+
+	var dependents []DependentInfo
+
+	// For each CRD, check if it has references to the targetKind
+	for _, crd := range crds {
+		// Skip if this is the target kind itself
+		if crd.Kind == targetKind {
+			continue
+		}
+
+		// Parse reference fields for this CRD
+		refs, err := ParseReferenceFields(resultPath, crd.Kind)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if any reference points to the targetKind
+		for _, ref := range refs {
+			if ref.ReferencedKind == targetKind {
+				dependent := DependentInfo{
+					DependentKind:       crd.Kind,
+					TargetKind:          targetKind,
+					IndexerConstantName: fmt.Sprintf("%sBy%sIndex", crd.Kind, targetKind),
+					MapFuncName:         fmt.Sprintf("New%sBy%sMapFunc", crd.Kind, targetKind),
+				}
+				dependents = append(dependents, dependent)
+				// Only add each dependent kind once (even if it has multiple refs to target)
+				break
+			}
+		}
+	}
+
+	return dependents, nil
+}

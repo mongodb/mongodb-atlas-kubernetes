@@ -789,3 +789,197 @@ func TestGenerateVersionHandlerInvalidResultPath(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse reference fields")
 }
+
+func TestGenerateGetDependentsMethod(t *testing.T) {
+	// Create a test YAML with multiple CRDs where some reference Group
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: groups.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Group
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  name:
+                    type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  groupRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: flexclusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: FlexCluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  groupRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	// Add Group CRD with api-mappings annotation for the version
+	groupYAML := strings.Replace(testYAML, `metadata:
+  name: groups.atlas.generated.mongodb.com
+spec:`, `metadata:
+  name: groups.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312008/admin
+spec:`, 1)
+	err = os.WriteFile(testFile, []byte(groupYAML), 0644)
+	require.NoError(t, err)
+
+	mapping := MappingWithConfig{
+		Version: "v20250312",
+		OpenAPIConfig: OpenAPIConfig{
+			Name:    "v20250312",
+			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
+		},
+	}
+
+	controllerDir := filepath.Join(tmpDir, "controllers")
+	err = os.MkdirAll(controllerDir, 0755)
+	require.NoError(t, err)
+
+	t.Run("GeneratesGetDependentsMethodForGroupWithDependents", func(t *testing.T) {
+		err := generateVersionHandlerFile(
+			controllerDir,
+			"Group",
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testFile,
+			mapping,
+			true,
+		)
+		require.NoError(t, err)
+
+		handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+		content, err := os.ReadFile(handlerFile)
+		require.NoError(t, err)
+		contentStr := string(content)
+
+		// Verify getDependents method exists
+		assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependents(")
+		assert.Contains(t, contentStr, "ctx context.Context")
+		assert.Contains(t, contentStr, "group *akov2generated.Group")
+		assert.Contains(t, contentStr, "[]reconcile.Request")
+
+		// Verify it declares dependents slice
+		assert.Contains(t, contentStr, "var dependents []reconcile.Request")
+
+		// Verify it calls the indexer MapFunc for Cluster (which references Group)
+		assert.Contains(t, contentStr, "indexers.NewClusterByGroupMapFunc")
+		assert.Contains(t, contentStr, "h.kubeClient")
+		assert.Contains(t, contentStr, "(ctx, group)")
+
+		// Verify it calls the indexer MapFunc for FlexCluster (which references Group)
+		assert.Contains(t, contentStr, "indexers.NewFlexClusterByGroupMapFunc")
+
+		// Verify it returns dependents
+		assert.Contains(t, contentStr, "return dependents")
+	})
+
+	t.Run("GeneratesGetDependentsMethodWithNoDependents", func(t *testing.T) {
+		// Cluster has no dependents (nothing references it)
+		err := generateVersionHandlerFile(
+			controllerDir,
+			"Cluster",
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testFile,
+			mapping,
+			true,
+		)
+		require.NoError(t, err)
+
+		handlerFile := filepath.Join(controllerDir, "handler_v20250312.go")
+		content, err := os.ReadFile(handlerFile)
+		require.NoError(t, err)
+		contentStr := string(content)
+
+		// Verify getDependents method exists
+		assert.Contains(t, contentStr, "func (h *Handlerv20250312) getDependents(")
+
+		// Verify it still returns dependents (even if empty)
+		assert.Contains(t, contentStr, "var dependents []reconcile.Request")
+		assert.Contains(t, contentStr, "return dependents")
+	})
+}
