@@ -748,3 +748,166 @@ spec:
 		}
 	})
 }
+
+func TestParseDependentReferences_ArrayBasedReferences(t *testing.T) {
+	// Test that ParseDependentReferences correctly finds dependents even when
+	// the reference is inside an array (e.g., spec.entries[].groupRef)
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: groups.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Group
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  name:
+                    type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: alertconfigs.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                notifications:
+                  items:
+                    properties:
+                      groupRef:
+                        x-kubernetes-mapping:
+                          type:
+                            kind: Group
+                            group: atlas.generated.mongodb.com
+                            version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: AlertConfig
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        groupRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: integrations.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                regions:
+                  items:
+                    properties:
+                      configs:
+                        items:
+                          properties:
+                            groupRef:
+                              x-kubernetes-mapping:
+                                type:
+                                  kind: Group
+                                  group: atlas.generated.mongodb.com
+                                  version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Integration
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  regions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        configs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              groupRef:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	t.Run("FindDependentsWithSingleLevelArrayReference", func(t *testing.T) {
+		dependents, err := ParseDependentReferences(testFile, "Group")
+		require.NoError(t, err)
+
+		// Should find AlertConfig and Integration as dependents of Group
+		// even though the references are inside arrays
+		dependentKinds := make(map[string]DependentInfo)
+		for _, dep := range dependents {
+			dependentKinds[dep.DependentKind] = dep
+		}
+
+		// Verify AlertConfig dependent (single-level array: notifications[].groupRef)
+		alertDep, ok := dependentKinds["AlertConfig"]
+		assert.True(t, ok, "AlertConfig should be a dependent of Group (array-based reference)")
+		assert.Equal(t, "Group", alertDep.TargetKind)
+		assert.Equal(t, "AlertConfigByGroupIndex", alertDep.IndexerConstantName)
+		assert.Equal(t, "NewAlertConfigByGroupMapFunc", alertDep.MapFuncName)
+	})
+
+	t.Run("FindDependentsWithNestedArrayReference", func(t *testing.T) {
+		dependents, err := ParseDependentReferences(testFile, "Group")
+		require.NoError(t, err)
+
+		dependentKinds := make(map[string]DependentInfo)
+		for _, dep := range dependents {
+			dependentKinds[dep.DependentKind] = dep
+		}
+
+		// Verify Integration dependent (nested array: regions[].configs[].groupRef)
+		integrationDep, ok := dependentKinds["Integration"]
+		assert.True(t, ok, "Integration should be a dependent of Group (nested array reference)")
+		assert.Equal(t, "Group", integrationDep.TargetKind)
+		assert.Equal(t, "IntegrationByGroupIndex", integrationDep.IndexerConstantName)
+		assert.Equal(t, "NewIntegrationByGroupMapFunc", integrationDep.MapFuncName)
+	})
+}
