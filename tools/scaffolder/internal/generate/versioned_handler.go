@@ -135,6 +135,9 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			jen.Error(),
 		).Block(methodBody...)
 	}
+
+	// Add newline after the last state handler
+	f.Line()
 }
 
 // generateGetDependenciesMethod generates the getDependencies method for the version-specific handler
@@ -208,6 +211,9 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 		jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
 		jen.Error(),
 	).Block(blockStatements...)
+
+	// Add newline after getDependencies method
+	f.Line()
 }
 
 // generateGetDependentsMethod generates the getDependents method that finds all resources
