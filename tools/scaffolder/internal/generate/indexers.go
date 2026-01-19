@@ -944,8 +944,7 @@ func ParseDependentReferences(resultPath, targetKind string) ([]DependentInfo, e
 		// Parse reference fields for this CRD
 		refs, err := ParseReferenceFields(resultPath, crd.Kind)
 		if err != nil {
-			// Skip CRDs that can't be parsed
-			continue
+			return nil, err
 		}
 
 		// Check if any reference points to the targetKind
