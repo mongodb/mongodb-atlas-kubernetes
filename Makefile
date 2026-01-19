@@ -462,11 +462,6 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/operatorgroup.yaml
 	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/subscription.yaml
 
-## Disabled for now
-## .PHONY: docker-login-olm
-## docker-login-olm:
-## docker login -u $(shell oc whoami) -p $(shell oc whoami -t) $(REGISTRY)
-
 .PHONY: image-push
 image-push: ## Push the docker image
 	$(CONTAINER_ENGINE) push ${IMG}
