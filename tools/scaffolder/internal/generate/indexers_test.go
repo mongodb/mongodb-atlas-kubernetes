@@ -580,3 +580,171 @@ spec:
 	assert.NotContains(t, string(groupFile), "func IntegrationRequests(")
 	assert.NotContains(t, string(secretFile), "func IntegrationRequests(")
 }
+
+func TestParseDependentReferences(t *testing.T) {
+	// Create a test YAML with multiple CRDs where some reference Group
+	testYAML := `
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: groups.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Group
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  name:
+                    type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  groupRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databaseusers.atlas.generated.mongodb.com
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    type:
+                      kind: Group
+                      group: atlas.generated.mongodb.com
+                      version: v1
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: DatabaseUser
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  groupRef:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: teams.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: Team
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              v20250312:
+                properties:
+                  name:
+                    type: string
+`
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test.yaml")
+	err := os.WriteFile(testFile, []byte(testYAML), 0644)
+	require.NoError(t, err)
+
+	t.Run("FindDependentsOfGroup", func(t *testing.T) {
+		dependents, err := ParseDependentReferences(testFile, "Group")
+		require.NoError(t, err)
+
+		// Should find Cluster and DatabaseUser as dependents of Group
+		assert.Len(t, dependents, 2)
+
+		// Check that the dependent info is correct
+		dependentKinds := make(map[string]DependentInfo)
+		for _, dep := range dependents {
+			dependentKinds[dep.DependentKind] = dep
+		}
+
+		// Verify Cluster dependent
+		clusterDep, ok := dependentKinds["Cluster"]
+		assert.True(t, ok, "Cluster should be a dependent of Group")
+		assert.Equal(t, "Group", clusterDep.TargetKind)
+		assert.Equal(t, "ClusterByGroupIndex", clusterDep.IndexerConstantName)
+		assert.Equal(t, "NewClusterByGroupMapFunc", clusterDep.MapFuncName)
+
+		// Verify DatabaseUser dependent
+		dbUserDep, ok := dependentKinds["DatabaseUser"]
+		assert.True(t, ok, "DatabaseUser should be a dependent of Group")
+		assert.Equal(t, "Group", dbUserDep.TargetKind)
+		assert.Equal(t, "DatabaseUserByGroupIndex", dbUserDep.IndexerConstantName)
+		assert.Equal(t, "NewDatabaseUserByGroupMapFunc", dbUserDep.MapFuncName)
+	})
+
+	t.Run("NoDependentsForTeam", func(t *testing.T) {
+		dependents, err := ParseDependentReferences(testFile, "Team")
+		require.NoError(t, err)
+
+		// Team has no dependents - no one references it
+		assert.Empty(t, dependents)
+	})
+
+	t.Run("DependentDoesNotIncludeSelf", func(t *testing.T) {
+		dependents, err := ParseDependentReferences(testFile, "Cluster")
+		require.NoError(t, err)
+
+		// Cluster should not have itself as a dependent
+		for _, dep := range dependents {
+			assert.NotEqual(t, "Cluster", dep.DependentKind)
+		}
+	})
+}

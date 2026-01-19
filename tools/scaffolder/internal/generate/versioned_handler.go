@@ -30,6 +30,12 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string,
 		return fmt.Errorf("failed to parse reference fields: %w", err)
 	}
 
+	// Parse dependent references (resources that reference this resource)
+	dependentInfos, err := ParseDependentReferences(resultPath, resourceName)
+	if err != nil {
+		return fmt.Errorf("failed to parse dependent references: %w", err)
+	}
+
 	f := jen.NewFile(atlasResourceName)
 	AddLicenseHeader(f)
 
@@ -62,6 +68,9 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string,
 
 	// Generate getDependencies method to be used in for api translation calls
 	generateGetDependenciesMethod(f, resourceName, apiPkg, versionSuffix, referenceFields)
+
+	// Generate getDependents method to find resources that reference this resource
+	generateGetDependentsMethod(f, resourceName, apiPkg, versionSuffix, dependentInfos)
 
 	// Generate For and SetupWithManager methods to satisfy StateHandler interface
 	generateVersionInterfaceMethods(f, resourceName, apiPkg, versionSuffix)
@@ -198,6 +207,57 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 	).Params(
 		jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object"),
 		jen.Error(),
+	).Block(blockStatements...)
+}
+
+// generateGetDependentsMethod generates the getDependents method that finds all resources
+// referencing this resource using the generated indexer MapFunc functions.
+// This is the reverse of getDependencies - instead of finding what this resource references,
+// it finds what references this resource.
+//
+// Example generated code for Group:
+//
+//	func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2generated.Group) []reconcile.Request {
+//	    var dependents []reconcile.Request
+//	    dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+//	    dependents = append(dependents, indexers.NewDatabaseUserByGroupMapFunc(h.kubeClient)(ctx, group)...)
+//	    dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
+//	    return dependents
+//	}
+func generateGetDependentsMethod(f *jen.File, resourceName, apiPkg, versionSuffix string, dependentInfos []DependentInfo) {
+	resourceVarName := strings.ToLower(resourceName)
+
+	blockStatements := []jen.Code{
+		jen.Var().Id("dependents").Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"),
+		jen.Line(),
+	}
+
+	if len(dependentInfos) == 0 {
+		// No dependents - just return empty slice
+		blockStatements = append(blockStatements, jen.Return(jen.Id("dependents")))
+	} else {
+		// Add indexer calls for each dependent resource
+		for _, depInfo := range dependentInfos {
+			// Generate: dependents = append(dependents, indexers.New<DependentKind>By<TargetKind>MapFunc(h.kubeClient)(ctx, <resource>)...)
+			blockStatements = append(blockStatements,
+				jen.Id("dependents").Op("=").Append(
+					jen.Id("dependents"),
+					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", depInfo.MapFuncName).
+						Call(jen.Id("h").Dot("kubeClient")).
+						Call(jen.Id("ctx"), jen.Id(resourceVarName)).Op("..."),
+				),
+			)
+		}
+		blockStatements = append(blockStatements, jen.Line(), jen.Return(jen.Id("dependents")))
+	}
+
+	f.Comment("getDependents returns all resources that reference this resource.")
+	f.Comment("It uses the generated indexer MapFunc functions to find dependent resources.")
+	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("getDependents").Params(
+		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id(resourceVarName).Op("*").Qual(apiPkg, resourceName),
+	).Params(
+		jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"),
 	).Block(blockStatements...)
 }
 
