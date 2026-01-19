@@ -17,10 +17,31 @@
    export ATLAS_PUBLIC_KEY=<your-public-key>
    export ATLAS_PRIVATE_KEY=<your-private-key>
    ```
-8. Build and deploy the Operator into the K8s cluster: `make deploy`
-10. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are created during running `make deploy`)
-11. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
-12. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
+8. Run the Operator locally from code: `make run`
+   - This will build the operator, create a local Kind cluster, install CRDs, and run the controller directly from your code
+   - The controller will run in the foreground (use `BACKGROUND=1 make run` to run in background)
+   - Atlas credentials will be read from environment variables or `.env` file
+
+9. (Alternative) Deploy a released controller using Helm:
+   ```bash
+   make install-ako-helm
+   ```
+   Or manually:
+   ```bash
+   helm repo add mongodb https://mongodb.github.io/helm-charts
+   helm install mongodb-atlas-operator mongodb/mongodb-atlas-operator \
+     --namespace mongodb-atlas-system --create-namespace
+   ```
+
+10. (Alternative) Deploy using the all-in-one.yaml from a release:
+    ```bash
+    # Download from GitHub releases or use from releases/v<version>/deploy/all-in-one.yaml
+    kubectl apply -f releases/v<version>/deploy/all-in-one.yaml
+    ```
+
+11. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml`
+12. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
+13. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
 
 > **Note**: If you want to use `act` to run GitHub Actions locally, see [HOWTO.md](../../.github/HOWTO.md) for optional setup instructions.
 ### IDE setup with Devbox
