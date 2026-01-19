@@ -18,12 +18,13 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 
 	admin "go.mongodb.org/atlas-sdk/v20250312012/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 )
 
 type GroupExporter struct {
@@ -38,12 +39,12 @@ func (e *GroupExporter) Export(ctx context.Context) ([]client.Object, error) {
 
 	atlasResource, _, err := e.client.ProjectsApi.GetGroup(ctx, e.identifiers[0]).Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Group from Atlas: %w", err)
 	}
 
 	resources, err := e.translator.FromAPI(resource, atlasResource)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to translate Group: %w", err)
 	}
 
 	return resources, nil

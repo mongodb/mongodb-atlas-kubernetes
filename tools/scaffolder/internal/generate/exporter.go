@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	translatorImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	translatorImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	pagingImportPath     = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	objectImportPath     = "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -109,7 +109,13 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			Dot("Execute").
 			Call(),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Id("err")),
+			jen.Return(
+				jen.Nil(),
+				jen.Qual("fmt", "Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to get %s from Atlas: %%w", resourceName)),
+					jen.Id("err"),
+				),
+			),
 		),
 		jen.Line(),
 		jen.List(jen.Id("resources"), jen.Id("err")).
@@ -119,7 +125,13 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			Dot("FromAPI").
 			Call(jen.Id("resource"), jen.Id("atlasResource")),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Id("err")),
+			jen.Return(
+				jen.Nil(),
+				jen.Qual("fmt", "Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to translate %s: %%w", resourceName)),
+					jen.Id("err"),
+				),
+			),
 		),
 		jen.Line(),
 		jen.Return(jen.Id("resources"), jen.Nil()),
@@ -154,7 +166,13 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 					),
 			),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Id("err")),
+			jen.Return(
+				jen.Nil(),
+				jen.Qual("fmt", "Errorf").Call(
+					jen.Lit(fmt.Sprintf("failed to list %ss from Atlas: %%w", resourceName)),
+					jen.Id("err"),
+				),
+			),
 		),
 		jen.Line(),
 		jen.Id("resources").Op(":=").Make(
@@ -172,7 +190,13 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 					Dot("FromAPI").
 					Call(jen.Id("resource"), jen.Id("atlasResource")),
 				jen.If(jen.Id("err").Op("!=").Nil()).Block(
-					jen.Return(jen.Nil(), jen.Id("err")),
+					jen.Return(
+						jen.Nil(),
+						jen.Qual("fmt", "Errorf").Call(
+							jen.Lit(fmt.Sprintf("failed to translate %s: %%w", resourceName)),
+							jen.Id("err"),
+						),
+					),
 				),
 				jen.Line(),
 				jen.Id("resources").Op("=").Append(jen.Id("resources"), jen.Id("translatedResources").Op("...")),

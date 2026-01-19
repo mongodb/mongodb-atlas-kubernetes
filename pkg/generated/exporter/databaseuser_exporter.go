@@ -18,14 +18,15 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	admin "go.mongodb.org/atlas-sdk/v20250312012/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	paging "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 )
 
 type DatabaseUserExporter struct {
@@ -40,7 +41,7 @@ func (e *DatabaseUserExporter) Export(ctx context.Context) ([]client.Object, err
 		return e.client.DatabaseUsersApi.ListDatabaseUsers(ctx, e.identifiers[0]).Execute()
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list DatabaseUsers from Atlas: %w", err)
 	}
 
 	resources := make([]client.Object, 0, len(atlasResources))
@@ -48,7 +49,7 @@ func (e *DatabaseUserExporter) Export(ctx context.Context) ([]client.Object, err
 		resource := &akov2generated.DatabaseUser{}
 		translatedResources, err := e.translator.FromAPI(resource, atlasResource)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to translate DatabaseUser: %w", err)
 		}
 
 		resources = append(resources, translatedResources...)

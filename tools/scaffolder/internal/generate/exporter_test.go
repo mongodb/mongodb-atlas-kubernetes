@@ -68,7 +68,7 @@ func TestGenerateResourceExporter_UsesGetBlock(t *testing.T) {
 
 	output := string(content)
 	assertContains(t, output, "type GroupExporter struct")
-	assertContains(t, output, "RESORCE_GET_METHOD")
+	assertContains(t, output, "GetGroup")
 	if strings.Contains(output, "AllPages(") {
 		t.Fatalf("expected get block output, found list block")
 	}
@@ -102,8 +102,8 @@ func TestGenerateResourceExporter_UsesListBlock(t *testing.T) {
 	}
 
 	output := string(content)
-	assertContains(t, output, "AllPages(")
-	assertContains(t, output, "List_RESOURCE(")
+	assertContains(t, output, "paging.ListAll(")
+	assertContains(t, output, "ListClusters(")
 	assertContains(t, output, "e.identifiers[0]")
 }
 
