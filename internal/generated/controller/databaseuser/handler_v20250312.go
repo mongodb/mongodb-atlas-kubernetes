@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312012/admin"
-	v1 "k8s.io/api/core/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -208,40 +207,6 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, currentState state.Re
 	}
 
 	return result.NextState(state.StateUpdated, "Updated Database User.")
-}
-
-func (h *Handlerv20250312) getDependencies(ctx context.Context, databaseuser *akov2generated.DatabaseUser) ([]client.Object, error) {
-	var deps []client.Object
-
-	// Check if passwordSecretRef is present
-	if databaseuser.Spec.V20250312 != nil && databaseuser.Spec.V20250312.Entry != nil && databaseuser.Spec.V20250312.Entry.PasswordSecretRef != nil {
-		secret := &v1.Secret{}
-		err := h.kubeClient.Get(ctx, client.ObjectKey{
-			Name:      databaseuser.Spec.V20250312.Entry.PasswordSecretRef.Name,
-			Namespace: databaseuser.GetNamespace(),
-		}, secret)
-		if err != nil {
-			return deps, fmt.Errorf("failed to get Secret %s/%s: %w", databaseuser.GetNamespace(), databaseuser.Spec.V20250312.Entry.PasswordSecretRef.Name, err)
-		}
-
-		deps = append(deps, secret)
-	}
-
-	// Check if groupRef is present
-	if databaseuser.Spec.V20250312 != nil && databaseuser.Spec.V20250312.GroupRef != nil {
-		group := &akov2generated.Group{}
-		err := h.kubeClient.Get(ctx, client.ObjectKey{
-			Name:      databaseuser.Spec.V20250312.GroupRef.Name,
-			Namespace: databaseuser.GetNamespace(),
-		}, group)
-		if err != nil {
-			return deps, fmt.Errorf("failed to get Group %s/%s: %w", databaseuser.GetNamespace(), databaseuser.Spec.V20250312.GroupRef.Name, err)
-		}
-
-		deps = append(deps, group)
-	}
-
-	return deps, nil
 }
 
 // For returns the resource and predicates for the controller

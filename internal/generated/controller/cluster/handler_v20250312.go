@@ -342,22 +342,3 @@ func (h *Handlerv20250312) handleAtlasClusterState(ctx context.Context, cluster 
 
 	return result.NextState(nextState, "Cluster is ready.")
 }
-
-func (h *Handlerv20250312) getDependencies(ctx context.Context, cluster *akov2generated.Cluster) ([]client.Object, error) {
-	var deps []client.Object
-
-	if cluster.Spec.V20250312.GroupRef == nil {
-		return deps, nil
-	}
-
-	groupRef := cluster.Spec.V20250312.GroupRef
-	group := &akov2generated.Group{}
-	err := h.kubeClient.Get(ctx, client.ObjectKey{Name: groupRef.Name, Namespace: cluster.GetNamespace()}, group)
-	if err != nil {
-		return deps, fmt.Errorf("failed to get Group %s/%s: %w", cluster.GetNamespace(), groupRef.Name, err)
-	}
-
-	deps = append(deps, group)
-
-	return deps, nil
-}
