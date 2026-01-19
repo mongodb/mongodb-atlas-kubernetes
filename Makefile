@@ -488,12 +488,6 @@ stop-kind: ## Stop the local kind cluster
 log: ## View manager logs
 	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas-system -f
 
-.PHONY: clear-atlas
-clear-atlas: export INPUT_ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
-clear-atlas: export INPUT_ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
-clear-atlas: ## Clear Atlas organization
-	bash .github/actions/cleanup/entrypoint.sh
-
 .PHONY: post-install-hook
 post-install-hook:
 	GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -o bin/helm-post-install cmd/post-install/main.go
