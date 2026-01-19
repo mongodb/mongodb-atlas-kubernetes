@@ -25,6 +25,7 @@ import (
 
 const (
 	translatorImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	pagingImportPath     = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	objectImportPath     = "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -65,7 +66,7 @@ func generateResourceExporter(req *exporterRequest) error {
 
 	block := getBlock(req.resourceName, req.resourceImportPath)
 	if len(referenceFields) > 0 {
-		block = listBlock(req.resourceName, req.resourceImportPath, sdkImportPath, len(referenceFields))
+		block = listBlock(req.resourceName, req.resourceImportPath, sdkImportPath, referenceFields)
 	}
 
 	file.Func().Params(jen.Id("e").Op("*").Id(structName)).Id("Export").Params(
@@ -102,8 +103,8 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			Op(":=").
 			Id("e").
 			Dot("client").
-			Dot("RESOURCE_API").
-			Dot("RESORCE_GET_METHOD").
+			Dot(resourceName+"sApi").
+			Dot("Get"+resourceName).
 			Call(jen.Id("ctx"), jen.Id("e").Dot("identifiers").Index(jen.Lit(0))).
 			Dot("Execute").
 			Call(),
@@ -125,31 +126,31 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 	}
 }
 
-func listBlock(resourceName, resourceImportPath, sdkImportPath string, numberOfRef int) []jen.Code {
+func listBlock(resourceName, resourceImportPath, sdkImportPath string, referenceFields []ReferenceField) []jen.Code {
 	return []jen.Code{
 		jen.Comment("@TODO: Replace template with the correct API Resource name and method"),
 		jen.List(jen.Id("atlasResources"), jen.Id("err")).
 			Op(":=").
-			Id("AllPages").
+			Qual(pagingImportPath, "ListAll").
 			Call(
+				jen.Id("ctx"),
 				jen.Func().
-					Params(jen.Id("pageNum").Int(), jen.Id("itemsPerPage").Int()).
-					Params(jen.Index().Qual(sdkImportPath, "Resource"), jen.Error()).
+					Params(jen.Id("ctx").Qual("context", "Context"), jen.Id("pageNum").Int()).
+					Params(
+						jen.Qual(pagingImportPath, "Response").Types(jen.Qual(sdkImportPath, "RESOURCE_TYPE")),
+						jen.Op("*").Qual("net/http", "Response"),
+						jen.Error(),
+					).
 					Block(
-						jen.List(jen.Id("atlasResources"), jen.Id("_"), jen.Id("err")).
-							Op(":=").
-							Id("e").
-							Dot("client").
-							Dot("RESOURCE_Api").
-							Dot("List_RESOURCE").
-							Call(listCallParams(numberOfRef)...).
-							Dot("Execute").
-							Call(),
-						jen.If(jen.Id("err").Op("!=").Nil()).Block(
-							jen.Return(jen.Nil(), jen.Id("err")),
+						jen.Return(
+							jen.Id("e").
+								Dot("client").
+								Dot(resourceName+"sApi").
+								Dot("List"+resourceName+"s").
+								Call(listCallParams(referenceFields)...).
+								Dot("Execute").
+								Call(),
 						),
-						jen.Line(),
-						jen.Return(jen.Id("atlasResources").Dot("GetResults").Call(), jen.Nil()),
 					),
 			),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
@@ -181,11 +182,15 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, numberOfR
 	}
 }
 
-func listCallParams(numberOfRefs int) []jen.Code {
-	params := make([]jen.Code, 0, numberOfRefs)
+func listCallParams(referenceFields []ReferenceField) []jen.Code {
+	params := make([]jen.Code, 0, len(referenceFields))
 	params = append(params, jen.Id("ctx"))
-	for i := 0; i < numberOfRefs; i++ {
-		params = append(params, jen.Id("e").Dot("identifiers").Index(jen.Lit(i)))
+	paramsCounter := 0
+	for i := 0; i < len(referenceFields); i++ {
+		if referenceFields[i].ReferencedKind != "Secret" && referenceFields[i].ReferencedKind != "ConfigMap" {
+			params = append(params, jen.Id("e").Dot("identifiers").Index(jen.Lit(paramsCounter)))
+			paramsCounter++
+		}
 	}
 	return params
 }

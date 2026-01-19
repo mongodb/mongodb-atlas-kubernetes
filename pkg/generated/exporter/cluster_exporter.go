@@ -18,12 +18,14 @@ package exporter
 
 import (
 	"context"
+	"net/http"
 
 	admin "go.mongodb.org/atlas-sdk/v20250312012/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	paging "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
 type ClusterExporter struct {
@@ -34,13 +36,8 @@ type ClusterExporter struct {
 }
 
 func (e *ClusterExporter) Export(ctx context.Context) ([]client.Object, error) {
-	atlasResources, err := AllPages(func(pageNum int, itemsPerPage int) ([]admin.ClusterDescription20240805, error) {
-		atlasResources, _, err := e.client.ClustersApi.ListClusters(ctx, e.identifiers[0]).Execute()
-		if err != nil {
-			return nil, err
-		}
-
-		return atlasResources.GetResults(), nil
+	atlasResources, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.ClusterDescription20240805], *http.Response, error) {
+		return e.client.ClustersApi.ListClusters(ctx, e.identifiers[0]).Execute()
 	})
 	if err != nil {
 		return nil, err
