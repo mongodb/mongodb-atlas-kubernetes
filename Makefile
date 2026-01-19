@@ -19,7 +19,9 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 VERSION_FILE=version.json
 CURRENT_VERSION := $(shell $(JQ) -r .current $(VERSION_FILE))
 NEXT_VERSION := $(shell $(JQ) -r .next $(VERSION_FILE))
-VERSION ?= $(shell git describe --always --tags --dirty --broken | cut -c 2-)
+# Check if there are uncommitted changes
+GIT_DIRTY := $(shell git status --porcelain 2>/dev/null | grep -q . && echo "-dirty" || echo "")
+VERSION ?= $(CURRENT_VERSION)$(GIT_DIRTY)
 BUILDTIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GITCOMMIT ?= $(shell git rev-parse --short HEAD 2> /dev/null || true)
 
