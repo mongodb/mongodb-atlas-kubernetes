@@ -1,7 +1,0 @@
-# Push to Docker Registry
--s DOCKER_USERNAME=<username>
--s DOCKER_PASSWORD=<password>
-# Update this data with your cloud-qa custom data
--s ATLAS_ORG_ID=<id>
--s ATLAS_PUBLIC_KEY=<public_key>
--s ATLAS_PRIVATE_KEY=<private_key>

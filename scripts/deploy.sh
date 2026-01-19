@@ -36,9 +36,22 @@ cd config/manager && kustomize edit set image controller="${image}"
 cd - && kustomize build --load-restrictor LoadRestrictionsNone config/release/dev/allinone | kubectl apply -f -
 
 # Ensuring the Atlas credentials Secret
-public_key=$(grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
-private_key=$(grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
-org_id=$(grep "ATLAS_ORG_ID" .actrc | cut -d "=" -f 2)
+# Get credentials from environment variables (preferred) or prompt if not set
+if [[ -z "${ATLAS_PUBLIC_KEY:-}" ]]; then
+  echo "ATLAS_PUBLIC_KEY environment variable is not set"
+  exit 1
+fi
+if [[ -z "${ATLAS_PRIVATE_KEY:-}" ]]; then
+  echo "ATLAS_PRIVATE_KEY environment variable is not set"
+  exit 1
+fi
+if [[ -z "${ATLAS_ORG_ID:-}" ]]; then
+  echo "ATLAS_ORG_ID environment variable is not set"
+  exit 1
+fi
+public_key="${ATLAS_PUBLIC_KEY}"
+private_key="${ATLAS_PRIVATE_KEY}"
+org_id="${ATLAS_ORG_ID}"
 
 # both global and project keys
 kubectl delete secrets my-atlas-key --ignore-not-found -n "${ns}"
