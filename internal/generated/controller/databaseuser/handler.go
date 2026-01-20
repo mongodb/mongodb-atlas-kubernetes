@@ -153,7 +153,7 @@ func (h *Handler) For() (client.Object, builder.Predicates) {
 }
 func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	return controllerruntime.NewControllerManagedBy(mgr).Named("DatabaseUser").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).Watches(&v1.Secret{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserBySecretMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
+	return controllerruntime.NewControllerManagedBy(mgr).Named("DatabaseUser").For(h.For()).Watches(&v1.Secret{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserBySecretMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
 }
 
 // getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret
