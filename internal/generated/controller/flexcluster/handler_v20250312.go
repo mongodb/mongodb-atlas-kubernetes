@@ -50,27 +50,6 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 	}
 }
 
-func (h *Handlerv20250312) getDependencies(ctx context.Context, flexcluster *akov2generated.FlexCluster) ([]client.Object, error) {
-	var result []client.Object
-
-	if flexcluster.Spec.V20250312.GroupRef != nil {
-		group := &akov2generated.Group{}
-
-		err := h.kubeClient.Get(ctx, client.ObjectKey{
-			Name:      flexcluster.Spec.V20250312.GroupRef.Name,
-			Namespace: flexcluster.GetNamespace(),
-		}, group)
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to get group  %w", err)
-		}
-
-		result = append(result, group)
-	}
-
-	return result, nil
-}
-
 // HandleInitial handles the initial state for version v20250312
 func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
 	deps, err := h.getDependencies(ctx, flexcluster)

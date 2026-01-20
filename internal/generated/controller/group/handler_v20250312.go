@@ -28,7 +28,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
-	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -162,18 +161,6 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2gener
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
 	}
 	return result.NextState(state.StateDeleting, "Deleting Group.")
-}
-
-// getDependents returns all resources that reference this resource.
-// It uses the generated indexer MapFunc functions to find dependent resources.
-func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2generated.Group) []reconcile.Request {
-	var dependents []reconcile.Request
-
-	dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
-	dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
-	dependents = append(dependents, indexers.NewDatabaseUserByGroupMapFunc(h.kubeClient)(ctx, group)...)
-
-	return dependents
 }
 
 // For returns the resource and predicates for the controller
