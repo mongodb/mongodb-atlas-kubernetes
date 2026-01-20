@@ -45,13 +45,13 @@ var (
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=groups/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="events.k8s.io",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=groups/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="events.k8s.io",namespace=default,resources=events,verbs=create;patch
 
 type Handler struct {
 	ctrlstate.StateHandler[akov2generated.Group]

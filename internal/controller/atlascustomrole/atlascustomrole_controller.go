@@ -77,12 +77,12 @@ func NewAtlasCustomRoleReconciler(c cluster.Cluster, predicates []predicate.Pred
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlascustomroles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,resources=atlascustomroles/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;patch;delete
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="events.k8s.io",resources=events,verbs=create;patch
 
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlascustomroles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=atlas.mongodb.com,namespace=default,resources=atlascustomroles/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=create;update;patch;delete
-// +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="events.k8s.io",namespace=default,resources=events,verbs=create;patch
 
 func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	atlasCustomRole := &akov2.AtlasCustomRole{}
