@@ -635,13 +635,6 @@ generate-sboms: ./ako.pem ## Generate a released version SBOMs
 gen-sdlc-checklist: ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" ./scripts/gen-sdlc-checklist.sh
 
-# TODO: avoid leaving leftovers in the first place
-.PHONY: clear-e2e-leftovers
-clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
-	git restore bundle* config deploy
-	cd helm-charts && git restore .
-	git submodule update helm-charts
-
 .PHONY: install-crds
 install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
