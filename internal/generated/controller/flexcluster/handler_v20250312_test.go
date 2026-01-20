@@ -102,7 +102,7 @@ func TestHandleInitial(t *testing.T) {
 			title:       "missing group",
 			flexCluster: setGroupRef(defaultTestFlexCluster("test-cluster1", "ns"), "not-found"),
 			want:        ctrlstate.Result{NextState: state.StateInitial},
-			wantErr:     "failed to get dependencies: failed to get group",
+			wantErr:     "failed to get dependencies: failed to get Group",
 		},
 		{
 			title:       "group without id",
@@ -299,7 +299,7 @@ func TestHandleCreating(t *testing.T) {
 			title:       "patchStatus fails",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), "not-found"),
 			want:        errorResult(state.StateCreating),
-			wantErr:     "failed to get group",
+			wantErr:     "failed to get Group",
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
