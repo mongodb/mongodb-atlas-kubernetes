@@ -688,25 +688,6 @@ endif
 stop-ako:  
 	@kill `cat ako.pid` && rm ako.pid || echo "AKO process not found or already stopped!"  
 
-.PHONY: local-docker-build
-local-docker-build:
-	docker build -f fast.Dockerfile -t $(LOCAL_IMAGE) .
-
-.PHONY: prepare-all-in-one
-prepare-all-in-one: local-docker-build run-kind
-	kubectl create namespace mongodb-atlas-system || echo "Namespace already in place"
-	kind load docker-image $(LOCAL_IMAGE)
-
-.PHONY: test-all-in-one
-test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-in-one.yaml definition
-	# Test all in one with a local image and at $(ATLAS_DOMAIN) (cloud-qa)
-	kubectl apply -f deploy/all-in-one.yaml
-	yq deploy/all-in-one.yaml \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).imagePullPolicy="IfNotPresent"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).image="$(LOCAL_IMAGE)"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
-	| kubectl apply -f -
-
 .PHONY: upload-sbom-to-kondukto
 upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
 	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
