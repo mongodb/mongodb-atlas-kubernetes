@@ -62,9 +62,15 @@ jobs:
       - run-tests
     uses: ./.github/workflows/cloud-tests-filter.yml
 
+  build-images:
+    needs:
+      - run-tests
+    uses: ./.github/workflows/build-images.yaml
+
   tests-selectable:
     needs:
       - ci
+      - build-images
       - cloud-tests-filter
     uses: ./.github/workflows/tests-selectable.yaml
     secrets: inherit
@@ -72,6 +78,7 @@ jobs:
   e2e2:
     needs:
       - ci
+      - build-images
       - cloud-tests-filter
     uses: ./.github/workflows/tests-e2e2.yaml
     secrets: inherit
