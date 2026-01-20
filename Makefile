@@ -512,13 +512,6 @@ all-platforms:
 	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
 	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 
-.PHONY: all-platforms-docker
-all-platforms-docker: all-platforms
-	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=amd64 \
-	-f fast.Dockerfile -t manager-amd64 .
-	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=arm64 \
-	-f fast.Dockerfile -t manager-arm64 .
-
 # docker-image builds the test image always for linux, even on MacOS.
 # This is because the Kubernetes cluster is always run within a Linux VM
 .PHONY: docker-image
