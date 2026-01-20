@@ -344,7 +344,7 @@ func (h *Handlerv20250312) handleAtlasClusterState(ctx context.Context, cluster 
 }
 
 func (h *Handlerv20250312) getDependencies(ctx context.Context, cluster *akov2generated.Cluster) ([]client.Object, error) {
-	var deps []client.Object
+	deps := make([]client.Object, 0, 1)
 
 	if cluster.Spec.V20250312.GroupRef == nil {
 		return deps, nil

@@ -167,7 +167,7 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2gener
 // getDependents returns all resources that reference this resource.
 // It uses the generated indexer MapFunc functions to find dependent resources.
 func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2generated.Group) []reconcile.Request {
-	var dependents []reconcile.Request
+	dependents := make([]reconcile.Request, 0, 4)
 
 	dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
 	dependents = append(dependents, indexers.NewFlexClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)

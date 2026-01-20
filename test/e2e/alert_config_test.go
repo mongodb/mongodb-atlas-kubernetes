@@ -233,7 +233,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.Aler
 		})
 
 		By("Each Atlas alert config matches its Kubernetes config", func() {
-			atlasConvertedSpecs := []*admin.GroupAlertsConfig{}
+			atlasConvertedSpecs := make([]*admin.GroupAlertsConfig, 0, len(alertConfigs))
 			for i := range alertConfigs {
 				akoConfig, err := alertConfigs[i].ToAtlas()
 				Expect(err).ToNot(HaveOccurred())

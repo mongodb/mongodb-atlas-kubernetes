@@ -55,7 +55,7 @@ func TestGetEndpointsNotInAtlas(t *testing.T) {
 			Region:   region2,
 		},
 	}
-	atlasPEs := []atlasPE{}
+	atlasPEs := make([]atlasPE, 0, 1)
 	uniqueItems, itemCounts := getEndpointsNotInAtlas(specPEs, atlasPEs)
 	assert.Equalf(t, 2, len(uniqueItems), "getEndpointsNotInAtlas should remove a duplicate PE Service")
 	assert.NotEqualf(t, uniqueItems[0].Region, uniqueItems[1].Region, "getEndpointsNotInAtlas should return unique PEs")

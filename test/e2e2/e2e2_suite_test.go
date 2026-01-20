@@ -82,7 +82,7 @@ func runTestAKO(globalCreds, ns string, deletionprotection bool) operator.Operat
 		fmt.Sprintf("--global-api-secret-name=%s", globalCreds),
 		"--log-encoder=json",
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
+		fmt.Sprintf("--object-deletion-protection=%v", deletionprotection),
 	}
-	args = append(args, fmt.Sprintf("--object-deletion-protection=%v", deletionprotection))
 	return operator.NewOperator(operator.AllNamespacesOperatorEnv(ns), os.Stdout, os.Stderr, args...)
 }

@@ -571,7 +571,7 @@ type itemCount struct {
 
 func getEndpointsIntersection(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE) []intersectionPair {
 	intersection := set.DeprecatedIntersection(specPEs, atlasPEs)
-	result := []intersectionPair{}
+	result := make([]intersectionPair, 0, len(intersection))
 	for _, item := range intersection {
 		pair := intersectionPair{}
 		pair.spec = item[0].(akov2.PrivateEndpoint)

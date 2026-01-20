@@ -142,7 +142,7 @@ func TestManagerStart(t *testing.T) {
 				require.NoError(t, err)
 				require.NotEmpty(t, ev.Items)
 
-				var gotEvMsgs []string
+				gotEvMsgs := make([]string, 0, len(ev.Items))
 				for i := range ev.Items {
 					gotEvMsgs = append(gotEvMsgs, ev.Items[i].Message)
 				}
@@ -249,7 +249,7 @@ func TestDryRunReportError(t *testing.T) {
 				require.NoError(t, err)
 				require.NotEmpty(t, ev.Items)
 
-				var gotEvMsgs []string
+				gotEvMsgs := make([]string, 0, len(ev.Items))
 				for i := range ev.Items {
 					gotEvMsgs = append(gotEvMsgs, fmt.Sprintf("%s %s %s", ev.Items[i].Type, ev.Items[i].Reason, ev.Items[i].Message))
 				}

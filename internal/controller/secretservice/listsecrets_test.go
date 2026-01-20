@@ -108,7 +108,7 @@ func TestListConnectionSecrets(t *testing.T) {
 }
 
 func getSecretsNames(secrets []corev1.Secret) []string {
-	res := make([]string, 0)
+	res := make([]string, 0, len(secrets))
 	for _, secret := range secrets {
 		res = append(res, secret.Name)
 	}

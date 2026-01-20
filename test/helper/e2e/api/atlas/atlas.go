@@ -93,7 +93,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	clusters, _, err := a.Client.ClustersApi.ListClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(clusters.GetResults(), "listing legacy deployments in project %s", projectID)
-	names := []string{}
+	names := make([]string, 0, len(clusters.GetResults()))
 	for _, cluster := range clusters.GetResults() {
 		names = append(names, cluster.GetName())
 	}

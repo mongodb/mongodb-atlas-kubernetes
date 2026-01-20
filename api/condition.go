@@ -190,7 +190,7 @@ func HasReadyCondition(conditions []Condition) bool {
 // EnsureConditionExists adds or updates the condition in the copy of a 'source' slice
 func EnsureConditionExists(condition Condition, source []Condition) []Condition {
 	condition.LastTransitionTime = metav1.Now()
-	target := make([]Condition, len(source))
+	target := make([]Condition, len(source), len(source)+1)
 	copy(target, source)
 	for i, c := range source {
 		if c.Type == condition.Type {

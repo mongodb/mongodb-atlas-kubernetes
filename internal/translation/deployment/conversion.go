@@ -948,7 +948,7 @@ func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionPro
 }
 
 func clustersToConnections(clusters []admin.ClusterDescription20240805) []Connection {
-	conns := []Connection{}
+	conns := make([]Connection, 0, len(clusters))
 	for _, c := range clusters {
 		conns = append(conns, Connection{
 			Name:             c.GetName(),
@@ -964,7 +964,7 @@ func clustersToConnections(clusters []admin.ClusterDescription20240805) []Connec
 }
 
 func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStringsPrivateEndpoint) []PrivateEndpoint {
-	pes := []PrivateEndpoint{}
+	pes := make([]PrivateEndpoint, 0, len(cpeList))
 	for _, cpe := range cpeList {
 		pes = append(pes, PrivateEndpoint{
 			URL:       cpe.GetConnectionString(),
@@ -976,7 +976,7 @@ func fillClusterPrivateEndpoints(cpeList []admin.ClusterDescriptionConnectionStr
 }
 
 func flexToConnections(flex []admin.FlexClusterDescription20241113) []Connection {
-	conns := []Connection{}
+	conns := make([]Connection, 0, len(flex))
 	for _, f := range flex {
 		conns = append(conns, Connection{
 			Name:       f.GetName(),
