@@ -133,7 +133,7 @@ spec:
 	assert.Contains(t, contentStr, "func (h *Handlerv20250312) SetupWithManager(")
 
 	// Verify generated file exists and contains getDependencies
-	generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+	generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 	assert.FileExists(t, generatedFile)
 
 	generatedContent, err := os.ReadFile(generatedFile)
@@ -228,7 +228,7 @@ spec:
 	assert.FileExists(t, handlerFile)
 
 	// Verify getDependencies is in the generated file, not the main handler file
-	generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+	generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 	assert.FileExists(t, generatedFile)
 
 	generatedContent, err := os.ReadFile(generatedFile)
@@ -600,7 +600,7 @@ spec:
 	require.NoError(t, err)
 
 	// getDependencies is now in the generated file
-	generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+	generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 	content, err := os.ReadFile(generatedFile)
 	require.NoError(t, err)
 	contentStr := string(content)
@@ -767,7 +767,7 @@ spec:
 	require.NoError(t, err)
 
 	// getDependencies is now in the generated file
-	generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+	generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 	content, err := os.ReadFile(generatedFile)
 	require.NoError(t, err)
 	contentStr := string(content)
@@ -958,7 +958,7 @@ spec:`, 1)
 		require.NoError(t, err)
 
 		// getDependents is now in the generated file
-		generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+		generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 		content, err := os.ReadFile(generatedFile)
 		require.NoError(t, err)
 		contentStr := string(content)
@@ -997,7 +997,7 @@ spec:`, 1)
 		require.NoError(t, err)
 
 		// getDependents is now in the generated file
-		generatedFile := filepath.Join(controllerDir, "handler_v20250312_generated.go")
+		generatedFile := filepath.Join(controllerDir, "dependencies_v20250312.go")
 		content, err := os.ReadFile(generatedFile)
 		require.NoError(t, err)
 		contentStr := string(content)

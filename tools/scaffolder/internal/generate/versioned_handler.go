@@ -66,7 +66,7 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string,
 	return generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPath, mapping)
 }
 
-// generateVersionHandlerGeneratedFile generates the handler_<version>_generated.go file
+// generateVersionHandlerGeneratedFile generates the dependencies_<version>.go file
 // containing getDependencies and getDependents methods. This file is always regenerated
 // and should not be manually edited.
 func generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPath string, mapping MappingWithConfig) error {
@@ -74,7 +74,7 @@ func generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPat
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
 
-	fileName := filepath.Join(dir, "handler_"+versionSuffix+"_generated.go")
+	fileName := filepath.Join(dir, "dependencies_"+versionSuffix+".go")
 
 	referenceFields, err := ParseReferenceFields(resultPath, resourceName)
 	if err != nil {
