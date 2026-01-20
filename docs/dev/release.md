@@ -29,7 +29,7 @@ The Kubernetes Version testing matrix is automatically checked via CI, Every wee
 
 **No manual action is required** unless you receive an alert or the automated check fails. If an alert is received or the check fails, please refer to the [Updating Kubernetes Versions documentation](update-kubernetes-version.md)
 
-Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yaml) ran successfully recently to ensure versions are up to date.
+Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yml) ran successfully recently to ensure versions are up to date.
 
 ## A Note on Versioning with `version.json`
 
@@ -155,7 +155,7 @@ Once the image is out, publish the release notes draft as soon as possible.
 
 ## Upload SBOMs to Kondukto
 
-The SBOM upload and augmentation process is automated via the [Send SBOMs to Kondukto](../../.github/workflows/send-sboms.yaml) GitHub workflow.
+The SBOM upload and augmentation process is automated via the [Send SBOMs to Kondukto](../../.github/workflows/send-sboms.yml) GitHub workflow.
 
 1. Navigate to the [Actions tab](https://github.com/mongodb/mongodb-atlas-kubernetes/actions) in the GitHub repository.
 2. Select the "Send SBOMs to Kondukto" workflow from the workflow list.
@@ -187,7 +187,7 @@ All bundles/package manifests for Operators for operatorhub.io reside in the fol
 * https://github.com/redhat-openshift-ecosystem/community-operators-prod - Kubernetes Operators that appear on [OpenShift](https://openshift.com/) and [OKD](https://www.okd.io/)
 * https://github.com/redhat-openshift-ecosystem/certified-operators - Red Hat certified Kubernetes Operators
 
-All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHat](../../.github/workflows/release-rh.yaml). This can also be run from the CLI using make, please look [at the code](../../.github/workflows/release-rh.yaml) for more details.
+All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHat](../../.github/workflows/release-rh.yml). This can also be run from the CLI using make, please look [at the code](../../.github/workflows/release-rh.yml) for more details.
 
 The workflow needs 4 parameters:
 - The `version` to release, which is **required**.
