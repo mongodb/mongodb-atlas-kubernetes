@@ -324,10 +324,6 @@ install: manifests ## Install CRDs from a cluster
 uninstall: manifests ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-.PHONY: deploy
-deploy: generate manifests run-kind ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-	@./scripts/deploy.sh
-
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
@@ -468,11 +464,6 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/operatorgroup.yaml
 	oc -n $(TARGET_NAMESPACE) apply -f ./scripts/openshift/subscription.yaml
 
-## Disabled for now
-## .PHONY: docker-login-olm
-## docker-login-olm:
-## docker login -u $(shell oc whoami) -p $(shell oc whoami -t) $(REGISTRY)
-
 .PHONY: image-push
 image-push: ## Push the docker image
 	$(CONTAINER_ENGINE) push ${IMG}
@@ -489,12 +480,6 @@ stop-kind: ## Stop the local kind cluster
 .PHONY: log
 log: ## View manager logs
 	kubectl logs deploy/mongodb-atlas-operator manager -n mongodb-atlas-system -f
-
-.PHONY: clear-atlas
-clear-atlas: export INPUT_ATLAS_PUBLIC_KEY=$(shell grep "ATLAS_PUBLIC_KEY" .actrc | cut -d "=" -f 2)
-clear-atlas: export INPUT_ATLAS_PRIVATE_KEY=$(shell grep "ATLAS_PRIVATE_KEY" .actrc | cut -d "=" -f 2)
-clear-atlas: ## Clear Atlas organization
-	bash .github/actions/cleanup/entrypoint.sh
 
 .PHONY: post-install-hook
 post-install-hook:

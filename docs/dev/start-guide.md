@@ -10,15 +10,40 @@
     ```
 4. Install [Kind] (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 5. Clone the project to your workspace (note, that this doesn't need to be `GOPATH` as the project uses Go Modules)
-6. Copy the default Github Actions settings for local run: `cp .actrc.local.sample .actrc`
-7. Copy the default Github Actions environment for local run: `cp dotenv.sample .env`
-8. Update the .actrc - specify your Atlas connectivity data (orgId, keys)
-9. Build and deploy the Operator into the K8s cluster: `make deploy`
-10. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml` (note, that Atlas connection secrets are created during running `make deploy`)
-11. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
-12. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
+6. Copy the default environment file for local run: `cp dotenv.sample .env`
+7. Update the `.env` file - specify your Atlas connectivity data (orgId, keys) or export environment variables:
+   ```bash
+   export ATLAS_ORG_ID=<your-org-id>
+   export ATLAS_PUBLIC_KEY=<your-public-key>
+   export ATLAS_PRIVATE_KEY=<your-private-key>
+   ```
+8. Run the Operator locally from code: `make run`
+   - This will build the operator, create a local Kind cluster, install CRDs, and run the controller directly from your code
+   - The controller will run in the foreground (use `BACKGROUND=1 make run` to run in background)
+   - Atlas credentials will be read from environment variables or `.env` file
 
-Some more details about using `act` can be found in [HOWTO.md](../../.github/HOWTO.md)
+9. (Alternative) Deploy a released controller using Helm:
+   ```bash
+   make install-ako-helm
+   ```
+   Or manually:
+   ```bash
+   helm repo add mongodb https://mongodb.github.io/helm-charts
+   helm install mongodb-atlas-operator mongodb/mongodb-atlas-operator \
+     --namespace mongodb-atlas-system --create-namespace
+   ```
+
+10. (Alternative) Deploy using the all-in-one.yaml from a release:
+    ```bash
+    # Download from GitHub releases or use from releases/v<version>/deploy/all-in-one.yaml
+    kubectl apply -f releases/v<version>/deploy/all-in-one.yaml
+    ```
+
+11. Create an AtlasProject: `kubectl apply -f config/samples/atlas_v1_atlasproject.yaml`
+12. Create an AtlasDeployment: `kubectl apply -f config/samples/atlas_v1_atlasdeployment.yaml`
+13. Create an AtlasDatabaseUser: `kubectl apply -f config/samples/atlas_v1_atlasdatabaseuser.yaml`
+
+> **Note**: If you want to use `act` to run GitHub Actions locally, see [HOWTO.md](../../.github/HOWTO.md) for optional setup instructions.
 ### IDE setup with Devbox
 Using Direnv Environment Extension (Visual Studio Code)
 1. Install devbox by following the instructions provided on the official [Jetify website](https://www.jetify.com/devbox).
@@ -52,11 +77,15 @@ Using a devcontainer
 **IMPORTANT: Please ensure you are in a Devbox environment when running any make targets**
 
 ### make
-When running the tests using `make` the Atlas credentials from `.actrc` will be used automatically to export environment
-variables
+When running the tests using `make`, ensure your Atlas credentials are available as environment variables:
 ```devbox shell
+export ATLAS_ORG_ID=<your-org-id>
+export ATLAS_PUBLIC_KEY=<your-public-key>
+export ATLAS_PRIVATE_KEY=<your-private-key>
 make int-test
 ```
+
+Alternatively, you can use a `.env` file (see step 6 in onboarding) which will be automatically loaded by devbox.
 
 ### IDE
 When running integration tests from an IDE the following environment variables need to be provided to `go test` / `ginkgo`:
