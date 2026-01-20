@@ -31,7 +31,7 @@ Update the `Compute K8s matrix/versions for testing` step:
     echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 ```
 
-### `.github/workflows/tests-selectable.yaml`
+### `.github/workflows/tests-selectable.yml`
 
 Update the `Compute test matrix for k8s versions` step in the `compute` job:
 
@@ -46,7 +46,7 @@ Update the `Compute test matrix for k8s versions` step in the `compute` job:
     echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 ```
 
-### `.github/workflows/tests-e2e2.yaml`
+### `.github/workflows/tests-e2e2.yml`
 
 Update the `Compute test matrix for k8s versions` step in the `compute` job:
 
@@ -110,5 +110,5 @@ After completing steps 1 and/or 2, update `kubernetes-versions.json` to reflect 
 
 - `kubernetes-versions.json` - Source of truth for supported versions
 - `scripts/check-kube-versions.sh` - Version check script
-- `.github/workflows/check-kubernetes-versions.yaml` - Weekly check workflow
+- `.github/workflows/check-kubernetes-versions.yml` - Weekly check workflow
 
