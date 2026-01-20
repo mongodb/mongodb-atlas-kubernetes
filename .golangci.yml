@@ -16,7 +16,6 @@ linters:
     - ineffassign
     - misspell
     - noctx
-    - prealloc
     - rowserrcheck
     - staticcheck
     - unconvert
