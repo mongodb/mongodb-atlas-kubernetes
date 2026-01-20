@@ -1,0 +1,112 @@
+name: Build Test Image
+
+on:
+  workflow_call:
+
+jobs:
+  get-version:
+    name: "Get AKO Version"
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read_version.outputs.version }}
+      image_tag: ${{ steps.read_version.outputs.image_tag }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
+      - name: Read binary version and image tag
+        id: read_version
+        run: |
+          VERSION=$(jq -r '.next' version.json)
+          echo "version=${VERSION}" >> ${GITHUB_OUTPUT}
+          echo "Read version: ${VERSION}"
+    
+          COMMIT=$(git rev-parse --short HEAD)
+          IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
+          echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
+          echo "Computed image tag: ${IMAGE_TAG}"
+
+  prepare-e2e-image:
+    runs-on: ubuntu-latest
+    needs: get-version
+    outputs:
+      image_url: ${{ steps.set_image_url.outputs.image_url }}
+    env:
+      REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Prepare image tag
+        id: set_tag
+        uses: ./.github/actions/set-tag
+
+      - name: Prepare image url for GitHub Container Registry
+        id: set_image_url
+        run: |
+          echo "image_url=${REPO}:${{ steps.set_tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image to GitHub Container Registry
+        uses: ./.github/actions/build-push-image
+        with:
+          file: fast.Dockerfile
+          version: ${{ needs.prepare-e2e.outputs.next_version }}
+          tags: ${{ steps.set_image_url.outputs.image_url }}
+          platforms: linux/amd64,linux/arm64
+          push_to_docker: false
+
+  prepare-e2e-bundle:
+    name: Prepare E2E Bundle configuration and image
+    runs-on: ubuntu-latest
+    needs: get-version
+    env:
+      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          submodules: true
+          fetch-depth: 0
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
+        with:
+          enable-cache: 'true'
+      - name: Prepare bundle
+        env:
+          OPERATOR_IMAGE: ${{ env.GHCR_REPO }}:${{ steps.get-version.outputs.image_tag }}
+          VERSION: ${{ steps.get-version.outputs.image_tag }}
+        run: |
+          devbox run -- make bundle-dev
+      - name: Cache repo files
+        uses: actions/cache@v5
+        with:
+          path: |
+            ./*
+          key: ${{ github.sha }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push image
+        uses: ./.github/actions/build-push-image
+        with:
+          file: fast.Dockerfile
+          version: ${{ needs.get-version.outputs.version }}
+          tags: |
+            ${{ env.GHCR_REPO }}:${{ needs.get-version.outputs.image_tag }}
+            ${{ env.GHCR_BUNDLES_REPO }}:${{ needs.get-version.outputs.image_tag }}
+          platforms: linux/amd64,linux/arm64
+          push_to_docker: false

@@ -30,6 +30,7 @@ jobs:
       e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
       version: ${{ steps.read_version.outputs.version }}
       image_tag: ${{ steps.read_version.outputs.image_tag }}
+      kind_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -101,15 +102,6 @@ jobs:
           IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
           echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
           echo "Computed image tag: ${IMAGE_TAG}"
-
-  compute:
-    needs: detect-tests
-    name: "Compute test matrix for k8s versions"
-    runs-on: ubuntu-latest
-    outputs:
-      test_matrix: ${{ steps.test.outputs.matrix }}
-      next_version: ${{ steps.read_version.outputs.version }}
-    steps:
       - id: test
         name: Compute test matrix for k8s versions
         run: |
@@ -120,96 +112,6 @@ jobs:
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
-      - name: Read the next release version
-        id: read_version
-        run: |
-          VERSION=$(jq -r '.next' version.json)
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-
-  prepare-e2e-image:
-    runs-on: ubuntu-latest
-    needs: detect-tests
-    outputs:
-      image_url: ${{ steps.set_image_url.outputs.image_url }}
-    env:
-      REPO: ghcr.io/${{ github.repository_owner }}/mongodb-atlas-kubernetes-operator-prerelease
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Prepare image tag
-        id: set_tag
-        uses: ./.github/actions/set-tag
-
-      - name: Prepare image url for GitHub Container Registry
-        id: set_image_url
-        run: |
-          echo "image_url=${REPO}:${{ steps.set_tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to the GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push image to GitHub Container Registry
-        uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          version: ${{ needs.prepare-e2e.outputs.next_version }}
-          tags: ${{ steps.set_image_url.outputs.image_url }}
-          platforms: linux/amd64,linux/arm64
-          push_to_docker: false
-
-  prepare-e2e-bundle:
-    needs: detect-tests
-    name: Prepare E2E Bundle configuration and image
-    if: ${{ needs.detect-tests.outputs.e2e_matrix != '[]' }}
-    runs-on: ubuntu-latest
-    env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          submodules: true
-          fetch-depth: 0
-      - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
-        with:
-          enable-cache: 'true'
-      - name: Prepare bundle
-        env:
-          OPERATOR_IMAGE: ${{ env.GHCR_REPO }}:${{ steps.detect-tests.outputs.image_tag }}
-          VERSION: ${{ steps.detect-tests.outputs.image_tag }}
-        run: |
-          devbox run -- make bundle-dev
-      - name: Cache repo files
-        uses: actions/cache@v5
-        with:
-          path: |
-            ./*
-          key: ${{ github.sha }}
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Push image
-        uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          version: ${{ needs.detect-tests.outputs.version }}
-          tags: |
-            ${{ env.GHCR_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
-            ${{ env.GHCR_BUNDLES_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
-          platforms: linux/amd64,linux/arm64
-          push_to_docker: false
 
   run-integration-tests:
     environment: test
@@ -245,14 +147,14 @@ jobs:
           devbox run -- 'make ${{ matrix.target }}'
 
   run-e2e-tests:
-    needs: [detect-tests, compute, prepare-e2e-bundle]
+    needs: detect-tests
     environment: test
     if: ${{ needs.detect-tests.outputs.e2e_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e_matrix) != '[]' }}
     strategy:
       fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) }}
-        k8s: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
+        k8s: ${{ fromJSON(needs.detect-tests.outputs.kind_matrix) }}
     runs-on: ubuntu-latest
     name: "e2e: ${{ matrix.test }}"
     steps:
