@@ -202,6 +202,14 @@ jobs:
           IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
           IMAGE_DEST_TAG: ${{ env.VERSION }}
 
+      - name: Move image to Docker registry release from prerelease
+        run: devbox run -- ./scripts/move-image.sh
+        env:
+          IMAGE_SRC_REPO: ${{ env.DOCKER_RELEASE_REPO }}
+          IMAGE_DEST_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
+          IMAGE_SRC_TAG: ${{ env.VERSION }} 
+          IMAGE_DEST_TAG: ${{ env.VERSION }}
+
       # Create Openshift certified images
       - name: Create OpenShift certified image on Quay
         run: devbox run -- ./scripts/move-image.sh
