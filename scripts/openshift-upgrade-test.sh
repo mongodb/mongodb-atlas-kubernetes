@@ -16,6 +16,12 @@
 
 set -eou pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the repository root directory (parent of scripts directory)
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VERSION_FILE="${REPO_ROOT}/version.json"
+
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
 #
 # Before running, make sure you have the following tools:
@@ -39,7 +45,11 @@ CATALOG_RELEASE_DIR="${CATALOG_RELEASE_DIR:-./openshift/atlas-catalog-release}"
 
 if [ -z "${CURRENT_VERSION+x}" ]; then
   # opm doesn't allow 'v' prefix for versions
-  CURRENT_VERSION=$(jq -r .current version.json)
+  if [ ! -f "${VERSION_FILE}" ]; then
+    echo "Error: version.json not found at ${VERSION_FILE}"
+    exit 1
+  fi
+  CURRENT_VERSION=$(jq -r .current "${VERSION_FILE}")
 	echo "CURRENT_VERSION is not set. Setting to default: ${CURRENT_VERSION}"
 fi
 
@@ -173,13 +183,13 @@ cleanup_previous_installation() {
 
 build_and_publish_image_and_bundle() {
   echo "Building bundle"
-  cd ../
+  cd "${REPO_ROOT}"
   VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make image bundle
   echo "Adding REPLACE parameter to the CSV"
   value="v1.0.0" yq e -i '.spec.replaces = env(value)' bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml
   echo "Publishing bundle"
   VERSION="${CURRENT_VERSION}" IMG="${NEW_OPERATOR_IMAGE}" OPERATOR_IMAGE="${NEW_OPERATOR_IMAGE}" BUNDLE_IMG="${OPERATOR_BUNDLE_IMAGE}" BUNDLE_METADATA_OPTS="--channels=candidate --default-channel=candidate" make bundle-build bundle-push
-  cd -
+  cd "${SCRIPT_DIR}"
   echo "Bundle has been build and published"
 }
 
