@@ -29,10 +29,6 @@
     "fd":                          "latest",
     "go-licenses":                 "1.6.0",
     "kind":                        "latest",
-    "apple-sdk_12": {
-      "version":   "latest",
-      "platforms": ["aarch64-darwin", "x86_64-darwin"]
-    },
     "path:./flakes/go": {},
     "gnused":           "latest"
   }
