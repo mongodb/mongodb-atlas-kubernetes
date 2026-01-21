@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -394,8 +395,14 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 		return nil // nothing to do
 	}
 
-	// Apply the secret
-	if err := r.Client.Patch(ctx, secret, client.Apply, client.ForceOwnership, ConnectionSecretGoFieldOwner); err != nil {
+	// Apply the secret using the new Apply() API (replaces deprecated Patch with client.Apply)
+	secretUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(secret)
+	if err != nil {
+		return err
+	}
+	secretUnstructuredObj := &unstructured.Unstructured{Object: secretUnstructured}
+	applyConfig := client.ApplyConfigurationFromUnstructured(secretUnstructuredObj)
+	if err := r.Client.Apply(ctx, applyConfig, client.FieldOwner(ConnectionSecretGoFieldOwner), client.ForceOwnership); err != nil {
 		return err
 	}
 

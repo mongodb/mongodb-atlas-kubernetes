@@ -155,9 +155,9 @@ func (p *Patcher) patchStatus(ctx context.Context, c client.Client) {
 		return
 	}
 
-	// SSA Apply() method for sub-resources is not yet supported, so we use Patch here.
-	// See the following issue for more details: https://github.com/kubernetes-sigs/controller-runtime/issues/3183
-	err = c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(p.fieldOwner), client.ForceOwnership)
+	// Use SubResource().Apply() for status subresource (replaces deprecated Status().Patch with client.Apply)
+	applyConfig := client.ApplyConfigurationFromUnstructured(patchedCopy)
+	err = c.SubResource("status").Apply(ctx, applyConfig, client.FieldOwner(p.fieldOwner), client.ForceOwnership)
 	p.err = err
 
 	// After successful status patch, fetch the updated ResourceVersion from the client

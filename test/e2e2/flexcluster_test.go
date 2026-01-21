@@ -225,7 +225,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 				updatedCluster := freshFlexCluster(cluster)
 				updateMutation(updatedCluster)
 				// Use SSA to simulate kubectl apply -f
-				Expect(kubeClient.Patch(ctx, updatedCluster, client.Apply, client.ForceOwnership, GinkGoFieldOwner)).To(Succeed())
+				Expect(applyObject(ctx, kubeClient, updatedCluster, GinkGoFieldOwner)).To(Succeed())
 				// Update cluster reference for subsequent checks
 				cluster = updatedCluster
 			})

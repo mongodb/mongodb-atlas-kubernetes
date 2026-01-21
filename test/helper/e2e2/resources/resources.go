@@ -22,6 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
@@ -46,6 +48,17 @@ func CopySecretToNamespace(ctx context.Context, kubeClient client.Client, key cl
 	}, nil
 }
 
+// applyObject converts a client.Object to ApplyConfiguration and applies it using the new Apply() API
+func applyObject(ctx context.Context, kubeClient client.Client, obj client.Object, fieldOwner client.FieldOwner) error {
+	objUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return fmt.Errorf("failed to convert object to unstructured: %w", err)
+	}
+	objUnstructuredObj := &unstructured.Unstructured{Object: objUnstructured}
+	applyConfig := client.ApplyConfigurationFromUnstructured(objUnstructuredObj)
+	return kubeClient.Apply(ctx, applyConfig, fieldOwner, client.ForceOwnership)
+}
+
 // CopyCredentialsToNamespace copies the credentials secret from the operator namespace
 // to the target namespace. The secret is applied with the specified field owner.
 func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, credentialsName, operatorNamespace, targetNamespace string, fieldOwner client.FieldOwner) error {
@@ -57,7 +70,7 @@ func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, c
 	if err != nil {
 		return err
 	}
-	return kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, fieldOwner)
+	return applyObject(ctx, kubeClient, credentialsSecret, fieldOwner)
 }
 
 // ApplyObjectsToNamespace applies a list of objects to a namespace.
@@ -65,7 +78,7 @@ func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, c
 func ApplyObjectsToNamespace(ctx context.Context, kubeClient client.Client, objs []client.Object, namespace string, fieldOwner client.FieldOwner) ([]client.Object, error) {
 	for _, obj := range objs {
 		obj.SetNamespace(namespace)
-		if err := kubeClient.Patch(ctx, obj, client.Apply, client.ForceOwnership, fieldOwner); err != nil {
+		if err := applyObject(ctx, kubeClient, obj, fieldOwner); err != nil {
 			return nil, fmt.Errorf("failed to apply object %s/%s: %w", obj.GetObjectKind().GroupVersionKind().Kind, obj.GetName(), err)
 		}
 	}

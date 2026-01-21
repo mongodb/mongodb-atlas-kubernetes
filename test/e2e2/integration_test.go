@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -46,6 +48,18 @@ var integrations embed.FS
 const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
+
+// applyObject converts a client.Object to ApplyConfiguration and applies it using the new Apply() API
+// This replaces the deprecated Patch() with client.Apply pattern
+func applyObject(ctx context.Context, kubeClient client.Client, obj client.Object, fieldOwner client.FieldOwner) error {
+	objUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return fmt.Errorf("failed to convert object to unstructured: %w", err)
+	}
+	objUnstructuredObj := &unstructured.Unstructured{Object: objUnstructured}
+	applyConfig := client.ApplyConfigurationFromUnstructured(objUnstructuredObj)
+	return kubeClient.Apply(ctx, applyConfig, fieldOwner, client.ForceOwnership)
+}
 
 var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
 	var ctx context.Context
@@ -101,7 +115,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				for _, obj := range objs {
 					objToApply := WithRandomAtlasProject(kube.WithRenamedNamespace(obj, testNamespace.Name))
 					Expect(
-						kubeClient.Patch(ctx, objToApply, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+						applyObject(ctx, kubeClient, objToApply, GinkGoFieldOwner),
 					).To(Succeed())
 				}
 			})
@@ -125,7 +139,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				for _, objUpdate := range updates {
 					objToPatch := WithRandomAtlasProject(kube.WithRenamedNamespace(objUpdate, testNamespace.Name))
 					Expect(
-						kubeClient.Patch(ctx, objToPatch, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+						applyObject(ctx, kubeClient, objToPatch, GinkGoFieldOwner),
 					).To(Succeed())
 				}
 			})
@@ -216,7 +230,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 		By("Create Atlas Project", func() {
 			Expect(
-				kubeClient.Patch(ctx, &project, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+				applyObject(ctx, kubeClient, &project, GinkGoFieldOwner),
 			).To(Succeed())
 		})
 
@@ -278,7 +292,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 			for _, obj := range []client.Object{credentialsSecret, &integrationSecret, &integration} {
 				Expect(
-					kubeClient.Patch(ctx, obj, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+					applyObject(ctx, kubeClient, obj, GinkGoFieldOwner),
 				).To(Succeed())
 			}
 		})
@@ -303,7 +317,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			}
 			updatedIntegration.Spec.VictorOps.RoutingKey = "another-routing-key"
 			Expect(
-				kubeClient.Patch(ctx, &updatedIntegration, client.Apply, client.ForceOwnership, GinkGoFieldOwner),
+				applyObject(ctx, kubeClient, &updatedIntegration, GinkGoFieldOwner),
 			).To(Succeed())
 		})
 
