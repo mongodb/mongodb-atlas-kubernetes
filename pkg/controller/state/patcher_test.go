@@ -17,7 +17,6 @@ package state
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -283,9 +282,13 @@ func TestPatcher(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 
-				gotObj := &appsv1.Deployment{}
-				require.NoError(t, runtime.DefaultUnstructuredConverter.FromUnstructured(p.patchedObj.Object, gotObj))
-				require.True(t, reflect.DeepEqual(gotObj, tc.wantObj))
+				obj := &appsv1.Deployment{}
+				require.NoError(t, runtime.DefaultUnstructuredConverter.FromUnstructured(p.patchedObj.Object, obj))
+				got := obj.DeepCopy()
+				if got != nil {
+					got.ResourceVersion = ""
+				}
+				require.Equal(t, tc.wantObj, got)
 			}
 		})
 	}

@@ -151,9 +151,14 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	result, err := r.reconcile(ctx, req)
 
 	if err != nil {
+		// Re-fetch the user object to get the latest ResourceVersion before patching.
+		// This is necessary because handleBatchUpsert may have already patched the status,
+		// and we need the latest ResourceVersion for the patcher to work correctly.
 		user := &generatedv1.DatabaseUser{}
-		user.SetName(req.Name)
-		user.SetNamespace(req.Namespace)
+		if fetchErr := r.Client.Get(ctx, req.NamespacedName, user); fetchErr != nil {
+			// If we can't fetch the user (e.g., it was deleted), return the original error
+			return result, err
+		}
 
 		errorCondition := metav1.Condition{
 			Type:               ConnectionSecretReady,

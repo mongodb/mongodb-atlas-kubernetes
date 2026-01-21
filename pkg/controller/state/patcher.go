@@ -41,6 +41,11 @@ func NewPatcher(obj client.Object) *Patcher {
 	patchedObj.SetName(obj.GetName())
 	patchedObj.SetNamespace(obj.GetNamespace())
 	patchedObj.SetGeneration(obj.GetGeneration())
+	// Copy ResourceVersion to ensure Server-Side Apply works correctly with fake client
+	// In controller-runtime 0.23.0+, SSA requires ResourceVersion to be present and correct
+	if obj.GetResourceVersion() != "" {
+		patchedObj.SetResourceVersion(obj.GetResourceVersion())
+	}
 	return &Patcher{patchedObj: patchedObj, obj: obj, fieldOwner: FieldOwner}
 }
 
@@ -154,6 +159,19 @@ func (p *Patcher) patchStatus(ctx context.Context, c client.Client) {
 	// See the following issue for more details: https://github.com/kubernetes-sigs/controller-runtime/issues/3183
 	err = c.Status().Patch(ctx, patchedCopy, client.Apply, client.FieldOwner(p.fieldOwner), client.ForceOwnership)
 	p.err = err
+
+	// After successful status patch, fetch the updated ResourceVersion from the client
+	// This is necessary because the fake client in 0.23.0+ updates ResourceVersion after patching,
+	// and we need it for subsequent object patch operations
+	if err == nil {
+		key := client.ObjectKeyFromObject(p.obj)
+		currentObj := p.obj.DeepCopyObject().(client.Object)
+		if fetchErr := c.Get(ctx, key, currentObj); fetchErr == nil {
+			if rv := currentObj.GetResourceVersion(); rv != "" {
+				p.patchedObj.SetResourceVersion(rv)
+			}
+		}
+	}
 }
 
 func (p *Patcher) copyPatchedObject(c client.Client) (*unstructured.Unstructured, error) {
