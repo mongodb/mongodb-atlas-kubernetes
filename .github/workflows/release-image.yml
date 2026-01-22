@@ -148,7 +148,6 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: |
             mongodb-atlas-kubernetes
-            helm-charts
 
       # Login in into all registries
       - name: Log in to Docker registry
@@ -174,16 +173,6 @@ jobs:
 
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
-
-      # Trigger the helm release workflow to sync
-      - name: Trigger helm post release workflow
-        env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-          gh workflow run post-atlas-operator-release.yaml \
-            --repo mongodb/helm-charts \
-            --ref main \
-            --field version="${{ env.VERSION }}"
 
       # Move prerelease images to official release registries in Docker Hub and Quay
       - name: Move image to Docker registry release from prerelease
