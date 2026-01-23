@@ -27,9 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/objmap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/refs"
 )
 
 // NewTranslator creates a translator for a particular CRD version. It is also

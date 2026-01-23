@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/refs"
 )
 
 // Translator allows to translate back and forth between a CRD schema
