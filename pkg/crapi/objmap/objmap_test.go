@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312012/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/objmap"
 )
 
 type testStruct struct {

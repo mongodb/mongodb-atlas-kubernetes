@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/testdata/samples/v1"
 )
 
 func TestIsNil(t *testing.T) {

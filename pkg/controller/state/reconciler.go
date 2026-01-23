@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/finalizer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )

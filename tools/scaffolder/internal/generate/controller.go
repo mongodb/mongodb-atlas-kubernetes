@@ -177,7 +177,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		handlerFields = append(
 			handlerFields,
 			jen.Id("translators").Map(jen.String()).Qual(
-				"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Translator",
+				"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "Translator",
 			),
 			jen.Id("handler"+versionSuffix).
 				Qual(pkgCtrlState, "VersionedHandlerFunc").
@@ -227,7 +227,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 			),
 		),
 		jen.List(jen.Id("translators"), jen.Id("err")).Op(":=").Qual(
-			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "NewPerVersionTranslators",
+			"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "NewPerVersionTranslators",
 		).Call(
 			jen.Id("c").Dot("GetScheme").Call(),
 			jen.Id("crd"),
@@ -269,7 +269,7 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 		handlerFuncParams := []jen.Code{
 			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-			jen.Id("translator").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi", "Translator"),
+			jen.Id("translator").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "Translator"),
 			jen.Id("deletionProtection").Bool(),
 		}
 

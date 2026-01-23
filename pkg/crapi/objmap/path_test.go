@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/objmap"
 )
 
 func TestAsPath(t *testing.T) {

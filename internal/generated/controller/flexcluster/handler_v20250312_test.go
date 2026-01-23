@@ -35,12 +35,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )

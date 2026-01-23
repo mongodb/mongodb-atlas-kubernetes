@@ -17,7 +17,7 @@ package refs
 import (
 	"strings"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/objmap"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/objmap"
 )
 
 type OpenAPIMapping struct {

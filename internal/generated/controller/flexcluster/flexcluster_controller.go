@@ -25,10 +25,10 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 )
 
 const (

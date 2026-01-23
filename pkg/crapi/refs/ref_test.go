@@ -31,11 +31,11 @@ import (
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata"
-	samplesv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/crapi/testdata/samples/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/refs"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/testdata"
+	samplesv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/testdata/samples/v1"
 )
 
 const (
