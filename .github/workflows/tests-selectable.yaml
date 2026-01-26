@@ -82,6 +82,12 @@ jobs:
           SKIP_PREFIXES: "[\"focus\"]"
           USE_JSON: true
         run: |
+          # Nightly runs all tests, overriding PR labels as ["test/e2e/*", "test/int/*"]
+          if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" -o "${EVENT_NAME}" == "workflow_dispatch" ];then
+          PR_LABELS='["test/e2e/*", "test/int/*"]'
+          echo "Nightly runs all tests"
+          fi
+          echo PR_LABELS="${PR_LABELS}"
           make compute-labels
           ./bin/ginkgo-labels > result.json
           echo "Int tests to execute $(cat result.json | jq -c .int)"
