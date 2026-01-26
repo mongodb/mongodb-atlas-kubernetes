@@ -576,6 +576,58 @@ verify: ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify
 
+# Helper to set sandbox environment variables
+# Usage: make release-image-sandbox <target1> <target2> ...
+# This sets all sandbox env vars and passes them to subsequent targets
+ifneq ($(filter release-image-sandbox,$(MAKECMDGOALS)),)
+    # 1. Flag to enable sandbox logic
+    SANDBOX_MODE := true
+
+    # 2. Defaults (Can be overridden by env vars or command line)
+    SANDBOX_REGISTRY ?= $(error SANDBOX_REGISTRY is not set)
+    # Assuming SANDBOX_REGISTRY is like "ghcr.io/{user}/ako-sandbox"
+    # Extract registry (first field) and username (second field)
+    SANDBOX_REGISTRY_HOST ?= $(shell echo $(SANDBOX_REGISTRY) | cut -d/ -f1)
+    SANDBOX_USERNAME ?= $(shell echo $(SANDBOX_REGISTRY) | cut -d/ -f2)
+    VERSION       ?= $(NEXT_VERSION)-test
+    PROMOTED_TAG  ?= promoted-latest
+    
+    # 3. Upstream Repos (Defaults)
+    DOCKER_PRERELEASE_REPO ?= docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+    QUAY_PRERELEASE_REPO   ?= quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
+
+    # 4. Sandbox Destinations
+    #    We simply prefix the existing repo names with our SANDBOX_REGISTRY.
+    #    This creates paths like: ttl.sh/abc123/docker.io/mongodb/...
+    DEST_PRERELEASE_REPO := $(SANDBOX_REGISTRY)/$(DOCKER_PRERELEASE_REPO)
+    DOCKER_RELEASE_REPO  := $(SANDBOX_REGISTRY)/docker.io/mongodb/mongodb-atlas-kubernetes-operator
+    QUAY_RELEASE_REPO    := $(SANDBOX_REGISTRY)/quay.io/mongodb/mongodb-atlas-kubernetes-operator
+    
+    # 5. Signature Config
+    #    Aligning these ensures consistency.
+    DOCKER_SIGNATURE_REPO := $(SANDBOX_REGISTRY)/docker.io/mongodb/signatures
+    SIGNATURE_REPO     := $(SANDBOX_REGISTRY)/mongodb/signature
+
+	SIGNING_DOCKERCFG_BASE64 := $(shell ./scripts/gen-dockerconf.sh $(SANDBOX_USERNAME) $(SANDBOX_REGISTRY_HOST))
+
+    # 6. Exports
+    export SANDBOX_MODE
+	export SANDBOX_REGISTRY VERSION PROMOTED_TAG
+    export DOCKER_PRERELEASE_REPO QUAY_PRERELEASE_REPO
+	export DEST_PRERELEASE_REPO DOCKER_RELEASE_REPO QUAY_RELEASE_REPO
+	export DOCKER_SIGNATURE_REPO SIGNATURE_REPO
+	export SIGNING_DOCKERCFG_BASE64
+endif
+
+.PHONY: release-image-sandbox
+release-image-sandbox: ## Set sandbox environment variables for release testing (use with other targets)
+	@:
+
+.PHONY: push-release-images
+push-release-images: ## Push, sign, and verify release images (Phase 6 - point of no return, atomic per target)
+	@DEST_PRERELEASE_REPO="$${DEST_PRERELEASE_REPO:-$$DOCKER_PRERELEASE_REPO}" \
+	./scripts/push-release-images.sh
+
 .PHONY: helm-upd-crds
 helm-upd-crds:
 	HELM_CRDS_PATH=$(HELM_CRDS_PATH) ./scripts/helm-upd-crds.sh

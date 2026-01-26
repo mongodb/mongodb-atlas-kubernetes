@@ -40,6 +40,10 @@ echo "  From: ${image_src_url}"
 echo "  To:   ${image_dest_url}"
 
 BUILDER_NAME="tmpbuilder-move-image"
+# Remove builder if it already exists (from previous failed run)
+if docker buildx inspect "${BUILDER_NAME}" > /dev/null 2>&1; then
+  docker buildx rm "${BUILDER_NAME}" > /dev/null 2>&1 || true
+fi
 docker buildx create --name "${BUILDER_NAME}" --use > /dev/null
 docker buildx imagetools create "${image_src_url}" --tag "${image_dest_url}"
 
@@ -49,5 +53,5 @@ if [[ "${ALIAS_ENABLED}" == "true" && -n "${ALIAS_TAG}" ]]; then
   echo "Successfully aliased as ${IMAGE_DEST_REPO}:${ALIAS_TAG}"
 fi
 
-docker buildx rm "${BUILDER_NAME}" > /dev/null
+docker buildx rm "${BUILDER_NAME}" > /dev/null 2>&1 || true
 echo "Successfully moved ${image_src_url} -> ${image_dest_url}"
