@@ -24,7 +24,16 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 "${SCRIPT_DIR}"/retry.sh docker pull "${img}"
 MULTIARCH_IMG_SHA=$(docker inspect --format='{{index .RepoDigests 0}}' "${img}" |awk -F@ '{print $2}')
-IMG_PLATFORMS_SHAS=$(docker manifest inspect "${img}" | \
+
+# Get manifest and validate it's JSON before parsing
+MANIFEST_OUTPUT=$(docker manifest inspect "${img}" 2>&1)
+if ! echo "${MANIFEST_OUTPUT}" | jq empty >/dev/null 2>&1; then
+    echo "Error: docker manifest inspect returned invalid JSON for ${img}" >&2
+    echo "Output (first 500 chars): ${MANIFEST_OUTPUT:0:500}" >&2
+    exit 1
+fi
+
+IMG_PLATFORMS_SHAS=$(echo "${MANIFEST_OUTPUT}" | \
   jq -rc '.manifests[] | select(.platform.os != "unknown" and .platform.architecture != "unknown") | .digest')
 
 echo "${action} parent multiarch image ${img}@${MULTIARCH_IMG_SHA}..."
