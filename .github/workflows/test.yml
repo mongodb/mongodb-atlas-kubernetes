@@ -83,12 +83,21 @@ jobs:
     uses: ./.github/workflows/tests-e2e2.yaml
     secrets: inherit
 
+  openshift-upgrade-test:
+     needs:
+       - ci
+       - build-images
+       - cloud-tests-filter
+     uses: ./.github/workflows/openshift-upgrade-test.yaml
+     secrets: inherit
+
   start-promote-image:
     name: Start Promote Image
     needs:
       - ci
       - tests-selectable
       - e2e2
+      - openshift-upgrade-test
     if: github.ref_name == 'main' && github.event_name != 'pull_request_target' && github.event_name != 'pull_request'
     uses: ./.github/workflows/promote-image.yml
     secrets: inherit
