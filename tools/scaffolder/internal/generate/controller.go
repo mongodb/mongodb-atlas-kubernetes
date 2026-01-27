@@ -28,7 +28,7 @@ const (
 )
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath string, override bool) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath string, override bool) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
@@ -82,6 +82,20 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, typesPath 
 	for _, mapping := range parsedConfig.Mappings {
 		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, resultPath, mapping, override); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
+		}
+
+		err = generateResourceExporter(
+			&exporterRequest{
+				crdPath:            resultPath,
+				kind:               crdKind,
+				resourceName:       resourceName,
+				resourceImportPath: typesPath,
+				destination:        exporterOutDir,
+				mapping:            mapping,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to generate exporter for resource %s: %w", resourceName, err)
 		}
 	}
 
