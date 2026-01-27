@@ -129,6 +129,7 @@ jobs:
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       PROMOTED_TAG: promoted-${{ github.event.inputs.image_sha }}
       CERTIFIED_TAG: ${{ github.event.inputs.version }}-certified
+      DEST_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       DOCKER_IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
       QUAY_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
       QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}-certified
@@ -174,51 +175,6 @@ jobs:
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.14.0
 
-      # Move prerelease images to official release registries in Docker Hub and Quay
-      - name: Move image to Docker registry release from prerelease
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.DOCKER_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
-          IMAGE_DEST_TAG: ${{ env.VERSION }}
-
-      - name: Move image to Quay registry release from prerelease
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
-          IMAGE_DEST_TAG: ${{ env.VERSION }}
-
-      - name: Copy image from Docker registry release to prerelease for all-in-one test
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.DOCKER_RELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.DOCKER_PRERELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ env.VERSION }} 
-          IMAGE_DEST_TAG: ${{ env.VERSION }}
-
-      # Create Openshift certified images
-      - name: Create OpenShift certified image on Quay
-        run: devbox run -- ./scripts/move-image.sh
-        env:
-          IMAGE_SRC_REPO: ${{ env.QUAY_PRERELEASE_REPO }}
-          IMAGE_DEST_REPO: ${{ env.QUAY_RELEASE_REPO }}
-          IMAGE_SRC_TAG: ${{ env.PROMOTED_TAG }}
-          IMAGE_DEST_TAG: ${{ env.CERTIFIED_TAG }}
-
-      - name: Certify Openshift images
-        uses: ./.github/actions/certify-openshift-images
-        with:
-          registry: quay.io
-          repository: ${{ needs.compute-repo.outputs.repo }}
-          version: ${{ env.CERTIFIED_TAG }}
-          registry_password: ${{ secrets.QUAY_PASSWORD }}
-          rhcc_project: ${{ secrets.RH_CERTIFICATION_OSPID }}
-          rhcc_token: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
-          submit: ${{ github.event.inputs.release_type == 'official-release' }}
-
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
         env:
@@ -232,30 +188,7 @@ jobs:
         run: devbox run -- ./scripts/bump-helm-chart-version.sh
 
       # Prepare SDLC requirement: signatures, sboms, compliance reports
-      # Note, signed images will live in mongodb/release and mongodb/signature repos
-      - name: Sign released images
-        run: |
-          devbox run -- make sign IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ env.QUAY_IMAGE_URL }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-          devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make sign IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-        env:
-          PKCS11_URI: ${{ secrets.PKCS11_URI }}
-          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
-          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
-      
-      - name: Self-verify released image signatures
-        run: |
-          devbox run -- make verify IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_RELEASE_REPO }}"
-          devbox run -- make verify IMG="${{ env.QUAY_IMAGE_URL }}"           SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make verify IMG="${{ env.DOCKER_IMAGE_URL }}"         SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-          devbox run -- make verify IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.QUAY_RELEASE_REPO }}"
-          devbox run -- make verify IMG="${{ env.QUAY_CERTIFIED_IMAGE_URL }}" SIGNATURE_REPO="${{ env.DOCKER_SIGNATURE_REPO }}"
-        env:
-          PKCS11_URI: ${{ secrets.PKCS11_URI }}
-          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
-          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+      # Note: Images are already signed and verified by push-release-images step above
 
       - name: Generate SBOMs
         run: devbox run -- make generate-sboms RELEASED_OPERATOR_IMAGE="${{ env.DOCKER_RELEASE_REPO }}"
@@ -301,12 +234,17 @@ jobs:
           git add -f "$RELEASE_DIR" helm-charts version.json
           scripts/create-signed-commit.sh
 
-          gh pr create \
-            --draft \
-            --base main \
-            --head "$BRANCH" \
-            --title "$COMMIT_MESSAGE" \
-            --body "This is an autogenerated PR to prepare for the release"
+          # Check if PR already exists (idempotent PR creation)
+          if gh pr view "$BRANCH" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "PR already exists for branch $BRANCH, skipping creation"
+          else
+            gh pr create \
+              --draft \
+              --base main \
+              --head "$BRANCH" \
+              --title "$COMMIT_MESSAGE" \
+              --body "This is an autogenerated PR to prepare for the release"
+          fi
 
       # Create release artefacts on GitHub by tagging and pushing a tag
       - name: Create configuration package
@@ -317,8 +255,29 @@ jobs:
       - name: Tag the release assets
         run: |
           git fetch --tags
+          # Force update tag to ensure it points to the correct commit (idempotent)
+          # This will create the tag if it doesn't exist, or update it if it does
           git tag -f ${{ env.RELEASE_TAG }} ${{ needs.image2commit.outputs.commit_sha }}
+          # Force push tag (idempotent - will update if exists, create if not)
           git push -f origin ${{ env.RELEASE_TAG }}
+
+      - name: Ensure release is draft (if exists)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if release exists and ensure it's a draft
+          RELEASE_JSON=$(gh release view "${{ env.RELEASE_TAG }}" --json draft,id 2>/dev/null || echo "{}")
+          if [ "$(echo "$RELEASE_JSON" | jq -r '.id // empty')" != "" ]; then
+            IS_DRAFT=$(echo "$RELEASE_JSON" | jq -r '.draft // false')
+            if [ "$IS_DRAFT" != "true" ]; then
+              echo "Warning: Release ${{ env.RELEASE_TAG }} exists but is not a draft. Updating to draft..."
+              gh release edit "${{ env.RELEASE_TAG }}" --draft
+            else
+              echo "Release ${{ env.RELEASE_TAG }} already exists as draft"
+            fi
+          else
+            echo "Release ${{ env.RELEASE_TAG }} does not exist yet, will be created as draft"
+          fi
 
       - name: Create release on GitHub
         uses: softprops/action-gh-release@v2
@@ -329,8 +288,48 @@ jobs:
           name: "${{ env.RELEASE_TAG }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           body_path: docs/release-notes/release-notes-template.md
+          # Note: action-gh-release@v2 automatically updates existing releases with the same tag (idempotent)
+          # The step above ensures the release remains a draft when updating
           files: |
             ./atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz
             ./docs/releases/v${{ env.VERSION }}/sdlc-compliance.md
             ./docs/releases/v${{ env.VERSION }}/linux_amd64.sbom.json
             ./docs/releases/v${{ env.VERSION }}/linux_arm64.sbom.json
+
+      # Safety check: Run certification in dry-run mode against prerelease image before publishing
+      # This ensures the image will pass certification before we push it to public registries
+      # Note: Registry login is performed earlier in the workflow (docker.io login step)
+      - name: Pre-validate certification (dry-run)
+        run: devbox run -- make certify-openshift-images
+        env:
+          REGISTRY: docker.io
+          REPOSITORY: mongodb/mongodb-atlas-kubernetes-operator-prerelease
+          VERSION: ${{ env.PROMOTED_TAG }}
+          RHCC_PROJECT: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          RHCC_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          SUBMIT: false
+          # Note: This runs against the prerelease image before it's pushed to quay.io
+          # Preflight can check images from any registry, not just quay.io
+
+      # Push, sign, and verify release images (atomic per target) - POINT OF NO RETURN
+      # This is the most critical step and must be last after all preparation is complete
+      # This handles: Docker release, Quay release, Quay certified, and copying back to prerelease
+      - name: Push, sign, and verify release images
+        run: devbox run -- make push-release-images
+        env:
+          PKCS11_URI: ${{ secrets.PKCS11_URI }}
+          GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
+          GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+
+      # Certify OpenShift images (must happen after push-release-images creates the certified image)
+      # This is the actual certification submission (if official-release)
+      # Note: Registry login is performed earlier in the workflow (quay.io login step)
+      - name: Certify Openshift images
+        run: devbox run -- make certify-openshift-images
+        env:
+          REGISTRY: quay.io
+          REPOSITORY: ${{ needs.compute-repo.outputs.repo }}
+          VERSION: ${{ env.CERTIFIED_TAG }}
+          RHCC_PROJECT: ${{ secrets.RH_CERTIFICATION_OSPID }}
+          RHCC_TOKEN: ${{ secrets.RH_CERTIFICATION_PYXIS_API_TOKEN }}
+          SUBMIT: ${{ github.event.inputs.release_type == 'official-release' }}
