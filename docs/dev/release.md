@@ -193,17 +193,23 @@ All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHa
 The workflow needs 4 parameters:
 - The `version` to release, which is **required**.
 - Whether or not this is a `dryrun`. Set to `false` to do the actual release.
-- The `author` name, which is **required**. This should be the author name as registered in RedHat Connect.
-- The `email` address, which is **required**. This should be the email address of the author as registered in RedHat Connect.
+- The `author` name, which is **required**. This should be the author's username [as registered in the RedHat repos like this](https://raw.githubusercontent.com/k8s-operatorhub/community-operators/refs/heads/main/operators/mongodb-atlas-kubernetes/ci.yaml). See [Prerequisites](#prerequisites).
 
 Note when the dryrun is `true` the workflow does everything, except the `git push` is dry run, which should test access credentials, but not make the push really happen.
 
-The `author` and `email` parameters are used to configure the git user identity for commits made during the release process. These should match the credentials registered in your RedHat Connect account to ensure proper attribution of the release.
+The `author` and `email` parameters are used to configure the git user identity for commits made during the release process.
 
-Once the workflow ends sucessfully, pleasego to the projects PR tabs and complete the PRs to review at:
+Once the workflow ends sucessfully, please go to the projects PR tabs and complete the PRs to review at:
 * https://github.com/k8s-operatorhub/community-operators/pulls
 * https://github.com/redhat-openshift-ecosystem/community-operators-prod/pulls
 * https://github.com/redhat-openshift-ecosystem/certified-operators/pulls
+
+The job log should end with direct links for you to create the PRs, they will look like this:
+```
+https://github.com/k8s-operatorhub/community-operators/pull/new/mongodb-atlas-operator-community-${version}
+https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/new/mongodb-atlas-operator-community-${version}
+https://github.com/redhat-openshift-ecosystem/certified-operators/pull/new/mongodb-atlas-kubernetes-operator-${version}
+```
 
 # Post install hook release
 
@@ -224,7 +230,7 @@ For the Openshift upgrade tests we rely on a service account to be present in th
 ## Setup Kubectl against the new cluster
 
 1. Go to https://console.redhat.com/openshift
-1. Use your RedHat account credentials to log in, see Pre-requisites on the RedHat Connect account you need to setup before this.
+1. Use your RedHat account credentials to log in, see [Prerequisites](#prerequisites) on the RedHat Connect account you need to setup before this.
 1. Form the list of Clusters, click of the name of the one to be used now.
 1. CLick the `Open Console` in the top right of the page.
 1. Use the cluster `htpasswd` credentials you should have been given beforehand to login to the cluster itself.
