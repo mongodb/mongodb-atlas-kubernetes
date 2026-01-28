@@ -41,5 +41,9 @@ echo "Releasing to RedHat: ${version}"
 ./scripts/release-redhat-openshift.sh "${version}"
 ./scripts/release-redhat-certified.sh "${version}"
 
-echo "All releases PR posted successfully."
+echo "All releases branches posted successfully."
+echo "Please use the following URLs to create the PRs manually:"
+echo "https://github.com/k8s-operatorhub/community-operators/pull/new/mongodb-atlas-operator-community-${version}"
+echo "https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/new/mongodb-atlas-operator-community-${version}"
+echo "https://github.com/redhat-openshift-ecosystem/certified-operators/pull/new/mongodb-atlas-kubernetes-operator-${version}"
 
