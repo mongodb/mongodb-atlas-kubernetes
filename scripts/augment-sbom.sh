@@ -35,10 +35,9 @@ silkbomb_img="${registry}/silkbomb:2.0"
 docker_platform="linux/amd64"
 
 # Arguments
-sbom_lite_json=$1
-[ -z "${sbom_lite_json}" ] && echo "Missing SBOM lite JSON path parameter" && exit 1
-target_dir=$2
-[ -z "${target_dir}" ] && echo "Missing target directory parameter #2" && exit 1
+sbom_lite_json=${1:?Missing SBOM lite JSON path parameter}
+target_dir=$(dirname "${sbom_lite_json}")
+sbom_lite_name=$(basename "${sbom_lite_json}")
 
 # Environment inputs
 kondukto_token="${KONDUKTO_TOKEN:?KONDUKTO_TOKEN must be set}"
@@ -48,15 +47,15 @@ kondukto_branch_prefix="${KONDUKTO_BRANCH_PREFIX:?KONDUKTO_BRANCH_PREFIX must be
 # Computed values
 arch=$(jq -r '.components[0].properties[] | select( .name == "syft:metadata:architecture" ) | .value' <"${sbom_lite_json}")
 kondukto_branch="${kondukto_branch_prefix}-linux-${arch}"
-target="${target_dir}/linux-${arch}.sbom.json"
+target="${target_dir}/linux-${arch}.sbom.augmented.json"
+target_name=$(basename "${target}")
 
 echo "Computed Kondukto branch: ${kondukto_branch}"
 
 # Download
-mkdir -p "${target_dir}"
-docker run --platform="${docker_platform}" --rm -v "${PWD}":/pwd \
+docker run --platform="${docker_platform}" --rm -v "${target_dir}":/tmp \
   -e KONDUKTO_TOKEN="${kondukto_token}" \
-  "${silkbomb_img}" augment --sbom-in "/pwd/${sbom_lite_json}" \
-  --repo "${kondukto_repo}" --branch "${kondukto_branch}" --sbom-out "/pwd/${target}"
+  "${silkbomb_img}" augment --sbom-in "/tmp/${sbom_lite_name}" \
+  --repo "${kondukto_repo}" --branch "${kondukto_branch}" --sbom-out "/tmp/${target_name}"
 
 echo "${target} augmented with Kondukto scan results"
