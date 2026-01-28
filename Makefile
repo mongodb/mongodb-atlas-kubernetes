@@ -101,7 +101,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Track changes to sources to avoid repeating operations on sourced when soruces did not change
+# Track changes to sources to avoid repeating operations on sourced when sources did not change
 TMPDIR ?= /tmp
 TIMESTAMPS_DIR := $(TMPDIR)/mongodb-atlas-kubernetes
 GO_SOURCES = $(shell find . -type f -name '*.go' -not -path './vendor/*' -not -path './tools/*')
@@ -684,8 +684,8 @@ upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto
 
 .PHONY: augment-sbom
 augment-sbom: ## augment the latest SBOM for a given architecture on a given directory
-	@KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
-	./scripts/augment-sbom.sh $(SBOM_JSON_FILE) tmp
+	KONDUKTO_REPO=$(KONDUKTO_REPO) KONDUKTO_BRANCH_PREFIX=$(KONDUKTO_BRANCH_PREFIX) \
+	./scripts/augment-sbom.sh $(SBOM_JSON_FILE)
 
 .PHONY: store-augmented-sboms
 store-augmented-sboms: ## Augment & Store the latest SBOM for a given version & architecture

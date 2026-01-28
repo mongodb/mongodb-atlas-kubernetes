@@ -154,6 +154,9 @@ Once the image is out, publish the release notes draft as soon as possible.
 
 ## Upload SBOMs to Kondukto
 
+> [!IMPORTANT]
+> The GitHub release notes must have been **published** before the SBOMs can be sent to Kondukto.
+
 The SBOM upload and augmentation process is automated via the [Send SBOMs to Kondukto](../../.github/workflows/send-sboms.yaml) GitHub workflow.
 
 1. Navigate to the [Actions tab](https://github.com/mongodb/mongodb-atlas-kubernetes/actions) in the GitHub repository.
