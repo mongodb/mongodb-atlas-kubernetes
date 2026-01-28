@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312012/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312013/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
