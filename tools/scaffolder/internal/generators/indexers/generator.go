@@ -12,36 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+// Package indexers provides the indexers generator for CRD reference field lookups.
+package indexers
 
 import (
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/registry"
 )
 
-const IndexersGeneratorName = "indexers"
+// GeneratorName is the unique name for this generator.
+const GeneratorName = "indexers"
 
 func init() {
-	Register(&IndexersGenerator{})
+	registry.Register(&Generator{})
 }
 
-// IndexersGenerator generates indexer files for CRDs.
-type IndexersGenerator struct{}
+// Generator generates indexer files for CRDs.
+type Generator struct{}
 
 // Name returns the generator name.
-func (g *IndexersGenerator) Name() string {
-	return IndexersGeneratorName
+func (g *Generator) Name() string {
+	return GeneratorName
 }
 
 // Description returns a human-readable description.
-func (g *IndexersGenerator) Description() string {
+func (g *Generator) Description() string {
 	return "Generates indexer files for CRD reference field lookups"
 }
 
 // Generate runs the indexer generation for a single CRD kind.
-func (g *IndexersGenerator) Generate(opts *Options) error {
-	if err := generate.GenerateIndexers(opts.InputPath, opts.CRDKind, opts.IndexerOutDir, opts.IndexerTypesPath); err != nil {
+func (g *Generator) Generate(opts *registry.Options) error {
+	if err := GenerateIndexers(opts.InputPath, opts.CRDKind, opts.IndexerOutDir, opts.IndexerTypesPath); err != nil {
 		return fmt.Errorf("failed to generate indexers: %w", err)
 	}
 	return nil

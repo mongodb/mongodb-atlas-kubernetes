@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package atlascontrollers
 
 import (
 	"os"
@@ -22,6 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/config"
 )
 
 const (
@@ -63,9 +65,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -208,9 +210,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -293,9 +295,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -387,9 +389,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -490,17 +492,17 @@ spec:
 	require.NoError(t, err)
 
 	// Generate handlers for both versions
-	mappings := []MappingWithConfig{
+	mappings := []config.MappingWithConfig{
 		{
 			Version: "v20250312",
-			OpenAPIConfig: OpenAPIConfig{
+			OpenAPIConfig: config.OpenAPIConfig{
 				Name:    "v20250312",
 				Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 			},
 		},
 		{
 			Version: "v20250401",
-			OpenAPIConfig: OpenAPIConfig{
+			OpenAPIConfig: config.OpenAPIConfig{
 				Name:    "v20250401",
 				Package: "go.mongodb.org/atlas-sdk/v20250401001/admin",
 			},
@@ -589,9 +591,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -675,9 +677,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -758,9 +760,9 @@ spec:
 	err := os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -804,9 +806,9 @@ spec:
 }
 
 func TestGenerateVersionHandlerInvalidResultPath(t *testing.T) {
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},
@@ -950,9 +952,9 @@ spec:`, 1)
 	err = os.WriteFile(testFile, []byte(groupYAML), 0644)
 	require.NoError(t, err)
 
-	mapping := MappingWithConfig{
+	mapping := config.MappingWithConfig{
 		Version: "v20250312",
-		OpenAPIConfig: OpenAPIConfig{
+		OpenAPIConfig: config.OpenAPIConfig{
 			Name:    "v20250312",
 			Package: "go.mongodb.org/atlas-sdk/v20250312008/admin",
 		},

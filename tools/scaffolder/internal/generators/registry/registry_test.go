@@ -12,37 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+package registry_test
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/registry"
+
+	// Import generators to trigger their init() registration
+	_ "github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/atlascontrollers"
+	_ "github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/atlasexporters"
+	_ "github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/indexers"
 )
 
 func TestRegisteredGenerators(t *testing.T) {
 	// Verify that all expected generators are registered via init()
 	expectedGenerators := []string{
-		AtlasControllersGeneratorName,
-		AtlasExportersGeneratorName,
-		IndexersGeneratorName,
+		"atlas-controllers",
+		"atlas-exporters",
+		"indexers",
 	}
 
-	registeredNames := List()
+	registeredNames := registry.List()
 
 	if len(registeredNames) != len(expectedGenerators) {
 		t.Errorf("expected %d registered generators, got %d: %v", len(expectedGenerators), len(registeredNames), registeredNames)
 	}
 
-	for _, expected := range expectedGenerators {
-		g := Get(expected)
-		if g == nil {
-			t.Errorf("expected generator %q to be registered", expected)
-			continue
-		}
-		if g.Name() != expected {
-			t.Errorf("generator name mismatch: expected %q, got %q", expected, g.Name())
-		}
+	// Verify all expected generators can be retrieved
+	gens, err := registry.GetByNames(expectedGenerators)
+	if err != nil {
+		t.Fatalf("failed to get expected generators: %v", err)
+	}
+
+	for _, g := range gens {
 		if g.Description() == "" {
-			t.Errorf("generator %q has empty description", expected)
+			t.Errorf("generator %q has empty description", g.Name())
 		}
 	}
 }
@@ -57,19 +63,19 @@ func TestGetByNames(t *testing.T) {
 	}{
 		{
 			name:      "single valid generator",
-			input:     []string{IndexersGeneratorName},
+			input:     []string{"indexers"},
 			wantCount: 1,
 			wantErr:   false,
 		},
 		{
 			name:      "multiple valid generators",
-			input:     []string{AtlasControllersGeneratorName, IndexersGeneratorName},
+			input:     []string{"atlas-controllers", "indexers"},
 			wantCount: 2,
 			wantErr:   false,
 		},
 		{
 			name:      "all generators",
-			input:     []string{AtlasControllersGeneratorName, AtlasExportersGeneratorName, IndexersGeneratorName},
+			input:     []string{"atlas-controllers", "atlas-exporters", "indexers"},
 			wantCount: 3,
 			wantErr:   false,
 		},
@@ -81,7 +87,7 @@ func TestGetByNames(t *testing.T) {
 		},
 		{
 			name:        "mix of valid and invalid",
-			input:       []string{IndexersGeneratorName, "invalid"},
+			input:       []string{"indexers", "invalid"},
 			wantErr:     true,
 			errContains: "unknown generator",
 		},
@@ -95,12 +101,12 @@ func TestGetByNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gens, err := GetByNames(tt.input)
+			gens, err := registry.GetByNames(tt.input)
 
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error containing %q, got nil", tt.errContains)
-				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
 				}
 				return
@@ -119,7 +125,7 @@ func TestGetByNames(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	names := List()
+	names := registry.List()
 
 	// Verify the list is sorted
 	for i := 1; i < len(names); i++ {
@@ -128,17 +134,16 @@ func TestList(t *testing.T) {
 		}
 	}
 
-	// Verify all registered generators are in the list
-	for _, name := range names {
-		if Get(name) == nil {
-			t.Errorf("List() returned %q but Get(%q) returns nil", name, name)
-		}
+	// Verify all listed names can be retrieved via GetByNames
+	_, err := registry.GetByNames(names)
+	if err != nil {
+		t.Errorf("GetByNames failed for listed names: %v", err)
 	}
 }
 
 func TestAll(t *testing.T) {
-	gens := All()
-	names := List()
+	gens := registry.All()
+	names := registry.List()
 
 	if len(gens) != len(names) {
 		t.Errorf("All() returned %d generators but List() returned %d names", len(gens), len(names))
@@ -146,7 +151,7 @@ func TestAll(t *testing.T) {
 }
 
 func TestGeneratorDescriptions(t *testing.T) {
-	gens := All()
+	gens := registry.All()
 
 	for _, gen := range gens {
 		t.Run(gen.Name(), func(t *testing.T) {
@@ -161,15 +166,22 @@ func TestGeneratorDescriptions(t *testing.T) {
 	}
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsAt(s, substr, 0))
+func TestGetByNames_UnknownGenerator(t *testing.T) {
+	_, err := registry.GetByNames([]string{"unknown-generator"})
+	if err == nil {
+		t.Error("expected error for unknown generator")
+	}
+	if !strings.Contains(err.Error(), "unknown generator") {
+		t.Errorf("expected error to contain 'unknown generator', got: %v", err)
+	}
 }
 
-func containsAt(s, substr string, start int) bool {
-	for i := start; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
+func TestGetByNames_EmptyList(t *testing.T) {
+	gens, err := registry.GetByNames([]string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
-	return false
+	if len(gens) != 0 {
+		t.Errorf("expected empty list, got %d generators", len(gens))
+	}
 }

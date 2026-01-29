@@ -12,51 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+// Package atlasexporters provides the exporter generator for Atlas resources.
+package atlasexporters
 
 import (
 	"fmt"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/indexers"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/registry"
 )
 
-const AtlasExportersGeneratorName = "atlas-exporters"
+// GeneratorName is the unique name for this generator.
+const GeneratorName = "atlas-exporters"
 
 func init() {
-	Register(&AtlasExportersGenerator{})
+	registry.Register(&Generator{})
 }
 
-// AtlasExportersGenerator generates exporter files for CRDs.
-type AtlasExportersGenerator struct{}
+// Generator generates exporter files for CRDs.
+type Generator struct{}
 
 // Name returns the generator name.
-func (g *AtlasExportersGenerator) Name() string {
-	return AtlasExportersGeneratorName
+func (g *Generator) Name() string {
+	return GeneratorName
 }
 
 // Description returns a human-readable description.
-func (g *AtlasExportersGenerator) Description() string {
+func (g *Generator) Description() string {
 	return "Generates Atlas exporter files for importing resources from Atlas API"
 }
 
 // Generate runs the exporter generation for a single CRD kind.
-func (g *AtlasExportersGenerator) Generate(opts *Options) error {
-	parsedConfig, err := opts.GetParsedConfig()
+func (g *Generator) Generate(opts *registry.Options) error {
+	parsedConfig, err := config.ParseCRDConfig(opts.InputPath, opts.CRDKind)
 	if err != nil {
 		return err
 	}
 
 	resourceName := parsedConfig.ResourceName
 
+	// Parse reference fields for the exporter
+	referenceFields, err := indexers.ParseReferenceFields(opts.InputPath, opts.CRDKind)
+	if err != nil {
+		return fmt.Errorf("failed to parse reference fields: %w", err)
+	}
+
 	// Generate exporter for each SDK version mapping
 	for _, mapping := range parsedConfig.Mappings {
-		if err := generate.GenerateResourceExporter(
-			opts.InputPath,
+		if err := GenerateExporter(
 			opts.CRDKind,
 			resourceName,
 			opts.TypesPath,
 			opts.ExporterOutDir,
 			mapping,
+			referenceFields,
 		); err != nil {
 			return fmt.Errorf("failed to generate exporter for resource %s version %s: %w", resourceName, mapping.Version, err)
 		}

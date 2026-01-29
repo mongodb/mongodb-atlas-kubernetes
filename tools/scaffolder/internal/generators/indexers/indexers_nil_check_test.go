@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package indexers
 
 import (
 	"os"
@@ -52,7 +52,7 @@ func TestBuildDotChain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stmt := buildDotChain(tt.segments)
+			stmt := BuildDotChain(tt.segments)
 			
 			// For empty segments, jen returns empty/null statement
 			if len(tt.segments) == 0 {
@@ -76,7 +76,7 @@ func TestBuildNilCheckConditions_NoRequiredSegments(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.GroupRef"
 	requiredSegments := []bool{}
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should fall back to checking the last field
@@ -90,7 +90,7 @@ func TestBuildNilCheckConditions_LengthMismatch(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.GroupRef"
 	requiredSegments := []bool{true} // Wrong length (should be 3: Spec, V20250312, GroupRef)
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should fall back to checking the last field
@@ -104,7 +104,7 @@ func TestBuildNilCheckConditions_AllRequired(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.GroupRef"
 	requiredSegments := []bool{false, true, true} // Spec is never required by convention, V20250312 and GroupRef are required
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Since V20250312 and GroupRef are required, and Spec is skipped by special case,
@@ -119,7 +119,7 @@ func TestBuildNilCheckConditions_MixedRequired(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.OptionalSection.GroupRef"
 	requiredSegments := []bool{false, true, false, true} // Spec (convention), V20250312 required, OptionalSection optional, GroupRef required
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// V20250312 is required so skipped, OptionalSection is optional so should be checked
@@ -137,7 +137,7 @@ func TestBuildNilCheckConditions_AllOptional(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.GroupRef"
 	requiredSegments := []bool{false, false, false} // All optional
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should check V20250312 and GroupRef (not Spec due to special case)
@@ -155,7 +155,7 @@ func TestBuildNilCheckConditions_SpecAlwaysSkipped(t *testing.T) {
 	fieldPath := "resource.Spec.GroupRef"
 	requiredSegments := []bool{false, false} // Both optional, but Spec should still be skipped
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should only check GroupRef, not Spec
@@ -181,7 +181,7 @@ func TestBuildNilCheckConditions_DeepNesting(t *testing.T) {
 	fieldPath := "resource.Spec.V20250312.Config.Advanced.Settings.GroupRef"
 	requiredSegments := []bool{false, true, false, false, false, false} // Only V20250312 is required
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should check all optional nested fields
@@ -203,7 +203,7 @@ func TestBuildNilCheckConditions_SingleOptionalField(t *testing.T) {
 	fieldPath := "resource.Spec.GroupRef"
 	requiredSegments := []bool{false, false} // Both optional
 	
-	stmt := buildNilCheckConditions(fieldPath, requiredSegments)
+	stmt := BuildNilCheckConditions(fieldPath, requiredSegments)
 	result := stmt.GoString()
 	
 	// Should only check GroupRef (Spec skipped by convention)
@@ -216,7 +216,7 @@ func TestBuildNilCheckConditions_SingleOptionalField(t *testing.T) {
 }
 
 func TestGenerateFieldExtractionCodeWithNilChecks(t *testing.T) {
-	// Integration test: verify that generateFieldExtractionCode uses buildNilCheckConditions correctly
+	// Integration test: verify that generateFieldExtractionCode uses BuildNilCheckConditions correctly
 	fields := []ReferenceField{
 		{
 			FieldName:         "groupRef",

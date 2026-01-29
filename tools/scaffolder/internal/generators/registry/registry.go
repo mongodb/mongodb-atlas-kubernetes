@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+// Package registry provides the generator registry and shared types.
+package registry
 
 import (
 	"fmt"
@@ -34,6 +35,37 @@ type Generator interface {
 	Generate(opts *Options) error
 }
 
+// Options contains all the configuration needed by generators.
+// This is passed to each generator's Generate method.
+type Options struct {
+	// InputPath is the path to the CRD YAML file
+	InputPath string
+
+	// CRDKind is the specific CRD kind to generate for
+	CRDKind string
+
+	// ControllerOutDir is the output directory for controller files
+	ControllerOutDir string
+
+	// IndexerOutDir is the output directory for indexer files
+	IndexerOutDir string
+
+	// ExporterOutDir is the output directory for exporter files
+	ExporterOutDir string
+
+	// TypesPath is the full import path to the API types package
+	TypesPath string
+
+	// IndexerTypesPath is the full import path for type imports in indexers
+	IndexerTypesPath string
+
+	// IndexerImportPath is the full import path for indexer imports in controllers
+	IndexerImportPath string
+
+	// Override determines whether to override existing versioned handler files
+	Override bool
+}
+
 // registry holds all registered generators
 var (
 	registryMu sync.RWMutex
@@ -41,7 +73,7 @@ var (
 )
 
 // Register adds a generator to the registry.
-// This is typically called from init() functions in generator files.
+// This is typically called from init() functions in generator packages.
 // Panics if a generator with the same name is already registered.
 func Register(g Generator) {
 	registryMu.Lock()
@@ -52,14 +84,6 @@ func Register(g Generator) {
 		panic(fmt.Sprintf("generator %q already registered", name))
 	}
 	registry[name] = g
-}
-
-// Get returns a generator by name, or nil if not found.
-func Get(name string) Generator {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
-
-	return registry[name]
 }
 
 // List returns all registered generator names in sorted order.

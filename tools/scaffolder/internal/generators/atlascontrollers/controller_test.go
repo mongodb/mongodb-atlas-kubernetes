@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package atlascontrollers
 
 import (
 	"os"
@@ -21,7 +21,46 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/atlasexporters"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/indexers"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/registry"
 )
+
+// runAllGenerators is a test helper that runs all generators similar to the old FromConfig function.
+func runAllGenerators(inputPath, crdKind, controllerDir, indexerDir, exporterDir, typesPath, indexerTypesPath, indexerImportPath string, override bool) error {
+	opts := &registry.Options{
+		InputPath:         inputPath,
+		CRDKind:           crdKind,
+		ControllerOutDir:  controllerDir,
+		IndexerOutDir:     indexerDir,
+		ExporterOutDir:    exporterDir,
+		TypesPath:         typesPath,
+		IndexerTypesPath:  indexerTypesPath,
+		IndexerImportPath: indexerImportPath,
+		Override:          override,
+	}
+
+	// Run indexers first
+	indexersGen := &indexers.Generator{}
+	if err := indexersGen.Generate(opts); err != nil {
+		return err
+	}
+
+	// Run controllers
+	controllersGen := &Generator{}
+	if err := controllersGen.Generate(opts); err != nil {
+		return err
+	}
+
+	// Run exporters
+	exportersGen := &atlasexporters.Generator{}
+	if err := exportersGen.Generate(opts); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func TestFromConfig_Integration(t *testing.T) {
 	if testing.Short() {
@@ -75,7 +114,7 @@ spec:
 
 	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
+	err = runAllGenerators(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	clusterControllerDir := filepath.Join(controllerDir, "cluster")
@@ -142,7 +181,7 @@ spec:
 
 	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
+	err = runAllGenerators(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "cluster", "handler.go")
@@ -215,7 +254,7 @@ spec:
 
 	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	err = FromConfig(testFile, "Integration", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
+	err = runAllGenerators(testFile, "Integration", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "integration", "handler.go")
@@ -292,7 +331,7 @@ spec:
 
 	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	err = FromConfig(testFile, "Team", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
+	err = runAllGenerators(testFile, "Team", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "team", "handler.go")
@@ -346,7 +385,7 @@ spec:
 
 	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
-	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
+	err = runAllGenerators(testFile, "Resource", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	controllerFile := filepath.Join(controllerDir, "resource", "resource_controller.go")
