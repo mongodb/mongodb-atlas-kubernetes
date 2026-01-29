@@ -2,7 +2,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd
 
 go 1.25
 
-toolchain go1.25.5
+toolchain go1.25.6
 
 tool (
 	github.com/daixiang0/gci
