@@ -65,10 +65,8 @@ sign_image_if_needed() {
     log_info "  Signing ${img_ref} to ${signature_repo}..."
     if IMG="${img_ref}" SIGNATURE_REPO="${signature_repo}" \
         MAX_RETRIES=0 "${SCRIPT_DIR}/sign-multiarch.sh" verify >/dev/null 2>&1; then
-        unset MAX_RETRIES
         log_info "  Signature already exists, skipping"
     else
-        unset MAX_RETRIES
         IMG="${img_ref}" SIGNATURE_REPO="${signature_repo}" \
             "${SCRIPT_DIR}/sign-multiarch.sh"
     fi
