@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       e2e2_matrix: ${{ steps.set-matrix.outputs.e2e2_matrix }}
+      kind_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -88,13 +89,6 @@ jobs:
           ./bin/ginkgo-labels > result.json
           echo "E2E2 tests to execute $(cat result.json | jq -c .e2e2)"
           echo "e2e2_matrix=$(cat result.json | jq -c .e2e2)" >> $GITHUB_OUTPUT
-  compute:
-    needs: detect-tests
-    name: "Compute test matrix for k8s versions"
-    runs-on: ubuntu-latest
-    outputs:
-      test_matrix: ${{ steps.test.outputs.matrix }}
-    steps:
       - id: test
         name: Compute test matrix for k8s versions
         run: |
@@ -109,16 +103,14 @@ jobs:
           cat "${GITHUB_OUTPUT}"
 
   run-e2e2-tests:
-    needs:
-      - detect-tests
-      - compute
+    needs: detect-tests
     environment: test
     if: ${{ needs.detect-tests.outputs.e2e2_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e2_matrix) != '[]' }}
     strategy:
       fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.e2e2_matrix) }}
-        k8s: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
+        k8s: ${{ fromJSON(needs.detect-tests.outputs.kind_matrix) }}
     runs-on: ubuntu-latest
     name: "e2e2: ${{ matrix.test }}"
     steps:
