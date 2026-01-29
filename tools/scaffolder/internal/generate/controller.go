@@ -28,7 +28,7 @@ const (
 )
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
-func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath string, override bool) error {
+func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOu
 	if indexerOutDir == "" {
 		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
 	}
-	if err := GenerateIndexers(resultPath, crdKind, indexerOutDir); err != nil {
+	if err := GenerateIndexers(resultPath, crdKind, indexerOutDir, indexerTypesPath); err != nil {
 		return fmt.Errorf("failed to generate indexers: %w", err)
 	}
 
@@ -74,13 +74,13 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOu
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
-	if err := generateMainHandlerFile(controllerDir, resourceName, typesPath, parsedConfig.Mappings, refsByKind, parsedConfig); err != nil {
+	if err := generateMainHandlerFile(controllerDir, resourceName, typesPath, indexerImportPath, parsedConfig.Mappings, refsByKind, parsedConfig); err != nil {
 		return fmt.Errorf("failed to generate main handler file: %w", err)
 	}
 
 	// Generate version-specific handlers
 	for _, mapping := range parsedConfig.Mappings {
-		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, resultPath, mapping, override); err != nil {
+		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, indexerImportPath, resultPath, mapping, override); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
 		}
 
@@ -307,17 +307,17 @@ func generateControllerFileWithMultipleVersions(dir, controllerName, resourceNam
 	return f.Save(fileName)
 }
 
-func generateSetupWithManager(f *jen.File, resourceName string, refsByKind map[string][]ReferenceField) {
+func generateSetupWithManager(f *jen.File, resourceName, typesPath, indexerImportPath string, refsByKind map[string][]ReferenceField) {
 	newControllerManagedBy := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
 		Dot("Named").Call(jen.Lit(resourceName)).
 		Dot("For").Call(jen.Id("h").Dot("For").Call())
 
 	for referencedKind := range refsByKind {
 		newControllerManagedBy = newControllerManagedBy.Dot("Watches").Call(
-			getWatchedTypeInstance(referencedKind),
+			getWatchedTypeInstance(referencedKind, typesPath),
 			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").
 				Call(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", fmt.Sprintf("New%sBy%sMapFunc", resourceName, referencedKind)).
+					jen.Qual(indexerImportPath, fmt.Sprintf("New%sBy%sMapFunc", resourceName, referencedKind)).
 						Call(jen.Id("h").Dot("Client")),
 				),
 			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").
@@ -350,13 +350,12 @@ func generateSetupWithManager(f *jen.File, resourceName string, refsByKind map[s
 		)
 }
 
-func getWatchedTypeInstance(kind string) *jen.Statement {
+func getWatchedTypeInstance(kind, typesPath string) *jen.Statement {
 	switch kind {
 	case "Secret":
 		return jen.Op("&").Qual("k8s.io/api/core/v1", "Secret").Values()
-	case "Group":
-		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Group").Values()
 	default:
-		return jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", kind).Values()
+		// Use the provided types path for all custom CRD types
+		return jen.Op("&").Qual(typesPath, kind).Values()
 	}
 }

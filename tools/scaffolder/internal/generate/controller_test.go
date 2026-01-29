@@ -73,7 +73,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	clusterControllerDir := filepath.Join(controllerDir, "cluster")
@@ -138,7 +140,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Cluster", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "cluster", "handler.go")
@@ -209,7 +213,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Integration", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Integration", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "integration", "handler.go")
@@ -226,6 +232,7 @@ spec:
 }
 
 func TestGetWatchedTypeInstance(t *testing.T) {
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	tests := []struct {
 		kind     string
 		expected string
@@ -237,7 +244,7 @@ func TestGetWatchedTypeInstance(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {
-			stmt := getWatchedTypeInstance(tt.kind)
+			stmt := getWatchedTypeInstance(tt.kind, typesPath)
 			result := stmt.GoString()
 			assert.Contains(t, result, tt.kind)
 		})
@@ -283,7 +290,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Team", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Team", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "team", "handler.go")
@@ -335,7 +344,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	controllerFile := filepath.Join(controllerDir, "resource", "resource_controller.go")

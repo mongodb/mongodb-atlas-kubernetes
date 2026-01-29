@@ -51,7 +51,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Resource", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	handlerFile := filepath.Join(controllerDir, "resource", "handler.go")
@@ -109,7 +111,9 @@ spec:
 	indexerDir := filepath.Join(tmpDir, "indexers")
 	exporterDir := filepath.Join(tmpDir, "exporters")
 
-	err = FromConfig(testFile, "Group", controllerDir, indexerDir, exporterDir, "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", true)
+	typesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	indexerImportPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	err = FromConfig(testFile, "Group", controllerDir, indexerDir, exporterDir, typesPath, typesPath, indexerImportPath, true)
 	require.NoError(t, err)
 
 	// Test handler.go contains certain package-level functions

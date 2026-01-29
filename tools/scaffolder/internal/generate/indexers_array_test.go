@@ -253,7 +253,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "Cluster", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Cluster", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	// Read generated file
@@ -345,7 +346,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "Deployment", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Deployment", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	// Should have generated two indexers
@@ -440,7 +442,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "AlertConfig", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "AlertConfig", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	// Should generate indexer for nested arrays
@@ -533,7 +536,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "Config", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Config", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	indexerFile := filepath.Join(outputDir, "configbysecret.go")
@@ -595,7 +599,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "Policy", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Policy", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	indexerFile := filepath.Join(outputDir, "policybysecret.go")
@@ -673,7 +678,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "App", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "App", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	// Should generate indexer for three-level nested arrays
@@ -751,7 +757,8 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
-	err = GenerateIndexers(testFile, "App", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "App", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	indexerFile := filepath.Join(outputDir, "appbygroup.go")

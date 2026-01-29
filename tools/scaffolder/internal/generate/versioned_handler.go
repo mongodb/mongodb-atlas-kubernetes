@@ -9,7 +9,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string, mapping MappingWithConfig, override bool) error {
+func generateVersionHandlerFile(dir, resourceName, typesPath, indexerImportPath, resultPath string, mapping MappingWithConfig, override bool) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
@@ -63,13 +63,13 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, resultPath string,
 	}
 
 	// Generate the separate file for getDependencies and getDependents methods
-	return generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPath, mapping)
+	return generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, indexerImportPath, resultPath, mapping)
 }
 
 // generateVersionHandlerGeneratedFile generates the dependencies_<version>.go file
 // containing getDependencies and getDependents methods. This file is always regenerated
 // and should not be manually edited.
-func generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPath string, mapping MappingWithConfig) error {
+func generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, indexerImportPath, resultPath string, mapping MappingWithConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	versionSuffix := mapping.Version
 	apiPkg := typesPath
@@ -100,7 +100,7 @@ func generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, resultPat
 	generateGetDependenciesMethod(f, resourceName, apiPkg, versionSuffix, referenceFields)
 
 	// Generate getDependents method
-	generateGetDependentsMethod(f, resourceName, apiPkg, versionSuffix, dependentInfos)
+	generateGetDependentsMethod(f, resourceName, apiPkg, versionSuffix, indexerImportPath, dependentInfos)
 
 	return f.Save(fileName)
 }
@@ -257,7 +257,7 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 //	    dependents = append(dependents, indexers.NewClusterByGroupMapFunc(h.kubeClient)(ctx, group)...)
 //	    return dependents
 //	}
-func generateGetDependentsMethod(f *jen.File, resourceName, apiPkg, versionSuffix string, dependentInfos []DependentInfo) {
+func generateGetDependentsMethod(f *jen.File, resourceName, apiPkg, versionSuffix, indexerImportPath string, dependentInfos []DependentInfo) {
 	resourceVarName := strings.ToLower(resourceName)
 
 	blockStatements := []jen.Code{
@@ -275,7 +275,7 @@ func generateGetDependentsMethod(f *jen.File, resourceName, apiPkg, versionSuffi
 			blockStatements = append(blockStatements,
 				jen.Id("dependents").Op("=").Append(
 					jen.Id("dependents"),
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers", depInfo.MapFuncName).
+					jen.Qual(indexerImportPath, depInfo.MapFuncName).
 						Call(jen.Id("h").Dot("kubeClient")).
 						Call(jen.Id("ctx"), jen.Id(resourceVarName)).Op("..."),
 				),

@@ -24,6 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testTypesPath         = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	testIndexerImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+)
+
 func TestGenerateVersionHandlerFile(t *testing.T) {
 	testYAML := `
 apiVersion: apiextensions.k8s.io/v1
@@ -73,7 +78,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Resource",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -217,7 +223,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Deployment",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -302,7 +309,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Resource",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -317,7 +325,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Resource",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -332,7 +341,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Resource",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		true,
@@ -392,7 +402,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Cluster",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -500,7 +511,8 @@ spec:
 		err = generateVersionHandlerFile(
 			controllerDir,
 			"Project",
-			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testTypesPath,
+			testIndexerImportPath,
 			testFile,
 			mapping,
 			false,
@@ -592,7 +604,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"User",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -677,7 +690,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Database",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -759,7 +773,8 @@ spec:
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Simple",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		testFile,
 		mapping,
 		false,
@@ -806,7 +821,8 @@ func TestGenerateVersionHandlerInvalidResultPath(t *testing.T) {
 	err = generateVersionHandlerFile(
 		controllerDir,
 		"Resource",
-		"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+		testTypesPath,
+		testIndexerImportPath,
 		"/non/existent/file.yaml",
 		mapping,
 		false,
@@ -950,7 +966,8 @@ spec:`, 1)
 		err := generateVersionHandlerFile(
 			controllerDir,
 			"Group",
-			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testTypesPath,
+			testIndexerImportPath,
 			testFile,
 			mapping,
 			true,
@@ -989,7 +1006,8 @@ spec:`, 1)
 		err := generateVersionHandlerFile(
 			controllerDir,
 			"Cluster",
-			"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1",
+			testTypesPath,
+			testIndexerImportPath,
 			testFile,
 			mapping,
 			true,
