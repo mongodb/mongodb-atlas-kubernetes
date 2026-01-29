@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Read binary version and image tag
         id: read_version
         run: |
@@ -23,7 +23,7 @@ jobs:
           echo "Read version: ${VERSION}"
     
           COMMIT=$(git rev-parse --short HEAD)
-          IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
+          IMAGE_TAG="${VERSION}-build-${COMMIT}"
           echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
           echo "Computed image tag: ${IMAGE_TAG}"
 
@@ -59,7 +59,7 @@ jobs:
         uses: ./.github/actions/build-push-image
         with:
           file: fast.Dockerfile
-          version: ${{ needs.prepare-e2e.outputs.next_version }}
+          version: ${{ needs.get-version.outputs.version }}
           tags: ${{ steps.set_image_url.outputs.image_url }}
           platforms: linux/amd64,linux/arm64
           push_to_docker: false
@@ -75,7 +75,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
         with:
-          ref: ${{github.event.pull_request.head.sha}}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: true
           fetch-depth: 0
       - name: Install devbox
@@ -84,8 +84,8 @@ jobs:
           enable-cache: 'true'
       - name: Prepare bundle
         env:
-          OPERATOR_IMAGE: ${{ env.GHCR_REPO }}:${{ steps.get-version.outputs.image_tag }}
-          VERSION: ${{ steps.get-version.outputs.image_tag }}
+          OPERATOR_IMAGE: ${{ env.GHCR_REPO }}:${{ needs.get-version.outputs.image_tag }}
+          VERSION: ${{ needs.get-version.outputs.image_tag }}
         run: |
           devbox run -- make bundle-dev
       - name: Cache repo files

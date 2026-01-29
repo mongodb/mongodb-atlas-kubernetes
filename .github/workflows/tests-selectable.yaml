@@ -105,7 +105,7 @@ jobs:
           echo "Read version: ${VERSION}"
           
           COMMIT=$(git rev-parse --short HEAD)
-          IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
+          IMAGE_TAG="${VERSION}-build-${COMMIT}"
           echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
           echo "Computed image tag: ${IMAGE_TAG}"
       - id: test
