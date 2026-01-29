@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312012/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
@@ -229,7 +229,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312012/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -869,6 +869,10 @@ spec:
                           title: Replication Specifications
                           type: object
                         type: array
+                      retainBackups:
+                        description: Flag that indicates whether the cluster retains
+                          backups.
+                        type: boolean
                       rootCertType:
                         description: Root Certificate Authority that MongoDB Atlas
                           cluster uses. MongoDB Cloud supports Internet Security Research
@@ -1526,6 +1530,9 @@ spec:
                       title: Replication Specifications
                       type: object
                     type: array
+                  retainBackups:
+                    description: Flag that indicates whether the cluster retains backups.
+                    type: boolean
                   stateName:
                     description: |-
                       Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
@@ -1573,7 +1580,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312012/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -1908,7 +1915,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312012/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
