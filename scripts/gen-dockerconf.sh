@@ -19,7 +19,7 @@ set -euo pipefail
 
 user="$1"
 registry="${2:-ghcr.io}"
-token="${3:-${GITHUB_TOKEN:-${GH_TOKEN}}}"
+token="${3:-${GITHUB_TOKEN:-${GH_TOKEN:?Error: No token provided in args or environment}}}"
 
 if [ -z "$user" ] || [ -z "$token" ]; then
   echo "Error: Username and token are required." >&2
