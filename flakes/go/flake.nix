@@ -11,16 +11,16 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        goVersion = "1.25.5";
+        goVersion = "1.25.6";
 
         go-src =
           if pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system == "x86_64-linux" then {
             url = "https://go.dev/dl/go${goVersion}.linux-amd64.tar.gz";
-            sha256 = "sha256-npt1XWOzas8wwSqaP8N5JDcUwcbT3XKGHaY38zbrs1s=";
+            sha256 = "sha256-8CK2qteONivLqbC5TQmtWMWnDGujt1gpBfq6v1/gGBo=";
           }
           else if pkgs.stdenv.isDarwin && pkgs.stdenv.hostPlatform.system == "aarch64-darwin" then {
             url = "https://go.dev/dl/go${goVersion}.darwin-arm64.tar.gz";
-            sha256 = "sha256-vtjr6CTj07J+hHHRMH+AP8arjh0Ot6SuGWl5vZuAHdM=";
+            sha256 = "sha256-mEUhrpeKU3fH14L9LdlTKRhA19PQvZV4Gh8y8W2UoAY=";
           }
           else throw "This flake does not support system: ${pkgs.stdenv.hostPlatform.system}";
 
