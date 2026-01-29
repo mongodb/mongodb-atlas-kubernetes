@@ -8,7 +8,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, _ *ParsedConfig) error {
+func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, _ *ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -79,7 +79,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 		jen.Return(jen.Id("selectedHandler").Op(",").Nil()),
 	)
 
-	generateDelegatingStateHandlers(f, resourceName, apiPkg, refsByKind)
+	generateDelegatingStateHandlers(f, resourceName, apiPkg, indexerImportPath, refsByKind)
 	// ClientSet and translation request helpers
 	generateSDKClientSetMethod(f, resourceName, apiPkg)
 
@@ -87,7 +87,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath string, mappings []Map
 	return f.Save(fileName)
 }
 
-func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg string, refsByKind map[string][]ReferenceField) {
+func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerImportPath string, refsByKind map[string][]ReferenceField) {
 	handlers := []string{
 		"HandleInitial",
 		"HandleImportRequested",
@@ -147,7 +147,7 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg string, r
 		),
 	)
 
-	generateSetupWithManager(f, resourceName, refsByKind)
+	generateSetupWithManager(f, resourceName, apiPkg, indexerImportPath, refsByKind)
 }
 
 func generateSDKClientSetMethod(f *jen.File, resourceName, apiPkg string) {

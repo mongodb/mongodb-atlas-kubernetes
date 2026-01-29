@@ -348,7 +348,7 @@ func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string
 	return false, nil
 }
 
-func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
+func GenerateIndexers(resultPath, crdKind, indexerOutDir, indexerTypesPath string) error {
 	references, err := ParseReferenceFields(resultPath, crdKind)
 	if err != nil {
 		return fmt.Errorf("failed to parse reference fields: %w", err)
@@ -369,7 +369,7 @@ func GenerateIndexers(resultPath, crdKind, indexerOutDir string) error {
 	// Generate one indexer per target kind
 	for kind, refs := range refsByKind {
 		indexerInfo := createIndexerInfoForKind(crdKind, kind, refs)
-		if err := generateIndexerFile(crdKind, indexerInfo, indexerOutDir); err != nil {
+		if err := generateIndexerFile(crdKind, indexerInfo, indexerOutDir, indexerTypesPath); err != nil {
 			return fmt.Errorf("failed to generate indexer for kind %s: %w", kind, err)
 		}
 	}
@@ -398,7 +398,7 @@ func createIndexerInfoForKind(crdKind, targetKind string, refs []ReferenceField)
 	}
 }
 
-func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir string) error {
+func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir, indexerTypesPath string) error {
 	// Set default directory if not provided
 	if indexerOutDir == "" {
 		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
@@ -435,7 +435,7 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir stri
 
 	// Object method
 	f.Func().Params(jen.Op("*").Id(structName)).Id("Object").Params().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object").Block(
-		jen.Return(jen.Op("&").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", crdKind).Values()),
+		jen.Return(jen.Op("&").Qual(indexerTypesPath, crdKind).Values()),
 	)
 
 	// Name method
@@ -444,12 +444,12 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir stri
 	)
 
 	// Keys method with logic for all reference fields
-	generateKeysMethod(f, structName, crdKind, indexer)
+	generateKeysMethod(f, structName, crdKind, indexer, indexerTypesPath)
 
 	f.Line()
 
 	// Always generate helper Requests function for all reference types
-	generateMapFunc(f, crdKind, indexer)
+	generateMapFunc(f, crdKind, indexer, indexerTypesPath)
 
 	if err := f.Save(filePath); err != nil {
 		return fmt.Errorf("failed to save file %s: %w", filePath, err)
@@ -459,13 +459,13 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir stri
 	return nil
 }
 
-func generateKeysMethod(f *jen.File, structName, crdKind string, indexer IndexerInfo) {
+func generateKeysMethod(f *jen.File, structName, crdKind string, indexer IndexerInfo, indexerTypesPath string) {
 	f.Comment("Keys extracts the index key(s) from the given object")
 
 	// Build the block statements
 	blockStatements := []jen.Code{
 		// Type assertion
-		jen.List(jen.Id("resource"), jen.Id("ok")).Op(":=").Id("object").Assert(jen.Op("*").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", crdKind)),
+		jen.List(jen.Id("resource"), jen.Id("ok")).Op(":=").Id("object").Assert(jen.Op("*").Qual(indexerTypesPath, crdKind)),
 		jen.If(jen.Op("!").Id("ok")).Block(
 			jen.Id("i").Dot("logger").Dot("Errorf").Call(
 				jen.Lit(fmt.Sprintf("expected *v1.%s but got %%T", crdKind)),
@@ -803,7 +803,7 @@ func buildDotChain(segments []string) *jen.Statement {
 	return stmt
 }
 
-func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {
+func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo, indexerTypesPath string) {
 	f.Func().
 		Id(fmt.Sprintf("New%sBy%sMapFunc", crdKind, indexer.TargetKind)).
 		Params(
@@ -849,7 +849,7 @@ func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo) {
 						jen.Line(),
 						jen.Id("list").Op(":=").
 							Op("&").
-							Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", fmt.Sprintf("%sList", crdKind)).
+							Qual(indexerTypesPath, fmt.Sprintf("%sList", crdKind)).
 							Values(),
 						jen.Id("err").Op(":=").
 							Id("kubeClient").Dot("List").

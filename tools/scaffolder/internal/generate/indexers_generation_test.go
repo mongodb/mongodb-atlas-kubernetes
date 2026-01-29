@@ -69,8 +69,10 @@ spec:
 
 	outputDir := filepath.Join(tmpDir, "indexers")
 
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+
 	t.Run("GenerateIndexerFiles", func(t *testing.T) {
-		err := GenerateIndexers(testFile, "Cluster", outputDir)
+		err := GenerateIndexers(testFile, "Cluster", outputDir, indexerTypesPath)
 		require.NoError(t, err)
 
 		indexerFile := filepath.Join(outputDir, "clusterbygroup.go")
@@ -137,7 +139,7 @@ spec:
 		require.NoError(t, err)
 
 		arrayOutputDir := filepath.Join(tmpDir, "array-indexers")
-		err = GenerateIndexers(arrayFile, "AlertConfig", arrayOutputDir)
+		err = GenerateIndexers(arrayFile, "AlertConfig", arrayOutputDir, indexerTypesPath)
 		require.NoError(t, err)
 
 		// Single-level arrays should now generate indexers
@@ -182,8 +184,9 @@ spec:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "indexers")
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 
-	err = GenerateIndexers(testFile, "Team", outputDir)
+	err = GenerateIndexers(testFile, "Team", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	files, err := os.ReadDir(outputDir)
@@ -243,7 +246,8 @@ spec:
 	err = os.WriteFile(testFile, []byte(testYAML), 0644)
 	require.NoError(t, err)
 
-	err = GenerateIndexers(testFile, "Integration", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Integration", outputDir, indexerTypesPath)
 	require.NoError(t, err)
 
 	groupFile, err := os.ReadFile(filepath.Join(outputDir, "integrationbygroup.go"))

@@ -11,15 +11,17 @@ import (
 )
 
 var (
-	inputPath        string
-	crdKind          string
-	listCRDs         bool
-	allCRDs          bool
-	controllerOutDir string
-	indexerOutDir    string
-	exporterOutDir   string
-	typesPath        string
-	override         bool
+	inputPath         string
+	crdKind           string
+	listCRDs          bool
+	allCRDs           bool
+	controllerOutDir  string
+	indexerOutDir     string
+	exporterOutDir    string
+	typesPath         string
+	indexerTypesPath  string
+	indexerImportPath string
+	override          bool
 )
 
 func main() {
@@ -49,11 +51,27 @@ func main() {
 				return fmt.Errorf("invalid --types-path: %w", err)
 			}
 
-			if allCRDs {
-				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
+			// Set defaults for new flags
+			if indexerTypesPath == "" {
+				indexerTypesPath = typesPath
+			}
+			if indexerImportPath == "" {
+				indexerImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 			}
 
-			return generate.FromConfig(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
+			// Validate new flags
+			if err := validateGoImportPath(indexerTypesPath); err != nil {
+				return fmt.Errorf("invalid --indexer-types-path: %w", err)
+			}
+			if err := validateGoImportPath(indexerImportPath); err != nil {
+				return fmt.Errorf("invalid --indexer-import-path: %w", err)
+			}
+
+			if allCRDs {
+				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
+			}
+
+			return generate.FromConfig(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
 		},
 	}
 
@@ -65,6 +83,8 @@ func main() {
 	rootCmd.Flags().StringVar(&indexerOutDir, "indexer-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/indexer)")
 	rootCmd.Flags().StringVar(&exporterOutDir, "exporter-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/exporter)")
 	rootCmd.Flags().StringVar(&typesPath, "types-path", "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Full import path to the API types package")
+	rootCmd.Flags().StringVar(&indexerTypesPath, "indexer-types-path", "", "Full import path for type imports in indexers (defaults to --types-path value)")
+	rootCmd.Flags().StringVar(&indexerImportPath, "indexer-import-path", "", "Full import path for indexer imports in controllers (defaults to github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers)")
 	rootCmd.Flags().BoolVar(&override, "override", false, "Override existing versioned handler files (default: false)")
 
 	if err := rootCmd.Execute(); err != nil {
@@ -97,7 +117,7 @@ func validateGoImportPath(path string) error {
 	return nil
 }
 
-func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath string, override bool) error {
+func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool) error {
 	crds, err := generate.ListCRDs(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to list CRDs: %w", err)
@@ -111,7 +131,7 @@ func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir,
 	for _, crd := range crds {
 		fmt.Printf("Generating for CRD: %s...\n", crd.Kind)
 
-		err = generate.FromConfig(inputPath, crd.Kind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, override)
+		err = generate.FromConfig(inputPath, crd.Kind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
 
 		result := CRDGenerationResult{
 			CRDKind: crd.Kind,

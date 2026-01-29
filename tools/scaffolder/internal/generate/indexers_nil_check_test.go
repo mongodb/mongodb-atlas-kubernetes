@@ -315,7 +315,8 @@ spec:
 	assert.NoError(t, err)
 	
 	outputDir := tmpDir + "/indexers"
-	err = GenerateIndexers(testFile, "Cluster", outputDir)
+	indexerTypesPath := "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	err = GenerateIndexers(testFile, "Cluster", outputDir, indexerTypesPath)
 	assert.NoError(t, err)
 	
 	// Read generated file
