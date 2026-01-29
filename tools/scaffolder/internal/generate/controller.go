@@ -28,6 +28,7 @@ const (
 )
 
 // FromConfig generates controllers and handlers based on the parsed CRD result file
+// Deprecated: Use the generator package instead for modular generation.
 func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool) error {
 	parsedConfig, err := ParseCRDConfig(resultPath, crdKind)
 	if err != nil {
@@ -61,8 +62,34 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOu
 		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
 	}
 
-	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
+	if err := GenerateController(resultPath, crdKind, controllerOutDir, typesPath, indexerImportPath, parsedConfig, refsByKind, override); err != nil {
+		return err
+	}
 
+	// Generate exporters
+	for _, mapping := range parsedConfig.Mappings {
+		if err := GenerateResourceExporter(resultPath, crdKind, resourceName, typesPath, exporterOutDir, mapping); err != nil {
+			return fmt.Errorf("failed to generate exporter for resource %s: %w", resourceName, err)
+		}
+	}
+
+	fmt.Printf("Successfully generated controller %s for resource %s with %d SDK versions at %s\n",
+		resourceName, resourceName, len(parsedConfig.Mappings), filepath.Join(controllerOutDir, strings.ToLower(resourceName)))
+
+	return nil
+}
+
+// GenerateController generates controller files for a CRD.
+// This is the main entry point for controller generation used by the generator package.
+func GenerateController(resultPath, crdKind, controllerOutDir, typesPath, indexerImportPath string, parsedConfig *ParsedConfig, refsByKind map[string][]ReferenceField, override bool) error {
+	resourceName := parsedConfig.ResourceName
+
+	// Set default directory if not provided
+	if controllerOutDir == "" {
+		controllerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "controller")
+	}
+
+	baseControllerDir := filepath.Join(controllerOutDir, strings.ToLower(resourceName))
 	controllerName := resourceName
 	controllerDir := baseControllerDir
 
@@ -83,24 +110,7 @@ func FromConfig(resultPath, crdKind, controllerOutDir, indexerOutDir, exporterOu
 		if err := generateVersionHandlerFile(controllerDir, resourceName, typesPath, indexerImportPath, resultPath, mapping, override); err != nil {
 			return fmt.Errorf("failed to generate handler for version %s: %w", mapping.Version, err)
 		}
-
-		err = generateResourceExporter(
-			&exporterRequest{
-				crdPath:            resultPath,
-				kind:               crdKind,
-				resourceName:       resourceName,
-				resourceImportPath: typesPath,
-				destination:        exporterOutDir,
-				mapping:            mapping,
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to generate exporter for resource %s: %w", resourceName, err)
-		}
 	}
-
-	fmt.Printf("Successfully generated controller %s for resource %s with %d SDK versions at %s\n",
-		controllerName, resourceName, len(parsedConfig.Mappings), controllerDir)
 
 	return nil
 }

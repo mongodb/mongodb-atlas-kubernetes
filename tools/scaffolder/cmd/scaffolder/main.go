@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generator"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +24,7 @@ var (
 	indexerTypesPath  string
 	indexerImportPath string
 	override          bool
+	generators        string
 )
 
 func main() {
@@ -67,13 +70,33 @@ func main() {
 				return fmt.Errorf("invalid --indexer-import-path: %w", err)
 			}
 
-			if allCRDs {
-				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
+			// Set default output directories
+			if controllerOutDir == "" {
+				controllerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "controller")
+			}
+			if indexerOutDir == "" {
+				indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
+			}
+			if exporterOutDir == "" {
+				exporterOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "exporter")
 			}
 
-			return generate.FromConfig(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
+			// Parse generator names
+			selectedGenerators, err := parseGenerators(generators)
+			if err != nil {
+				return err
+			}
+
+			if allCRDs {
+				return generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override, selectedGenerators)
+			}
+
+			return runGenerators(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override, selectedGenerators)
 		},
 	}
+
+	// Build default generators list
+	defaultGenerators := strings.Join(generator.List(), ",")
 
 	rootCmd.Flags().StringVar(&inputPath, "input", "", "Path to a CRD yaml file (required)")
 	rootCmd.Flags().StringVar(&crdKind, "crd", "", "CRD kind to generate controller for. Can not be set together with --all")
@@ -81,11 +104,12 @@ func main() {
 	rootCmd.Flags().BoolVar(&allCRDs, "all", false, "Generate controllers for all CRDs in the input file. Can not be set together with --crd")
 	rootCmd.Flags().StringVar(&controllerOutDir, "controller-out", "", "Output directory for controller files (default: ../mongodb-atlas-kubernetes/internal/controller)")
 	rootCmd.Flags().StringVar(&indexerOutDir, "indexer-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/indexer)")
-	rootCmd.Flags().StringVar(&exporterOutDir, "exporter-out", "", "Output directory for indexer files (default: ../mongodb-atlas-kubernetes/internal/exporter)")
+	rootCmd.Flags().StringVar(&exporterOutDir, "exporter-out", "", "Output directory for exporter files (default: ../mongodb-atlas-kubernetes/internal/exporter)")
 	rootCmd.Flags().StringVar(&typesPath, "types-path", "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1", "Full import path to the API types package")
 	rootCmd.Flags().StringVar(&indexerTypesPath, "indexer-types-path", "", "Full import path for type imports in indexers (defaults to --types-path value)")
 	rootCmd.Flags().StringVar(&indexerImportPath, "indexer-import-path", "", "Full import path for indexer imports in controllers (defaults to github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers)")
 	rootCmd.Flags().BoolVar(&override, "override", false, "Override existing versioned handler files (default: false)")
+	rootCmd.Flags().StringVar(&generators, "generators", defaultGenerators, fmt.Sprintf("Comma-separated list of generators to run (available: %s)", defaultGenerators))
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -117,13 +141,52 @@ func validateGoImportPath(path string) error {
 	return nil
 }
 
-func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool) error {
+// parseGenerators parses the comma-separated generator names and returns the corresponding generators.
+func parseGenerators(generatorsFlag string) ([]generator.Generator, error) {
+	if generatorsFlag == "" {
+		return generator.All(), nil
+	}
+
+	names := strings.Split(generatorsFlag, ",")
+	for i := range names {
+		names[i] = strings.TrimSpace(names[i])
+	}
+
+	return generator.GetByNames(names)
+}
+
+// runGenerators runs the specified generators for a single CRD kind.
+func runGenerators(inputPath, crdKind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool, gens []generator.Generator) error {
+	opts := &generator.Options{
+		InputPath:         inputPath,
+		CRDKind:           crdKind,
+		ControllerOutDir:  controllerOutDir,
+		IndexerOutDir:     indexerOutDir,
+		ExporterOutDir:    exporterOutDir,
+		TypesPath:         typesPath,
+		IndexerTypesPath:  indexerTypesPath,
+		IndexerImportPath: indexerImportPath,
+		Override:          override,
+	}
+
+	for _, gen := range gens {
+		fmt.Printf("Running generator: %s\n", gen.Name())
+		if err := gen.Generate(opts); err != nil {
+			return fmt.Errorf("generator %s failed: %w", gen.Name(), err)
+		}
+	}
+
+	return nil
+}
+
+func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath string, override bool, gens []generator.Generator) error {
 	crds, err := generate.ListCRDs(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to list CRDs: %w", err)
 	}
 
-	fmt.Printf("Found %d CRD(s) to generate\n\n", len(crds))
+	fmt.Printf("Found %d CRD(s) to generate\n", len(crds))
+	fmt.Printf("Running generators: %s\n\n", generatorNames(gens))
 
 	var results []CRDGenerationResult
 
@@ -131,7 +194,7 @@ func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir,
 	for _, crd := range crds {
 		fmt.Printf("Generating for CRD: %s...\n", crd.Kind)
 
-		err = generate.FromConfig(inputPath, crd.Kind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override)
+		err = runGenerators(inputPath, crd.Kind, controllerOutDir, indexerOutDir, exporterOutDir, typesPath, indexerTypesPath, indexerImportPath, override, gens)
 
 		result := CRDGenerationResult{
 			CRDKind: crd.Kind,
@@ -143,7 +206,7 @@ func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir,
 		if err != nil {
 			fmt.Printf("CRD: %s. Failed to generate because of an error: %v\n\n", crd.Kind, err)
 		} else {
-			fmt.Printf("CRD: %s. Generated controller and indexer. No errors\n\n", crd.Kind)
+			fmt.Printf("CRD: %s. Generated successfully. No errors\n\n", crd.Kind)
 		}
 	}
 
@@ -169,4 +232,13 @@ func generateAllCRDs(inputPath, controllerOutDir, indexerOutDir, exporterOutDir,
 	}
 
 	return nil
+}
+
+// generatorNames returns a comma-separated list of generator names.
+func generatorNames(gens []generator.Generator) string {
+	names := make([]string, len(gens))
+	for i, gen := range gens {
+		names[i] = gen.Name()
+	}
+	return strings.Join(names, ", ")
 }

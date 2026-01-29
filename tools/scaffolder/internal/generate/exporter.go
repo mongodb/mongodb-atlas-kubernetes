@@ -37,6 +37,19 @@ type exporterRequest struct {
 	mapping            MappingWithConfig
 }
 
+// GenerateResourceExporter generates an exporter file for a CRD.
+// This is the main entry point for exporter generation used by the generator package.
+func GenerateResourceExporter(crdPath, kind, resourceName, resourceImportPath, destination string, mapping MappingWithConfig) error {
+	return generateResourceExporter(&exporterRequest{
+		crdPath:            crdPath,
+		kind:               kind,
+		resourceName:       resourceName,
+		resourceImportPath: resourceImportPath,
+		destination:        destination,
+		mapping:            mapping,
+	})
+}
+
 func generateResourceExporter(req *exporterRequest) error {
 	if err := os.MkdirAll(req.destination, 0755); err != nil {
 		return fmt.Errorf("failed to create exporter directory: %w", err)
