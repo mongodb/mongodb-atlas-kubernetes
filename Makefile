@@ -576,6 +576,12 @@ verify: ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify
 
+
+.PHONY: push-release-images
+push-release-images: ## Push, sign, and verify release images (Phase 6 - point of no return, atomic per target)
+	@DEST_PRERELEASE_REPO="$${DEST_PRERELEASE_REPO:-$$DOCKER_PRERELEASE_REPO}" \
+	./scripts/push-release-images.sh
+
 .PHONY: helm-upd-crds
 helm-upd-crds:
 	HELM_CRDS_PATH=$(HELM_CRDS_PATH) ./scripts/helm-upd-crds.sh
