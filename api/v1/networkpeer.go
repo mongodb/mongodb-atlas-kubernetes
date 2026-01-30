@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312012/admin"
+	"go.mongodb.org/atlas-sdk/v20250312013/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
