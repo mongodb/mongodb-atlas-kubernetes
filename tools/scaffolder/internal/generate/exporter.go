@@ -25,7 +25,6 @@ import (
 
 const (
 	translatorImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
-	pagingImportPath     = "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	objectImportPath     = "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -98,7 +97,6 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 	return []jen.Code{
 		jen.Id("resource").Op(":=").Op("&").Qual(resourceImportPath, resourceName).Values(),
 		jen.Line(),
-		jen.Comment("@TODO: Replace template with the correct API Resource name and method"),
 		jen.List(jen.Id("atlasResource"), jen.Id("_"), jen.Id("err")).
 			Op(":=").
 			Id("e").
@@ -140,39 +138,31 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 
 func listBlock(resourceName, resourceImportPath, sdkImportPath string, referenceFields []ReferenceField) []jen.Code {
 	return []jen.Code{
-		jen.Comment("@TODO: Replace template with the correct API Resource name and method"),
-		jen.List(jen.Id("atlasResources"), jen.Id("err")).
-			Op(":=").
-			Qual(pagingImportPath, "ListAll").
-			Call(
-				jen.Id("ctx"),
-				jen.Func().
-					Params(jen.Id("ctx").Qual("context", "Context"), jen.Id("pageNum").Int()).
-					Params(
-						jen.Qual(pagingImportPath, "Response").Types(jen.Qual(sdkImportPath, "RESOURCE_TYPE")),
-						jen.Op("*").Qual("net/http", "Response"),
-						jen.Error(),
-					).
-					Block(
-						jen.Return(
-							jen.Id("e").
-								Dot("client").
-								Dot(resourceName+"sApi").
-								Dot("List"+resourceName+"s").
-								Call(listCallParams(referenceFields)...).
-								Dot("Execute").
-								Call(),
-						),
+		jen.Var().Id("atlasResources").Index().Any(),
+		jen.For(jen.Id("pageNum").Op(":=").Lit(1).Op(";").Op(";").Id("pageNum").Op("++")).Block(
+			jen.List(jen.Id("resp"), jen.Id("_"), jen.Id("err")).Op(":=").
+				Id("e").Dot("client").Dot(resourceName+"sApi").Dot("List"+resourceName+"s").
+				Call(listCallParams(referenceFields)...).Dot("PageNum").Call(jen.Id("pageNum")).Dot("Execute").Call(),
+			jen.If(jen.Id("err").Op("!=").Nil()).Block(
+				jen.Return(
+					jen.Nil(),
+					jen.Qual("fmt", "Errorf").Call(
+						jen.Lit(fmt.Sprintf("failed to list %ss from Atlas: %%w", resourceName)),
+						jen.Id("err"),
 					),
-			),
-		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(
-				jen.Nil(),
-				jen.Qual("fmt", "Errorf").Call(
-					jen.Lit(fmt.Sprintf("failed to list %ss from Atlas: %%w", resourceName)),
-					jen.Id("err"),
 				),
 			),
+			jen.If(jen.Id("resp").Op("==").Nil()).Block(
+				jen.Return(jen.Nil(), jen.Qual("errors", "New").Call(jen.Lit("no response"))),
+			),
+			jen.Id("pageResults").Op(":=").Id("resp").Dot("GetResults").Call(),
+			jen.For(jen.Id("i").Op(":=").Range().Id("pageResults")).Block(
+				jen.Id("atlasResources").Op("=").Append(jen.Id("atlasResources"), jen.Id("pageResults").Index(jen.Id("i"))),
+			),
+			jen.If(
+				jen.Len(jen.Id("pageResults")).Op("==").Lit(0).Op("||").
+					Len(jen.Id("atlasResources")).Op(">=").Id("resp").Dot("GetTotalCount").Call(),
+			).Block(jen.Break()),
 		),
 		jen.Line(),
 		jen.Id("resources").Op(":=").Make(
