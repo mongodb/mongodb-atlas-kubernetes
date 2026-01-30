@@ -142,7 +142,7 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 		jen.For(jen.Id("pageNum").Op(":=").Lit(1).Op(";").Op(";").Id("pageNum").Op("++")).Block(
 			jen.List(jen.Id("resp"), jen.Id("_"), jen.Id("err")).Op(":=").
 				Id("e").Dot("client").Dot(resourceName+"sApi").Dot("List"+resourceName+"s").
-				Call(listCallParams(referenceFields)...).Dot("Execute").Call(),
+				Call(listCallParams(referenceFields)...).Dot("PageNum").Call(jen.Id("pageNum")).Dot("Execute").Call(),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return(
 					jen.Nil(),
