@@ -156,8 +156,8 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 				jen.Return(jen.Nil(), jen.Qual("errors", "New").Call(jen.Lit("no response"))),
 			),
 			jen.Id("pageResults").Op(":=").Id("resp").Dot("GetResults").Call(),
-			jen.For(jen.Id("_").Op(",").Id("r").Op(":=").Range().Id("pageResults")).Block(
-				jen.Id("atlasResources").Op("=").Append(jen.Id("atlasResources"), jen.Id("r")),
+			jen.For(jen.Id("i").Op(":=").Range().Id("pageResults")).Block(
+				jen.Id("atlasResources").Op("=").Append(jen.Id("atlasResources"), jen.Id("pageResults").Index(jen.Id("i"))),
 			),
 			jen.If(
 				jen.Len(jen.Id("pageResults")).Op("==").Lit(0).Op("||").
