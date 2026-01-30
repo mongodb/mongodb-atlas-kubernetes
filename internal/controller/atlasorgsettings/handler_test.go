@@ -88,7 +88,7 @@ func createSuccessfulProvider() atlas.Provider {
 	return &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			return &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
+				SdkClient20250312013: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
 			}, nil
 		},
 	}

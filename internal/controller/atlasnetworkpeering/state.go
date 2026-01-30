@@ -68,7 +68,7 @@ func (r *AtlasNetworkPeeringReconciler) handleCustomResource(ctx context.Context
 	if err != nil {
 		return r.terminate(workflowCtx, networkPeering, workflow.NetworkPeeringNotConfigured, err)
 	}
-	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312012, networkPeering)
+	project, err := r.ResolveProject(ctx, sdkClientSet.SdkClient20250312013, networkPeering)
 	if err != nil {
 		return r.release(workflowCtx, networkPeering, err)
 	}

@@ -367,7 +367,7 @@ func TestEnsureCustomResource(t *testing.T) {
 						)
 
 					return &atlas.ClientSet{
-						SdkClient20250312012: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
+						SdkClient20250312013: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
 					}, nil
 				},
 			},
