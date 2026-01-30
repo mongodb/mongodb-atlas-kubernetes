@@ -18,14 +18,13 @@ package exporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/http"
 
 	admin "go.mongodb.org/atlas-sdk/v20250312012/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	paging "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 )
 
@@ -37,11 +36,22 @@ type ClusterExporter struct {
 }
 
 func (e *ClusterExporter) Export(ctx context.Context) ([]client.Object, error) {
-	atlasResources, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.ClusterDescription20240805], *http.Response, error) {
-		return e.client.ClustersApi.ListClusters(ctx, e.identifiers[0]).Execute()
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list Clusters from Atlas: %w", err)
+	var atlasResources []any
+	for pageNum := 1; ; pageNum++ {
+		resp, _, err := e.client.ClustersApi.ListClusters(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
+		if err != nil {
+			return nil, fmt.Errorf("failed to list Clusters from Atlas: %w", err)
+		}
+		if resp == nil {
+			return nil, errors.New("no response")
+		}
+		pageResults := resp.GetResults()
+		for i := range pageResults {
+			atlasResources = append(atlasResources, pageResults[i])
+		}
+		if len(pageResults) == 0 || len(atlasResources) >= resp.GetTotalCount() {
+			break
+		}
 	}
 
 	resources := make([]client.Object, 0, len(atlasResources))
