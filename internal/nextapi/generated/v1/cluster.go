@@ -178,6 +178,9 @@ type V20250312Entry struct {
 	// For replica sets there is only one object representing node configurations.
 	ReplicationSpecs *[]ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
+	// RetainBackups Flag that indicates whether the cluster retains backups.
+	RetainBackups *bool `json:"retainBackups,omitempty"`
+
 	// RootCertType Root Certificate Authority that MongoDB Atlas cluster uses. MongoDB
 	// Cloud supports Internet Security Research Group.
 	RootCertType *string `json:"rootCertType,omitempty"`
@@ -579,6 +582,9 @@ type ClusterStatusV20250312 struct {
 	// array has one object per shard representing node configurations in each shard.
 	// For replica sets there is only one object representing node configurations.
 	ReplicationSpecs *[]V20250312ReplicationSpecs `json:"replicationSpecs,omitempty"`
+
+	// RetainBackups Flag that indicates whether the cluster retains backups.
+	RetainBackups *bool `json:"retainBackups,omitempty"`
 
 	/*
 	   StateName Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
