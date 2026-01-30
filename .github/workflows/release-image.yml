@@ -73,11 +73,13 @@ jobs:
   compute-repo:
     name: Compute target repos
     runs-on: ubuntu-latest
+    needs: image2commit
     env:
       RELEASE_TYPE: ${{ github.event.inputs.release_type }}
     outputs:
       repo: ${{ steps.compute.outputs.repo }}
       version: ${{ steps.read_version.outputs.version }}
+      image_version: ${{ steps.read_version.outputs.image_version }}
     steps:
     - name: Compute
       id: compute
@@ -98,15 +100,21 @@ jobs:
       id: read_version
       env:
         INPUT_VERSION: ${{ github.event.inputs.version }}
+        RELEASE_TYPE: ${{ env.RELEASE_TYPE }}
       run: |
         VERSION=$(jq -r '.next' version.json)
-        
         if [[ "$INPUT_VERSION" != "$VERSION" ]]; then
           echo "::error::Input version '$INPUT_VERSION' does not match the expected 'next' version '$VERSION' from version.json."
           exit 1
         fi
-        
+        # Compute image version based on release type
+        if [ "${RELEASE_TYPE}" == "pre-release" ]; then
+          IMAGE_VERSION="${VERSION}-pre-release"
+        else
+          IMAGE_VERSION="${VERSION}"
+        fi
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+        echo "image_version=${IMAGE_VERSION}" >> "${GITHUB_OUTPUT}"
 
   # Release-image: Created and uploads a release for the specified operator version given in the image_sha
   # Note, with new releases, all the release artifacts will be stored within docs/releases/{version}
@@ -119,7 +127,7 @@ jobs:
     - compute-repo
     env:
       VERSION: ${{ needs.compute-repo.outputs.version }}
-      RELEASE_TAG: v${{ github.event.inputs.version }}
+      RELEASE_TAG: v${{ needs.compute-repo.outputs.image_version }}
       AUTHORS: ${{ github.event.inputs.authors }}
       IMAGE_SHA: ${{ github.event.inputs.image_sha }}
       DOCKER_SIGNATURE_REPO: docker.io/mongodb/signatures
@@ -128,11 +136,11 @@ jobs:
       QUAY_RELEASE_REPO: quay.io/${{ needs.compute-repo.outputs.repo }}
       QUAY_PRERELEASE_REPO: quay.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
       PROMOTED_TAG: promoted-${{ github.event.inputs.image_sha }}
-      CERTIFIED_TAG: ${{ github.event.inputs.version }}-certified
+      CERTIFIED_TAG: ${{ needs.compute-repo.outputs.image_version }}-certified
       DEST_PRERELEASE_REPO: docker.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      DOCKER_IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
-      QUAY_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}
-      QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ github.event.inputs.version }}-certified
+      DOCKER_IMAGE_URL: ${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}
+      QUAY_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}
+      QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}-certified
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -283,7 +291,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          prerelease: false
+          prerelease: ${{ github.event.inputs.release_type == 'pre-release' }}
           tag_name: "${{ env.RELEASE_TAG }}"
           name: "${{ env.RELEASE_TAG }}"
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -320,6 +328,8 @@ jobs:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME: ${{ secrets.GRS_USERNAME }}
           GRS_PASSWORD: ${{ secrets.GRS_PASSWORD }}
+          VERSION: ${{ needs.compute-repo.outputs.image_version }}
+          CERTIFIED_TAG: ${{ env.CERTIFIED_TAG }}
 
       # Certify OpenShift images (must happen after push-release-images creates the certified image)
       # This is the actual certification submission (if official-release)
