@@ -37,7 +37,7 @@ type GroupExporter struct {
 func (e *GroupExporter) Export(ctx context.Context) ([]client.Object, error) {
 	resource := &akov2generated.Group{}
 
-	atlasResource, _, err := e.client.GroupsApi.GetGroup(ctx, e.identifiers[0]).Execute()
+	atlasResource, _, err := e.client.ProjectsApi.GetGroup(ctx, e.identifiers[0]).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Group from Atlas: %w", err)
 	}
