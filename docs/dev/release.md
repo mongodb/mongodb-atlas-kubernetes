@@ -93,23 +93,14 @@ image_sha: latest
 
 ### What Happens Next
 
-Once triggered, the release workflow performs the following automated steps:
+The release workflow performs automated steps including artifact generation, PR creation, image publishing, and certification. 
 
-1. **Image Promotion**: Moves the promoted image from prerelease registries to official release registries (for official releases)
-2. **OpenShift Certification**: Creates OpenShift certified images on Quay.io (tagged with `-certified` suffix) and optionally submits them for certification (for official releases)
-3. **Image Signing**: Signs all released images using PKCS11 signing for security and compliance
-4. **SBOM Generation**: Generates SBOMs for both `linux-amd64` and `linux-arm64` platforms
-5. **SDLC Compliance**: Creates SDLC compliance reports
-6. **Artifact Generation**: Generates deployment configurations (bundle, helm charts, all-in-one.yml)
-7. **Version Management**: Automatically bumps the `version.json` file (sets `current` to the released version and `next` to the next minor version)
-8. **Release PR Creation**: Creates a release PR that adds a new `release/<version>` directory (containing `deploy/`, `helm-charts/`, and `bundle/` directories)
-9. **Root Updates**: Updates the directories `deploy/` and `helm-charts/` at the root of the repository with the same contents as in the `release/<version>`. This is because both the [helm charts repository](https://github.com/mongodb/helm-charts/) and the [Kubernetes CLI plugin](https://github.com/mongodb/atlas-cli-plugin-kubernetes) require the versions referenced in there to be the source of truth for the latest release matching the tagged version.
-10. **Git Tagging**: Creates and pushes a Git tag of the form `v<version>` on GitHub
-11. **GitHub Release**: Publishes a GitHub release (as draft) with:
-    - Zipped `all-in-one.yml`
-    - SDLC-compliant artifacts: SBOMs and compliance reports
+**See [Release Workflow](release-workflow.md) for detailed step-by-step information, including which steps have external side effects and how to recover from failures.**
 
 The only manual step is to **review and merge** the release PR. This PR does **not** re-run any of the expensive tests on cloud-qa.
+
+> [!NOTE]
+> **Retry Capability**: The workflow is fully idempotent and can be safely re-run if it fails. If a release fails, simply re-run the workflow with the same inputs - it will continue from where it left off.
 
 **Note:** this directory-based approach avoids merge conflicts entirely. Because each release introduces a clean, isolated `release/<version>` folder, it can be merged directly into `main` without conflicting with prior or future releases. This enables a linear and conflict-free release history while maintaining clear traceability for each version.
 

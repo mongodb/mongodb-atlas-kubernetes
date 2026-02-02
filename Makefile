@@ -576,11 +576,49 @@ verify: ./ako.pem ## Verify an AKO multi-architecture image's signature
 	@IMG=$(IMG) SIGNATURE_REPO=$(SIGNATURE_REPO) \
 	./scripts/sign-multiarch.sh verify
 
-
 .PHONY: push-release-images
 push-release-images: ## Push, sign, and verify release images (Phase 6 - point of no return, atomic per target)
 	@DEST_PRERELEASE_REPO="$${DEST_PRERELEASE_REPO:-$$DOCKER_PRERELEASE_REPO}" \
 	./scripts/push-release-images.sh
+
+.PHONY: certify-openshift-images
+certify-openshift-images: ## Certify OpenShift images using Red Hat preflight
+	./scripts/certify-openshift-images.sh
+
+# Helper to set sandbox environment variables for pre-certification (dry-run against prerelease)
+# Usage: make pre-cert-sandbox certify-openshift-images
+# This sets env vars for testing preflight validation against prerelease image
+ifneq ($(filter pre-cert-sandbox,$(MAKECMDGOALS)),)
+    PROMOTED_TAG ?= $(error PROMOTED_TAG is not set (e.g., promoted-latest or promoted-<sha>))
+    REGISTRY := docker.io
+    REPOSITORY := mongodb/mongodb-atlas-kubernetes-operator-prerelease
+    VERSION := $(PROMOTED_TAG)
+    SUBMIT := false
+    # Note: RHCC_PROJECT, RHCC_TOKEN should be set in environment
+    # Note: Registry login should be performed before running this target
+    export REGISTRY REPOSITORY VERSION SUBMIT
+endif
+
+.PHONY: pre-cert-sandbox
+pre-cert-sandbox: ## Set sandbox environment variables for pre-certification testing (use with certify-openshift-images)
+	@:
+
+# Helper to set sandbox environment variables for certification
+# Usage: make cert-sandbox certify-openshift-images
+# This sets env vars for testing certification
+ifneq ($(filter cert-sandbox,$(MAKECMDGOALS)),)
+    VERSION ?= $(error VERSION is not set (e.g., 2.13.1-certified))
+    REGISTRY := quay.io
+    REPOSITORY := mongodb/mongodb-atlas-kubernetes-operator-prerelease
+    SUBMIT := false
+    # Note: RHCC_PROJECT, RHCC_TOKEN should be set in environment
+    # Note: Registry login should be performed before running this target
+    export REGISTRY REPOSITORY VERSION SUBMIT
+endif
+
+.PHONY: cert-sandbox
+cert-sandbox: ## Set sandbox environment variables for certification testing (use with certify-openshift-images)
+	@:
 
 .PHONY: helm-upd-crds
 helm-upd-crds:
