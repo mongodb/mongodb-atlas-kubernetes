@@ -632,10 +632,11 @@ helm-upd-rbac:
 vulncheck: ## Run govulncheck to find vulnerabilities in code
 	@./scripts/vulncheck.sh ./vuln-ignore
 
+IMAGE_TAG ?= $(VERSION)
 .PHONY: generate-sboms
 generate-sboms: ./ako.pem ## Generate a released version SBOMs
 	mkdir -p docs/releases/v$(VERSION) && \
-	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(VERSION) -o docs/releases/v$(VERSION) && \
+	./scripts/generate_upload_sbom.sh -i $(RELEASED_OPERATOR_IMAGE):$(IMAGE_TAG) -o docs/releases/v$(VERSION) && \
 	ls -l docs/releases/v$(VERSION)
 
 .PHONY: gen-sdlc-checklist
