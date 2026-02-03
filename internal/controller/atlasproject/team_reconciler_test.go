@@ -36,7 +36,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{},
+				SdkClient20250312013: &admin.APIClient{},
 			},
 			Context: context.Background(),
 		}
@@ -50,7 +50,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{},
+				SdkClient20250312013: &admin.APIClient{},
 			},
 			Context: context.Background(),
 		}
@@ -70,7 +70,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &atlasClient,
+				SdkClient20250312013: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -100,7 +100,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &atlasClient,
+				SdkClient20250312013: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -131,7 +131,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID-1",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &atlasClient,
+				SdkClient20250312013: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -175,7 +175,7 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			OrgID: "orgID-1",
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &atlasClient,
+				SdkClient20250312013: &atlasClient,
 			},
 			Context: context.Background(),
 		}

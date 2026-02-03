@@ -49,7 +49,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &atlasClient,
+				SdkClient20250312013: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -150,7 +150,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -221,7 +221,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -278,7 +278,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -864,7 +864,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -895,7 +895,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -951,7 +951,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -990,7 +990,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -1024,7 +1024,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -1054,7 +1054,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312012: &admin.APIClient{
+				SdkClient20250312013: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},

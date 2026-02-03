@@ -395,7 +395,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								pAPI.EXPECT().GetGroupExecute(admin.GetGroupApiRequest{ApiService: pAPI}).
 									Return(grp, nil, nil)
 							}
-							return &atlas.ClientSet{SdkClient20250312012: &admin.APIClient{
+							return &atlas.ClientSet{SdkClient20250312013: &admin.APIClient{
 								CustomDatabaseRolesApi: cdrAPI,
 								ProjectsApi:            pAPI,
 							}}, nil

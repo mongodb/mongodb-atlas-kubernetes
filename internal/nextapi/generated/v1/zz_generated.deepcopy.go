@@ -401,6 +401,11 @@ func (in *ClusterStatusV20250312) DeepCopyInto(out *ClusterStatusV20250312) {
 			}
 		}
 	}
+	if in.RetainBackups != nil {
+		in, out := &in.RetainBackups, &out.RetainBackups
+		*out = new(bool)
+		**out = **in
+	}
 	if in.StateName != nil {
 		in, out := &in.StateName, &out.StateName
 		*out = new(string)
@@ -2090,6 +2095,11 @@ func (in *V20250312Entry) DeepCopyInto(out *V20250312Entry) {
 				(*in)[i].DeepCopyInto(&(*out)[i])
 			}
 		}
+	}
+	if in.RetainBackups != nil {
+		in, out := &in.RetainBackups, &out.RetainBackups
+		*out = new(bool)
+		**out = **in
 	}
 	if in.RootCertType != nil {
 		in, out := &in.RootCertType, &out.RootCertType

@@ -543,10 +543,10 @@ func TestEnsureIntegration(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312012: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+					SdkClient20250312013: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
 				},
 			}
-			workflowCtx.SdkClientSet.SdkClient20250312012.ThirdPartyIntegrationsApi = tt.apiMock()
+			workflowCtx.SdkClientSet.SdkClient20250312013.ThirdPartyIntegrationsApi = tt.apiMock()
 			reconciler := &AtlasProjectReconciler{
 				Client: fake.NewClientBuilder().
 					WithScheme(testScheme).
@@ -773,7 +773,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312012: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
+					SdkClient20250312013: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
 				},
 			}
 			reconciler := IntegrationReconciler{

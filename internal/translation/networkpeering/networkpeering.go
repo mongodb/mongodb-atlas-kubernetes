@@ -42,7 +42,7 @@ type networkPeeringService struct {
 }
 
 func NewNetworkPeeringServiceFromClientSet(clientSet *atlas.ClientSet) NetworkPeeringService {
-	return NewNetworkPeeringService(clientSet.SdkClient20250312012.NetworkPeeringApi)
+	return NewNetworkPeeringService(clientSet.SdkClient20250312013.NetworkPeeringApi)
 }
 
 func NewNetworkPeeringService(peeringAPI admin.NetworkPeeringApi) NetworkPeeringService {

@@ -92,7 +92,7 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 			return ctrl.Result{}, fmt.Errorf("unable to create atlas client: %w", err)
 		}
 
-		group, _, err := atlasClient.SdkClient20250312012.ProjectsApi.GetGroup(ctx, projectID).Execute()
+		group, _, err := atlasClient.SdkClient20250312013.ProjectsApi.GetGroup(ctx, projectID).Execute()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to get group: %w", err)
 		}

@@ -35,27 +35,27 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	}
 
 	// Get current IDP for the ORG
-	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20250312012.FederatedAuthenticationApi.
+	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20250312013.FederatedAuthenticationApi.
 		GetFederationSettings(service.Context, service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err)
 	}
 
-	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClientSet.SdkClient20250312012, atlasFedSettings)
+	identityProvider, err := GetIdentityProviderForFederatedSettings(service.Context, service.SdkClientSet.SdkClient20250312013, atlasFedSettings)
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthNotAvailable, err)
 	}
 
 	// Get current Org config
-	orgConfig, _, err := service.SdkClientSet.SdkClient20250312012.FederatedAuthenticationApi.
+	orgConfig, _, err := service.SdkClientSet.SdkClient20250312013.FederatedAuthenticationApi.
 		GetConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID).
 		Execute()
 	if err != nil {
 		return workflow.Terminate(workflow.FederatedAuthOrgNotConnected, err)
 	}
 
-	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20250312012)
+	projectList, err := prepareProjectList(service.Context, service.SdkClientSet.SdkClient20250312013)
 	if err != nil {
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("cannot list projects for org ID %s: %w", service.OrgID, err))
 	}
@@ -65,7 +65,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.Terminate(workflow.Internal, fmt.Errorf("cannot convert Federated Auth spec to Atlas: %w", err))
 	}
 
-	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClientSet.SdkClient20250312012); !result.IsOk() {
+	if result := r.ensureIDPSettings(service.Context, atlasFedSettings.GetId(), identityProvider, fedauth, service.SdkClientSet.SdkClient20250312013); !result.IsOk() {
 		return result
 	}
 
@@ -73,7 +73,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK()
 	}
 
-	updatedSettings, _, err := service.SdkClientSet.SdkClient20250312012.FederatedAuthenticationApi.
+	updatedSettings, _, err := service.SdkClientSet.SdkClient20250312013.FederatedAuthenticationApi.
 		UpdateConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID, operatorConf).
 		Execute()
 	if err != nil {
