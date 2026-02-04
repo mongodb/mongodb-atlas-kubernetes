@@ -18,7 +18,7 @@
 // For array-related tests, see indexers_array_test.go
 // For nil check tests, see indexers_nil_check_test.go
 // For dependent reference tests, see indexers_dependents_test.go
-package generate
+package indexers
 
 import (
 	"testing"
@@ -51,7 +51,7 @@ func TestBuildFieldAccessPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildFieldAccessPath(tt.fieldPath)
+			result := BuildFieldAccessPath(tt.fieldPath)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -71,7 +71,7 @@ func TestCapitalizeFirst(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := capitalizeFirst(tt.input)
+			result := CapitalizeFirst(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

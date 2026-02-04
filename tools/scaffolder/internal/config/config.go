@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package config
 
 import (
 	"bufio"
@@ -267,4 +267,33 @@ func ListCRDs(resultPath string) ([]CRDInfo, error) {
 	}
 
 	return crds, nil
+}
+
+// PrintCRDs displays available CRDs from the result file.
+func PrintCRDs(resultPath string) error {
+	crdInfos, err := ListCRDs(resultPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Available CRDs in %s:\n\n", resultPath)
+	for _, crd := range crdInfos {
+		fmt.Printf("Kind: %s\n", crd.Kind)
+		fmt.Printf("  Group: %s\n", crd.Group)
+		fmt.Printf("  Version: %s\n", crd.Version)
+		if len(crd.ShortNames) > 0 {
+			fmt.Printf("  Short Names: %s\n", strings.Join(crd.ShortNames, ", "))
+		}
+		if len(crd.Categories) > 0 {
+			fmt.Printf("  Categories: %s\n", strings.Join(crd.Categories, ", "))
+		}
+		if len(crd.Versions) > 0 {
+			fmt.Printf("  SDK Versions:\n")
+			for _, version := range crd.Versions {
+				fmt.Printf("    %s: %s\n", version.Version, version.AtlasSDKVersion)
+			}
+		}
+		fmt.Println()
+	}
+	return nil
 }

@@ -1,4 +1,18 @@
-package generate
+// Copyright 2025 MongoDB Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package atlascontrollers
 
 import (
 	"fmt"
@@ -6,14 +20,18 @@ import (
 	"strings"
 
 	"github.com/dave/jennifer/jen"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/boilerplate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/config"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/indexers"
 )
 
-func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath string, mappings []MappingWithConfig, refsByKind map[string][]ReferenceField, _ *ParsedConfig) error {
+func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath string, mappings []config.MappingWithConfig, refsByKind map[string][]indexers.ReferenceField, _ *config.ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
 	f := jen.NewFile(atlasResourceName)
-	AddLicenseHeader(f)
+	boilerplate.AddLicenseHeader(f)
 
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 	f.ImportAlias("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "apiextensionsv1")
@@ -39,7 +57,6 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 		jen.CustomFunc(jen.Options{Multi: true}, func(g *jen.Group) {
 			for _, mapping := range mappings {
 				versionSuffix := mapping.Version
-				// Capitalize first letter of version (e.g., v20250312 -> V20250312)
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
 
 				sdkImportPathSplit := strings.Split(mapping.OpenAPIConfig.Package, "/")
@@ -80,14 +97,13 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 	)
 
 	generateDelegatingStateHandlers(f, resourceName, apiPkg, indexerImportPath, refsByKind)
-	// ClientSet and translation request helpers
 	generateSDKClientSetMethod(f, resourceName, apiPkg)
 
 	fileName := filepath.Join(dir, "handler.go")
 	return f.Save(fileName)
 }
 
-func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerImportPath string, refsByKind map[string][]ReferenceField) {
+func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerImportPath string, refsByKind map[string][]indexers.ReferenceField) {
 	handlers := []string{
 		"HandleInitial",
 		"HandleImportRequested",
@@ -148,6 +164,58 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerI
 	)
 
 	generateSetupWithManager(f, resourceName, apiPkg, indexerImportPath, refsByKind)
+}
+
+func generateSetupWithManager(f *jen.File, resourceName, typesPath, indexerImportPath string, refsByKind map[string][]indexers.ReferenceField) {
+	newControllerManagedBy := jen.Qual("sigs.k8s.io/controller-runtime", "NewControllerManagedBy").Call(jen.Id("mgr")).
+		Dot("Named").Call(jen.Lit(resourceName)).
+		Dot("For").Call(jen.Id("h").Dot("For").Call())
+
+	for referencedKind := range refsByKind {
+		newControllerManagedBy = newControllerManagedBy.Dot("Watches").Call(
+			getWatchedTypeInstance(referencedKind, typesPath),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").
+				Call(
+					jen.Qual(indexerImportPath, fmt.Sprintf("New%sBy%sMapFunc", resourceName, referencedKind)).
+						Call(jen.Id("h").Dot("Client")),
+				),
+			jen.Qual("sigs.k8s.io/controller-runtime/pkg/builder", "WithPredicates").
+				Call(
+					jen.Qual("sigs.k8s.io/controller-runtime/pkg/predicate", "ResourceVersionChangedPredicate").Values(),
+				),
+		)
+	}
+
+	newControllerManagedBy = newControllerManagedBy.
+		Dot("WithOptions").Call(jen.Id("defaultOptions")).
+		Dot("Complete").Call(jen.Id("rec"))
+
+	f.Func().
+		Params(
+			jen.Id("h").Op("*").Id("Handler"),
+		).
+		Id("SetupWithManager").
+		Params(
+			jen.Id("mgr").Qual("sigs.k8s.io/controller-runtime", "Manager"),
+			jen.Id("rec").Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Reconciler"),
+			jen.Id("defaultOptions").Qual("sigs.k8s.io/controller-runtime/pkg/controller", "Options"),
+		).
+		Params(
+			jen.Error(),
+		).
+		Block(
+			jen.Id("h").Dot("Client").Op("=").Id("mgr").Dot("GetClient").Call(),
+			jen.Return(newControllerManagedBy),
+		)
+}
+
+func getWatchedTypeInstance(kind, typesPath string) *jen.Statement {
+	switch kind {
+	case "Secret":
+		return jen.Op("&").Qual("k8s.io/api/core/v1", "Secret").Values()
+	default:
+		return jen.Op("&").Qual(typesPath, kind).Values()
+	}
 }
 
 func generateSDKClientSetMethod(f *jen.File, resourceName, apiPkg string) {

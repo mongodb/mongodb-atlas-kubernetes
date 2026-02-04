@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package indexers
 
 import (
 	"os"
@@ -121,7 +121,7 @@ func TestGenerateLoopVariableName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := generateLoopVariableName(tt.input)
+			result := GenerateLoopVariableName(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

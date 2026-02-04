@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package indexers
 
 import (
 	"bufio"
@@ -31,8 +31,12 @@ import (
 	clientsetscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/boilerplate"
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/config"
 )
 
+// ReferenceField represents a field that references another Kubernetes resource.
 type ReferenceField struct {
 	FieldName         string
 	FieldPath         string
@@ -43,18 +47,18 @@ type ReferenceField struct {
 	ArrayBoundaries   []ArrayBoundary // all array boundaries (empty if not array-based)
 }
 
-// ArrayBoundary represents a single array level in a nested array path
+// ArrayBoundary represents a single array level in a nested array path.
 type ArrayBoundary struct {
 	ArrayPath string // path to the array container
 	ItemPath  string // path within array item to the next array or final field
 }
 
-// IsArrayBased returns true if the reference is inside an array
+// IsArrayBased returns true if the reference is inside an array.
 func (r ReferenceField) IsArrayBased() bool {
 	return len(r.ArrayBoundaries) > 0
 }
 
-// ArrayPath returns the path to the first array container (for backwards compatibility)
+// ArrayPath returns the path to the first array container (for backwards compatibility).
 func (r ReferenceField) ArrayPath() string {
 	if len(r.ArrayBoundaries) == 0 {
 		return ""
@@ -62,7 +66,7 @@ func (r ReferenceField) ArrayPath() string {
 	return r.ArrayBoundaries[0].ArrayPath
 }
 
-// ItemPath returns the path within the last array item (for backwards compatibility)
+// ItemPath returns the path within the last array item (for backwards compatibility).
 func (r ReferenceField) ItemPath() string {
 	if len(r.ArrayBoundaries) == 0 {
 		return ""
@@ -70,6 +74,7 @@ func (r ReferenceField) ItemPath() string {
 	return r.ArrayBoundaries[len(r.ArrayBoundaries)-1].ItemPath
 }
 
+// IndexerInfo contains information needed to generate an indexer.
 type IndexerInfo struct {
 	ResourceName    string
 	IndexerName     string
@@ -79,6 +84,49 @@ type IndexerInfo struct {
 	ReferenceFields []ReferenceField // All fields that reference this kind
 }
 
+// DependentInfo represents a resource that depends on another resource (has a reference to it).
+type DependentInfo struct {
+	// DependentKind is the kind of the resource that has the reference (e.g., "FlexCluster")
+	DependentKind string
+	// TargetKind is the kind being referenced (e.g., "Group")
+	TargetKind string
+	// IndexerConstantName is the constant name for the indexer (e.g., "FlexClusterByGroupIndex")
+	IndexerConstantName string
+	// MapFuncName is the name of the MapFunc function (e.g., "NewFlexClusterByGroupMapFunc")
+	MapFuncName string
+}
+
+// GenerateIndexers generates indexer files for a CRD kind.
+func GenerateIndexers(resultPath, crdKind, indexerOutDir, indexerTypesPath string) error {
+	references, err := ParseReferenceFields(resultPath, crdKind)
+	if err != nil {
+		return fmt.Errorf("failed to parse reference fields: %w", err)
+	}
+
+	if len(references) == 0 {
+		fmt.Printf("No reference fields found for CRD %s, skipping indexer generation\n", crdKind)
+		return nil
+	}
+
+	// Group references by target kind (e.g., all Secret refs together, all Group refs together)
+	refsByKind := make(map[string][]ReferenceField)
+	for _, ref := range references {
+		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
+	}
+
+	// Generate one indexer per target kind
+	for kind, refs := range refsByKind {
+		indexerInfo := createIndexerInfoForKind(crdKind, kind, refs)
+		if err := generateIndexerFile(crdKind, indexerInfo, indexerOutDir, indexerTypesPath); err != nil {
+			return fmt.Errorf("failed to generate indexer for kind %s: %w", kind, err)
+		}
+	}
+
+	fmt.Printf("Generated indexers for CRD %s: %v\n", crdKind, refsByKind)
+	return nil
+}
+
+// ParseReferenceFields parses reference fields from a CRD YAML file.
 func ParseReferenceFields(resultPath, crdKind string) ([]ReferenceField, error) {
 	file, err := os.Open(resultPath)
 	if err != nil {
@@ -102,6 +150,42 @@ func ParseReferenceFields(resultPath, crdKind string) ([]ReferenceField, error) 
 	}
 
 	return nil, fmt.Errorf("CRD kind '%s' not found in result file", crdKind)
+}
+
+// ParseDependentReferences finds all resources that have references to the given targetKind.
+func ParseDependentReferences(resultPath, targetKind string) ([]DependentInfo, error) {
+	crds, err := config.ListCRDs(resultPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list CRDs: %w", err)
+	}
+
+	var dependents []DependentInfo
+
+	for _, crd := range crds {
+		if crd.Kind == targetKind {
+			continue
+		}
+
+		refs, err := ParseReferenceFields(resultPath, crd.Kind)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ref := range refs {
+			if ref.ReferencedKind == targetKind {
+				dependent := DependentInfo{
+					DependentKind:       crd.Kind,
+					TargetKind:          targetKind,
+					IndexerConstantName: fmt.Sprintf("%sBy%sIndex", crd.Kind, targetKind),
+					MapFuncName:         fmt.Sprintf("New%sBy%sMapFunc", crd.Kind, targetKind),
+				}
+				dependents = append(dependents, dependent)
+				break
+			}
+		}
+	}
+
+	return dependents, nil
 }
 
 func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]ReferenceField, error) {
@@ -134,7 +218,6 @@ func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]Refere
 	if buffer.Len() > 0 {
 		refs, err := extractReferencesFromCRD(buffer.Bytes(), targetKind)
 		if err != nil {
-			// Ignore "not target CRD" errors, just like in the loop above
 			if err.Error() != "not target CRD" {
 				return nil, err
 			}
@@ -147,7 +230,7 @@ func parseNextCRDReferences(scanner *bufio.Scanner, targetKind string) ([]Refere
 }
 
 func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceField, error) {
-	crd, err := Decode(content)
+	crd, err := decode(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode YAML: %w", err)
 	}
@@ -165,11 +248,10 @@ func extractReferencesFromCRD(content []byte, targetKind string) ([]ReferenceFie
 		}
 	}
 
-	// Return empty slice for CRDs with no references (this is valid)
 	return references, nil
 }
 
-func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
+func decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 	sch := runtime.NewScheme()
 	_ = clientsetscheme.AddToScheme(sch)
 	_ = apiextensions.AddToScheme(sch)
@@ -178,9 +260,9 @@ func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 	_ = apiextensionsv1beta1.AddToScheme(sch)
 	_ = apiextensionsv1beta1.RegisterConversions(sch)
 
-	decode := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
+	decodeFunc := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode
 
-	obj, _, err := decode(content, nil, nil)
+	obj, _, err := decodeFunc(content, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode YAML: %w", err)
 	}
@@ -199,16 +281,12 @@ func Decode(content []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
 }
 
 func parseAPIMapping(apiMappingsStr string, schema *apiextensionsv1.JSONSchemaProps) ([]ReferenceField, error) {
-	// Parse the api-mappings as a generic map to handle any nesting level
 	var mapping map[string]any
 	if err := yaml.Unmarshal([]byte(apiMappingsStr), &mapping); err != nil {
 		return nil, fmt.Errorf("failed to parse api-mappings: %w", err)
 	}
 
 	var references []ReferenceField
-
-	// Recursively search for x-kubernetes-mapping
-	// Start with empty requiredSegments slice
 	findReferences(mapping, "", schema, nil, &references)
 
 	return references, nil
@@ -239,7 +317,6 @@ func processKubernetesMapping(v map[string]any, path string, requiredSegments []
 	group, _ := typeMap["group"].(string)
 	version, _ := typeMap["version"].(string)
 
-	// Extract field name from path
 	pathParts := strings.Split(path, ".")
 	fieldName := ""
 	if len(pathParts) > 0 {
@@ -247,11 +324,9 @@ func processKubernetesMapping(v map[string]any, path string, requiredSegments []
 	}
 
 	if kind != "" && fieldName != "" {
-		// Make a copy of requiredSegments to avoid sharing the underlying array
 		reqCopy := make([]bool, len(requiredSegments))
 		copy(reqCopy, requiredSegments)
 
-		// Parse all array boundaries for array support (single-level and nested)
 		arrayBoundaries := parseAllArrayBoundaries(path)
 
 		ref := ReferenceField{
@@ -270,7 +345,6 @@ func processKubernetesMapping(v map[string]any, path string, requiredSegments []
 func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaProps, requiredSegments []bool, references *[]ReferenceField) {
 	switch v := data.(type) {
 	case map[string]any:
-		// Check if this is a kubernetes mapping and process it
 		processKubernetesMapping(v, path, requiredSegments, references)
 
 		for key, value := range v {
@@ -280,13 +354,10 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 			}
 			newPath += key
 
-			// Resolve the child schema for this key and pass it into the recursive call
 			required, childSchema := getSchemaForPathSegment(schema, key)
 
-			// Track required status for meaningful segments (not "properties" or "items")
 			newRequiredSegments := requiredSegments
 			if key != "properties" && key != "items" {
-				// Special case: the top-level "spec" property is never required per Kubernetes convention
 				if key == "spec" && len(requiredSegments) == 0 {
 					required = false
 				}
@@ -299,7 +370,6 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 		for i, item := range v {
 			newPath := fmt.Sprintf("%s[%d]", path, i)
 
-			// For arrays pass the items schema if available
 			var childSchema *apiextensionsv1.JSONSchemaProps
 			if schema != nil {
 				_, childSchema = getSchemaForPathSegment(schema, "items")
@@ -309,17 +379,12 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 	}
 }
 
-// getSchemaForPathSegment returns the nested JSONSchemaProps for a given mapping key.
-// - "properties" returns the current schema (so inner property names will be looked up in schema.Properties)
-// - "items" returns the schema for array items (handles single Schema or first element of JSONSchemas)
-// - normal property names return schema.Properties[name] (strips trailing "[index]" if present)
 func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string) (bool, *apiextensionsv1.JSONSchemaProps) {
 	if schema == nil {
 		return false, nil
 	}
 
 	if key == "properties" {
-		// The next level will contain actual property names; keep the current schema so those names can be looked up in schema.Properties
 		return false, schema
 	}
 
@@ -332,7 +397,6 @@ func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string
 	}
 
 	if key == "items" {
-		// Return the items schema for arrays
 		if schema.Items != nil && schema.Items.Schema != nil {
 			return false, schema.Items.Schema
 		}
@@ -348,40 +412,9 @@ func getSchemaForPathSegment(schema *apiextensionsv1.JSONSchemaProps, key string
 	return false, nil
 }
 
-func GenerateIndexers(resultPath, crdKind, indexerOutDir, indexerTypesPath string) error {
-	references, err := ParseReferenceFields(resultPath, crdKind)
-	if err != nil {
-		return fmt.Errorf("failed to parse reference fields: %w", err)
-	}
-
-	if len(references) == 0 {
-		fmt.Printf("No reference fields found for CRD %s, skipping indexer generation\n", crdKind)
-		return nil
-	}
-
-	// Group references by target kind (e.g., all Secret refs together, all Group refs together)
-	// Both single-level and nested arrays are now supported
-	refsByKind := make(map[string][]ReferenceField)
-	for _, ref := range references {
-		refsByKind[ref.ReferencedKind] = append(refsByKind[ref.ReferencedKind], ref)
-	}
-
-	// Generate one indexer per target kind
-	for kind, refs := range refsByKind {
-		indexerInfo := createIndexerInfoForKind(crdKind, kind, refs)
-		if err := generateIndexerFile(crdKind, indexerInfo, indexerOutDir, indexerTypesPath); err != nil {
-			return fmt.Errorf("failed to generate indexer for kind %s: %w", kind, err)
-		}
-	}
-
-	fmt.Printf("Generated indexers for CRD %s: %v\n", crdKind, refsByKind)
-	return nil
-}
-
 func createIndexerInfoForKind(crdKind, targetKind string, refs []ReferenceField) IndexerInfo {
 	resourceName := strings.ToLower(crdKind)
 
-	// Build index name from all field paths
 	indexParts := make([]string, 0, len(refs))
 	for _, ref := range refs {
 		indexParts = append(indexParts, ref.FieldName)
@@ -399,12 +432,10 @@ func createIndexerInfoForKind(crdKind, targetKind string, refs []ReferenceField)
 }
 
 func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir, indexerTypesPath string) error {
-	// Set default directory if not provided
 	if indexerOutDir == "" {
 		indexerOutDir = filepath.Join("..", "mongodb-atlas-kubernetes", "internal", "indexer")
 	}
 
-	// Ensure output directory exists
 	if err := os.MkdirAll(indexerOutDir, 0755); err != nil {
 		return fmt.Errorf("failed to create indexer directory: %w", err)
 	}
@@ -413,18 +444,16 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir, ind
 	filePath := filepath.Join(indexerOutDir, filename)
 
 	f := jen.NewFile("indexer")
-	AddLicenseHeader(f)
+	boilerplate.AddLicenseHeader(f)
 	f.Comment("nolint:dupl")
 
 	f.Const().Id(indexer.ConstantName).Op("=").Lit(indexer.IndexerName)
 
-	// Add struct type with logger field
 	structName := fmt.Sprintf("%sBy%sIndexer", crdKind, indexer.TargetKind)
 	f.Type().Id(structName).Struct(
 		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "SugaredLogger"),
 	)
 
-	// Constructor
 	f.Func().Id(indexer.FunctionName).Params(
 		jen.Id("logger").Op("*").Qual("go.uber.org/zap", "Logger"),
 	).Op("*").Id(structName).Block(
@@ -433,22 +462,18 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir, ind
 		})),
 	)
 
-	// Object method
 	f.Func().Params(jen.Op("*").Id(structName)).Id("Object").Params().Qual("sigs.k8s.io/controller-runtime/pkg/client", "Object").Block(
 		jen.Return(jen.Op("&").Qual(indexerTypesPath, crdKind).Values()),
 	)
 
-	// Name method
 	f.Func().Params(jen.Op("*").Id(structName)).Id("Name").Params().String().Block(
 		jen.Return(jen.Id(indexer.ConstantName)),
 	)
 
-	// Keys method with logic for all reference fields
 	generateKeysMethod(f, structName, crdKind, indexer, indexerTypesPath)
 
 	f.Line()
 
-	// Always generate helper Requests function for all reference types
 	generateMapFunc(f, crdKind, indexer, indexerTypesPath)
 
 	if err := f.Save(filePath); err != nil {
@@ -462,9 +487,7 @@ func generateIndexerFile(crdKind string, indexer IndexerInfo, indexerOutDir, ind
 func generateKeysMethod(f *jen.File, structName, crdKind string, indexer IndexerInfo, indexerTypesPath string) {
 	f.Comment("Keys extracts the index key(s) from the given object")
 
-	// Build the block statements
 	blockStatements := []jen.Code{
-		// Type assertion
 		jen.List(jen.Id("resource"), jen.Id("ok")).Op(":=").Id("object").Assert(jen.Op("*").Qual(indexerTypesPath, crdKind)),
 		jen.If(jen.Op("!").Id("ok")).Block(
 			jen.Id("i").Dot("logger").Dot("Errorf").Call(
@@ -476,10 +499,7 @@ func generateKeysMethod(f *jen.File, structName, crdKind string, indexer Indexer
 		jen.Var().Id("keys").Index().String(),
 	}
 
-	// Add field extraction logic
 	blockStatements = append(blockStatements, generateFieldExtractionCode(indexer.ReferenceFields)...)
-
-	// Add return statement
 	blockStatements = append(blockStatements, jen.Return(jen.Id("keys")))
 
 	f.Func().Params(jen.Id("i").Op("*").Id(structName)).Id("Keys").Params(
@@ -491,24 +511,15 @@ func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 	code := make([]jen.Code, 0)
 
 	for _, field := range fields {
-		// Check if this is an array-based reference
 		if field.IsArrayBased() {
 			code = append(code, generateArrayFieldExtractionCode(field))
 		} else {
-			// Original non-array logic
-			fieldAccessPath := buildFieldAccessPath(field.FieldPath)
-
-			// Nil check if conditions
-			nilCheckCondition := buildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
-
-			// Add check that the Name field is not empty
+			fieldAccessPath := BuildFieldAccessPath(field.FieldPath)
+			nilCheckCondition := BuildNilCheckConditions(fieldAccessPath, field.RequiredSegments)
 			condition := nilCheckCondition.Op("&&").Add(
 				jen.Id(fieldAccessPath).Dot("Name").Op("!=").Lit(""),
 			)
 
-			// Generate: if <nil checks> && resource.Spec.<version>.GroupRef.Name != "" {
-			//   keys = append(keys, types.NamespacedName{...}.String())
-			// }
 			code = append(code,
 				jen.If(condition).Block(
 					jen.Id("keys").Op("=").Append(
@@ -526,39 +537,18 @@ func generateFieldExtractionCode(fields []ReferenceField) []jen.Code {
 	return code
 }
 
-// generateArrayFieldExtractionCode generates code for extracting keys from array-based references.
-// This handles both single-level and nested arrays by generating appropriate nested loops.
-// Example for nested path: properties.spec.properties.regions.items.properties.notifications.items.properties.secretRef
-// Generates:
-//
-//	if resource.Spec.Regions != nil {
-//	    for _, region := range *resource.Spec.Regions {
-//	        if region.Notifications != nil {
-//	            for _, notification := range *region.Notifications {
-//	                if notification.SecretRef != nil && notification.SecretRef.Name != "" {
-//	                    keys = append(keys, ...)
-//	                }
-//	            }
-//	        }
-//	    }
-//	}
 func generateArrayFieldExtractionCode(field ReferenceField) jen.Code {
 	boundaries := field.ArrayBoundaries
 
-	// Build the nested structure from innermost to outermost
-	// Start with the innermost block (the append statement)
 	lastBoundary := boundaries[len(boundaries)-1]
-	lastItemPath := buildFieldAccessPath(lastBoundary.ItemPath)
+	lastItemPath := BuildFieldAccessPath(lastBoundary.ItemPath)
 
-	// Determine the last loop variable name (from this boundary's array)
 	lastArrayParts := strings.Split(lastBoundary.ArrayPath, ".")
 	lastArrayFieldName := lastArrayParts[len(lastArrayParts)-1]
-	lastLoopVar := generateLoopVariableName(lastArrayFieldName)
+	lastLoopVar := GenerateLoopVariableName(lastArrayFieldName)
 
-	// Build the final field path using the last loop variable
 	finalFieldPath := strings.Replace(lastItemPath, "resource", lastLoopVar, 1)
 
-	// Create the innermost block: if check and keys append
 	innermostBlock := jen.If(
 		jen.Id(finalFieldPath).Op("!=").Nil().Op("&&").Add(
 			jen.Id(finalFieldPath).Dot("Name").Op("!=").Lit(""),
@@ -573,30 +563,23 @@ func generateArrayFieldExtractionCode(field ReferenceField) jen.Code {
 		),
 	)
 
-	// Now build the nested loops from innermost to outermost
 	currentBlock := innermostBlock
 
-	// Process boundaries from the last down to index 1 (skip the first boundary for now)
 	for i := len(boundaries) - 1; i >= 1; i-- {
 		boundary := boundaries[i]
 		prevBoundary := boundaries[i-1]
 
-		// Get the previous loop variable name
 		prevArrayParts := strings.Split(prevBoundary.ArrayPath, ".")
 		prevArrayFieldName := prevArrayParts[len(prevArrayParts)-1]
-		prevLoopVar := generateLoopVariableName(prevArrayFieldName)
+		prevLoopVar := GenerateLoopVariableName(prevArrayFieldName)
 
-		// Get the current loop variable name from this boundary's array
 		arrayParts := strings.Split(boundary.ArrayPath, ".")
 		arrayFieldName := arrayParts[len(arrayParts)-1]
-		loopVar := generateLoopVariableName(arrayFieldName)
+		loopVar := GenerateLoopVariableName(arrayFieldName)
 
-		// Build the array access path from the previous boundary's ItemPath
-		// This tells us how to get from the previous loop variable to this array
-		arrayAccessFromPrev := buildFieldAccessPath(prevBoundary.ItemPath)
+		arrayAccessFromPrev := BuildFieldAccessPath(prevBoundary.ItemPath)
 		arrayAccessInLoop := strings.Replace(arrayAccessFromPrev, "resource", prevLoopVar, 1)
 
-		// Wrap current block in a for loop with nil check
 		currentBlock = jen.If(jen.Id(arrayAccessInLoop).Op("!=").Nil()).Block(
 			jen.For(
 				jen.List(jen.Id("_"), jen.Id(loopVar)).Op(":=").Range().Op("*").Id(arrayAccessInLoop),
@@ -604,14 +587,12 @@ func generateArrayFieldExtractionCode(field ReferenceField) jen.Code {
 		)
 	}
 
-	// Handle the first/outermost boundary
 	firstBoundary := boundaries[0]
-	firstArrayAccessPath := buildFieldAccessPath(firstBoundary.ArrayPath)
+	firstArrayAccessPath := BuildFieldAccessPath(firstBoundary.ArrayPath)
 	firstArrayParts := strings.Split(firstBoundary.ArrayPath, ".")
 	firstArrayFieldName := firstArrayParts[len(firstArrayParts)-1]
-	firstLoopVar := generateLoopVariableName(firstArrayFieldName)
+	firstLoopVar := GenerateLoopVariableName(firstArrayFieldName)
 
-	// Wrap in the outermost nil check and for loop
 	return jen.If(jen.Id(firstArrayAccessPath).Op("!=").Nil()).Block(
 		jen.For(
 			jen.List(jen.Id("_"), jen.Id(firstLoopVar)).Op(":=").Range().Op("*").Id(firstArrayAccessPath),
@@ -619,78 +600,55 @@ func generateArrayFieldExtractionCode(field ReferenceField) jen.Code {
 	)
 }
 
-func buildFieldAccessPath(fieldPath string) string {
+// BuildFieldAccessPath converts a field path to a Go field access path.
+func BuildFieldAccessPath(fieldPath string) string {
 	parts := strings.Split(fieldPath, ".")
 	accessPath := []string{"resource"}
 
 	for i := 0; i < len(parts); i++ {
 		part := parts[i]
 
-		// Skip "properties" keyword
 		if part == "properties" {
 			continue
 		}
 
-		// Skip "items" only if it's the schema marker (followed by "properties")
-		// Keep "items" if it's an actual field name (last part or followed by something other than "properties")
 		if part == "items" {
-			// Check if this is the schema marker: ".items.properties."
 			if i+1 < len(parts) && parts[i+1] == "properties" {
-				// This is the schema marker, skip it
 				continue
 			}
-			// Otherwise, it's a field name, keep it
 		}
 
-		// Capitalize the first letter
-		accessPath = append(accessPath, capitalizeFirst(part))
+		accessPath = append(accessPath, CapitalizeFirst(part))
 	}
 
 	return strings.Join(accessPath, ".")
 }
 
-func capitalizeFirst(s string) string {
+// CapitalizeFirst capitalizes the first letter of a string.
+func CapitalizeFirst(s string) string {
 	if s == "" {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-// parseAllArrayBoundaries parses a field path and returns all array boundaries.
-// This supports nested arrays by finding all .items.properties. patterns.
-// Example: "properties.spec.properties.regions.items.properties.notifications.items.properties.secretRef"
-// Returns: [
-//
-//	{ArrayPath: "properties.spec.properties.regions", ItemPath: "properties.notifications"},
-//	{ArrayPath: "properties.notifications", ItemPath: "properties.secretRef"}
-//
-// ]
 func parseAllArrayBoundaries(fieldPath string) []ArrayBoundary {
 	var boundaries []ArrayBoundary
 
-	// Split by ".items.properties." to find all array boundaries
 	const delimiter = ".items.properties."
 	parts := strings.Split(fieldPath, delimiter)
 
 	if len(parts) <= 1 {
-		// No arrays found
 		return nil
 	}
 
-	// Each part except the last represents an array container
-	// The item path is derived from the next part
 	for i := 0; i < len(parts)-1; i++ {
 		arrayPath := parts[i]
 
-		// For nested arrays (i > 0), we need to get just the array field name
-		// from the previous item path
 		if i > 0 {
-			// The arrayPath here is relative to the previous loop variable
-			// Extract just the array field name
 			arrayPath = "properties." + extractArrayFieldFromItemPath(parts[i])
 		}
 
-		// The item path is the next part (after splitting, parts won't contain ".items.")
 		itemPath := "properties." + parts[i+1]
 
 		boundaries = append(boundaries, ArrayBoundary{
@@ -702,23 +660,19 @@ func parseAllArrayBoundaries(fieldPath string) []ArrayBoundary {
 	return boundaries
 }
 
-// extractArrayFieldFromItemPath extracts the array field name from an item path
-// For "config.properties.notifications", it returns "notifications" (the last field - the array)
-// For "notifications", it returns "notifications"
 func extractArrayFieldFromItemPath(path string) string {
-	// Handle paths like "notifications" or "config.properties.notifications"
 	path = strings.TrimPrefix(path, "properties.")
 
-	// For nested paths like "config.properties.notifications", we want the last segment (the array name)
 	lastPropertiesIdx := strings.LastIndex(path, ".properties.")
 	if lastPropertiesIdx >= 0 {
-		return path[lastPropertiesIdx+len(".properties."):] // skip ".properties."
+		return path[lastPropertiesIdx+len(".properties."):]
 	}
 
 	return path
 }
 
-func generateLoopVariableName(arrayFieldName string) string {
+// GenerateLoopVariableName generates a loop variable name from an array field name.
+func GenerateLoopVariableName(arrayFieldName string) string {
 	if arrayFieldName == "" {
 		return "item"
 	}
@@ -738,20 +692,16 @@ func generateLoopVariableName(arrayFieldName string) string {
 	return name + "Item"
 }
 
-// buildNilCheckConditions creates a compound nil check condition for a field access path
-// based on which segments are required (non-pointer) vs optional (pointer).
-// Examples:
-//   - fieldAccessPath: "cluster.Spec.V20250312.GroupRef"
-//   - requiredSegments: [false, true, false] (for Spec, V20250312, GroupRef - excludes variable name)
-func buildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *jen.Statement {
+// BuildNilCheckConditions creates a compound nil check condition for a field access path.
+func BuildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *jen.Statement {
 	segments := strings.Split(fieldAccessPath, ".")
 
 	if len(requiredSegments) == 0 {
-		return buildDotChain(segments).Op("!=").Nil()
+		return BuildDotChain(segments).Op("!=").Nil()
 	}
 
 	if len(requiredSegments) != len(segments)-1 {
-		return buildDotChain(segments).Op("!=").Nil()
+		return BuildDotChain(segments).Op("!=").Nil()
 	}
 
 	var conditions *jen.Statement
@@ -759,19 +709,16 @@ func buildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *j
 	for i := 1; i < len(segments); i++ {
 		requiredIndex := i - 1
 
-		// Skip if segment is required, means it's a non-pointer struct
 		if requiredSegments[requiredIndex] {
 			continue
 		}
 
-		// Special case: "Spec" is always a non-pointer struct in Kubernetes resources
 		if segments[i] == "Spec" {
 			continue
 		}
 
-		// Build the path up to this segment
 		pathSegments := segments[:i+1]
-		nilCheck := buildDotChain(pathSegments).Op("!=").Nil()
+		nilCheck := BuildDotChain(pathSegments).Op("!=").Nil()
 
 		if conditions == nil {
 			conditions = nilCheck
@@ -780,17 +727,15 @@ func buildNilCheckConditions(fieldAccessPath string, requiredSegments []bool) *j
 		}
 	}
 
-	// If no conditions were added (all segments required), check only the last field
 	if conditions == nil {
-		return buildDotChain(segments).Op("!=").Nil()
+		return BuildDotChain(segments).Op("!=").Nil()
 	}
 
 	return conditions
 }
 
-// buildDotChain creates a jen.Statement for a dot-separated path
-// For example: ["cluster", "Spec", "V20250312"] -> jen.Id("cluster").Dot("Spec").Dot("V20250312")
-func buildDotChain(segments []string) *jen.Statement {
+// BuildDotChain creates a jen.Statement for a dot-separated path.
+func BuildDotChain(segments []string) *jen.Statement {
 	if len(segments) == 0 {
 		return jen.Null()
 	}
@@ -905,63 +850,4 @@ func generateMapFunc(f *jen.File, crdKind string, indexer IndexerInfo, indexerTy
 					),
 			),
 		)
-}
-
-// TODO: UpdateIndexerRegistry needs to be reimplemented to work with the new kind-based indexer approach
-// For now, indexers need to be manually registered in the indexer registry
-
-// DependentInfo represents a resource that depends on another resource (has a reference to it)
-type DependentInfo struct {
-	// DependentKind is the kind of the resource that has the reference (e.g., "FlexCluster")
-	DependentKind string
-	// TargetKind is the kind being referenced (e.g., "Group")
-	TargetKind string
-	// IndexerConstantName is the constant name for the indexer (e.g., "FlexClusterByGroupIndex")
-	IndexerConstantName string
-	// MapFuncName is the name of the MapFunc function (e.g., "NewFlexClusterByGroupMapFunc")
-	MapFuncName string
-}
-
-// ParseDependentReferences finds all resources that have references to the given targetKind.
-// It parses all CRDs in the result file and returns information about resources that depend on targetKind.
-// For example, if targetKind is "Group", it will find FlexCluster, Cluster, DatabaseUser etc. that reference Group.
-func ParseDependentReferences(resultPath, targetKind string) ([]DependentInfo, error) {
-	// List all CRDs in the result file
-	crds, err := ListCRDs(resultPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list CRDs: %w", err)
-	}
-
-	var dependents []DependentInfo
-
-	// For each CRD, check if it has references to the targetKind
-	for _, crd := range crds {
-		// Skip if this is the target kind itself
-		if crd.Kind == targetKind {
-			continue
-		}
-
-		// Parse reference fields for this CRD
-		refs, err := ParseReferenceFields(resultPath, crd.Kind)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if any reference points to the targetKind
-		for _, ref := range refs {
-			if ref.ReferencedKind == targetKind {
-				dependent := DependentInfo{
-					DependentKind:       crd.Kind,
-					TargetKind:          targetKind,
-					IndexerConstantName: fmt.Sprintf("%sBy%sIndex", crd.Kind, targetKind),
-					MapFuncName:         fmt.Sprintf("New%sBy%sMapFunc", crd.Kind, targetKind),
-				}
-				dependents = append(dependents, dependent)
-				// Only add each dependent kind once (even if it has multiple refs to target)
-				break
-			}
-		}
-	}
-
-	return dependents, nil
 }
