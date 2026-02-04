@@ -1,0 +1,295 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-operator
+  namespace: mongodb-atlas-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-leader-election-role
+  namespace: mongodb-atlas-system
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-manager-role
+  namespace: mongodb-atlas-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackupcompliancepolicies
+  - atlasbackuppolicies
+  - atlasbackupschedules
+  - atlascustomroles
+  - atlasdatabaseusers
+  - atlasdatafederations
+  - atlasdeployments
+  - atlasfederatedauths
+  - atlasipaccesslists
+  - atlasnetworkpeerings
+  - atlasorgsettings
+  - atlasprivateendpoints
+  - atlasprojects
+  - atlassearchindexconfigs
+  - atlasstreamconnections
+  - atlasstreaminstances
+  - atlasteams
+  - atlasthirdpartyintegrations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasbackuppolicies/status
+  - atlasbackupschedules/status
+  - atlascustomroles/status
+  - atlasdatabaseusers/status
+  - atlasdatafederations/status
+  - atlasdeployments/status
+  - atlasfederatedauths/status
+  - atlasipaccesslists/status
+  - atlasnetworkpeerings/status
+  - atlasorgsettings/status
+  - atlasprivateendpoints/status
+  - atlasprojects/status
+  - atlassearchindexconfigs/status
+  - atlasstreamconnections/status
+  - atlasstreaminstances/status
+  - atlasteams/status
+  - atlasthirdpartyintegrations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - atlas.mongodb.com
+  resources:
+  - atlasipaccesslists/finalizers
+  - atlasnetworkpeerings/finalizers
+  - atlasorgsettings/finalizers
+  - atlasthirdpartyintegrations/finalizers
+  verbs:
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-leader-election-rolebinding
+  namespace: mongodb-atlas-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mongodb-atlas-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: mongodb-atlas-operator
+  namespace: mongodb-atlas-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-manager-rolebinding
+  namespace: mongodb-atlas-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mongodb-atlas-manager-role
+subjects:
+- kind: ServiceAccount
+  name: mongodb-atlas-operator
+  namespace: mongodb-atlas-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+    control-plane: controller-manager
+  name: mongodb-atlas-controller-manager-metrics-service
+  namespace: mongodb-atlas-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+    app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  name: mongodb-atlas-operator
+  namespace: mongodb-atlas-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+      app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: mongodb-atlas-kubernetes-operator
+        app.kubernetes.io/name: mongodb-atlas-kubernetes-operator
+    spec:
+      containers:
+      - args:
+        - --leader-elect
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --log-level=info
+        - --log-encoder=json
+        command:
+        - /manager
+        env:
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['olm.targetNamespaces']
+        - name: OPERATOR_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: mongodb/mongodb-atlas-kubernetes-operator-prerelease:2.14.0
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+      serviceAccountName: mongodb-atlas-operator
+      terminationGracePeriodSeconds: 10
