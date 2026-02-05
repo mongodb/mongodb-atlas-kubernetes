@@ -39,5 +39,5 @@ jobs:
 
   openshift-upgrade-test:
     needs: allowed
-    uses: ./.github/workflows/openshift-upgrade-test.yaml
+    uses: ./.github/workflows/openshift-upgrade-test.yml
     secrets: inherit
