@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type ThirdPartyIntegration struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ThirdPartyIntegrationSpec   `json:"spec,omitempty"`
+	Spec ThirdPartyIntegrationSpec `json:"spec,omitempty"`
+
 	Status ThirdPartyIntegrationStatus `json:"status,omitempty"`
 }
 
 type ThirdPartyIntegrationSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the thirdpartyintegration resource for version v20250312.
 	V20250312 *ThirdPartyIntegrationSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -71,7 +79,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiKeySecretRef *ApiTokenSecretRef `json:"apiKeySecretRef,omitempty"`
+	ApiKeySecretRef *PasswordSecretRef `json:"apiKeySecretRef,omitempty"`
 
 	/*
 	   ApiTokenSecretRef SENSITIVE FIELD
@@ -88,7 +96,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   **IMPORTANT**: Slack integrations now use the OAuth2 verification method and must  be initially configured, or updated from a legacy integration, through the Atlas  third-party service integrations page. Legacy tokens will soon no longer be  supported.
 	*/
-	ApiTokenSecretRef *ApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
+	ApiTokenSecretRef *PasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications.
@@ -108,7 +116,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 	   **IMPORTANT**: Effective Wednesday, June 16th, 2021, New Relic no longer supports the plugin-based integration with MongoDB. We do not recommend that you sign up for the plugin-based integration.
 	   Consider configuring an alternative monitoring integration before June 16th to maintain visibility into your MongoDB deployments.
 	*/
-	LicenseKeySecretRef *ApiTokenSecretRef `json:"licenseKeySecretRef,omitempty"`
+	LicenseKeySecretRef *PasswordSecretRef `json:"licenseKeySecretRef,omitempty"`
 
 	/*
 	   MicrosoftTeamsWebhookUrlSecretRef SENSITIVE FIELD
@@ -119,7 +127,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlSecretRef *ApiTokenSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
+	MicrosoftTeamsWebhookUrlSecretRef *PasswordSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
 
 	/*
 	   PasswordSecretRef SENSITIVE FIELD
@@ -128,7 +136,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   Password needed to allow MongoDB Cloud to access your Prometheus account.
 	*/
-	PasswordSecretRef *ApiTokenSecretRef `json:"passwordSecretRef,omitempty"`
+	PasswordSecretRef *PasswordSecretRef `json:"passwordSecretRef,omitempty"`
 
 	/*
 	   ReadTokenSecretRef SENSITIVE FIELD
@@ -137,10 +145,10 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   Query key used to access your New Relic account.
 	*/
-	ReadTokenSecretRef *ApiTokenSecretRef `json:"readTokenSecretRef,omitempty"`
+	ReadTokenSecretRef *PasswordSecretRef `json:"readTokenSecretRef,omitempty"`
 
-	// Region PagerDuty region that indicates the API Uniform Resource Locator (URL) to
-	// use.
+	// Region Two-letter code that indicates which regional URL MongoDB uses to access
+	// the Opsgenie API.
 	Region *string `json:"region,omitempty"`
 
 	/*
@@ -150,7 +158,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   Routing key associated with your Splunk On-Call account.
 	*/
-	RoutingKeySecretRef *ApiTokenSecretRef `json:"routingKeySecretRef,omitempty"`
+	RoutingKeySecretRef *PasswordSecretRef `json:"routingKeySecretRef,omitempty"`
 
 	/*
 	   SecretSecretRef SENSITIVE FIELD
@@ -161,7 +169,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	SecretSecretRef *ApiTokenSecretRef `json:"secretSecretRef,omitempty"`
+	SecretSecretRef *PasswordSecretRef `json:"secretSecretRef,omitempty"`
 
 	// SendCollectionLatencyMetrics Toggle sending collection latency metrics that
 	// includes database names and collection namesand latency metrics on reads,
@@ -172,9 +180,18 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 	// and metrics on the number of collections, storage size, and index size.
 	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
 
+	// SendQueryStatsMetrics Toggle sending query shape metrics that includes query
+	// hash and metrics on latency, execution frequency, documents returned, and
+	// timestamps.
+	SendQueryStatsMetrics *bool `json:"sendQueryStatsMetrics,omitempty"`
+
 	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
 	// resource tags with the datadog metrics.
 	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
+
+	// SendUserProvidedResourceTagsEnabled Toggle sending user provided group and
+	// cluster resource tags with the prometheus metrics.
+	SendUserProvidedResourceTagsEnabled *bool `json:"sendUserProvidedResourceTagsEnabled,omitempty"`
 
 	// ServiceDiscovery Desired method to discover the Prometheus service.
 	ServiceDiscovery *string `json:"serviceDiscovery,omitempty"`
@@ -192,7 +209,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeySecretRef *ApiTokenSecretRef `json:"serviceKeySecretRef,omitempty"`
+	ServiceKeySecretRef *PasswordSecretRef `json:"serviceKeySecretRef,omitempty"`
 
 	// TeamName Human-readable label that identifies your Slack team. Set this
 	// parameter when you configure a legacy Slack integration.
@@ -212,7 +229,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the URL appears partially redacted.
 	*/
-	UrlSecretRef *ApiTokenSecretRef `json:"urlSecretRef,omitempty"`
+	UrlSecretRef *PasswordSecretRef `json:"urlSecretRef,omitempty"`
 
 	// Username Human-readable label that identifies your Prometheus incoming webhook.
 	Username *string `json:"username,omitempty"`
@@ -224,7 +241,7 @@ type ThirdPartyIntegrationSpecV20250312Entry struct {
 
 	   Insert key associated with your New Relic account.
 	*/
-	WriteTokenSecretRef *ApiTokenSecretRef `json:"writeTokenSecretRef,omitempty"`
+	WriteTokenSecretRef *PasswordSecretRef `json:"writeTokenSecretRef,omitempty"`
 }
 
 type ThirdPartyIntegrationStatus struct {
@@ -250,9 +267,18 @@ type ThirdPartyIntegrationStatusV20250312 struct {
 	// and metrics on the number of collections, storage size, and index size.
 	SendDatabaseMetrics *bool `json:"sendDatabaseMetrics,omitempty"`
 
+	// SendQueryStatsMetrics Toggle sending query shape metrics that includes query
+	// hash and metrics on latency, execution frequency, documents returned, and
+	// timestamps.
+	SendQueryStatsMetrics *bool `json:"sendQueryStatsMetrics,omitempty"`
+
 	// SendUserProvidedResourceTags Toggle sending user provided group and cluster
 	// resource tags with the datadog metrics.
 	SendUserProvidedResourceTags *bool `json:"sendUserProvidedResourceTags,omitempty"`
+
+	// SendUserProvidedResourceTagsEnabled Toggle sending user provided group and
+	// cluster resource tags with the prometheus metrics.
+	SendUserProvidedResourceTagsEnabled *bool `json:"sendUserProvidedResourceTagsEnabled,omitempty"`
 
 	// Type Human-readable label that identifies the service to which you want to
 	// integrate with MongoDB Cloud. The value must match the third-party service
@@ -265,4 +291,12 @@ type ThirdPartyIntegrationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ThirdPartyIntegration `json:"items"`
+}
+
+// GetConditions for ThirdPartyIntegration
+func (tpi *ThirdPartyIntegration) GetConditions() []metav1.Condition {
+	if tpi.Status.Conditions == nil {
+		return nil
+	}
+	return *tpi.Status.Conditions
 }

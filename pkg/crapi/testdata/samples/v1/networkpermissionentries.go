@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type NetworkPermissionEntries struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NetworkPermissionEntriesSpec   `json:"spec,omitempty"`
+	Spec NetworkPermissionEntriesSpec `json:"spec,omitempty"`
+
 	Status NetworkPermissionEntriesStatus `json:"status,omitempty"`
 }
 
 type NetworkPermissionEntriesSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the networkpermissionentries resource for version
 	// v20250312.
 	V20250312 *NetworkPermissionEntriesSpecV20250312 `json:"v20250312,omitempty"`
@@ -106,4 +114,12 @@ type NetworkPermissionEntriesList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []NetworkPermissionEntries `json:"items"`
+}
+
+// GetConditions for NetworkPermissionEntries
+func (npe *NetworkPermissionEntries) GetConditions() []metav1.Condition {
+	if npe.Status.Conditions == nil {
+		return nil
+	}
+	return *npe.Status.Conditions
 }

@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type NetworkPeeringConnection struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NetworkPeeringConnectionSpec   `json:"spec,omitempty"`
+	Spec NetworkPeeringConnectionSpec `json:"spec,omitempty"`
+
 	Status NetworkPeeringConnectionStatus `json:"status,omitempty"`
 }
 
 type NetworkPeeringConnectionSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the networkpeeringconnection resource for version
 	// v20250312.
 	V20250312 *NetworkPeeringConnectionSpecV20250312 `json:"v20250312,omitempty"`
@@ -148,4 +156,12 @@ type NetworkPeeringConnectionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []NetworkPeeringConnection `json:"items"`
+}
+
+// GetConditions for NetworkPeeringConnection
+func (npc *NetworkPeeringConnection) GetConditions() []metav1.Condition {
+	if npc.Status.Conditions == nil {
+		return nil
+	}
+	return *npc.Status.Conditions
 }

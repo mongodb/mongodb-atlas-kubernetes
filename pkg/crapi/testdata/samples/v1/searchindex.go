@@ -3,10 +3,9 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -18,14 +17,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type SearchIndex struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SearchIndexSpec   `json:"spec,omitempty"`
+	Spec SearchIndexSpec `json:"spec,omitempty"`
+
 	Status SearchIndexStatus `json:"status,omitempty"`
 }
 
 type SearchIndexSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the searchindex resource for version v20250312.
 	V20250312 *SearchIndexSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -106,15 +114,27 @@ type Definition struct {
 	// SearchAnalyzer Method applied to identify words when searching this index.
 	SearchAnalyzer *string `json:"searchAnalyzer,omitempty"`
 
+	// Sort Sort definition for the index. When defined, the index will be pre-sorted
+	// on thespecified fields, which improves query sort performance for those fields.
+	// Supports two formats: simple format with field name and direction, or complex
+	// format with additional options.The 'order' field is required (1=ascending,
+	// -1=descending).The 'noData' field is optional and controls how missing values
+	// are sorted(default: "lowest").
+	Sort *apiextensionsv1.JSON `json:"sort,omitempty"`
+
 	// StoredSource Flag that indicates whether to store all fields (true) on Atlas
 	// Search. By default, Atlas doesn't store (false) the fields on Atlas Search.
 	// Alternatively, you can specify an object that only contains the list of fields
-	// to store (include) or not store (exclude) on Atlas Search. To learn more, see
+	// to store (include) or not store (exclude) on Atlas Search. Note that storing all
+	// fields (true) is not allowed for vector search indexes. To learn more, see
 	// Stored Source Fields.
 	StoredSource *apiextensionsv1.JSON `json:"storedSource,omitempty"`
 
 	// Synonyms Rule sets that map words to their synonyms in this index.
 	Synonyms *[]Synonyms `json:"synonyms,omitempty"`
+
+	// TypeSets Type sets for the index.
+	TypeSets *[]TypeSets `json:"typeSets,omitempty"`
 }
 
 type Analyzers struct {
@@ -145,9 +165,13 @@ type Analyzers struct {
 }
 
 type Mappings struct {
-	// Dynamic Flag that indicates whether the index uses dynamic or static mappings.
-	// Required if **mappings.fields** is omitted.
-	Dynamic *bool `json:"dynamic,omitempty"`
+	// Dynamic Indicates whether the index uses static, default dynamic, or
+	// configurable dynamic mappings. Set to **true** to enable dynamic mapping with
+	// default type set or define object to specify the name of the configured type
+	// sets for dynamic mapping. If you specify configurable dynamic mappings, you must
+	// define the referred type sets in the **typeSets** field. Set to **false** to use
+	// only static mappings through **mappings.fields**.
+	Dynamic *apiextensionsv1.JSON `json:"dynamic,omitempty"`
 
 	// Fields One or more field specifications for the Atlas Search index. Required if
 	// **mappings.dynamic** is omitted or set to **false**.
@@ -171,6 +195,18 @@ type Source struct {
 	// Collection Label that identifies the MongoDB collection that stores words and
 	// their applicable synonyms.
 	Collection string `json:"collection"`
+}
+
+type TypeSets struct {
+	// Name Label that identifies the type set name. Each **typeSets.name** must be
+	// unique within the same index definition.
+	Name string `json:"name"`
+
+	// Types List of types associated with the type set. Each type definition must
+	// include a "type" field specifying the search field type ("autocomplete",
+	// "boolean", "date", "geo", "number", "objectId", "string", "token", or "uuid")
+	// and may include additional configuration properties specific to that type.
+	Types *[]apiextensionsv1.JSON `json:"types,omitempty"`
 }
 
 type SearchIndexStatus struct {
@@ -307,6 +343,14 @@ type MainIndexDefinition struct {
 
 	// NumPartitions Number of index partitions. Allowed values are [1, 2, 4].
 	NumPartitions *int `json:"numPartitions,omitempty"`
+
+	// StoredSource Flag that indicates whether to store all fields (true) on Atlas
+	// Search. By default, Atlas doesn't store (false) the fields on Atlas Search.
+	// Alternatively, you can specify an object that only contains the list of fields
+	// to store (include) or not store (exclude) on Atlas Search. Note that storing all
+	// fields (true) is not allowed for vector search indexes. To learn more, see
+	// Stored Source Fields.
+	StoredSource *apiextensionsv1.JSON `json:"storedSource,omitempty"`
 }
 
 type SynonymMappingStatusDetail struct {
@@ -327,4 +371,12 @@ type SearchIndexList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []SearchIndex `json:"items"`
+}
+
+// GetConditions for SearchIndex
+func (si *SearchIndex) GetConditions() []metav1.Condition {
+	if si.Status.Conditions == nil {
+		return nil
+	}
+	return *si.Status.Conditions
 }

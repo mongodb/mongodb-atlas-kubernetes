@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -253,7 +254,7 @@ func (mapping *Mapping) collapse(ks *kubeset, obj map[string]any) error {
 func (mapping *Mapping) collapsedPath() []string {
 	path := make([]string, len(mapping.path))
 	copy(path, mapping.path)
-	return append(objmap.Dir(path), objmap.AsPath(mapping.xOpenAPIMapping.Property)...)
+	return append(objmap.Dir(path), objmap.AsPath(strings.TrimLeft(mapping.xOpenAPIMapping.Property, "$"))...)
 }
 
 func (mapping *Mapping) nameFor(prefix string, path []string) string {

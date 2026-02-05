@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type GroupAlertsConfig struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GroupAlertsConfigSpec   `json:"spec,omitempty"`
+	Spec GroupAlertsConfigSpec `json:"spec,omitempty"`
+
 	Status GroupAlertsConfigStatus `json:"status,omitempty"`
 }
 
 type GroupAlertsConfigSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the groupalertsconfig resource for version v20250312.
 	V20250312 *GroupAlertsConfigSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -86,7 +94,8 @@ type Matchers struct {
 	FieldName string `json:"fieldName"`
 
 	// Operator Comparison operator to apply when checking the current metric value
-	// against **matcher[n].value**.
+	// against **matcher[n].value**. The `REGEX` operator only supports inclusive
+	// matches. Use the `NOT_CONTAINS` operator to exclude values.
 	Operator string `json:"operator"`
 
 	// Value Value to match or exceed using the specified **matchers.operator**.
@@ -126,7 +135,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ApiTokenSecretRef *ApiTokenSecretRef `json:"apiTokenSecretRef,omitempty"`
+	ApiTokenSecretRef *PasswordSecretRef `json:"apiTokenSecretRef,omitempty"`
 
 	// ChannelName Name of the Slack channel to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -146,7 +155,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	DatadogApiKeySecretRef *ApiTokenSecretRef `json:"datadogApiKeySecretRef,omitempty"`
+	DatadogApiKeySecretRef *PasswordSecretRef `json:"datadogApiKeySecretRef,omitempty"`
 
 	// DatadogRegion Datadog region that indicates which API Uniform Resource Locator
 	// (URL) to use. The resource requires this parameter when
@@ -198,7 +207,7 @@ type Notifications struct {
 
 	   **NOTE**: When you view or edit the alert for a Microsoft Teams notification, the URL appears partially redacted.
 	*/
-	MicrosoftTeamsWebhookUrlSecretRef *ApiTokenSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
+	MicrosoftTeamsWebhookUrlSecretRef *PasswordSecretRef `json:"microsoftTeamsWebhookUrlSecretRef,omitempty"`
 
 	// MobileNumber Mobile phone number to which MongoDB Cloud sends alert
 	// notifications. The resource requires this parameter when
@@ -218,7 +227,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	NotificationTokenSecretRef *ApiTokenSecretRef `json:"notificationTokenSecretRef,omitempty"`
+	NotificationTokenSecretRef *PasswordSecretRef `json:"notificationTokenSecretRef,omitempty"`
 
 	// NotifierId The notifierId is a system-generated unique identifier assigned to
 	// each notification method. This is needed when updating third-party notifications
@@ -238,7 +247,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	OpsGenieApiKeySecretRef *ApiTokenSecretRef `json:"opsGenieApiKeySecretRef,omitempty"`
+	OpsGenieApiKeySecretRef *PasswordSecretRef `json:"opsGenieApiKeySecretRef,omitempty"`
 
 	// OpsGenieRegion Opsgenie region that indicates which API Uniform Resource Locator
 	// (URL) to use.
@@ -274,7 +283,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	ServiceKeySecretRef *ApiTokenSecretRef `json:"serviceKeySecretRef,omitempty"`
+	ServiceKeySecretRef *PasswordSecretRef `json:"serviceKeySecretRef,omitempty"`
 
 	/*
 	   SmsEnabled Flag that indicates whether MongoDB Cloud should send text message notifications. The resource requires this parameter when one of the following values have been set:
@@ -316,7 +325,7 @@ type Notifications struct {
 
 	   * Query the alert for the notification through the Atlas Administration API.
 	*/
-	VictorOpsApiKeySecretRef *ApiTokenSecretRef `json:"victorOpsApiKeySecretRef,omitempty"`
+	VictorOpsApiKeySecretRef *PasswordSecretRef `json:"victorOpsApiKeySecretRef,omitempty"`
 
 	/*
 	   VictorOpsRoutingKeySecretRef SENSITIVE FIELD
@@ -325,7 +334,7 @@ type Notifications struct {
 
 	   Routing key that MongoDB Cloud needs to send alert notifications to Splunk On-Call. The resource requires this parameter when `"notifications.[n].typeName" : "VICTOR_OPS"`. If the key later becomes invalid, MongoDB Cloud sends an email to the project owners. If the key remains invalid, MongoDB Cloud removes it.
 	*/
-	VictorOpsRoutingKeySecretRef *ApiTokenSecretRef `json:"victorOpsRoutingKeySecretRef,omitempty"`
+	VictorOpsRoutingKeySecretRef *PasswordSecretRef `json:"victorOpsRoutingKeySecretRef,omitempty"`
 
 	/*
 	   WebhookSecretSecretRef SENSITIVE FIELD
@@ -336,11 +345,11 @@ type Notifications struct {
 
 	   Atlas returns this value if you set `"notifications.[n].typeName" :"WEBHOOK"` and either:
 	   * You set `notification.[n].webhookSecret` to a non-empty string
-	   * You set a default webhookSecret either on the Integrations page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
+	   * You set a default webhookSecret either on the Integrations page, or with the Integrations API
 
 	   **NOTE**: When you view or edit the alert for a webhook notification, the secret appears completely redacted.
 	*/
-	WebhookSecretSecretRef *ApiTokenSecretRef `json:"webhookSecretSecretRef,omitempty"`
+	WebhookSecretSecretRef *PasswordSecretRef `json:"webhookSecretSecretRef,omitempty"`
 
 	/*
 	   WebhookUrlSecretRef SENSITIVE FIELD
@@ -351,20 +360,11 @@ type Notifications struct {
 
 	   Atlas returns this value if you set `"notifications.[n].typeName" :"WEBHOOK"` and either:
 	   * You set `notification.[n].webhookURL` to a non-empty string
-	   * You set a default webhookUrl either on the [Integrations](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/#std-label-third-party-integrations) page, or with the [Integrations API](#tag/Third-Party-Service-Integrations/operation/createIntegration)
+	   * You set a default webhookUrl either on the Integrations page, or with the Integrations API
 
 	   **NOTE**: When you view or edit the alert for a Webhook URL notification, the URL appears partially redacted.
 	*/
-	WebhookUrlSecretRef *ApiTokenSecretRef `json:"webhookUrlSecretRef,omitempty"`
-}
-
-type ApiTokenSecretRef struct {
-	// Key Key of the secret data containing the sensitive field value, defaults to
-	// "apiToken".
-	Key *string `json:"key,omitempty"`
-
-	// Name Name of the secret containing the sensitive field value.
-	Name *string `json:"name,omitempty"`
+	WebhookUrlSecretRef *PasswordSecretRef `json:"webhookUrlSecretRef,omitempty"`
 }
 
 type GroupAlertsConfigStatus struct {
@@ -399,4 +399,12 @@ type GroupAlertsConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GroupAlertsConfig `json:"items"`
+}
+
+// GetConditions for GroupAlertsConfig
+func (gac *GroupAlertsConfig) GetConditions() []metav1.Condition {
+	if gac.Status.Conditions == nil {
+		return nil
+	}
+	return *gac.Status.Conditions
 }

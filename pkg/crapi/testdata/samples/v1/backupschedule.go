@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type BackupSchedule struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BackupScheduleSpec   `json:"spec,omitempty"`
+	Spec BackupScheduleSpec `json:"spec,omitempty"`
+
 	Status BackupScheduleStatus `json:"status,omitempty"`
 }
 
 type BackupScheduleSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the backupschedule resource for version v20250312.
 	V20250312 *BackupScheduleSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -65,6 +73,10 @@ type BackupScheduleSpecV20250312Entry struct {
 	// whose backup copies you want to delete.
 	DeleteCopiedBackups *[]DeleteCopiedBackups `json:"deleteCopiedBackups,omitempty"`
 
+	// DeleteSnapshots Flag that indicates whether to delete Snapshots that MongoDB
+	// Cloud took previously when deleting the associated backup policy.
+	DeleteSnapshots *bool `json:"deleteSnapshots,omitempty"`
+
 	// Export Policy for automatically exporting Cloud Backup Snapshots.
 	Export *Export `json:"export,omitempty"`
 
@@ -103,7 +115,7 @@ type CopySettings struct {
 	// stores the snapshot copy.
 	CloudProvider *string `json:"cloudProvider,omitempty"`
 
-	// Frequencies List that describes which types of snapshots to copy.
+	// Frequencies List that defines which snapshots to copy and their retention.
 	Frequencies *[]string `json:"frequencies,omitempty"`
 
 	// RegionName Target region to copy snapshots belonging to zoneId. Please supply
@@ -195,4 +207,12 @@ type BackupScheduleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []BackupSchedule `json:"items"`
+}
+
+// GetConditions for BackupSchedule
+func (bs *BackupSchedule) GetConditions() []metav1.Condition {
+	if bs.Status.Conditions == nil {
+		return nil
+	}
+	return *bs.Status.Conditions
 }
