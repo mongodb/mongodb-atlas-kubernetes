@@ -182,6 +182,16 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("failed accessing value at path %v: %w", mapping.path, err)
 	}
+
+	// Check if any existing dependency matches the value in its properties
+	if existingDep := mapping.findMatchingDependency(ks, rawValue); existingDep != nil {
+		refData := map[string]any{refName: existingDep.GetName()}
+		holder[objmap.Base(mapping.path)] = refData
+		// Remove the original API field (e.g., groupId) since we're using the reference
+		delete(holder, objmap.Base(collapsedPath))
+		return nil
+	}
+
 	refSolver := newReferenceResolver()
 	value, err := mapping.xKubernetesMapping.encode(refSolver, rawValue)
 	if err != nil {
@@ -214,6 +224,69 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 	holder[objmap.Base(mapping.path)] = refData
 	ks.add(dep)
 	return nil
+}
+
+// findMatchingDependency searches through existing dependencies to find one
+// whose property value matches the given raw value from the API.
+// This is used to map API fields (like groupId) to existing Kubernetes resources
+// (like a Group) that were passed as dependencies.
+func (mapping *Mapping) findMatchingDependency(ks *kubeset, rawValue any) client.Object {
+	for _, dep := range ks.m {
+		// Check if this dependency's GVK matches the mapping's expected type
+		gvk := dep.GetObjectKind().GroupVersionKind()
+		if gvk.Kind == "" || gvk.GroupVersion().String() == "" {
+			gvks, _, err := ks.scheme.ObjectKinds(dep)
+			if err != nil || len(gvks) == 0 {
+				continue
+			}
+			gvk = gvks[0]
+		}
+		if !mapping.xKubernetesMapping.equal(gvk) {
+			continue
+		}
+
+		// Convert the dependency to an object map to access its properties
+		depMap, err := objmap.ToObjectMap(dep)
+		if err != nil {
+			continue
+		}
+
+		// Check if any of the mapping's properties match the raw value
+		for _, prop := range mapping.xKubernetesMapping.Properties {
+			path := resolveXPath(prop)
+			value, err := objmap.GetField[any](depMap, path...)
+			if err != nil {
+				continue
+			}
+			// Compare values - handle both string and other types
+			if valuesMatch(value, rawValue) {
+				return dep
+			}
+		}
+	}
+	return nil
+}
+
+// valuesMatch compares two values for equality, handling type conversions
+func valuesMatch(a, b any) bool {
+	// Direct equality check
+	if a == b {
+		return true
+	}
+	// Handle string comparisons with pointer types
+	aStr, aIsStr := a.(string)
+	bStr, bIsStr := b.(string)
+	if aIsStr && bIsStr {
+		return aStr == bStr
+	}
+	// Handle pointer to string
+	if aPtr, ok := a.(*string); ok && aPtr != nil && bIsStr {
+		return *aPtr == bStr
+	}
+	if bPtr, ok := b.(*string); ok && bPtr != nil && aIsStr {
+		return aStr == *bPtr
+	}
+	return false
 }
 
 // collapse processes the unstructured (API request) object at the given path to

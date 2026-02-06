@@ -2025,6 +2025,142 @@ func testToAPI[T any](t *testing.T, kind string, input client.Object, objs []cli
 	assert.Equal(t, want, target)
 }
 
+// TestFromAPIRefMapping tests that when translating from the API
+// with a groupId, the translator properly maps the reference based on provided dependencies.
+func TestFromAPIRefMapping(t *testing.T) {
+	const (
+		groupID   = "62b6e34b3d91647abb20e7b8"
+		groupName = "my-project"
+	)
+
+	// The Group object that represents the project referenced by groupId
+	group := &samplesv1.Group{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Group",
+			APIVersion: "atlas.generated.mongodb.com/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      groupName,
+			Namespace: "default",
+		},
+		Spec: samplesv1.GroupSpec{
+			V20250312: &samplesv1.GroupSpecV20250312{
+				Entry: &samplesv1.GroupSpecV20250312Entry{
+					Name:  "My Project",
+					OrgId: "org123456789",
+				},
+			},
+		},
+		Status: samplesv1.GroupStatus{
+			V20250312: &samplesv1.GroupStatusV20250312{
+				Id: pointer.MakePtr(groupID),
+			},
+		},
+	}
+
+	for _, tc := range []struct {
+		name                 string
+		apiCluster           admin2025.ClusterDescription20240805
+		targetCluster        *samplesv1.Cluster
+		referencedObjects    []client.Object
+		wantGroupRefName     string
+		wantGroupId          *string
+		wantExtraObjectCount int
+	}{
+		{
+			name: "with Group reference - should convert groupId to groupRef",
+			apiCluster: admin2025.ClusterDescription20240805{
+				Name:        pointer.MakePtr("my-cluster"),
+				ClusterType: pointer.MakePtr("REPLICASET"),
+				GroupId:     pointer.MakePtr(groupID),
+				ReplicationSpecs: &[]admin2025.ReplicationSpec20240805{
+					{
+						ZoneName: pointer.MakePtr("Zone 1"),
+						RegionConfigs: &[]admin2025.CloudRegionConfig20240805{
+							{
+								ProviderName: pointer.MakePtr("AWS"),
+								RegionName:   pointer.MakePtr("US_EAST_1"),
+								Priority:     pointer.MakePtr(7),
+								ElectableSpecs: &admin2025.HardwareSpec20240805{
+									InstanceSize: pointer.MakePtr("M10"),
+									NodeCount:    pointer.MakePtr(3),
+								},
+							},
+						},
+					},
+				},
+			},
+			targetCluster: &samplesv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster",
+					Namespace: "default",
+				},
+				Spec: samplesv1.ClusterSpec{
+					V20250312: &samplesv1.ClusterSpecV20250312{
+						GroupRef: &crd2gok8s.LocalReference{},
+						Entry:    &samplesv1.ClusterSpecV20250312Entry{},
+					},
+				},
+			},
+			referencedObjects:    []client.Object{group},
+			wantGroupRefName:     groupName,
+			wantGroupId:          nil,
+			wantExtraObjectCount: 0,
+		},
+		{
+			name: "without Group reference - should keep groupId",
+			apiCluster: admin2025.ClusterDescription20240805{
+				Name:        pointer.MakePtr("my-cluster"),
+				ClusterType: pointer.MakePtr("REPLICASET"),
+				GroupId:     pointer.MakePtr(groupID),
+			},
+			targetCluster: &samplesv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-cluster",
+					Namespace: "default",
+				},
+			},
+			referencedObjects:    nil,
+			wantGroupRefName:     "",
+			wantGroupId:          pointer.MakePtr(groupID),
+			wantExtraObjectCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			scheme := testScheme(t)
+			crdsYML := bytes.NewBuffer(testdata.SampleCRDs)
+			crd, err := extractCRD("Cluster", bufio.NewScanner(crdsYML))
+			require.NoError(t, err)
+
+			translator, err := crapi.NewTranslator(scheme, crd, version, sdkVersion)
+			require.NoError(t, err)
+
+			extraObjects, err := translator.FromAPI(tc.targetCluster, &tc.apiCluster, tc.referencedObjects...)
+			require.NoError(t, err)
+
+			assert.NotNil(t, tc.targetCluster.Spec.V20250312, "spec.v20250312 should not be nil")
+
+			if tc.wantGroupRefName != "" {
+				assert.NotNil(t, tc.targetCluster.Spec.V20250312.GroupRef,
+					"spec.v20250312.groupRef should not be nil")
+				assert.Equal(t, tc.wantGroupRefName, tc.targetCluster.Spec.V20250312.GroupRef.Name,
+					"groupRef.name should match expected value")
+			}
+
+			if tc.wantGroupId == nil {
+				assert.Nil(t, tc.targetCluster.Spec.V20250312.GroupId,
+					"groupId should be nil when groupRef is set")
+			} else {
+				assert.Equal(t, tc.wantGroupId, tc.targetCluster.Spec.V20250312.GroupId,
+					"groupId should match expected value")
+			}
+
+			assert.Len(t, extraObjects, tc.wantExtraObjectCount,
+				"extra objects count should match expected value")
+		})
+	}
+}
+
 func extractCRD(kind string, scanner *bufio.Scanner) (*apiextensionsv1.CustomResourceDefinition, error) {
 	for {
 		crd, err := crds.Parse(scanner)
