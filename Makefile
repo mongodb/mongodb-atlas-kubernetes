@@ -778,6 +778,7 @@ validate-api-docs: api-docs
 addlicense-check:
 	addlicense -check -l apache -c "MongoDB Inc" \
 	-ignore ".idea/*" \
+	-ignore ".vscode/*" \
 	-ignore "**/*.md" \
 	-ignore "**/*.yaml" \
 	-ignore "**/*.yml" \
