@@ -387,10 +387,10 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 			bProviderRegion = b.ProviderName + b.RegionName
 		}
 		if aPriority < bPriority {
-				return 1
+			return 1
 		}
 		if aPriority > bPriority {
-				return -1
+			return -1
 		}
 		return strings.Compare(bProviderRegion, aProviderRegion)
 	})
