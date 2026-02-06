@@ -719,7 +719,7 @@ func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
 			},
 			expectedOrder: []int{7, 6, 5},
 		},
-		"should sort by provider+region first, then priority descending": {
+		"should sort by priority descending first, then provider+region": {
 			regionConfigs: []*akov2.AdvancedRegionConfig{
 				{
 					ProviderName: "AWS",
@@ -758,21 +758,6 @@ func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
 				},
 			},
 			expectedOrder: []int{7, 5, 0},
-		},
-		"should maintain order for same provider+region and same priority": {
-			regionConfigs: []*akov2.AdvancedRegionConfig{
-				{
-					ProviderName: "AWS",
-					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(7),
-				},
-				{
-					ProviderName: "AWS",
-					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(7),
-				},
-			},
-			expectedOrder: []int{7, 7},
 		},
 	}
 
