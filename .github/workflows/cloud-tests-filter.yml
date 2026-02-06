@@ -16,6 +16,7 @@ jobs:
         outputs:
           production-code-changed: ${{ steps.paths-filter.outputs.production-code-changed }}
           run-cloud-tests: ${{ steps.tests-filter.outputs.run-cloud-tests }}
+          allowed: ${{ steps.allowed-msg.outputs.allowed }}
         steps:
         - uses: actions/checkout@v6
           with:
@@ -37,6 +38,18 @@ jobs:
         - name: Production code changed
           if: steps.paths-filter.outputs.production-code-changed == 'true'
           run: echo "Production code was changed"
+
+        - name: Allowed
+          id: allowed-msg
+          if: |
+            github.event_name == 'workflow_dispatch' ||
+            github.event_name == 'merge_group' ||
+            github.ref == 'refs/heads/main' ||
+            (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') ||
+            contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+          run: |
+            echo "Allowed to run"
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
     
         - name: Tests Filter
           id: tests-filter
@@ -80,5 +93,5 @@ jobs:
     
         # run only if not cloud tests should run
         - name: Cloud tests should run
-          if: steps.tests-filter.outputs.run-cloud-tests == 'true'
+          if: steps.tests-filter.outputs.run-cloud-tests == 'true' && steps.allowed-msg.outputs.allowed == 'true'
           run: echo "Cloud tests should run"

@@ -30,6 +30,7 @@ jobs:
       e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
       version: ${{ steps.read_version.outputs.version }}
       image_tag: ${{ steps.read_version.outputs.image_tag }}
+      kind_matrix: ${{ steps.test.outputs.matrix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -81,6 +82,12 @@ jobs:
           SKIP_PREFIXES: "[\"focus\"]"
           USE_JSON: true
         run: |
+          # Nightly runs all tests, overriding PR labels as ["test/e2e/*", "test/int/*"]
+          if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" -o "${EVENT_NAME}" == "workflow_dispatch" ];then
+          PR_LABELS='["test/e2e/*", "test/int/*"]'
+          echo "Nightly runs all tests"
+          fi
+          echo PR_LABELS="${PR_LABELS}"
           make compute-labels
           ./bin/ginkgo-labels > result.json
           echo "Int tests to execute $(cat result.json | jq -c .int)"
@@ -98,75 +105,19 @@ jobs:
           echo "Read version: ${VERSION}"
           
           COMMIT=$(git rev-parse --short HEAD)
-          IMAGE_TAG="${VERSION}-BUILD-${COMMIT}"
+          IMAGE_TAG="${VERSION}-build-${COMMIT}"
           echo "image_tag=${IMAGE_TAG}" >> ${GITHUB_OUTPUT}
           echo "Computed image tag: ${IMAGE_TAG}"
-
-  compute:
-    needs: detect-tests
-    name: "Compute test matrix for k8s versions"
-    runs-on: ubuntu-latest
-    outputs:
-      test_matrix: ${{ steps.test.outputs.matrix }}
-    steps:
       - id: test
         name: Compute test matrix for k8s versions
         run: |
           # Note the use of external single quotes to allow for double quotes at inline YAML array
-          matrix='["v1.32.8-kind"]'
+          matrix='["v1.33.7-kind"]'
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
-            matrix='["v1.32.8-kind", "v1.34.0-kind"]'
+            matrix='["v1.33.7-kind", "v1.35.0-kind"]'
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
-
-  prepare-e2e-bundle:
-    needs: detect-tests
-    name: Prepare E2E Bundle configuration and image
-    if: ${{ needs.detect-tests.outputs.e2e_matrix != '[]' }}
-    runs-on: ubuntu-latest
-    env:
-      GHCR_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-operator-prerelease
-      GHCR_BUNDLES_REPO: ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          ref: ${{github.event.pull_request.head.sha}}
-          submodules: true
-          fetch-depth: 0
-      - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
-        with:
-          enable-cache: 'true'
-      - name: Prepare bundle
-        env:
-          OPERATOR_IMAGE: ${{ env.GHCR_BUNDLES_REPO }}:${{ steps.detect-tests.outputs.image_tag }}
-          VERSION: ${{ steps.detect-tests.outputs.image_tag }}
-        run: |
-          devbox run -- make bundle-dev
-      - name: Cache repo files
-        uses: actions/cache@v5
-        with:
-          path: |
-            ./*
-          key: ${{ github.sha }}
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Push image
-        uses: ./.github/actions/build-push-image
-        with:
-          file: fast.Dockerfile
-          version: ${{ needs.detect-tests.outputs.version }}
-          tags: |
-            ${{ env.GHCR_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
-            ${{ env.GHCR_BUNDLES_REPO }}:${{ needs.detect-tests.outputs.image_tag }}
-          platforms: linux/amd64
-          push_to_docker: false
 
   run-integration-tests:
     environment: test
@@ -202,14 +153,14 @@ jobs:
           devbox run -- 'make ${{ matrix.target }}'
 
   run-e2e-tests:
-    needs: [detect-tests, compute, prepare-e2e-bundle]
+    needs: detect-tests
     environment: test
     if: ${{ needs.detect-tests.outputs.e2e_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e_matrix) != '[]' }}
     strategy:
       fail-fast: false
       matrix:
         test: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) }}
-        k8s: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
+        k8s: ${{ fromJSON(needs.detect-tests.outputs.kind_matrix) }}
     runs-on: ubuntu-latest
     name: "e2e: ${{ matrix.test }}"
     steps:
