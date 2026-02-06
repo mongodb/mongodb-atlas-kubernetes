@@ -386,7 +386,7 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 		if b != nil {
 			bProviderRegion = b.ProviderName + b.RegionName
 		}
-		return strings.Compare(aProviderRegion+aPriority, bProviderRegion+bPriority)
+		return strings.Compare(bPriority+bProviderRegion, aPriority+aProviderRegion)
 	})
 
 	for _, regionConfig := range regionConfigs {
