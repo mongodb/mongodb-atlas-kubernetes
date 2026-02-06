@@ -1,5 +1,5 @@
 {
-  description = "A dev shell with a custom-fetched Go 1.25.5";
+  description = "A dev shell with a custom-fetched Go 1.25.7";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -11,16 +11,16 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        goVersion = "1.25.6";
+        goVersion = "1.25.7";
 
         go-src =
           if pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.system == "x86_64-linux" then {
             url = "https://go.dev/dl/go${goVersion}.linux-amd64.tar.gz";
-            sha256 = "sha256-8CK2qteONivLqbC5TQmtWMWnDGujt1gpBfq6v1/gGBo=";
+            sha256 = "sha256-EubWoZEJGuJ9wx9u/GMOOjuLpAm681c9lVsZb98IYAU=";
           }
           else if pkgs.stdenv.isDarwin && pkgs.stdenv.hostPlatform.system == "aarch64-darwin" then {
             url = "https://go.dev/dl/go${goVersion}.darwin-arm64.tar.gz";
-            sha256 = "sha256-mEUhrpeKU3fH14L9LdlTKRhA19PQvZV4Gh8y8W2UoAY=";
+            sha256 = "sha256-/xg2n/rQXFfVvtiItmCzE4XzyRNnCoPvVXzf2Y6prhs=";
           }
           else throw "This flake does not support system: ${pkgs.stdenv.hostPlatform.system}";
 
