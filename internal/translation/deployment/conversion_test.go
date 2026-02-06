@@ -694,6 +694,103 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 	}
 }
 
+func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
+	tests := map[string]struct {
+		regionConfigs []*akov2.AdvancedRegionConfig
+		expectedOrder []int // Expected priority values in order
+	}{
+		"should sort priorities in descending order": {
+			regionConfigs: []*akov2.AdvancedRegionConfig{
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_EAST_1",
+					Priority:     pointer.MakePtr(5),
+				},
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_WEST_1",
+					Priority:     pointer.MakePtr(7),
+				},
+				{
+					ProviderName: "AWS",
+					RegionName:   "EU_WEST_1",
+					Priority:     pointer.MakePtr(6),
+				},
+			},
+			expectedOrder: []int{7, 6, 5},
+		},
+		"should sort by priority descending first, then provider+region": {
+			regionConfigs: []*akov2.AdvancedRegionConfig{
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_EAST_1",
+					Priority:     pointer.MakePtr(5),
+				},
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_EAST_1",
+					Priority:     pointer.MakePtr(7),
+				},
+				{
+					ProviderName: "GCP",
+					RegionName:   "US_CENTRAL_1",
+					Priority:     pointer.MakePtr(6),
+				},
+			},
+			expectedOrder: []int{7, 6, 5},
+		},
+		"should handle nil priorities as 0": {
+			regionConfigs: []*akov2.AdvancedRegionConfig{
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_EAST_1",
+					Priority:     nil,
+				},
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_WEST_1",
+					Priority:     pointer.MakePtr(7),
+				},
+				{
+					ProviderName: "AWS",
+					RegionName:   "EU_WEST_1",
+					Priority:     pointer.MakePtr(5),
+				},
+			},
+			expectedOrder: []int{7, 5, 0},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			// Create a cluster with the region configs
+			cluster := &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							RegionConfigs: tt.regionConfigs,
+						},
+					},
+				},
+			}
+
+			normalizeClusterDeployment(cluster)
+
+			// Verify the ordering
+			actualOrder := make([]int, len(cluster.ReplicationSpecs[0].RegionConfigs))
+			for i, config := range cluster.ReplicationSpecs[0].RegionConfigs {
+				if config.Priority != nil {
+					actualOrder[i] = *config.Priority
+				} else {
+					actualOrder[i] = 0
+				}
+			}
+
+			assert.Equal(t, tt.expectedOrder, actualOrder, "Region configs should be ordered by priority in descending order")
+		})
+	}
+}
+
 func TestConnSet(t *testing.T) {
 	testCases := []struct {
 		title    string

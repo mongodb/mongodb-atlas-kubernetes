@@ -369,25 +369,33 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 	})
 }
 
+func compareRegionConfigs(a, b *akov2.AdvancedRegionConfig) int {
+	aPriority := 0
+	if a != nil && a.Priority != nil {
+		aPriority = *a.Priority
+	}
+	bPriority := 0
+	if b != nil && b.Priority != nil {
+		bPriority = *b.Priority
+	}
+	var aProviderRegion, bProviderRegion string
+	if a != nil {
+		aProviderRegion = a.ProviderName + a.RegionName
+	}
+	if b != nil {
+		bProviderRegion = b.ProviderName + b.RegionName
+	}
+	if aPriority < bPriority {
+		return 1
+	}
+	if aPriority > bPriority {
+		return -1
+	}
+	return strings.Compare(bProviderRegion, aProviderRegion)
+}
+
 func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenant bool) {
-	cmp.NormalizeSlice(regionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
-		aPriority := "0"
-		if a != nil && a.Priority != nil {
-			aPriority = strconv.Itoa(*a.Priority)
-		}
-		bPriority := "0"
-		if b != nil && b.Priority != nil {
-			bPriority = strconv.Itoa(*b.Priority)
-		}
-		var aProviderRegion, bProviderRegion string
-		if a != nil {
-			aProviderRegion = a.ProviderName + a.RegionName
-		}
-		if b != nil {
-			bProviderRegion = b.ProviderName + b.RegionName
-		}
-		return strings.Compare(aProviderRegion+aPriority, bProviderRegion+bPriority)
-	})
+	cmp.NormalizeSlice(regionConfigs, compareRegionConfigs)
 
 	for _, regionConfig := range regionConfigs {
 		if regionConfig == nil {

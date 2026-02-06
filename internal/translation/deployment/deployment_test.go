@@ -1150,8 +1150,8 @@ func expectedGeoShardedCluster() *Cluster {
 					RegionConfigs: []*akov2.AdvancedRegionConfig{
 						{
 							ProviderName: "AWS",
-							RegionName:   "EU_WEST_1",
-							Priority:     pointer.MakePtr(5),
+							RegionName:   "US_EAST_1",
+							Priority:     pointer.MakePtr(7),
 							ElectableSpecs: &akov2.Specs{
 								InstanceSize:  "M30",
 								NodeCount:     pointer.MakePtr(3),
@@ -1184,8 +1184,8 @@ func expectedGeoShardedCluster() *Cluster {
 						},
 						{
 							ProviderName: "AWS",
-							RegionName:   "US_EAST_1",
-							Priority:     pointer.MakePtr(7),
+							RegionName:   "EU_WEST_1",
+							Priority:     pointer.MakePtr(5),
 							ElectableSpecs: &akov2.Specs{
 								InstanceSize:  "M30",
 								NodeCount:     pointer.MakePtr(3),
