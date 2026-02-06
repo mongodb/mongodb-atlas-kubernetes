@@ -27,7 +27,11 @@ import (
 )
 
 func TestFlexSpec(t *testing.T) {
-	output := cmd.RunCommand(t, "helm", "template", "--values=flex_values.yaml", "../../helm-charts/atlas-deployment")
+	output := cmd.RunCommand(t,
+		"helm", "template",
+		"--namespace=default",
+		"--values=flex_values.yaml",
+		"../../helm-charts/atlas-deployment")
 	objects := decoder.DecodeAll(t, output)
 
 	var gotDeployment *akov2.AtlasDeployment
