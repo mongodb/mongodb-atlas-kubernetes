@@ -184,7 +184,11 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 	}
 
 	// Check if any existing dependency matches the value in its properties
-	if existingDep := mapping.findMatchingDependency(ks, rawValue); existingDep != nil {
+	existingDep, err := mapping.findMatchingDependency(ks, rawValue)
+	if err != nil {
+		return fmt.Errorf("failed to find matching dependency: %w", err)
+	}
+	if existingDep != nil {
 		refData := map[string]any{refName: existingDep.GetName()}
 		holder[objmap.Base(mapping.path)] = refData
 		// Remove the original API field (e.g., groupId) since we're using the reference
@@ -230,14 +234,19 @@ func (mapping *Mapping) expand(ks *kubeset, obj map[string]any) error {
 // whose property value matches the given raw value from the API.
 // This is used to map API fields (like groupId) to existing Kubernetes resources
 // (like a Group) that were passed as dependencies.
-func (mapping *Mapping) findMatchingDependency(ks *kubeset, rawValue any) client.Object {
+func (mapping *Mapping) findMatchingDependency(ks *kubeset, rawValue any) (client.Object, error) {
 	for _, dep := range ks.m {
 		// Check if this dependency's GVK matches the mapping's expected type
 		gvk := dep.GetObjectKind().GroupVersionKind()
 		if gvk.Kind == "" || gvk.GroupVersion().String() == "" {
 			gvks, _, err := ks.scheme.ObjectKinds(dep)
-			if err != nil || len(gvks) == 0 {
+			// Skip if type is not registered in the scheme (expected case for unknown types)
+			// or if no GVKs are returned. This is a best-effort search through dependencies.
+			if runtime.IsNotRegisteredError(err) || len(gvks) == 0 {
 				continue
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to get ObjectKinds for dependency %q: %w", dep.GetName(), err)
 			}
 			gvk = gvks[0]
 		}
@@ -245,26 +254,36 @@ func (mapping *Mapping) findMatchingDependency(ks *kubeset, rawValue any) client
 			continue
 		}
 
+		// If no properties are defined, we can't match by property value - skip this dependency
+		// (some mappings use propertySelectors instead of properties)
+		if len(mapping.xKubernetesMapping.Properties) == 0 {
+			continue
+		}
+
 		// Convert the dependency to an object map to access its properties
 		depMap, err := objmap.ToObjectMap(dep)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("failed to convert dependency %q to object map: %w", dep.GetName(), err)
 		}
 
 		// Check if any of the mapping's properties match the raw value
 		for _, prop := range mapping.xKubernetesMapping.Properties {
 			path := resolveXPath(prop)
 			value, err := objmap.GetField[any](depMap, path...)
-			if err != nil {
+			// Skip if the property path doesn't exist in this dependency (expected case)
+			if errors.Is(err, objmap.ErrNotFound) {
 				continue
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to get field %v from dependency %q: %w", path, dep.GetName(), err)
 			}
 			// Compare values - handle both string and other types
 			if valuesMatch(value, rawValue) {
-				return dep
+				return dep, nil
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 // valuesMatch compares two values for equality, handling type conversions
