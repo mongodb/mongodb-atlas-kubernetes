@@ -371,13 +371,13 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 
 func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenant bool) {
 	cmp.NormalizeSlice(regionConfigs, func(a, b *akov2.AdvancedRegionConfig) int {
-		aPriority := "0"
+		aPriority := 0
 		if a != nil && a.Priority != nil {
-			aPriority = strconv.Itoa(*a.Priority)
+			aPriority = *a.Priority
 		}
-		bPriority := "0"
+		bPriority := 0
 		if b != nil && b.Priority != nil {
-			bPriority = strconv.Itoa(*b.Priority)
+			bPriority = *b.Priority
 		}
 		var aProviderRegion, bProviderRegion string
 		if a != nil {
@@ -386,7 +386,13 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 		if b != nil {
 			bProviderRegion = b.ProviderName + b.RegionName
 		}
-		return strings.Compare(bPriority+bProviderRegion, aPriority+aProviderRegion)
+		if aPriority < bPriority {
+				return 1
+		}
+		if aPriority > bPriority {
+				return -1
+		}
+		return strings.Compare(bProviderRegion, aProviderRegion)
 	})
 
 	for _, regionConfig := range regionConfigs {
