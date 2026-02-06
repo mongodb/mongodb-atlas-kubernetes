@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/crd2go/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&Group{})
@@ -13,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type Group struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GroupSpec   `json:"spec,omitempty"`
+	Spec GroupSpec `json:"spec,omitempty"`
+
 	Status GroupStatus `json:"status,omitempty"`
 }
 
 type GroupSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the group resource for version v20250312.
 	V20250312 *GroupSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -28,16 +40,16 @@ type GroupSpec struct {
 type GroupSpecV20250312 struct {
 	// Entry The entry fields of the group resource spec. These fields can be set for
 	// creating and updating groups.
-	Entry *V20250312Entry `json:"entry,omitempty"`
+	Entry *GroupSpecV20250312Entry `json:"entry,omitempty"`
 
 	// ProjectOwnerId Unique 24-hexadecimal digit string that identifies the MongoDB
 	// Cloud user to whom to grant the Project Owner role on the specified project. If
 	// you set this parameter, it overrides the default value of the oldest
 	// Organization Owner.
-	ProjectOwnerId string `json:"projectOwnerId"`
+	ProjectOwnerId *string `json:"projectOwnerId,omitempty"`
 }
 
-type V20250312Entry struct {
+type GroupSpecV20250312Entry struct {
 	// Name Human-readable label that identifies the project included in the MongoDB
 	// Cloud organization.
 	Name string `json:"name"`
@@ -64,7 +76,7 @@ type V20250312Entry struct {
 	Tags *[]Tags `json:"tags,omitempty"`
 
 	// WithDefaultAlertsSettings Flag that indicates whether to create the project with
-	// default alert settings.
+	// default alert settings. This setting cannot be updated after project creation.
 	WithDefaultAlertsSettings *bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
@@ -105,4 +117,12 @@ type GroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Group `json:"items"`
+}
+
+// GetConditions for Group
+func (g *Group) GetConditions() []metav1.Condition {
+	if g.Status.Conditions == nil {
+		return nil
+	}
+	return *g.Status.Conditions
 }

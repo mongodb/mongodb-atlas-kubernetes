@@ -318,9 +318,11 @@ func TestFromAPIUnstructured(t *testing.T) {
 					},
 					"spec": map[string]any{
 						"v20250312": map[string]any{
-							"enabled":       true,                       // extra field
-							"eventTypeName": "some-event",               // extra field
-							"groupId":       "62b6e34b3d91647abb20e7b8", // extra field
+							"enabled":       true,         // extra field
+							"eventTypeName": "some-event", // extra field
+							"groupRef": map[string]any{ // converted from groupId when Group dep is provided
+								"name": "my-project",
+							},
 							"matchers": []any{ // extra field structure
 								map[string]any{
 									"fieldName": "field1",

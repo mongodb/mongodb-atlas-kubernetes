@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type BackupCompliancePolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BackupCompliancePolicySpec   `json:"spec,omitempty"`
+	Spec BackupCompliancePolicySpec `json:"spec,omitempty"`
+
 	Status BackupCompliancePolicyStatus `json:"status,omitempty"`
 }
 
 type BackupCompliancePolicySpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the backupcompliancepolicy resource for version v20250312.
 	V20250312 *BackupCompliancePolicySpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -50,7 +58,7 @@ type BackupCompliancePolicySpecV20250312 struct {
 
 	// OverwriteBackupPolicies Flag that indicates whether to overwrite non complying
 	// backup policies with the new data protection settings or not.
-	OverwriteBackupPolicies bool `json:"overwriteBackupPolicies"`
+	OverwriteBackupPolicies *bool `json:"overwriteBackupPolicies,omitempty"`
 }
 
 type BackupCompliancePolicySpecV20250312Entry struct {
@@ -157,4 +165,12 @@ type BackupCompliancePolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []BackupCompliancePolicy `json:"items"`
+}
+
+// GetConditions for BackupCompliancePolicy
+func (bcp *BackupCompliancePolicy) GetConditions() []metav1.Condition {
+	if bcp.Status.Conditions == nil {
+		return nil
+	}
+	return *bcp.Status.Conditions
 }

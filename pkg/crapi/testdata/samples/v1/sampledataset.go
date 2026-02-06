@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type SampleDataset struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SampleDatasetSpec   `json:"spec,omitempty"`
+	Spec SampleDatasetSpec `json:"spec,omitempty"`
+
 	Status SampleDatasetStatus `json:"status,omitempty"`
 }
 
 type SampleDatasetSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the sampledataset resource for version v20250312.
 	V20250312 *SampleDatasetSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -88,4 +96,12 @@ type SampleDatasetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []SampleDataset `json:"items"`
+}
+
+// GetConditions for SampleDataset
+func (sd *SampleDataset) GetConditions() []metav1.Condition {
+	if sd.Status.Conditions == nil {
+		return nil
+	}
+	return *sd.Status.Conditions
 }

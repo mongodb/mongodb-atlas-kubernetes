@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type Cluster struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterSpec   `json:"spec,omitempty"`
+	Spec ClusterSpec `json:"spec,omitempty"`
+
 	Status ClusterStatus `json:"status,omitempty"`
 }
 
 type ClusterSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the cluster resource for version v20250312.
 	V20250312 *ClusterSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -102,15 +110,6 @@ type ClusterSpecV20250312Entry struct {
 	// be `M10` or higher and `"backupEnabled" : false` or omitted entirely.
 	EncryptionAtRestProvider *string `json:"encryptionAtRestProvider,omitempty"`
 
-	// FeatureCompatibilityVersion Feature compatibility version of the cluster. This
-	// will always appear regardless of whether FCV is pinned.
-	FeatureCompatibilityVersion *string `json:"featureCompatibilityVersion,omitempty"`
-
-	// FeatureCompatibilityVersionExpirationDate Feature compatibility version
-	// expiration date. Will only appear if FCV is pinned. This parameter expresses its
-	// value in the ISO 8601 timestamp format in UTC.
-	FeatureCompatibilityVersionExpirationDate *string `json:"featureCompatibilityVersionExpirationDate,omitempty"`
-
 	/*
 	   GlobalClusterSelfManagedSharding Set this field to configure the Sharding Management Mode when creating a new Global Cluster.
 
@@ -179,6 +178,9 @@ type ClusterSpecV20250312Entry struct {
 	// For replica sets there is only one object representing node configurations.
 	ReplicationSpecs *[]ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
+	// RetainBackups Flag that indicates whether the cluster retains backups.
+	RetainBackups *bool `json:"retainBackups,omitempty"`
+
 	// RootCertType Root Certificate Authority that MongoDB Atlas cluster uses. MongoDB
 	// Cloud supports Internet Security Research Group.
 	RootCertType *string `json:"rootCertType,omitempty"`
@@ -192,6 +194,12 @@ type ClusterSpecV20250312Entry struct {
 	// cluster. If set to `false`, MongoDB Cloud will delete the cluster.
 	TerminationProtectionEnabled *bool `json:"terminationProtectionEnabled,omitempty"`
 
+	// UseAwsTimeBasedSnapshotCopyForFastInitialSync Flag that indicates whether AWS
+	// time-based snapshot copies will be used instead of slower standard snapshot
+	// copies during fast Atlas cross-region initial syncs. This flag is only relevant
+	// for clusters containing AWS nodes.
+	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
+
 	// VersionReleaseSystem Method by which the cluster maintains the MongoDB versions.
 	// If value is `CONTINUOUS`, you must not specify **mongoDBMajorVersion**.
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
@@ -201,6 +209,10 @@ type AdvancedConfiguration struct {
 	// CustomOpensslCipherConfigTls12 The custom OpenSSL cipher suite list for TLS 1.2.
 	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
 	CustomOpensslCipherConfigTls12 *[]string `json:"customOpensslCipherConfigTls12,omitempty"`
+
+	// CustomOpensslCipherConfigTls13 The custom OpenSSL cipher suite list for TLS 1.3.
+	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	CustomOpensslCipherConfigTls13 *[]string `json:"customOpensslCipherConfigTls13,omitempty"`
 
 	// MinimumEnabledTlsProtocol Minimum Transport Layer Security (TLS) version that
 	// the cluster accepts for incoming connections. Clusters using TLS 1.0 or 1.1
@@ -254,7 +266,7 @@ type Links struct {
 
 type ReplicationSpecs struct {
 	/*
-	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
 
 	   **Example:**
 
@@ -277,9 +289,7 @@ type RegionConfigs struct {
 	// scaling.
 	AnalyticsAutoScaling *AnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
 
-	// AnalyticsSpecs Hardware specifications for read-only nodes in the region.
-	// Read-only nodes can never become the primary member, but can enable local reads.
-	// If you don't specify this parameter, no read-only nodes are deployed to the
+	// AnalyticsSpecs The current hardware specifications for read only nodes in the
 	// region.
 	AnalyticsSpecs *AnalyticsSpecs `json:"analyticsSpecs,omitempty"`
 
@@ -310,9 +320,7 @@ type RegionConfigs struct {
 	// Set dedicated clusters to `AWS`, `GCP`, `AZURE` or `TENANT`.
 	ProviderName *string `json:"providerName,omitempty"`
 
-	// ReadOnlySpecs Hardware specifications for read-only nodes in the region.
-	// Read-only nodes can never become the primary member, but can enable local reads.
-	// If you don't specify this parameter, no read-only nodes are deployed to the
+	// ReadOnlySpecs The current hardware specifications for read only nodes in the
 	// region.
 	ReadOnlySpecs *AnalyticsSpecs `json:"readOnlySpecs,omitempty"`
 
@@ -355,14 +363,6 @@ type Compute struct {
 	// MinInstanceSize Instance size boundary to which your cluster can automatically
 	// scale.
 	MinInstanceSize *string `json:"minInstanceSize,omitempty"`
-
-	/*
-	   PredictiveEnabled Flag that indicates whether predictive instance size auto-scaling is enabled.
-
-	   - Set to `true` to enable predictive instance size auto-scaling. MongoDB Cloud requires **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled** to be `true` in order to enable this feature.
-	   - Set to `false` to disable predictive instance size auto-scaling.
-	*/
-	PredictiveEnabled *bool `json:"predictiveEnabled,omitempty"`
 
 	// ScaleDownEnabled Flag that indicates whether the instance size may scale down
 	// via reactive auto-scaling. MongoDB Cloud requires this parameter if
@@ -544,6 +544,11 @@ type ClusterStatusV20250312 struct {
 	// Id Unique 24-hexadecimal digit string that identifies the cluster.
 	Id *string `json:"id,omitempty"`
 
+	// InternalClusterRole Internal classification of the cluster's role. Possible
+	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
+	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
+	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
+
 	// MongoDBEmployeeAccessGrant MongoDB employee granted access level and expiration
 	// for a cluster.
 	MongoDBEmployeeAccessGrant *MongoDBEmployeeAccessGrant `json:"mongoDBEmployeeAccessGrant,omitempty"`
@@ -578,8 +583,18 @@ type ClusterStatusV20250312 struct {
 	// For replica sets there is only one object representing node configurations.
 	ReplicationSpecs *[]V20250312ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
-	// StateName Human-readable label that indicates the current operating condition of
-	// this cluster.
+	// RetainBackups Flag that indicates whether the cluster retains backups.
+	RetainBackups *bool `json:"retainBackups,omitempty"`
+
+	/*
+	   StateName Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
+
+	    - `IDLE`: Atlas is making no changes to this cluster and all changes requested via the UI or API can be assumed to have been applied.
+	    - `CREATING`: A cluster being provisioned for the very first time returns state CREATING until it is ready for connections. Ensure IP Access List and DB Users are configured before attempting to connect.
+	    - `UPDATING`: A change requested via the UI, API, AutoScaling, or other scheduled activity is taking place.
+	    - `DELETING`: The cluster is in the process of deletion and will soon be deleted.
+	    - `REPAIRING`: One or more nodes in the cluster are being returned to service by the Atlas control plane. Other nodes should continue to provide service as normal.
+	*/
 	StateName *string `json:"stateName,omitempty"`
 }
 
@@ -702,9 +717,32 @@ type V20250312ReplicationSpecs struct {
 	// corresponds to Shard ID displayed in the UI.
 	Id *string `json:"id,omitempty"`
 
+	/*
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+
+	   **Example:**
+
+	   If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+	*/
+	RegionConfigs *[]ReplicationSpecsRegionConfigs `json:"regionConfigs,omitempty"`
+
 	// ZoneId Unique 24-hexadecimal digit string that identifies the zone in a Global
 	// Cluster. This value can be used to configure Global Cluster backup policies.
 	ZoneId *string `json:"zoneId,omitempty"`
+}
+
+type ReplicationSpecsRegionConfigs struct {
+	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
+
+	// EffectiveElectableSpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveElectableSpecs *AnalyticsSpecs `json:"effectiveElectableSpecs,omitempty"`
+
+	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
+	// in the region.
+	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -712,4 +750,12 @@ type ClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Cluster `json:"items"`
+}
+
+// GetConditions for Cluster
+func (c *Cluster) GetConditions() []metav1.Condition {
+	if c.Status.Conditions == nil {
+		return nil
+	}
+	return *c.Status.Conditions
 }

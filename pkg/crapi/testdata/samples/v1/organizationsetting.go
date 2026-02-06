@@ -2,7 +2,10 @@
 
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	k8s "github.com/crd2go/crd2go/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&OrganizationSetting{})
@@ -13,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type OrganizationSetting struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   OrganizationSettingSpec   `json:"spec,omitempty"`
+	Spec OrganizationSettingSpec `json:"spec,omitempty"`
+
 	Status OrganizationSettingStatus `json:"status,omitempty"`
 }
 
 type OrganizationSettingSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the organizationsetting resource for version v20250312.
 	V20250312 *OrganizationSettingSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -28,7 +40,7 @@ type OrganizationSettingSpec struct {
 type OrganizationSettingSpecV20250312 struct {
 	// Entry The entry fields of the organizationsetting resource spec. These fields
 	// can be set for creating and updating organizationsettings.
-	Entry *OrganizationSettingSpecV20250312Entry `json:"entry,omitempty"`
+	Entry *V20250312Entry `json:"entry,omitempty"`
 
 	// OrgId Unique 24-hexadecimal digit string that identifies the organization that
 	// contains your projects. Use the
@@ -37,11 +49,16 @@ type OrganizationSettingSpecV20250312 struct {
 	OrgId string `json:"orgId"`
 }
 
-type OrganizationSettingSpecV20250312Entry struct {
+type V20250312Entry struct {
 	// ApiAccessListRequired Flag that indicates whether to require API operations to
 	// originate from an IP Address added to the API access list for the specified
 	// organization.
 	ApiAccessListRequired *bool `json:"apiAccessListRequired,omitempty"`
+
+	// CustomSessionTimeouts Defines the session timeout settings for managing user
+	// sessions at the organization level. When set to null, the field's value is
+	// unset, and the default timeout settings are applied.
+	CustomSessionTimeouts *CustomSessionTimeouts `json:"customSessionTimeouts,omitempty"`
 
 	// GenAIFeaturesEnabled Flag that indicates whether this organization has access to
 	// generative AI features. This setting only applies to Atlas Commercial and is
@@ -76,9 +93,26 @@ type OrganizationSettingSpecV20250312Entry struct {
 	SecurityContact *string `json:"securityContact,omitempty"`
 
 	// StreamsCrossGroupEnabled Flag that indicates whether a group's Atlas Stream
-	// Processing instances in this organization can create connections to other
+	// Processing workspaces in this organization can create connections to other
 	// group's clusters in the same organization.
 	StreamsCrossGroupEnabled *bool `json:"streamsCrossGroupEnabled,omitempty"`
+}
+
+type CustomSessionTimeouts struct {
+	// AbsoluteSessionTimeoutInSeconds Specifies the absolute session timeout duration
+	// in seconds. When set to null, the field's value is unset, and the default value
+	// of 43,200 seconds (12 hours) is applied. Accepted values range between a minimum
+	// of 3,600 seconds (1 hour) and a maximum of 43,200 seconds (12 hours).
+	AbsoluteSessionTimeoutInSeconds *int `json:"absoluteSessionTimeoutInSeconds,omitempty"`
+
+	// IdleSessionTimeoutInSeconds Specifies the idle session timeout duration in
+	// seconds. When set to null, the field's value is unset, and the default behavior
+	// depends on the context: no timeout for Atlas Commercial, and 600 seconds (10
+	// minutes) for Atlas for Government. Accepted values start at a minimum of 300
+	// seconds (5 minutes). For Atlas Commercial, the maximum value cannot exceed the
+	// configured absolute session timeout. For Atlas for Government, the maximum value
+	// is capped at 600 seconds (10 minutes).
+	IdleSessionTimeoutInSeconds *int `json:"idleSessionTimeoutInSeconds,omitempty"`
 }
 
 type OrganizationSettingStatus struct {
@@ -92,4 +126,12 @@ type OrganizationSettingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []OrganizationSetting `json:"items"`
+}
+
+// GetConditions for OrganizationSetting
+func (os *OrganizationSetting) GetConditions() []metav1.Condition {
+	if os.Status.Conditions == nil {
+		return nil
+	}
+	return *os.Status.Conditions
 }

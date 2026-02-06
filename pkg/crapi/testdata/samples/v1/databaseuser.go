@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type DatabaseUser struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DatabaseUserSpec   `json:"spec,omitempty"`
+	Spec DatabaseUserSpec `json:"spec,omitempty"`
+
 	Status DatabaseUserStatus `json:"status,omitempty"`
 }
 
 type DatabaseUserSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the databaseuser resource for version v20250312.
 	V20250312 *DatabaseUserSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -71,9 +79,6 @@ type DatabaseUserSpecV20250312Entry struct {
 	// Description Description of this database user.
 	Description *string `json:"description,omitempty"`
 
-	// GroupId Unique 24-hexadecimal digit string that identifies the project.
-	GroupId string `json:"groupId"`
-
 	// Labels List that contains the key-value pairs for tagging and categorizing the
 	// MongoDB database user. The labels that you define do not appear in the console.
 	Labels *[]Tags `json:"labels,omitempty"`
@@ -88,18 +93,22 @@ type DatabaseUserSpecV20250312Entry struct {
 	// federated authentication group, specify the value of IDP_GROUP in this field.
 	OidcAuthType *string `json:"oidcAuthType,omitempty"`
 
-	// Password Alphanumeric string that authenticates this database user against the
-	// database specified in `databaseName`. To authenticate with SCRAM-SHA, you must
-	// specify this parameter. This parameter doesn't appear in this response.
-	Password *string `json:"password,omitempty"`
+	/*
+	   PasswordSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing data for the "password" field:
+
+	   Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.
+	*/
+	PasswordSecretRef *PasswordSecretRef `json:"passwordSecretRef,omitempty"`
 
 	// Roles List that provides the pairings of one role with one applicable database.
 	Roles *[]Roles `json:"roles,omitempty"`
 
 	// Scopes List that contains clusters, MongoDB Atlas Data Lakes, and MongoDB Atlas
-	// Streams Instances that this database user can access. If omitted, MongoDB Cloud
+	// Streams Workspaces that this database user can access. If omitted, MongoDB Cloud
 	// grants the database user access to all the clusters, MongoDB Atlas Data Lakes,
-	// and MongoDB Atlas Streams Instances in the project.
+	// and MongoDB Atlas Streams Workspaces in the project.
 	Scopes *[]Scopes `json:"scopes,omitempty"`
 
 	/*
@@ -128,6 +137,15 @@ type DatabaseUserSpecV20250312Entry struct {
 	   Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.
 	*/
 	X509Type *string `json:"x509Type,omitempty"`
+}
+
+type PasswordSecretRef struct {
+	// Key Key of the secret data containing the sensitive field value, defaults to
+	// "password".
+	Key *string `json:"key,omitempty"`
+
+	// Name Name of the secret containing the sensitive field value.
+	Name string `json:"name"`
 }
 
 type Roles struct {
@@ -162,4 +180,12 @@ type DatabaseUserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DatabaseUser `json:"items"`
+}
+
+// GetConditions for DatabaseUser
+func (du *DatabaseUser) GetConditions() []metav1.Condition {
+	if du.Status.Conditions == nil {
+		return nil
+	}
+	return *du.Status.Conditions
 }

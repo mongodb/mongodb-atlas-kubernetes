@@ -3,9 +3,8 @@
 package v1
 
 import (
+	k8s "github.com/crd2go/crd2go/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/k8s"
 )
 
 func init() {
@@ -17,14 +16,23 @@ func init() {
 // +kubebuilder:object:root=true
 
 type DataFederation struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DataFederationSpec   `json:"spec,omitempty"`
+	Spec DataFederationSpec `json:"spec,omitempty"`
+
 	Status DataFederationStatus `json:"status,omitempty"`
 }
 
 type DataFederationSpec struct {
+	/*
+	   ConnectionSecretRef SENSITIVE FIELD
+
+	   Reference to a secret containing the credentials to setup the connection to Atlas.
+	*/
+	ConnectionSecretRef *k8s.LocalReference `json:"connectionSecretRef,omitempty"`
+
 	// V20250312 The spec of the datafederation resource for version v20250312.
 	V20250312 *DataFederationSpecV20250312 `json:"v20250312,omitempty"`
 }
@@ -52,7 +60,7 @@ type DataFederationSpecV20250312 struct {
 	// requesting IAM role can read from the S3 bucket. AWS checks if the role can list
 	// the objects in the bucket before writing to it. Some IAM roles only need write
 	// permissions. This flag allows you to skip that check.
-	SkipRoleValidation bool `json:"skipRoleValidation"`
+	SkipRoleValidation *bool `json:"skipRoleValidation,omitempty"`
 }
 
 type DataFederationSpecV20250312Entry struct {
@@ -367,4 +375,12 @@ type DataFederationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DataFederation `json:"items"`
+}
+
+// GetConditions for DataFederation
+func (df *DataFederation) GetConditions() []metav1.Condition {
+	if df.Status.Conditions == nil {
+		return nil
+	}
+	return *df.Status.Conditions
 }
