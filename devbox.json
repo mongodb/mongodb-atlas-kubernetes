@@ -29,7 +29,17 @@
     "fd":                          "latest",
     "go-licenses":                 "1.6.0",
     "kind":                        "latest",
-    "path:./flakes/go": {},
-    "gnused":           "latest"
+    "go":                          "latest",
+    "gnused":                      "latest"
+  },
+  "shell": {
+    "init_hook": [
+      "# Prepend Go's managed GOROOT to PATh to use it ",
+      "# instead of Nix's managed Go path",
+      "export NIX_GOROOT=$(go env GOROOT)",
+      "export PATH=$NIX_GOROOT/bin:$PATH",
+      "unset GOROOT            # force to calculate GOROOT automatically",
+      "export GOTOOLCHAIN=auto # honor go.mod's toolchain"
+    ]
   }
 }
