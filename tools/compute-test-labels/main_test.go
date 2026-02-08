@@ -16,6 +16,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,13 +64,7 @@ func TestFilterLabelsContain(t *testing.T) {
 				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
 			}
 			for _, label := range tt.expectedResult {
-				found := false
-				for _, res := range result {
-					if res == label {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(result, label)
 				if !found {
 					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
 				}
@@ -117,13 +113,7 @@ func TestFilterLabelsDoNotContain(t *testing.T) {
 				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
 			}
 			for _, label := range tt.expectedResult {
-				found := false
-				for _, res := range result {
-					if res == label {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(result, label)
 				if !found {
 					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
 				}
@@ -231,7 +221,7 @@ func TestComputeTestLabel(t *testing.T) {
 			inputs: labelSet{
 				prLabels: "[]",
 			},
-			want: `{"e2e":[],"e2e2":[],"e2e_gov":[],"int":[]}` + "\n",
+			want: `{"e2e":[],"e2e2":[],"e2e_gov":[],"e2e_helm":[],"int":[]}` + "\n",
 		},
 		{
 			name: "e2e2 explicit name is targeted",
@@ -239,7 +229,7 @@ func TestComputeTestLabel(t *testing.T) {
 				prLabels:   `["test/e2e2/some-test"]`,
 				e2e2Labels: `["some-test"]`,
 			},
-			want: `{"e2e":[],"e2e2":["some-test"],"e2e_gov":[],"int":[]}` + "\n",
+			want: `{"e2e":[],"e2e2":["some-test"],"e2e_gov":[],"e2e_helm":[],"int":[]}` + "\n",
 		},
 		{
 			name: "e2e2 wildcard ",
@@ -247,14 +237,90 @@ func TestComputeTestLabel(t *testing.T) {
 				prLabels:   `["test/e2e2/some*"]`,
 				e2e2Labels: `["some-other-test"]`,
 			},
-			want: `{"e2e":[],"e2e2":["some-other-test"],"e2e_gov":[],"int":[]}` + "\n",
+			want: `{"e2e":[],"e2e2":["some-other-test"],"e2e_gov":[],"e2e_helm":[],"int":[]}` + "\n",
+		},
+		{
+			name: "helm tests are separated from e2e tests - exact match",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/helm-ns"]`,
+				e2eLabels: `["deployment", "helm-ns", "helm-wide", "network-peering"]`,
+			},
+			want: `{"e2e":[],"e2e2":[],"e2e_gov":[],"e2e_helm":["helm-ns"],"int":[]}` + "\n",
+		},
+		{
+			name: "helm tests are separated from e2e tests - wildcard all",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/*"]`,
+				e2eLabels: `["deployment", "helm-ns", "helm-wide", "network-peering"]`,
+			},
+			// Order can be different
+			want: `{"e2e":["deployment","network-peering"],"e2e2":[],"e2e_gov":[],"e2e_helm":["helm-ns","helm-wide"],"int":[]}` + "\n",
+		},
+		{
+			name: "helm wildcard pattern matches only helm tests",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/helm-*"]`,
+				e2eLabels: `["deployment", "helm-ns", "helm-wide", "helm-update", "network-peering"]`,
+			},
+			// Order can be different
+			want: `{"e2e":[],"e2e2":[],"e2e_gov":[],"e2e_helm":["helm-ns","helm-update","helm-wide"],"int":[]}` + "\n",
+		},
+		{
+			name: "non-helm e2e test does not match helm",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/deployment"]`,
+				e2eLabels: `["deployment", "helm-ns", "network-peering"]`,
+			},
+			want: `{"e2e":["deployment"],"e2e2":[],"e2e_gov":[],"e2e_helm":[],"int":[]}` + "\n",
+		},
+		{
+			name: "helm tests extracted before gov tests",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/*"]`,
+				e2eLabels: `["deployment", "helm-ns", "atlas-gov-peering", "network-peering"]`,
+			},
+			want: `{"e2e":["deployment","network-peering"],"e2e2":[],"e2e_gov":["atlas-gov-peering"],"e2e_helm":["helm-ns"],"int":[]}` + "\n",
+		},
+		{
+			name: "multiple label patterns with helm",
+			inputs: labelSet{
+				prLabels:  `["test/e2e/deployment", "test/e2e/helm-ns"]`,
+				e2eLabels: `["deployment", "helm-ns", "helm-wide", "network-peering"]`,
+			},
+			want: `{"e2e":["deployment"],"e2e2":[],"e2e_gov":[],"e2e_helm":["helm-ns"],"int":[]}` + "\n",
+		},
+		{
+			name: "skip prefixes applied to helm tests",
+			inputs: labelSet{
+				prLabels:     `["test/e2e/*"]`,
+				e2eLabels:    `["deployment", "helm-ns", "focus-helm-test", "network-peering"]`,
+				skipPrefixes: `["focus"]`,
+			},
+			want: `{"e2e":["deployment","network-peering"],"e2e2":[],"e2e_gov":[],"e2e_helm":["helm-ns"],"int":[]}` + "\n",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			buf := bytes.NewBufferString("")
 			err := computeTestLabels(buf, outputJSON, &tc.inputs)
 			require.NoError(t, err)
-			assert.Equal(t, tc.want, buf.String())
+
+			var want, got map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tc.want), &want))
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+
+			assert.Equal(t, len(want), len(got), "Number of keys should match")
+			for key, wantVal := range want {
+				gotVal, exists := got[key]
+				assert.True(t, exists, "Key %s should exist in result", key)
+
+				wantArray, wantIsArray := wantVal.([]any)
+				gotArray, gotIsArray := gotVal.([]any)
+				if wantIsArray && gotIsArray {
+					assert.ElementsMatch(t, wantArray, gotArray, "Arrays for key %s should match (ignoring order)", key)
+				} else {
+					assert.Equal(t, wantVal, gotVal, "Value for key %s should match", key)
+				}
+			}
 		})
 	}
 }
