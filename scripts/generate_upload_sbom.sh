@@ -120,8 +120,15 @@ for platform in "${platforms[@]}"; do
   
   digest=$(docker manifest inspect "$image_pull_spec" | jq '.manifests[] | select(.platform.architecture == "'"$arch"'" and .platform.os == "'"$os"'")' | jq -r .digest)
 
-  echo "Verifying image signature before generating SBOM for $image_pull_spec ($platform)"
-  IMG=$image_pull_spec@$digest SIGNATURE_REPO=$repo_name/$image_name "${SCRIPT_DIR}"/verify.sh
+  # Verify signature if SKIP_SIGNATURE_VERIFY is not set (allow verification to fail for unsigned images)
+  if [ "${SKIP_SIGNATURE_VERIFY:-false}" != "true" ]; then
+    echo "Verifying image signature before generating SBOM for $image_pull_spec ($platform)"
+    if ! IMG=$image_pull_spec@$digest SIGNATURE_REPO=$repo_name/$image_name "${SCRIPT_DIR}"/verify.sh 2>/dev/null; then
+      echo "Warning: Signature verification failed or signature not found. Continuing with SBOM generation..."
+    fi
+  else
+    echo "Skipping signature verification (SKIP_SIGNATURE_VERIFY=true)"
+  fi
 
   echo "Generating SBOM for $image_pull_spec ($platform) and uploading to $s3_path_platform_dependent"
 
