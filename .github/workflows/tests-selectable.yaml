@@ -76,20 +76,27 @@ jobs:
       - name: Compute Test Matrix
         id: set-matrix
         env:
-          PR_LABELS: ${{ steps.get-labels.outputs.result }}
+          PR_LABELS: ${{ steps.get-labels.outputs.result || '["test/e2e/*", "test/int/*"]'}}
           INT_LABELS: ${{ env.int_labels }}
           E2E_LABELS: ${{ env.e2e_labels }}
           SKIP_PREFIXES: "[\"focus\"]"
           USE_JSON: true
+          GITHUB_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          # Nightly runs all tests, overriding PR labels as ["test/e2e/*", "test/int/*"]
           if [ "${GITHUB_REF}" == "refs/heads/main" ] && [ "${EVENT_NAME}" == "schedule" -o "${EVENT_NAME}" == "workflow_dispatch" ];then
-          PR_LABELS='["test/e2e/*", "test/int/*"]'
-          echo "Nightly runs all tests"
+            # Nightly runs all tests, overriding PR labels as ["test/e2e/*", "test/int/*"]
+            PR_LABELS='["test/e2e/*", "test/int/*"]'
+            echo "Nightly runs all tests"
           fi
+          
           echo PR_LABELS="${PR_LABELS}"
+          echo INT_LABELS="${INT_LABELS}"
+          echo E2E_LABELS="${E2E_LABELS}"
+          
           make compute-labels
           ./bin/ginkgo-labels > result.json
+          
           echo "Int tests to execute $(cat result.json | jq -c .int)"
           echo "E2E tests to execute $(cat result.json | jq -c .e2e)"
           echo "E2E GOV tests to execute $(cat result.json | jq -c .e2e_gov)"

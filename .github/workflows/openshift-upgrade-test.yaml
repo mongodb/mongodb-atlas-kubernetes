@@ -26,7 +26,8 @@ jobs:
     name: Upgrade test on Openshift
     environment: openshift-test
     runs-on: ubuntu-latest
-    if: ${{ vars.SKIP_OPENSHIFT != 'true' && contains( github.event.pull_request.labels.*.name, 'test/openshift') }}
+    if: ${{ vars.SKIP_OPENSHIFT != 'true' && contains( github.event.pull_request.labels.*.name, 'test/openshift') || 
+      github.ref == 'refs/heads/main' && github.event_name == 'schedule'}}
     steps:
       - name: Check out code
         uses: actions/checkout@v6
