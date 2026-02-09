@@ -34,8 +34,8 @@
   },
   "shell": {
     "init_hook": [
-      "# Prepend Go's managed GOROOT to PATh to use it ",
-      "# instead of Nix's managed Go path",
+      "# Prepend Go's managed GOROOT to PATH",
+      "# This allows Go's toolbox version control, overriding Nix's paths",
       "export NIX_GOROOT=$(go env GOROOT)",
       "export PATH=$NIX_GOROOT/bin:$PATH",
       "unset GOROOT            # force to calculate GOROOT automatically",
