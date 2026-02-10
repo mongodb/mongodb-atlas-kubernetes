@@ -142,11 +142,30 @@ jobs:
       QUAY_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}
       QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}-certified
     steps:
-      - name: Checkout code
+      - name: Checkout CI branch (workflow branch)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout released commit to released-branch/
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.image2commit.outputs.commit_sha }}
+          path: released-branch
+
+      - name: Replace Makefile and scripts with CI branch versions
+        run: |
+          # Backup released-branch's Makefile and scripts if they exist
+          [ -f released-branch/Makefile ] && mv released-branch/Makefile released-branch/Makefile.bak || true
+          [ -d released-branch/scripts ] && mv released-branch/scripts released-branch/scripts.bak || true
+          # Copy CI branch's Makefile and scripts to a stable location
+          mkdir -p .ci-tooling
+          cp Makefile .ci-tooling/
+          cp -r scripts .ci-tooling/
+          # Replace with symlinks to CI branch versions (use absolute path via .ci-tooling)
+          ln -s "$(pwd)/.ci-tooling/Makefile" released-branch/Makefile
+          ln -s "$(pwd)/.ci-tooling/scripts" released-branch/scripts
 
       - name: Generate GitHub App Token
         id: generate_token
@@ -185,6 +204,7 @@ jobs:
 
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations
+        working-directory: released-branch
         env:
           ENV: prod
           VERSION: ${{ env.VERSION }}
@@ -193,20 +213,28 @@ jobs:
         run: devbox run -- make bundle
 
       - name: Bump Helm chart version
-        run: devbox run -- ./scripts/bump-helm-chart-version.sh
+        working-directory: released-branch
+        run: devbox run -- scripts/bump-helm-chart-version.sh
 
       # Prepare SDLC requirement: signatures, sboms, compliance reports
-      # Note: Images are already signed and verified by push-release-images step above
-
+      # Note: At this point, the image exists in prerelease registry with promoted tag, not yet tagged with version
+      # We use the prerelease image with promoted tag for SBOM generation, then the image will be pushed with version tag later
       - name: Generate SBOMs
-        run: devbox run -- make generate-sboms RELEASED_OPERATOR_IMAGE="${{ env.DOCKER_RELEASE_REPO }}"
+        working-directory: released-branch
+        env:
+          RELEASED_OPERATOR_IMAGE: ${{ env.DOCKER_PRERELEASE_REPO }}
+          IMAGE_TAG: ${{ env.PROMOTED_TAG }}
+          VERSION: ${{ env.VERSION }}
+          SKIP_SIGNATURE_VERIFY: "true"
+        run: devbox run -- make generate-sboms
 
       - name: Create SDLC report
+        working-directory: released-branch
         run: devbox run -- make gen-sdlc-checklist
 
       - name: Generate licenses.csv
-        run: |
-          devbox run -- 'make build-licenses.csv'
+        working-directory: released-branch
+        run: devbox run -- make build-licenses.csv
 
       # Create PR on release branch with all updates generated
       - name: Create release pr with all updated artefacts
@@ -220,21 +248,22 @@ jobs:
           git config --global user.name "release-bot[bot]"
           git config --global user.email "456789+release-bot[bot]@users.noreply.github.com"
           
-          # Create release directory
+          # Create release directory (copy from released-branch)
           mkdir -p "$RELEASE_DIR"
-          cp -rf deploy "$RELEASE_DIR/"
-          cp -rf bundle "$RELEASE_DIR/"
-          cp -rf helm-charts "$RELEASE_DIR/"
-          cp bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
-          cp licenses.csv "$RELEASE_DIR/"
-          cp docs/api-docs.md "$RELEASE_DIR/"
+          cp -rf released-branch/deploy "$RELEASE_DIR/"
+          cp -rf released-branch/bundle "$RELEASE_DIR/"
+          cp -rf released-branch/helm-charts "$RELEASE_DIR/"
+          cp released-branch/bundle.Dockerfile "$RELEASE_DIR/bundle.Dockerfile"
+          cp released-branch/licenses.csv "$RELEASE_DIR/"
+          cp released-branch/docs/api-docs.md "$RELEASE_DIR/"
 
           git fetch origin
           git checkout -f -b "$BRANCH" origin/main
           git push -f origin "$BRANCH"
 
-          # bump version.json
-          devbox run -- 'make bump-version-file'
+          # bump version.json (in released-branch, but output to current dir)
+          (cd released-branch && devbox run -- make bump-version-file)
+          cp released-branch/version.json .
 
           # Update Helm Charts on main
           cp -r "$RELEASE_DIR/helm-charts" .
@@ -295,19 +324,20 @@ jobs:
           tag_name: "${{ env.RELEASE_TAG }}"
           name: "${{ env.RELEASE_TAG }}"
           token: ${{ secrets.GITHUB_TOKEN }}
-          body_path: docs/release-notes/release-notes-template.md
+          body_path: released-branch/docs/release-notes/release-notes-template.md
           # Note: action-gh-release@v2 automatically updates existing releases with the same tag (idempotent)
           # The step above ensures the release remains a draft when updating
           files: |
             ./atlas-operator-all-in-one-${{ env.VERSION }}.tar.gz
-            ./docs/releases/v${{ env.VERSION }}/sdlc-compliance.md
-            ./docs/releases/v${{ env.VERSION }}/linux_amd64.sbom.json
-            ./docs/releases/v${{ env.VERSION }}/linux_arm64.sbom.json
+            ./released-branch/docs/releases/v${{ env.VERSION }}/sdlc-compliance.md
+            ./released-branch/docs/releases/v${{ env.VERSION }}/linux_amd64.sbom.json
+            ./released-branch/docs/releases/v${{ env.VERSION }}/linux_arm64.sbom.json
 
       # Safety check: Run certification in dry-run mode against prerelease image before publishing
       # This ensures the image will pass certification before we push it to public registries
       # Note: Registry login is performed earlier in the workflow (docker.io login step)
       - name: Pre-validate certification (dry-run)
+        working-directory: released-branch
         run: devbox run -- make certify-openshift-images
         env:
           REGISTRY: docker.io
@@ -323,6 +353,7 @@ jobs:
       # This is the most critical step and must be last after all preparation is complete
       # This handles: Docker release, Quay release, Quay certified, and copying back to prerelease
       - name: Push, sign, and verify release images
+        working-directory: released-branch
         run: devbox run -- make push-release-images
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
@@ -335,6 +366,7 @@ jobs:
       # This is the actual certification submission (if official-release)
       # Note: Registry login is performed earlier in the workflow (quay.io login step)
       - name: Certify Openshift images
+        working-directory: released-branch
         run: devbox run -- make certify-openshift-images
         env:
           REGISTRY: quay.io
