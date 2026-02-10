@@ -63,6 +63,7 @@ jobs:
     uses: ./.github/workflows/cloud-tests-filter.yml
 
   build-images:
+    if: !startsWith(github.event.pull_request.title, 'dependabot')
     needs:
       - run-tests
     uses: ./.github/workflows/build-images.yaml
