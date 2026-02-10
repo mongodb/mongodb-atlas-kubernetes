@@ -7,6 +7,7 @@ jobs:
   get-version:
     name: "Get AKO Version"
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       version: ${{ steps.read_version.outputs.version }}
       image_tag: ${{ steps.read_version.outputs.image_tag }}
