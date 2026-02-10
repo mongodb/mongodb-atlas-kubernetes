@@ -512,13 +512,6 @@ all-platforms:
 	$(MAKE) bin/linux/amd64/manager TARGET_OS=linux TARGET_ARCH=amd64 VERSION=$(VERSION)
 	$(MAKE) bin/linux/arm64/manager TARGET_OS=linux TARGET_ARCH=arm64 VERSION=$(VERSION)
 
-.PHONY: all-platforms-docker
-all-platforms-docker: all-platforms
-	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=amd64 \
-	-f fast.Dockerfile -t manager-amd64 .
-	docker build --build-arg TARGETOS=linux --build-arg TARGETARCH=arm64 \
-	-f fast.Dockerfile -t manager-arm64 .
-
 # docker-image builds the test image always for linux, even on MacOS.
 # This is because the Kubernetes cluster is always run within a Linux VM
 .PHONY: docker-image
@@ -642,13 +635,6 @@ generate-sboms: ./ako.pem ## Generate a released version SBOMs
 gen-sdlc-checklist: ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" ./scripts/gen-sdlc-checklist.sh
 
-# TODO: avoid leaving leftovers in the first place
-.PHONY: clear-e2e-leftovers
-clear-e2e-leftovers: ## Clear the e2e test leftovers quickly
-	git restore bundle* config deploy
-	cd helm-charts && git restore .
-	git submodule update helm-charts
-
 .PHONY: install-crds
 install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
@@ -701,25 +687,6 @@ endif
 .PHONY: stop-ako
 stop-ako:  
 	@kill `cat ako.pid` && rm ako.pid || echo "AKO process not found or already stopped!"  
-
-.PHONY: local-docker-build
-local-docker-build:
-	docker build -f fast.Dockerfile -t $(LOCAL_IMAGE) .
-
-.PHONY: prepare-all-in-one
-prepare-all-in-one: local-docker-build run-kind
-	kubectl create namespace mongodb-atlas-system || echo "Namespace already in place"
-	kind load docker-image $(LOCAL_IMAGE)
-
-.PHONY: test-all-in-one
-test-all-in-one: prepare-all-in-one install-credentials ## Test the deploy/all-in-one.yaml definition
-	# Test all in one with a local image and at $(ATLAS_DOMAIN) (cloud-qa)
-	kubectl apply -f deploy/all-in-one.yaml
-	yq deploy/all-in-one.yaml \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).imagePullPolicy="IfNotPresent"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).image="$(LOCAL_IMAGE)"' \
-	| yq 'select(.kind == "Deployment") | $(CONTAINER_SPEC).args[0]="--atlas-domain=$(ATLAS_DOMAIN)"' \
-	| kubectl apply -f -
 
 .PHONY: upload-sbom-to-kondukto
 upload-sbom-to-kondukto: ## Upload a given SBOM (lite) file to Kondukto

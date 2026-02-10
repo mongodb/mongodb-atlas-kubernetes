@@ -65,14 +65,14 @@ jobs:
   build-images:
     needs:
       - run-tests
-    uses: ./.github/workflows/build-images.yaml
+    uses: ./.github/workflows/build-images.yml
 
   tests-selectable:
     needs:
       - ci
       - build-images
       - cloud-tests-filter
-    uses: ./.github/workflows/tests-selectable.yaml
+    uses: ./.github/workflows/tests-selectable.yml
     secrets: inherit
 
   e2e2:
@@ -80,7 +80,7 @@ jobs:
       - ci
       - build-images
       - cloud-tests-filter
-    uses: ./.github/workflows/tests-e2e2.yaml
+    uses: ./.github/workflows/tests-e2e2.yml
     secrets: inherit
 
   openshift-upgrade-test:
@@ -88,7 +88,7 @@ jobs:
        - ci
        - build-images
        - cloud-tests-filter
-     uses: ./.github/workflows/openshift-upgrade-test.yaml
+     uses: ./.github/workflows/openshift-upgrade-test.yml
      secrets: inherit
 
   start-promote-image:
