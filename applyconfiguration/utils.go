@@ -16,12 +16,13 @@
 package applyconfiguration
 
 import (
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/applyconfiguration/api/v1"
-	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/applyconfiguration/internal"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
+
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/applyconfiguration/api/v1"
+	internal "github.com/mongodb/mongodb-atlas-kubernetes/v2/applyconfiguration/internal"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no

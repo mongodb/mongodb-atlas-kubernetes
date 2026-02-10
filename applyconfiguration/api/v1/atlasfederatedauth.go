@@ -16,10 +16,11 @@
 package v1
 
 import (
-	status "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+
+	status "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 )
 
 // AtlasFederatedAuthApplyConfiguration represents a declarative configuration of the AtlasFederatedAuth type for use
