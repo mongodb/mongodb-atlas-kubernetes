@@ -31,7 +31,7 @@ type labelSet struct {
 	skipPrefixes string
 }
 
-func jsonDump(data interface{}) string {
+func jsonDump(data any) string {
 	r, _ := json.Marshal(data)
 	return string(r)
 }
@@ -143,15 +143,20 @@ func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 	matchedIntTests := MatchWildcards(labels, SkipLabelsByPrefix(intLabels, skipPrefixes), "int")
 	matchedE2ETests := MatchWildcards(labels, SkipLabelsByPrefix(e2eLabels, skipPrefixes), "e2e")
 	matchedE2E2Tests := MatchWildcards(labels, SkipLabelsByPrefix(e2e2Labels, skipPrefixes), "e2e2")
-	// These have to be executed in their own environment )
-	matchedE2EGovTests := FilterLabelsContain(matchedE2ETests, "atlas-gov")
 
+	// Helm tests are executed in their own environment
+	matchedE2EHelmTests := FilterLabelsContain(matchedE2ETests, "helm-")
+	matchedE2ETests = FilterLabelsDoNotContain(matchedE2ETests, "helm-")
+
+	// Government tests are executed in their own environment
+	matchedE2EGovTests := FilterLabelsContain(matchedE2ETests, "atlas-gov")
 	matchedE2ETests = FilterLabelsDoNotContain(matchedE2ETests, "atlas-gov")
 
 	matchedIntTestsJSON, _ := json.Marshal(matchedIntTests)
 	matchedE2ETestsJSON, _ := json.Marshal(matchedE2ETests)
 	matchedE2E2TestsJSON, _ := json.Marshal(matchedE2E2Tests)
 	matchedE2EGovTestsJSON, _ := json.Marshal(matchedE2EGovTests)
+	matchedE2EHelmTestsJSON, _ := json.Marshal(matchedE2EHelmTests)
 
 	if outputJSON {
 		res := map[string]any{}
@@ -159,6 +164,7 @@ func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 		res["e2e"] = matchedE2ETests
 		res["e2e2"] = matchedE2E2Tests
 		res["e2e_gov"] = matchedE2EGovTests
+		res["e2e_helm"] = matchedE2EHelmTests
 		fmt.Fprintln(out, jsonDump(res))
 		return nil
 	}
@@ -166,6 +172,7 @@ func computeTestLabels(out io.Writer, outputJSON bool, inputs *labelSet) error {
 	fmt.Fprintf(out, "Matched E2E Tests: %s\n", matchedE2ETestsJSON)
 	fmt.Fprintf(out, "Matched E2E2 Tests: %s\n", matchedE2E2TestsJSON)
 	fmt.Fprintf(out, "Matched E2E GOV Tests: %s\n", matchedE2EGovTestsJSON)
+	fmt.Fprintf(out, "Matched E2E HELM Tests: %s\n", matchedE2EHelmTestsJSON)
 	return nil
 }
 

@@ -5,6 +5,7 @@ name: Tests-selectable
 # The label filter app is used to select tests based on GitHub PR labels
 # Tests in the ./int directory are considered an integration test and executed in a separate job
 # Tests in the ./e2e directory are considered an end-to-end test and executed in a separate job
+# Tests in the ./e2e directory with labels starting with "helm-" are considered Helm tests and executed in a separate job WITHOUT operator image building
 # Tests in the ./e2e directory are considered a GOV test ONLY IF their labels contain "atlas-gov" and executed in a separate job
 
 on:
@@ -27,6 +28,7 @@ jobs:
     outputs:
       int_matrix: ${{ steps.set-matrix.outputs.int_matrix }}
       e2e_matrix: ${{ steps.set-matrix.outputs.e2e_matrix }}
+      e2e_helm_matrix: $ {{ steps.set-matrix.outputs.e2e_helm_matrix }}
       e2e_gov_matrix: ${{ steps.set-matrix.outputs.e2e_gov_matrix }}
       version: ${{ steps.read_version.outputs.version }}
       image_tag: ${{ steps.read_version.outputs.image_tag }}
@@ -99,10 +101,12 @@ jobs:
           
           echo "Int tests to execute $(cat result.json | jq -c .int)"
           echo "E2E tests to execute $(cat result.json | jq -c .e2e)"
+          echo "E2E Helm tests to execute $(cat result.json | jq -c .e2e_helm)"  # ADD THIS LINE
           echo "E2E GOV tests to execute $(cat result.json | jq -c .e2e_gov)"
-          
+
           echo "int_matrix=$(cat result.json | jq -c .int)" >> $GITHUB_OUTPUT
           echo "e2e_matrix=$(cat result.json | jq -c .e2e)" >> $GITHUB_OUTPUT
+          echo "e2e_helm_matrix=$(cat result.json | jq -c .e2e_helm)" >> $GITHUB_OUTPUT
           echo "e2e_gov_matrix=$(cat result.json | jq -c .e2e_gov)" >> $GITHUB_OUTPUT
       - name: Read binary version and image tag
         id: read_version
@@ -226,6 +230,75 @@ jobs:
         with:
           name: logs
           path: output/**
+
+  run-e2e-helm-tests:
+    needs: [detect-tests, compute]
+    environment: test
+    if: ${{ needs.detect-tests.outputs.e2e_matrix != '[]' && fromJSON(needs.detect-tests.outputs.e2e_matrix) != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJSON(needs.detect-tests.outputs.e2e_matrix) }}
+        k8s: ${{ fromJSON(needs.compute.outputs.test_matrix) }}
+    runs-on: ubuntu-latest
+    name: "e2e: ${{ matrix.test }}"
+    steps:
+      - name: Get repo files from cache
+        id: get-repo-files-from-cache
+        uses: actions/cache@v5
+        with:
+          path: ./*
+          key: ${{ github.sha }}
+      - name: Checkout if cache repo files missed
+        if: steps.get-repo-files-from-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{github.event.pull_request.head.sha}}
+          submodules: true
+          fetch-depth: 0
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
+        with:
+          enable-cache: 'true'
+      - name: Set properties
+        id: properties
+        run: |
+          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
+          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
+          echo "k8s_version=$version" >> $GITHUB_OUTPUT
+          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
+      # TODO: Build image, fix helm tests, run
+      # - name: Run E2E test
+      #   env:
+      #     MCLI_OPS_MANAGER_URL: "https://cloud-qa.mongodb.com/"
+      #     MCLI_ORG_ID: ${{ secrets.ATLAS_ORG_ID}}
+      #     MCLI_PUBLIC_API_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+      #     MCLI_PRIVATE_API_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+      #     BUNDLE_IMAGE: "ghcr.io/mongodb/mongodb-atlas-kubernetes-bundles-prerelease:${{ needs.detect-tests.outputs.image_tag }}"
+      #     IMAGE_PULL_SECRET_REGISTRY: ghcr.io
+      #     IMAGE_PULL_SECRET_USERNAME: $
+      #     IMAGE_PULL_SECRET_PASSWORD: "${{ secrets.GITHUB_TOKEN }}"
+      #     TEST_NAME: "${{ matrix.test }}"
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_ACCOUNT_ARN_LIST: ${{ secrets.AWS_ACCOUNT_ARN_LIST }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_REGION: ${{ vars.AWS_REGION }}
+      #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      #     AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      #     AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      #     GCP_SA_CRED: ${{ secrets.GCP_SA_CRED }}
+      #     DATADOG_KEY: ${{ secrets.DATADOG_KEY }}
+      #     PAGER_DUTY_SERVICE_KEY: ${{ secrets.PAGER_DUTY_SERVICE_KEY }}
+      #   run: |
+      #     echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
+      #     devbox run -- make e2e label=${{ env.TEST_NAME }}
+      # - name: Upload operator logs
+      #   if: ${{ failure() }}
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: logs
+      #     path: output/**
 
   run-e2e-gov-tests:
     needs: detect-tests
