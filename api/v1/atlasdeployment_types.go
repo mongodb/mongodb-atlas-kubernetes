@@ -78,7 +78,7 @@ type AtlasDeploymentSpec struct {
 
 type SearchNode struct {
 	// Hardware specification for the Search Node instance sizes.
-	// +kubebuilder:validation:Enum:=S20_HIGHCPU_NVME;S30_HIGHCPU_NVME;S40_HIGHCPU_NVME;S50_HIGHCPU_NVME;S60_HIGHCPU_NVME;S70_HIGHCPU_NVME;S80_HIGHCPU_NVME;S30_LOWCPU_NVME;S40_LOWCPU_NVME;S50_LOWCPU_NVME;S60_LOWCPU_NVME;S80_LOWCPU_NVME;S90_LOWCPU_NVME;S100_LOWCPU_NVME;S110_LOWCPU_NVME
+	// See https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupclustersearchdeployment#operation-creategroupclustersearchdeployment-body-application-vnd-atlas-2024-05-30-json-specs-instancesize for available values
 	InstanceSize string `json:"instanceSize,omitempty"`
 	// Number of Search Nodes in the cluster.
 	// +kubebuilder:validation:Minimum:=2
