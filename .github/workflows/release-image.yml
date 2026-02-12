@@ -96,6 +96,12 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ needs.image2commit.outputs.commit_sha }}
+    - name: Checkout version.json from the ${{ github.ref_name }} 
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: version.json
+        sparse-checkout-cone-mode: false
+        refs: ${{ github.ref_name }} 
     - name: Read the next release version
       id: read_version
       env:
