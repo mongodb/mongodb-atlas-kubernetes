@@ -101,7 +101,7 @@ jobs:
       with:
         sparse-checkout: version.json
         sparse-checkout-cone-mode: false
-        refs: ${{ github.ref_name }} 
+        ref: ${{ github.ref_name }} 
     - name: Read the next release version
       id: read_version
       env:
