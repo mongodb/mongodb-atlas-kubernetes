@@ -163,9 +163,11 @@ jobs:
           mkdir -p .ci-tooling
           cp Makefile .ci-tooling/
           cp -r scripts .ci-tooling/
+          cp version.json .ci-tooling/
           # Replace with symlinks to CI branch versions (use absolute path via .ci-tooling)
           ln -s "$(pwd)/.ci-tooling/Makefile" released-branch/Makefile
           ln -s "$(pwd)/.ci-tooling/scripts" released-branch/scripts
+          ln -s "$(pwd)/.ci-tooling/version.json" released-branch/version.json
 
       - name: Generate GitHub App Token
         id: generate_token
