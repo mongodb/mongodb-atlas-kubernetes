@@ -39,7 +39,7 @@ The `version.json` file is the definitive **source of truth** for managing softw
 
 * **Automatic Updates for next Releases**: After a successful release, the CI pipeline will **automatically** update `version.json`. The `current` field is set to the version that was just released, and the `next` field is incremented to the next minor version (e.g., `2.11.0` would become `2.12.0`, or `2.11.4` would become `2.12.0`).
 
-* **Manual Updates for Patch Releases**: Creating a **patch release** (e.g., `v2.10.1`) is a deliberate exception to the automated process. To prepare for a patch, you must **manually** update the `next` field to the exact patch version via a Pull Request (PR). This manual step ensures the release workflow targets the specific patch instead of accidentally creating the next minor release.
+* **Manual Updates for Patch Releases**: Creating a **patch release** (e.g., `v2.10.1`) is a deliberate exception to the automated process. To prepare for a patch, you must **manually** update the `next` field to the exact patch version via a Pull Request (PR). This manual step ensures the release workflow targets the specific patch instead of accidentally creating the next minor release. In case of modifying the `version.json`, you should trigger the `Test` workflow with the `promote image` option set to `true` so that it builds a new image with the updated version from `version.json` file BEFORE triggering a `Release image` workflow.
 
 ## Release Notes
 
