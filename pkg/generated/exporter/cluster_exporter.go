@@ -35,7 +35,7 @@ type ClusterExporter struct {
 	translator crapi.Translator
 }
 
-func (e *ClusterExporter) Export(ctx context.Context) ([]client.Object, error) {
+func (e *ClusterExporter) Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error) {
 	var atlasResources []any
 	for pageNum := 1; ; pageNum++ {
 		resp, _, err := e.client.ClustersApi.ListClusters(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
@@ -57,11 +57,13 @@ func (e *ClusterExporter) Export(ctx context.Context) ([]client.Object, error) {
 	resources := make([]client.Object, 0, len(atlasResources))
 	for _, atlasResource := range atlasResources {
 		resource := &akov2generated.Cluster{}
-		translatedResources, err := e.translator.FromAPI(resource, atlasResource)
+		translatedResources, err := e.translator.FromAPI(resource, atlasResource, referencedObjects...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate Cluster: %w", err)
 		}
 
+		resource.GetObjectKind().SetGroupVersionKind(akov2generated.GroupVersion.WithKind("Cluster"))
+		resources = append(resources, resource)
 		resources = append(resources, translatedResources...)
 	}
 
