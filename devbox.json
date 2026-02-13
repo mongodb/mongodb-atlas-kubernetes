@@ -32,14 +32,12 @@
     "go":                          "latest",
     "gnused":                      "latest"
   },
+  "env": {
+    "GOTOOLCHAIN": "auto"
+  },
   "shell": {
     "init_hook": [
-      "# Prepend Go's managed GOROOT to PATH",
-      "# This allows Go's toolbox version control, overriding Nix's paths",
-      "export NIX_GOROOT=$(go env GOROOT)",
-      "export PATH=$NIX_GOROOT/bin:$PATH",
-      "unset GOROOT            # force to calculate GOROOT automatically",
-      "export GOTOOLCHAIN=auto # honor go.mod's toolchain"
+      "export PATH=\"$(GOTOOLCHAIN=auto go env GOROOT)/bin:$PATH\""
     ]
   }
 }
