@@ -1,5 +1,7 @@
 ## Operator sdk support for OLM and OLM bundles
 
+> For a comprehensive reference on the bundle pipeline, directory layout, versioning, and Makefile targets, see [bundle.md](bundle.md).
+
 One of the features that operator-sdk provides is support for [OLM](https://olm.operatorframework.io/docs/getting-started/) and bundles that it uses.
 
 OLM is an "Operator Lifecycle Manager" developed by RedHat. It's shipped together with Openshift but can be installed
