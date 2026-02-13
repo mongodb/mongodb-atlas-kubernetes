@@ -24,7 +24,6 @@ bucket_name=""
 registry_name=""
 s3_path=""
 output_folder="$PWD"
-sbom_binary=$(which syft)
 
 function usage() {
   echo "Generates and uploads an SBOM to an S3 bucket.
@@ -61,7 +60,7 @@ function generate_sbom() {
   local digest=$3
   local file_name=$4
   set +Ee
-  "${sbom_binary}" --platform "$platform" -o "cyclonedx-json" "$image_pull_spec@$digest" > "$file_name"
+  syft --platform "$platform" -o "cyclonedx-json" "$image_pull_spec@$digest" > "$file_name"
   sbom_return_code=$?
   set -Ee
   if ((sbom_return_code != 0)); then
