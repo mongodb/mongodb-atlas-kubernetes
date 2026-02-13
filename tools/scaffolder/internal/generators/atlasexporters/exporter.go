@@ -62,6 +62,7 @@ func GenerateExporter(kind, resourceName, resourceImportPath, destination string
 
 	file.Func().Params(jen.Id("e").Op("*").Id(structName)).Id("Export").Params(
 		jen.Id("ctx").Qual("context", "Context"),
+		jen.Id("referencedObjects").Index().Qual(objectImportPath, "Object"),
 	).Params(
 		jen.Index().Qual(objectImportPath, "Object"),
 		jen.Error(),
@@ -113,7 +114,7 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			Id("e").
 			Dot("translator").
 			Dot("FromAPI").
-			Call(jen.Id("resource"), jen.Id("atlasResource")),
+			Call(jen.Id("resource"), jen.Id("atlasResource"), jen.Id("referencedObjects").Op("...")),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
 			jen.Return(
 				jen.Nil(),
@@ -170,7 +171,7 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 					Id("e").
 					Dot("translator").
 					Dot("FromAPI").
-					Call(jen.Id("resource"), jen.Id("atlasResource")),
+					Call(jen.Id("resource"), jen.Id("atlasResource"), jen.Id("referencedObjects").Op("...")),
 				jen.If(jen.Id("err").Op("!=").Nil()).Block(
 					jen.Return(
 						jen.Nil(),
