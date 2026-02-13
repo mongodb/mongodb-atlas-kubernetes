@@ -35,7 +35,7 @@ type FlexClusterExporter struct {
 	translator crapi.Translator
 }
 
-func (e *FlexClusterExporter) Export(ctx context.Context) ([]client.Object, error) {
+func (e *FlexClusterExporter) Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error) {
 	var atlasResources []any
 	for pageNum := 1; ; pageNum++ {
 		resp, _, err := e.client.FlexClustersApi.ListFlexClusters(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
@@ -57,11 +57,13 @@ func (e *FlexClusterExporter) Export(ctx context.Context) ([]client.Object, erro
 	resources := make([]client.Object, 0, len(atlasResources))
 	for _, atlasResource := range atlasResources {
 		resource := &akov2generated.FlexCluster{}
-		translatedResources, err := e.translator.FromAPI(resource, atlasResource)
+		translatedResources, err := e.translator.FromAPI(resource, atlasResource, referencedObjects...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate FlexCluster: %w", err)
 		}
 
+		resource.GetObjectKind().SetGroupVersionKind(akov2generated.GroupVersion.WithKind("FlexCluster"))
+		resources = append(resources, resource)
 		resources = append(resources, translatedResources...)
 	}
 

@@ -34,7 +34,7 @@ type GroupExporter struct {
 	translator crapi.Translator
 }
 
-func (e *GroupExporter) Export(ctx context.Context) ([]client.Object, error) {
+func (e *GroupExporter) Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error) {
 	resource := &akov2generated.Group{}
 
 	atlasResource, _, err := e.client.ProjectsApi.GetGroup(ctx, e.identifiers[0]).Execute()
@@ -42,12 +42,14 @@ func (e *GroupExporter) Export(ctx context.Context) ([]client.Object, error) {
 		return nil, fmt.Errorf("failed to get Group from Atlas: %w", err)
 	}
 
-	resources, err := e.translator.FromAPI(resource, atlasResource)
+	resources, err := e.translator.FromAPI(resource, atlasResource, referencedObjects...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to translate Group: %w", err)
 	}
 
-	return resources, nil
+	resource.GetObjectKind().SetGroupVersionKind(akov2generated.GroupVersion.WithKind("Group"))
+
+	return append([]client.Object{resource}, resources...), nil
 }
 
 func NewGroupExporter(client *admin.APIClient, translator crapi.Translator, identifiers []string) *GroupExporter {

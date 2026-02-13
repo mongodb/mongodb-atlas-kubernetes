@@ -35,7 +35,7 @@ type DatabaseUserExporter struct {
 	translator crapi.Translator
 }
 
-func (e *DatabaseUserExporter) Export(ctx context.Context) ([]client.Object, error) {
+func (e *DatabaseUserExporter) Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error) {
 	var atlasResources []any
 	for pageNum := 1; ; pageNum++ {
 		resp, _, err := e.client.DatabaseUsersApi.ListDatabaseUsers(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
@@ -57,11 +57,13 @@ func (e *DatabaseUserExporter) Export(ctx context.Context) ([]client.Object, err
 	resources := make([]client.Object, 0, len(atlasResources))
 	for _, atlasResource := range atlasResources {
 		resource := &akov2generated.DatabaseUser{}
-		translatedResources, err := e.translator.FromAPI(resource, atlasResource)
+		translatedResources, err := e.translator.FromAPI(resource, atlasResource, referencedObjects...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate DatabaseUser: %w", err)
 		}
 
+		resource.GetObjectKind().SetGroupVersionKind(akov2generated.GroupVersion.WithKind("DatabaseUser"))
+		resources = append(resources, resource)
 		resources = append(resources, translatedResources...)
 	}
 

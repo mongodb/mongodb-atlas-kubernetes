@@ -21,5 +21,5 @@ import (
 )
 
 type Exporter interface {
-	Export(ctx context.Context) ([]client.Object, error)
+	Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error)
 }
