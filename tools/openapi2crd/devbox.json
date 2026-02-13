@@ -1,17 +1,12 @@
 {
-  "$schema":  "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
-  "packages": [
-    "path:../../flakes/go",
-    "go-mockery@latest"
-  ],
+  "packages": {
+    "go": "latest",
+    "go-mockery": "latest"
+  },
+  "env": {
+    "GOTOOLCHAIN": "auto"
+  },
   "shell": {
-    "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
-    ],
-    "scripts": {
-      "test": [
-        "echo \"Error: no test specified\" && exit 1"
-      ]
-    }
+    "init_hook": ["export PATH=\"$(GOTOOLCHAIN=auto go env GOROOT)/bin:$PATH\""]
   }
 }
