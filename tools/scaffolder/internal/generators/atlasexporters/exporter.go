@@ -129,7 +129,13 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			jen.Qual(resourceImportPath, "GroupVersion").Dot("WithKind").Call(jen.Lit(resourceName)),
 		),
 		jen.Line(),
-		jen.Return(jen.Id("resources"), jen.Nil()),
+		jen.Return(
+			jen.Append(
+				jen.Index().Qual(objectImportPath, "Object").Values(jen.Id("resource")),
+				jen.Id("resources").Op("..."),
+			),
+			jen.Nil(),
+		),
 	}
 }
 
@@ -189,7 +195,7 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 				jen.Id("resource").Dot("GetObjectKind").Call().Dot("SetGroupVersionKind").Call(
 					jen.Qual(resourceImportPath, "GroupVersion").Dot("WithKind").Call(jen.Lit(resourceName)),
 				),
-				jen.Line(),
+				jen.Id("resources").Op("=").Append(jen.Id("resources"), jen.Id("resource")),
 				jen.Id("resources").Op("=").Append(jen.Id("resources"), jen.Id("translatedResources").Op("...")),
 			),
 		jen.Line(),
