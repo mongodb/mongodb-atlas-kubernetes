@@ -24,7 +24,7 @@ bucket_name=""
 registry_name=""
 s3_path=""
 output_folder="$PWD"
-sbom_binary="syft"
+sbom_binary=$(which syft)
 
 function usage() {
   echo "Generates and uploads an SBOM to an S3 bucket.
