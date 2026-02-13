@@ -46,6 +46,11 @@ function validate() {
     echo "AWS CLI not found. Please install the AWS CLI before running this script."
     exit 1
   fi
+  if ! command -v syft &>/dev/null; then
+    echo "syft not found. Please ensure syft is installed and in PATH."
+    echo "Current PATH: $PATH"
+    exit 1
+  fi
   if [ -z "$image_pull_spec" ]; then
     echo "Missing image"
     usage
@@ -59,8 +64,14 @@ function generate_sbom() {
   local platform=$2
   local digest=$3
   local file_name=$4
+  local syft_cmd
+  syft_cmd=$(command -v syft)
+  if [ -z "$syft_cmd" ]; then
+    echo "Error: syft command not found in PATH"
+    return 1
+  fi
   set +Ee
-  syft --platform "$platform" -o "cyclonedx-json" "$image_pull_spec@$digest" > "$file_name"
+  "$syft_cmd" --platform "$platform" -o "cyclonedx-json" "$image_pull_spec@$digest" > "$file_name"
   sbom_return_code=$?
   set -Ee
   if ((sbom_return_code != 0)); then
@@ -109,6 +120,8 @@ echo "Tag: $tag_name"
 echo "Platforms:" "${platforms[@]}"
 echo "S3 Path: $s3_path"
 echo "Docker version: $(docker version)"
+echo "Syft location: $(command -v syft || echo 'NOT FOUND')"
+echo "Current PATH: $PATH"
 
 for platform in "${platforms[@]}"; do
   os=${platform%/*}
