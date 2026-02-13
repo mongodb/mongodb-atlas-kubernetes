@@ -209,54 +209,6 @@
         }
       }
     },
-    "docker-sbom@latest": {
-      "last_modified": "2026-01-30T02:32:49Z",
-      "resolved": "github:NixOS/nixpkgs/6308c3b21396534d8aaeac46179c14c439a89b8a#docker-sbom",
-      "source": "devbox-search",
-      "version": "0.6.1",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/g8993fc8fdc5pg01hzc9yi9mh0yj1r5a-docker-sbom-0.6.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/g8993fc8fdc5pg01hzc9yi9mh0yj1r5a-docker-sbom-0.6.1"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/7jh6ddlghp4cak316ssmpzfyl60abj4f-docker-sbom-0.6.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/7jh6ddlghp4cak316ssmpzfyl60abj4f-docker-sbom-0.6.1"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/rnb0dbm2ymvdxznqrx2x01z4ffspigqz-docker-sbom-0.6.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/rnb0dbm2ymvdxznqrx2x01z4ffspigqz-docker-sbom-0.6.1"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/zl3dp86jh2sw3q79ds6xz8a1nnmy6fy4-docker-sbom-0.6.1",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/zl3dp86jh2sw3q79ds6xz8a1nnmy6fy4-docker-sbom-0.6.1"
-        }
-      }
-    },
     "docker@latest": {
       "last_modified": "2026-01-30T02:32:49Z",
       "resolved": "github:NixOS/nixpkgs/6308c3b21396534d8aaeac46179c14c439a89b8a#docker",
@@ -1662,6 +1614,54 @@
             }
           ],
           "store_path": "/nix/store/ghz6z8fvri862mgdg5kl95cpfls931h5-shellcheck-0.11.0-bin"
+        }
+      }
+    },
+    "syft@latest": {
+      "last_modified": "2026-02-03T17:56:14Z",
+      "resolved": "github:NixOS/nixpkgs/41965737c1797c1d83cfb0b644ed0840a6220bd1#syft",
+      "source": "devbox-search",
+      "version": "1.41.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/64yc26c4ww2zsqwn0pwdm2s9prncsafv-syft-1.41.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/64yc26c4ww2zsqwn0pwdm2s9prncsafv-syft-1.41.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/xgpqycqnlhyy9rzk0s2rlwvf02rn8h73-syft-1.41.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/xgpqycqnlhyy9rzk0s2rlwvf02rn8h73-syft-1.41.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/yi1lnpsdg68rqpg1ci7gira0niyv0k4v-syft-1.41.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/yi1lnpsdg68rqpg1ci7gira0niyv0k4v-syft-1.41.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/w09g5rc16b8kq6z8c8f5gmc0mz9w1b5y-syft-1.41.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/w09g5rc16b8kq6z8c8f5gmc0mz9w1b5y-syft-1.41.1"
         }
       }
     },

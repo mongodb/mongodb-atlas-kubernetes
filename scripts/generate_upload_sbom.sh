@@ -24,7 +24,7 @@ bucket_name=""
 registry_name=""
 s3_path=""
 output_folder="$PWD"
-docker_sbom_binary="docker-sbom"
+sbom_binary="syft"
 
 function usage() {
   echo "Generates and uploads an SBOM to an S3 bucket.
@@ -61,12 +61,12 @@ function generate_sbom() {
   local digest=$3
   local file_name=$4
   set +Ee
-  "${docker_sbom_binary}" sbom --platform "$platform" -o "$file_name" --format "cyclonedx-json" "$image_pull_spec@$digest"
-  docker_sbom_return_code=$?
+  "${sbom_binary}" --platform "$platform" -o "cyclonedx-json" "$image_pull_spec@$digest" > "$file_name"
+  sbom_return_code=$?
   set -Ee
-  if ((docker_sbom_return_code != 0)); then
-    echo "Image $image_pull_spec with platform $platform doesn't exist. Ignoring."
-    return 1
+  if ((sbom_return_code != 0)); then
+      echo "Image $image_pull_spec with platform $platform doesn't exist. Ignoring."
+      return 1
   fi
   return 0
 }
