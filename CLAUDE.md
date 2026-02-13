@@ -146,18 +146,65 @@ Key files:
 - `version.json` — source of truth for `current` (released) and `next` (upcoming) versions.
 - `bundle/` and `bundle.Dockerfile` — generated output, not checked in.
 
-## Experimental / generated CRDs
+## CRD generation
 
-Set `EXPERIMENTAL=1` to enable experimental features. This affects `manifests`, `generate`, and `install-crds` targets by including CRDs and types from `internal/nextapi/`.
+`make manifests` generates CRD YAML, RBAC roles, and webhook config from Go type definitions using `controller-gen`.
 
-Key targets for generated/scaffolded CRDs:
+How it works:
 
-- `make gen-crds` — generate CRDs from OpenAPI specs into `config/generated/crd/bases/`
-- `make gen-go-types` — generate Go types from generated CRDs into `internal/nextapi/generated/v1/`
-- `make run-scaffolder` — generate controller scaffolding and indexers
-- `make gen-all` — run all of the above plus formatting
-- `make regen-crds` — clean and regenerate CRDs
-- `make build-autogen` — generate everything and build an experimental image
+1. `controller-gen` reads marker comments (e.g. `// +kubebuilder:...`) from Go types in `api/` and controller code in `internal/controller/`.
+2. It produces CRD YAML files into `config/crd/bases/`. These files are auto-generated — do not edit by hand.
+3. A kustomization is created in `config/crd/bases/` so Kustomize can compose CRDs with patches and overlays.
+4. RBAC roles are split into clusterwide and namespaced variants via `scripts/split_roles_yaml.sh`.
+
+Key paths:
+
+- `api/v1/` — Go types with `kubebuilder` markers that drive CRD generation.
+- `config/crd/bases/` — generated CRD YAML output. Regenerated on every `make manifests`, not checked in.
+- `config/crd/kustomization.yaml` — references `bases/` and applies `kustomizeconfig.yaml` for webhook name/namespace substitution.
+- `config/crd/experimental/` — placeholder for experimental CRD overlays (used when `EXPERIMENTAL=1`).
+
+To regenerate: `make manifests`. This is also a dependency of `make bundle` and `make release`.
+
+## Feature generated CRDs
+
+Feature generated CRDs are an auto-generated set of CRDs, Go types, controllers, and indexers derived from the MongoDB Atlas OpenAPI specification. They live under the `atlas.generated.mongodb.com` API group and are gated behind `EXPERIMENTAL=1`.
+
+The pipeline has three stages, orchestrated by `make gen-all`:
+
+**1. CRD generation (`make gen-crds`)**
+
+The `openapi2crd` tool (in `tools/openapi2crd/`) reads the Atlas OpenAPI spec and produces CRD YAML. It is configured by `config/openapi2crd.yaml`, which defines:
+
+- Which OpenAPI spec version to use (e.g. `v20250312`).
+- Which CRDs to generate (Group, Cluster, FlexCluster, DatabaseUser, CustomRole, etc.), each mapped to an Atlas API path and OpenAPI schema.
+- Which properties are spec-only (read-write), status-only (read-only), sensitive, or skipped.
+- Cross-resource references (e.g. Cluster references a Group via `groupRef`).
+- A plugin pipeline (`base`, `parameters`, `connection_secret`, `status`, `references`, etc.) that shapes the CRD output.
+
+Output goes to `config/generated/crd/bases/crds.yaml` and is copied to `internal/generated/crds/crds.yaml` for embedding.
+
+**2. Go type generation (`make gen-go-types`)**
+
+The `crd2go` tool reads the generated CRD YAML and produces Go structs into `internal/nextapi/generated/v1/`. Configuration is in `crd2go.yaml`, which controls type renames, imports, and deep copy generation. Do not edit the generated Go files by hand.
+
+**3. Controller and indexer scaffolding (`make run-scaffolder`)**
+
+The `scaffolder` tool (in `tools/scaffolder/`) reads the generated CRD YAML and produces:
+
+- Field indexers into `internal/generated/indexers/` (e.g. look up clusters by group).
+- Controller scaffolding into `internal/generated/controller/` (one sub-package per CRD kind).
+- Exporter scaffolding into `pkg/generated/exporter/`.
+
+Use `SCAFFOLDER_FLAGS` to control scope: `--all` (default) regenerates everything, `--kind=Group --override` targets a single kind.
+
+Key targets:
+
+- `make gen-all` — run all three stages plus formatting.
+- `make regen-crds` — clean and regenerate CRDs only.
+- `make build-autogen` — generate everything and build an experimental operator image.
+
+To enable at runtime, set `EXPERIMENTAL=1` on `make manifests`, `make generate`, or `make install-crds`.
 
 ## Documentation
 
