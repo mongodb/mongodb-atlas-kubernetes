@@ -67,6 +67,8 @@ func TestGenerateResourceExporter_UsesGetBlock(t *testing.T) {
 	assertContains(t, output, "Export(ctx context.Context, referencedObjects []client.Object)")
 	assertContains(t, output, "GetGroup")
 	assertContains(t, output, "FromAPI(resource, atlasResource, referencedObjects...)")
+	assertContains(t, output, "resource.GetObjectKind().SetGroupVersionKind")
+	assertContains(t, output, `GroupVersion.WithKind("Group")`)
 	if strings.Contains(output, "AllPages(") {
 		t.Fatalf("expected get block output, found list block")
 	}
@@ -116,6 +118,8 @@ func TestGenerateResourceExporter_UsesListBlock(t *testing.T) {
 	assertContains(t, output, "ListClusters(")
 	assertContains(t, output, "e.identifiers[0]")
 	assertContains(t, output, "FromAPI(resource, atlasResource, referencedObjects...)")
+	assertContains(t, output, "resource.GetObjectKind().SetGroupVersionKind")
+	assertContains(t, output, `GroupVersion.WithKind("Cluster")`)
 }
 
 func TestGenerateResourceExporter_InvalidDestination(t *testing.T) {
