@@ -43,7 +43,6 @@ echo "Releasing to RedHat: ${version}"
 
 echo "All releases branches posted successfully."
 echo "Please use the following URLs to create the PRs manually:"
-echo "https://github.com/k8s-operatorhub/community-operators/compare/main...mongodb-forks:community-operators:mongodb-atlas-operator-community-${version}"
-echo "https://github.com/redhat-openshift-ecosystem/community-operators-prod/compare/main...mongodb-forks:community-operators-prod:mongodb-atlas-operator-community-${version}"
-echo "https://github.com/redhat-openshift-ecosystem/certified-operators/compare/main...mongodb-forks:certified-operators:mongodb-atlas-kubernetes-operator-${version}"
-
+echo "https://github.com/mongodb-forks/community-operators/pull/new/mongodb-atlas-operator-community-${version}"
+echo "https://github.com/mongodb-forks/community-operators-prod/pull/new/mongodb-atlas-operator-community-${version}"
+echo "https://github.com/mongodb-forks/certified-operators/pull/new/mongodb-atlas-kubernetes-operator-${version}"
