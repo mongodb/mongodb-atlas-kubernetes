@@ -182,7 +182,7 @@ All bundles/package manifests for Operators for operatorhub.io reside in the fol
 * https://github.com/redhat-openshift-ecosystem/community-operators-prod - Kubernetes Operators that appear on [OpenShift](https://openshift.com/) and [OKD](https://www.okd.io/)
 * https://github.com/redhat-openshift-ecosystem/certified-operators - Red Hat certified Kubernetes Operators
 
-All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHat](../../.github/workflows/release-rh.yaml). This can also be run from the CLI using make, please look [at the code](../../.github/workflows/release-rh.yaml) for more details.
+All 3 PRs for those repos can be pushed from workflow [Push release PRs to RedHat](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-rh.yml). This can also be run from the CLI using make, please look [at the code](https://github.com/mongodb/mongodb-atlas-kubernetes/actions/workflows/release-rh.yml) for more details.
 
 The workflow needs 4 parameters:
 - The `version` to release, which is **required**.
