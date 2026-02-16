@@ -71,9 +71,6 @@ linters:
           - dupl
         path: internal/indexer
       - linters:
-          - dupl
-        path: test/scaffolder/generated
-      - linters:
           - prealloc
         path: pkg/controller/atlasdatabaseuser/connectionsecrets
       - linters:
