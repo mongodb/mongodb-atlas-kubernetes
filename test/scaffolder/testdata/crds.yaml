@@ -1,0 +1,228 @@
+# Sample CRDs for scaffolder integration testing
+# These CRDs are designed to maximize scaffolder feature coverage with minimal complexity
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            integrations:
+              items:
+                properties:
+                  credentials:
+                    items:
+                      properties:
+                        secretRef:
+                          x-kubernetes-mapping:
+                            nameSelector: .name
+                            type:
+                              group: ""
+                              kind: Secret
+                              resource: secrets
+                              version: v1
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+  name: parents.test.mongodb.com
+spec:
+  group: test.mongodb.com
+  names:
+    categories:
+    - test
+    kind: Parent
+    listKind: ParentList
+    plural: parents
+    singular: parent
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: A parent resource for scaffolder testing.
+        properties:
+          spec:
+            description: Specification of the parent resource.
+            properties:
+              integrations:
+                description: List of integrations with nested credentials.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      description: Integration name identifier.
+                      type: string
+                    credentials:
+                      description: List of credentials for this integration.
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          secretRef:
+                            description: Reference to a Kubernetes Secret.
+                            type: object
+                            properties:
+                              name:
+                                description: Name of the Secret.
+                                type: string
+                            required:
+                              - name
+              connectionSecretRef:
+                description: Reference to a secret containing Atlas credentials.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                    - type
+                    - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                  - type
+                x-kubernetes-list-type: map
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                parentRef:
+                  x-kubernetes-mapping:
+                    nameSelector: .name
+                    properties:
+                    - $.status.v20250312.id
+                    type:
+                      group: test.mongodb.com
+                      kind: Parent
+                      resource: parents
+                      version: v1
+                  x-openapi-mapping:
+                    property: $.parentId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+  name: children.test.mongodb.com
+spec:
+  group: test.mongodb.com
+  names:
+    categories:
+    - test
+    kind: Child
+    listKind: ChildList
+    plural: children
+    singular: child
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: A child resource for scaffolder testing.
+        properties:
+          spec:
+            description: Specification of the child resource.
+            properties:
+              connectionSecretRef:
+                description: Reference to a secret containing Atlas credentials.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                required:
+                - name
+                type: object
+              v20250312:
+                description: Versioned spec for v20250312.
+                type: object
+                properties:
+                  parentId:
+                    description: ID of the parent resource.
+                    type: string
+                    x-kubernetes-validations:
+                    - message: parentId cannot be modified after creation
+                      rule: self == oldSelf
+                  parentRef:
+                    description: Reference to a Parent resource.
+                    type: object
+                    properties:
+                      name:
+                        description: Name of the Parent resource.
+                        type: string
+                    required:
+                    - name
+            type: object
+          status:
+            description: Status of the child resource.
+            properties:
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
