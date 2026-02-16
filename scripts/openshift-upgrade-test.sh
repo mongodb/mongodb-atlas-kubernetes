@@ -158,6 +158,59 @@ oc_login() {
   oc get clusterversion/version
 }
 
+# Normalize version to X.Y format (strip patch version if present)
+normalize_version() {
+  local version="$1"
+  echo "$version" | cut -d. -f1,2
+}
+
+check_openshift_version() {
+  echo "Checking OpenShift cluster version matches expected version..."
+  
+  # Read expected version from kubernetes-versions.json
+  local k8s_versions_file="${REPO_ROOT}/kubernetes-versions.json"
+  if [ ! -f "$k8s_versions_file" ]; then
+    echo "Error: kubernetes-versions.json not found at $k8s_versions_file"
+    exit 1
+  fi
+  
+  local expected_raw
+  expected_raw=$(jq -r '.openshift // empty' "$k8s_versions_file")
+  if [ -z "$expected_raw" ] || [ "$expected_raw" == "null" ]; then
+    echo "Error: could not read openshift version from $k8s_versions_file"
+    exit 1
+  fi
+  
+  # Normalize expected version (strip patch if present)
+  local expected_norm
+  expected_norm=$(normalize_version "$expected_raw")
+  
+  # Get actual cluster version
+  local actual_raw
+  actual_raw=$(oc get clusterversion/version -o jsonpath='{.status.desired.version}' 2>/dev/null || echo "")
+  if [ -z "$actual_raw" ]; then
+    echo "Error: could not get cluster version from OpenShift cluster"
+    exit 1
+  fi
+  
+  # Normalize actual version (strip patch if present)
+  local actual_norm
+  actual_norm=$(normalize_version "$actual_raw")
+  
+  echo "Expected OpenShift version (from kubernetes-versions.json): $expected_raw (normalized: $expected_norm)"
+  echo "Actual OpenShift cluster version: $actual_raw (normalized: $actual_norm)"
+  
+  if [ "$expected_norm" != "$actual_norm" ]; then
+    echo "ERROR: OpenShift version mismatch!"
+    echo "  Expected: $expected_raw ($expected_norm)"
+    echo "  Actual:   $actual_raw ($actual_norm)"
+    echo "  Please update kubernetes-versions.json to match the actual cluster version, or update the cluster."
+    exit 1
+  fi
+  
+  echo "✓ OpenShift version matches expected version"
+}
+
 prepare_test_namespace() {
   expect_success "oc delete project ${TEST_NAMESPACE} --ignore-not-found" $((10 * second))
   try_until_success "oc create namespace ${TEST_NAMESPACE}" ${DEFAULT_TIMEOUT}
@@ -320,6 +373,7 @@ verify_deployment () {
 main() {
   echo "Test upgrade from ${LATEST_RELEASE_VERSION} to ${CURRENT_VERSION}"
   oc_login
+  check_openshift_version
   opm_version
 
   # Build and install previous version of the operator
