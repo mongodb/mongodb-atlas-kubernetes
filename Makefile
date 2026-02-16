@@ -905,6 +905,14 @@ gen-go-types:
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--output $(realpath .)/internal/nextapi/generated/v1
 
+	@echo "==> Generating Go models for scaffolder test CRDs..."
+	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/crds.yaml \
+	--output $(realpath .)/test/scaffolder/generated/types/v1
+
+	@echo "==> Generating Go models for scaffolder test Atlas CRDs..."
+	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/atlas-crds.yaml \
+	--output $(realpath .)/test/scaffolder/generated/types/v1
+
 # In order to override all of the generated versioned handler, use SCAFFOLDER_FLAGS="--all --override" make gen-all
 # In order to override a specific generated versioned handler for the Group CRD, use SCAFFOLDER_FLAGS="--kind=Group --override" make gen-all
 run-scaffolder: tools/scaffolder/bin/scaffolder
@@ -912,9 +920,27 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 	$(MAKE) -C tools/scaffolder build
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	$(SCAFFOLDER_FLAGS) \
+	--generators indexers,atlas-controllers \
 	--indexer-out $(realpath .)/internal/generated/indexers \
 	--controller-out $(realpath .)/internal/generated/controller \
 	--exporter-out $(realpath .)/pkg/generated/exporter
+
+	@echo "==> Generating scaffolder test exporters for Atlas CRDs..."
+	$(SCAFFOLDER) --input $(realpath .)/test/scaffolder/testdata/atlas-crds.yaml \
+	$(SCAFFOLDER_FLAGS) \
+	--generators atlas-exporters \
+	--exporter-out $(realpath .)/test/scaffolder/generated/exporter \
+	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1
+
+	@echo "==> Generating scaffolder test controller and indexers..."
+	$(SCAFFOLDER) --input $(realpath .)/test/scaffolder/testdata/crds.yaml \
+	$(SCAFFOLDER_FLAGS) \
+	--generators indexers,atlas-controllers \
+	--indexer-out $(realpath .)/test/scaffolder/generated/indexers \
+	--controller-out $(realpath .)/test/scaffolder/generated/controller \
+	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
+	--indexer-types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
+	--indexer-import-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/indexers
 
 gen-all: gen-crds gen-go-types run-scaffolder fmt ## Generate all CRDs, Go types, and scaffolding
 

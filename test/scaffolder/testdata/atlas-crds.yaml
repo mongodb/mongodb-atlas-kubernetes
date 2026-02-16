@@ -1,0 +1,93 @@
+# Sample CRDs for scaffolder integration testing
+# These CRDs are designed to maximize scaffolder feature coverage with minimal complexity
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            groupRef:
+              x-kubernetes-mapping:
+                nameSelector: .name
+                properties:
+                - $.status.flexSpec.id
+                type:
+                  group: atlas.generated.mongodb.com
+                  kind: Group
+                  resource: groups
+                  version: v1
+              x-openapi-mapping:
+                property: $.groupId
+            flexSpec:
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+  name: flexclusters.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    kind: FlexCluster
+    listKind: FlexClusterList
+    plural: flexclusters
+    singular: flexcluster
+  scope: Namespaced
+  versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          properties:
+            spec:
+              properties:
+                groupId:
+                  description: ID of the group (project) that owns the cluster.
+                  type: string
+                groupRef:
+                  description: Reference to a Group resource.
+                  type: object
+                  properties:
+                    name:
+                      description: Name of the Group resource.
+                      type: string
+                  required:
+                  - name
+                flexSpec:
+                  description: Versioned spec for FlexCluster.
+                  type: object
+              type: object
+            status:
+              properties:
+                conditions:
+                  description: Conditions of the resource.
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        type: string
+                      observedGeneration:
+                        type: integer
+                      reason:
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    required:
+                    - type
+                    - status
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - type
+                  x-kubernetes-list-type: map
+                flexSpec:
+                  description: Versioned status for FlexCluster.
+                  type: object
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
