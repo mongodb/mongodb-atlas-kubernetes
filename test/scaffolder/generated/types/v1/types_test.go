@@ -20,17 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
-
-// newScheme returns a scheme with all generated types registered.
-func newScheme(t *testing.T) *runtime.Scheme {
-	t.Helper()
-	scheme := runtime.NewScheme()
-	err := AddToScheme(scheme)
-	require.NoError(t, err)
-	return scheme
-}
 
 // TestGetConditions verifies the generated GetConditions helper methods.
 func TestGetConditions(t *testing.T) {
@@ -75,8 +65,4 @@ func TestGetConditions(t *testing.T) {
 		got := child.GetConditions()
 		assert.Nil(t, got)
 	})
-}
-
-func strPtr(s string) *string {
-	return &s
 }

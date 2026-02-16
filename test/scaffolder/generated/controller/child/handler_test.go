@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
 	"go.uber.org/zap"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +54,7 @@ func (m *mockProvider) SdkClientSet(_ context.Context, _ *atlas.Credentials, _ *
 	return m.clientSet, m.err
 }
 
-func (m *mockProvider) IsCloudGov() bool                              { return false }
+func (m *mockProvider) IsCloudGov() bool                                   { return false }
 func (m *mockProvider) IsResourceSupported(_ api.AtlasCustomResource) bool { return true }
 
 var _ atlas.Provider = (*mockProvider)(nil)
@@ -62,9 +62,9 @@ var _ atlas.Provider = (*mockProvider)(nil)
 // mockTranslator implements crapi.Translator for handler dispatch tests.
 type mockTranslator struct{}
 
-func (m *mockTranslator) Scheme() *runtime.Scheme              { return nil }
-func (m *mockTranslator) MajorVersion() string                  { return "v20250312" }
-func (m *mockTranslator) Mappings() ([]*refs.Mapping, error)    { return nil, nil }
+func (m *mockTranslator) Scheme() *runtime.Scheme            { return nil }
+func (m *mockTranslator) MajorVersion() string               { return "v20250312" }
+func (m *mockTranslator) Mappings() ([]*refs.Mapping, error) { return nil, nil }
 func (m *mockTranslator) ToAPI(_ any, _ client.Object, _ ...client.Object) error {
 	return nil
 }
@@ -80,11 +80,11 @@ func newSchemeWithCoreV1(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-func newCredentialSecret(name, namespace string) *corev1.Secret {
+func newCredentialSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "default",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("test-org"),
@@ -100,7 +100,6 @@ func buildHandler(
 	provider atlas.Provider,
 	globalSecretRef client.ObjectKey,
 	translators map[string]crapi.Translator,
-	deletionProtection bool,
 ) *Handler {
 	logger := zap.NewNop()
 	return &Handler{
@@ -110,7 +109,7 @@ func buildHandler(
 			GlobalSecretRef: globalSecretRef,
 			Log:             logger.Sugar(),
 		},
-		deletionProtection: deletionProtection,
+		deletionProtection: false,
 		translators:        translators,
 		handlerv20250312:   handlerv20250312Func,
 	}
@@ -121,7 +120,7 @@ func TestGetHandlerForResource(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	tests := []struct {
@@ -185,7 +184,7 @@ func TestGetHandlerForResource(t *testing.T) {
 				},
 			}
 
-			handler := buildHandler(fakeClient, provider, globalSecretRef, tc.translators, false)
+			handler := buildHandler(fakeClient, provider, globalSecretRef, tc.translators)
 			result, err := handler.getHandlerForResource(ctx, tc.child)
 
 			if tc.wantErr {
@@ -206,22 +205,22 @@ func TestGetSDKClientSet(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
-	perResourceSecret := newCredentialSecret("resource-secret", "default")
+	perResourceSecret := newCredentialSecret("resource-secret")
 
 	expectedClientSet := &atlas.ClientSet{
 		SdkClient20250312013: &v20250312sdk.APIClient{},
 	}
 
 	tests := []struct {
-		name        string
-		child       *v1.Child
-		objects     []client.Object
-		provider    *mockProvider
-		wantErr     bool
-		wantErrMsg  string
+		name       string
+		child      *v1.Child
+		objects    []client.Object
+		provider   *mockProvider
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "uses global secret when no connectionSecretRef",
@@ -280,7 +279,7 @@ func TestGetSDKClientSet(t *testing.T) {
 				WithObjects(tc.objects...).
 				Build()
 
-			handler := buildHandler(fakeClient, tc.provider, globalSecretRef, nil, false)
+			handler := buildHandler(fakeClient, tc.provider, globalSecretRef, nil)
 			clientSet, err := handler.getSDKClientSet(ctx, tc.child)
 
 			if tc.wantErr {
@@ -301,7 +300,7 @@ func TestHandlerStateTransitions(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	child := &v1.Child{
@@ -326,7 +325,7 @@ func TestHandlerStateTransitions(t *testing.T) {
 		"v20250312": &mockTranslator{},
 	}
 
-	handler := buildHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
 	type stateFunc func(context.Context, *v1.Child) (ctrlstate.Result, error)
 
@@ -361,7 +360,7 @@ func TestHandlerStateTransitions_NoVersion(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	child := &v1.Child{
@@ -384,14 +383,14 @@ func TestHandlerStateTransitions_NoVersion(t *testing.T) {
 		"v20250312": &mockTranslator{},
 	}
 
-	handler := buildHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
 	type stateFunc func(context.Context, *v1.Child) (ctrlstate.Result, error)
 
 	stateTests := []struct {
-		name          string
-		fn            stateFunc
-		wantErrState  state.ResourceState
+		name         string
+		fn           stateFunc
+		wantErrState state.ResourceState
 	}{
 		{"HandleInitial", handler.HandleInitial, state.StateInitial},
 		{"HandleImportRequested", handler.HandleImportRequested, state.StateImportRequested},
@@ -464,7 +463,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 	require.NoError(t, err, "NewPerVersionTranslators should succeed for Child CRD")
 	require.Contains(t, translators, "v20250312", "translators should contain v20250312")
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
@@ -482,7 +481,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 		},
 	}
 
-	handler := buildHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
 	child := &v1.Child{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},

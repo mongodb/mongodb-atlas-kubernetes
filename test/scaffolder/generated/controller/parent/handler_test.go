@@ -27,8 +27,8 @@ import (
 	integrationssdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,7 +56,7 @@ func (m *mockProvider) SdkClientSet(_ context.Context, _ *atlas.Credentials, _ *
 	return m.clientSet, m.err
 }
 
-func (m *mockProvider) IsCloudGov() bool                              { return false }
+func (m *mockProvider) IsCloudGov() bool                                   { return false }
 func (m *mockProvider) IsResourceSupported(_ api.AtlasCustomResource) bool { return true }
 
 var _ atlas.Provider = (*mockProvider)(nil)
@@ -64,9 +64,9 @@ var _ atlas.Provider = (*mockProvider)(nil)
 // mockTranslator implements crapi.Translator for handler dispatch tests.
 type mockTranslator struct{}
 
-func (m *mockTranslator) Scheme() *runtime.Scheme              { return nil }
-func (m *mockTranslator) MajorVersion() string                  { return "integrations" }
-func (m *mockTranslator) Mappings() ([]*refs.Mapping, error)    { return nil, nil }
+func (m *mockTranslator) Scheme() *runtime.Scheme            { return nil }
+func (m *mockTranslator) MajorVersion() string               { return "integrations" }
+func (m *mockTranslator) Mappings() ([]*refs.Mapping, error) { return nil, nil }
 func (m *mockTranslator) ToAPI(_ any, _ client.Object, _ ...client.Object) error {
 	return nil
 }
@@ -84,11 +84,11 @@ func newSchemeWithCoreV1(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-func newCredentialSecret(name, namespace string) *corev1.Secret {
+func newCredentialSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "default",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("test-org"),
@@ -104,7 +104,6 @@ func buildTestHandler(
 	provider atlas.Provider,
 	globalSecretRef client.ObjectKey,
 	translators map[string]crapi.Translator,
-	deletionProtection bool,
 ) *Handler {
 	logger := zap.NewNop()
 	return &Handler{
@@ -114,7 +113,7 @@ func buildTestHandler(
 			GlobalSecretRef: globalSecretRef,
 			Log:             logger.Sugar(),
 		},
-		deletionProtection:  deletionProtection,
+		deletionProtection:  false,
 		translators:         translators,
 		handlerintegrations: handlerintegrationsFunc,
 	}
@@ -125,7 +124,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	tests := []struct {
@@ -191,7 +190,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 				},
 			}
 
-			handler := buildTestHandler(fakeClient, provider, globalSecretRef, tc.translators, false)
+			handler := buildTestHandler(fakeClient, provider, globalSecretRef, tc.translators)
 			result, err := handler.getHandlerForResource(ctx, tc.parent)
 
 			if tc.wantErr {
@@ -212,10 +211,10 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
-	perResourceSecret := newCredentialSecret("resource-secret", "default")
+	perResourceSecret := newCredentialSecret("resource-secret")
 
 	expectedClientSet := &atlas.ClientSet{
 		SdkClient20250312013: &integrationssdk.APIClient{},
@@ -286,7 +285,7 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 				WithObjects(tc.objects...).
 				Build()
 
-			handler := buildTestHandler(fakeClient, tc.provider, globalSecretRef, nil, false)
+			handler := buildTestHandler(fakeClient, tc.provider, globalSecretRef, nil)
 			clientSet, err := handler.getSDKClientSet(ctx, tc.parent)
 
 			if tc.wantErr {
@@ -307,7 +306,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
@@ -334,7 +333,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 		"integrations": &mockTranslator{},
 	}
 
-	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators)
 
 	type stateFunc func(context.Context, *v1.Parent) (ctrlstate.Result, error)
 
@@ -369,7 +368,7 @@ func TestHandlerStateTransitions_Parent_NoVersion(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
@@ -392,7 +391,7 @@ func TestHandlerStateTransitions_Parent_NoVersion(t *testing.T) {
 		"integrations": &mockTranslator{},
 	}
 
-	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators)
 
 	type stateFunc func(context.Context, *v1.Parent) (ctrlstate.Result, error)
 
@@ -429,7 +428,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 	scheme := newSchemeWithCoreV1(t)
 	logger := zaptest.NewLogger(t)
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	idx := indexer.NewChildByParentIndexer(logger)
@@ -459,7 +458,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 		"integrations": &mockTranslator{},
 	}
 
-	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators)
 
 	type stateFunc func(context.Context, *v1.Parent) (ctrlstate.Result, error)
 
@@ -516,7 +515,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 	require.NoError(t, err, "NewPerVersionTranslators should succeed for Parent CRD")
 	require.Contains(t, translators, "integrations", "translators should contain integrations")
 
-	globalSecret := newCredentialSecret("global-secret", "default")
+	globalSecret := newCredentialSecret("global-secret")
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	idx := indexer.NewChildByParentIndexer(logger)
@@ -542,7 +541,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 		},
 	}
 
-	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators, false)
+	handler := buildTestHandler(fakeClient, provider, globalSecretRef, translators)
 
 	// Verify the full dispatch chain works with real translators
 	result, err := handler.HandleInitial(ctx, parent)
