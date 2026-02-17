@@ -91,3 +91,22 @@ All critical steps are idempotent:
 - **Certification**: Pre-validation runs before publishing to catch issues early
 - **Retry-safe**: Workflow can be safely re-run from any point
 
+## Local Testing
+
+To test release image operations locally, use the `release-sandbox.sh` script.
+
+You might need to do `gh auth login --scopes write:packages` beforehand.
+
+```bash
+# Test image publishing, specify a custom registry
+TMPDIR=./tmp \
+GH_TOKEN=$(gh auth token) \
+PKCS11_URI="${PKCS11_URI}" \
+GRS_USERNAME="${GRS_USERNAME}" \
+GRS_PASSWORD="${GRS_PASSWORD}" \
+SANDBOX_REGISTRY="${MY_REGISTRY}" \
+./scripts/release-sandbox.sh make push-release-images
+```
+
+The script sets up sandbox environment variables that redirect image pushes to a test registry, allowing you to validate release logic without affecting production registries.
+

@@ -39,6 +39,7 @@ SIGNING_ENVFILE="${TMPDIR}/signing-envfile"
 }  > "${SIGNING_ENVFILE}"
 
 docker run \
+  --platform linux/amd64 \
   --env-file="${SIGNING_ENVFILE}" \
   -v "${DOCKER_CFG}:/root/.docker/config.json" \
   --rm \
