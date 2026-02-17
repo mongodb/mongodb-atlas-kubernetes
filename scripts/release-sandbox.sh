@@ -94,6 +94,14 @@ else
     fi
 fi
 
+# PR testing variables (safe defaults for testing release PR creation)
+export AUTHORS="${AUTHORS:-test@example.com}"
+export IMAGE_URL="${IMAGE_URL:-${SANDBOX_REGISTRY}/docker.io/mongodb/mongodb-atlas-kubernetes-operator}"
+export OPERATOR_REGISTRY="${OPERATOR_REGISTRY:-${SANDBOX_REGISTRY}/docker.io/mongodb/mongodb-atlas-kubernetes-operator}"
+export RELEASED_OPERATOR_IMAGE="${RELEASED_OPERATOR_IMAGE:-${DOCKER_PRERELEASE_REPO}}"
+export IMAGE_TAG="${IMAGE_TAG:-${PROMOTED_TAG}}"
+export SKIP_SIGNATURE_VERIFY="${SKIP_SIGNATURE_VERIFY:-true}"
+
 # 9. Run the command with all sandbox environment variables set
 exec "$@"
 
