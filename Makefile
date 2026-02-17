@@ -588,28 +588,11 @@ build-release-pr: ## Build release artifacts in released-branch directory (requi
 		echo "Error: released-branch directory not found. Run prepare-released-branch first." >&2; \
 		exit 1; \
 	fi
-	@echo "Building release artifacts in released-branch..."
-	@cd released-branch && \
-		ENV=prod \
-		VERSION=$(VERSION) \
-		$(if $(IMAGE_URL),IMAGE_URL=$(IMAGE_URL),) \
-		$(if $(OPERATOR_REGISTRY),OPERATOR_REGISTRY=$(OPERATOR_REGISTRY),) \
-		devbox run -- make bundle
-	@cd released-branch && \
-		VERSION=$(VERSION) \
-		devbox run -- make bump-helm-chart-version
-	@cd released-branch && \
-		$(if $(RELEASED_OPERATOR_IMAGE),RELEASED_OPERATOR_IMAGE=$(RELEASED_OPERATOR_IMAGE),) \
-		$(if $(IMAGE_TAG),IMAGE_TAG=$(IMAGE_TAG),) \
-		VERSION=$(VERSION) \
-		$(if $(SKIP_SIGNATURE_VERIFY),SKIP_SIGNATURE_VERIFY=$(SKIP_SIGNATURE_VERIFY),SKIP_SIGNATURE_VERIFY=true) \
-		devbox run -- make generate-sboms
-	@cd released-branch && \
-		VERSION=$(VERSION) \
-		$(if $(AUTHORS),AUTHORS=$(AUTHORS),) \
-		devbox run -- make gen-sdlc-checklist
-	@cd released-branch && \
-		devbox run -- make build-licenses.csv
+	@$(MAKE) -C released-branch bundle ENV=prod VERSION=$(VERSION) IMAGE_URL=$(IMAGE_URL) OPERATOR_REGISTRY=$(OPERATOR_REGISTRY)
+	@$(MAKE) -C released-branch bump-helm-chart-version VERSION=$(VERSION)
+	@$(MAKE) -C released-branch generate-sboms RELEASED_OPERATOR_IMAGE=$(RELEASED_OPERATOR_IMAGE) IMAGE_TAG=$(IMAGE_TAG) VERSION=$(VERSION) SKIP_SIGNATURE_VERIFY=$(SKIP_SIGNATURE_VERIFY)
+	@$(MAKE) -C released-branch gen-sdlc-checklist VERSION=$(VERSION) AUTHORS=$(AUTHORS)
+	@$(MAKE) -C released-branch build-licenses.csv
 	@echo "✓ Release artifacts built in released-branch"
 
 .PHONY: create-release-pr
