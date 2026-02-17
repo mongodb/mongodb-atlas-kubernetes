@@ -20,7 +20,6 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-PROJECT_ROOT=$(cd -- "${SCRIPT_DIR}/.." &> /dev/null && pwd)
 
 # Git bot configuration (for commits created by this script)
 GIT_BOT_USER="release-bot[bot]"
