@@ -39,7 +39,21 @@ type Indexer interface {
 func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) error {
 	logger = logger.Named("indexer")
 	indexers := []Indexer{}
-	indexers = append(indexers,
+	indexers = append(indexers, legacyIndexers(ctx, c, logger)...)
+	indexers = append(indexers, generatedIndexers(logger)...)
+
+	if version.IsExperimental() {
+		// add experimental indexers here
+		indexers = append(indexers,
+			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
+			indexer.NewDatabaseUserBySecretIndexer(logger),
+		)
+	}
+	return Register(ctx, c, indexers...)
+}
+
+func legacyIndexers(ctx context.Context, c cluster.Cluster, logger *zap.Logger) []Indexer {
+	return []Indexer{
 		NewAtlasBackupScheduleByBackupPolicyIndexer(logger),
 		NewAtlasDeploymentByBackupScheduleIndexer(logger),
 		NewAtlasDeploymentBySearchIndexIndexer(logger),
@@ -70,21 +84,18 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
 		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
 		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
-	)
-	if version.IsExperimental() {
-		// add experimental indexers here
-		indexers = append(indexers,
-			connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
-
-			indexer.NewFlexClusterByGroupIndexer(logger),
-			indexer.NewClusterByGroupIndexer(logger),
-			indexer.NewDatabaseUserBySecretIndexer(logger),
-			indexer.NewDatabaseUserByGroupIndexer(logger),
-		)
 	}
-	return Register(ctx, c, indexers...)
+}
+
+func generatedIndexers(logger *zap.Logger) []Indexer {
+	return []Indexer{
+		// Group-related indexers (Group is production-ready)
+		indexer.NewDatabaseUserByGroupIndexer(logger),
+		indexer.NewClusterByGroupIndexer(logger),
+		indexer.NewFlexClusterByGroupIndexer(logger),
+		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
+	}
 }
 
 // Register registers the given indexers to the given manager's field indexer.

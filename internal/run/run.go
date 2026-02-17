@@ -79,9 +79,10 @@ func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
 	ctrl.SetLogger(logrLogger.WithName("ctrl"))
 	klog.SetLogger(logrLogger.WithName("klog"))
 	setupLog := logger.Named("setup").Sugar()
+	// Register generatedv1 scheme unconditionally (Group controller is production-ready)
+	utilruntime.Must(generatedv1.AddToScheme(akoScheme))
 	if version.IsExperimental() {
 		setupLog.Warn("Experimental features enabled!")
-		utilruntime.Must(generatedv1.AddToScheme(akoScheme))
 		utilruntime.Must(apiextensionsv1.AddToScheme(akoScheme))
 	}
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))

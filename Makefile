@@ -671,8 +671,10 @@ gen-sdlc-checklist: ## Generate the SDLC checklist
 install-crds: manifests ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
 ifdef EXPERIMENTAL
-	$(MAKE) regen-crds
-	kubectl apply -f config/generated/crd/bases/crds.yaml
+	@if [ -f config/generated/crd/bases/crds.experimental.yaml ]; then \
+		echo "Installing experimental CRDs..."; \
+		kubectl apply -f config/generated/crd/bases/crds.experimental.yaml; \
+	fi
 endif
 
 .PHONY: set-namespace
@@ -927,6 +929,11 @@ gen-crds: tools/openapi2crd/bin/openapi2crd
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
+	$(MAKE) split-generated-crds
+
+.PHONY: split-generated-crds
+split-generated-crds: ## Split generated CRDs into production and experimental
+	@./scripts/split-generated-crds.sh
 
 .PHONY: regen-crds
 regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs

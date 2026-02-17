@@ -123,6 +123,47 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 	}
 
 	var reconcilers []Reconciler
+	reconcilers = append(reconcilers, r.legacyReconcilers(c, ap)...)
+
+	generatedReconcilers, err := r.generatedReconcilers(c, ap)
+	if err != nil {
+		return fmt.Errorf("error creating generated reconcilers: %w", err)
+	}
+	reconcilers = append(reconcilers, generatedReconcilers...)
+
+	if version.IsExperimental() {
+		// Add experimental controllers here
+		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
+
+		clusterController, err := akov2generatedcluster.NewClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating cluster reconciler: %w", err)
+		}
+
+		flexController, err := flexcluster.NewFlexClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating flex cluster reconciler: %w", err)
+		}
+
+		databaseUserReconciler, err := databaseuser.NewDatabaseUserReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+		if err != nil {
+			return fmt.Errorf("error creating database user reconciler: %w", err)
+		}
+
+		reconcilers = append(reconcilers,
+			newCtrlStateReconciler(clusterController, r.maxConcurrentReconciles),
+			newCtrlStateReconciler(flexController, r.maxConcurrentReconciles),
+			newCtrlStateReconciler(databaseUserReconciler, r.maxConcurrentReconciles),
+		)
+	}
+
+	r.reconcilers = reconcilers
+
+	return nil
+}
+
+func (r *Registry) legacyReconcilers(c cluster.Cluster, ap atlas.Provider) []Reconciler {
+	var reconcilers []Reconciler
 	reconcilers = append(reconcilers, atlasproject.NewAtlasProjectReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasdeployment.NewAtlasDeploymentReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasdatabaseuser.NewAtlasDatabaseUserReconciler(c, r.deprecatedPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.featureFlags, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
@@ -143,41 +184,19 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 	integrationsReconciler := integrations.NewAtlasThirdPartyIntegrationsReconciler(c, ap, r.deletionProtection, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(integrationsReconciler, r.maxConcurrentReconciles))
 
-	if version.IsExperimental() {
-		// Add experimental controllers here
-		reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
+	return reconcilers
+}
 
-		groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
-		if err != nil {
-			return fmt.Errorf("error creating group reconciler: %w", err)
-		}
+func (r *Registry) generatedReconcilers(c cluster.Cluster, ap atlas.Provider) ([]Reconciler, error) {
+	var reconcilers []Reconciler
 
-		clusterController, err := akov2generatedcluster.NewClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
-		if err != nil {
-			return fmt.Errorf("error creating cluster reconciler: %w", err)
-		}
-
-		flexController, err := flexcluster.NewFlexClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
-		if err != nil {
-			return fmt.Errorf("error creating flex cluster reconciler: %w", err)
-		}
-
-		databaseUserReconciler, err := databaseuser.NewDatabaseUserReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
-		if err != nil {
-			return fmt.Errorf("error creating database user reconciler: %w", err)
-		}
-
-		reconcilers = append(reconcilers,
-			newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles),
-			newCtrlStateReconciler(clusterController, r.maxConcurrentReconciles),
-			newCtrlStateReconciler(flexController, r.maxConcurrentReconciles),
-			newCtrlStateReconciler(databaseUserReconciler, r.maxConcurrentReconciles),
-		)
+	groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+	if err != nil {
+		return nil, fmt.Errorf("error creating group reconciler: %w", err)
 	}
+	reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 
-	r.reconcilers = reconcilers
-
-	return nil
+	return reconcilers, nil
 }
 
 // deprecatedPredicates are to be phased out in favor of defaultPredicates
