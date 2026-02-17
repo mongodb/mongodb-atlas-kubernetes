@@ -147,28 +147,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout released commit to released-branch/
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.image2commit.outputs.commit_sha }}
-          path: released-branch
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.14.0
 
-      - name: Replace Makefile and scripts with CI branch versions
-        run: |
-          # Backup released-branch's Makefile and scripts if they exist
-          [ -f released-branch/Makefile ] && mv released-branch/Makefile released-branch/Makefile.bak || true
-          [ -d released-branch/scripts ] && mv released-branch/scripts released-branch/scripts.bak || true
-          # Copy CI branch's Makefile and scripts to a stable location
-          mkdir -p .ci-tooling
-          cp Makefile .ci-tooling/
-          cp -r scripts .ci-tooling/
-          # Replace with symlinks to CI branch versions (use absolute path via .ci-tooling)
-          ln -s "$(pwd)/.ci-tooling/Makefile" released-branch/Makefile
-          ln -s "$(pwd)/.ci-tooling/scripts" released-branch/scripts
-          # Copy devbox.json and devbox.lock to released-branch so devbox can set up the environment correctly
-          cp devbox.json released-branch/
-          cp devbox.lock released-branch/
+      - name: Prepare released branch
+        run: devbox run -- make prepare-released-branch COMMIT_SHA=${{ needs.image2commit.outputs.commit_sha }}
 
       - name: Generate GitHub App Token
         id: generate_token
@@ -201,9 +184,6 @@ jobs:
           registry: artifactory.corp.mongodb.com
           username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
           password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
-
-      - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
 
       # Link updates to pr: all-in-one.yml, helm-updates, sdlc requirements
       - name: Generate deployment configurations

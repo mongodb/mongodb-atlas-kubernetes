@@ -574,6 +574,13 @@ push-release-images: ## Push, sign, and verify release images (Phase 6 - point o
 	@DEST_PRERELEASE_REPO="$${DEST_PRERELEASE_REPO:-$$DOCKER_PRERELEASE_REPO}" \
 	./scripts/push-release-images.sh
 
+.PHONY: prepare-released-branch
+prepare-released-branch: ## Checkout released commit and replace CI tooling (Makefile, scripts, devbox files)
+ifndef COMMIT_SHA
+	$(error COMMIT_SHA is required for prepare-released-branch)
+endif
+	@./scripts/prepare-released-branch.sh $(COMMIT_SHA)
+
 .PHONY: certify-openshift-images
 certify-openshift-images: ## Certify OpenShift images using Red Hat preflight
 	./scripts/certify-openshift-images.sh

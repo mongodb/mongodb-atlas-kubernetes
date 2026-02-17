@@ -93,6 +93,20 @@ All critical steps are idempotent:
 
 ## Local Testing
 
+### Testing Prepare Released Branch
+
+The `prepare-released-branch` step can be tested locally without a sandbox since it only creates local directories:
+
+```bash
+# Test with a commit SHA (e.g., from a previous release)
+# rm -rf -rf released-branch .ci-tooling ## shoudl you need to retest
+make prepare-released-branch COMMIT_SHA=<commit-sha>
+```
+
+This will create `released-branch/` directory with the checked-out commit and `.ci-tooling/` directory with CI tooling.
+
+### Testing Release Image Operations
+
 To test release image operations locally, use the `release-sandbox.sh` script.
 
 You might need to do `gh auth login --scopes write:packages` beforehand.
