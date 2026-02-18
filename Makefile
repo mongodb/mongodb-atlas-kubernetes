@@ -574,6 +574,37 @@ push-release-images: ## Push, sign, and verify release images (Phase 6 - point o
 	@DEST_PRERELEASE_REPO="$${DEST_PRERELEASE_REPO:-$$DOCKER_PRERELEASE_REPO}" \
 	./scripts/push-release-images.sh
 
+.PHONY: prepare-released-branch
+prepare-released-branch: ## Checkout released commit and replace CI tooling (Makefile, scripts, devbox files)
+	@./scripts/prepare-released-branch.sh $(COMMIT_SHA)
+
+.PHONY: bump-helm-chart-version
+bump-helm-chart-version: ## Bump Helm chart version (requires VERSION)
+	@VERSION=$(VERSION) ./scripts/bump-helm-chart-version.sh
+
+.PHONY: build-release-pr
+build-release-pr: ## Build release artifacts in released-branch directory (requires VERSION, optional: RELEASED_OPERATOR_IMAGE, IMAGE_TAG, AUTHORS, IMAGE_URL, OPERATOR_REGISTRY)
+	@if [ ! -d "released-branch" ]; then \
+		echo "Error: released-branch directory not found. Run prepare-released-branch first." >&2; \
+		exit 1; \
+	fi
+	@$(MAKE) -C released-branch bundle ENV=prod VERSION=$(VERSION) IMAGE_URL=$(IMAGE_URL) OPERATOR_REGISTRY=$(OPERATOR_REGISTRY)
+	@$(MAKE) -C released-branch bump-helm-chart-version VERSION=$(VERSION)
+	@$(MAKE) -C released-branch generate-sboms RELEASED_OPERATOR_IMAGE=$(RELEASED_OPERATOR_IMAGE) IMAGE_TAG=$(IMAGE_TAG) VERSION=$(VERSION) SKIP_SIGNATURE_VERIFY=$(SKIP_SIGNATURE_VERIFY)
+	@$(MAKE) -C released-branch gen-sdlc-checklist VERSION=$(VERSION) AUTHORS=$(AUTHORS)
+	@$(MAKE) -C released-branch build-licenses.csv
+	@echo "✓ Release artifacts built in released-branch"
+
+.PHONY: create-release-pr
+create-release-pr: ## Create release PR with all updated artifacts (requires GITHUB_TOKEN, creates branches/PRs)
+	@./scripts/create-release-pr.sh $(RELEASE_TAG) $(VERSION)
+
+.PHONY: prepare-release-pr
+prepare-release-pr: ## Prepare release PR: checkout branch, build artifacts, and create PR (combines prepare-released-branch + build-release-pr + create-release-pr)
+	@$(MAKE) prepare-released-branch COMMIT_SHA=$(COMMIT_SHA)
+	@$(MAKE) build-release-pr VERSION=$(VERSION)
+	@$(MAKE) create-release-pr RELEASE_TAG=$(RELEASE_TAG) VERSION=$(VERSION)
+
 .PHONY: certify-openshift-images
 certify-openshift-images: ## Certify OpenShift images using Red Hat preflight
 	./scripts/certify-openshift-images.sh
