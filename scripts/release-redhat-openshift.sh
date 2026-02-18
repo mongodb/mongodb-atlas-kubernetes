@@ -18,15 +18,28 @@ set -eou pipefail
 
 version=${1:?"pass the version as the parameter, e.g \"0.5.0\""}
 
+PROJECT_ROOT=$(pwd)
+
 if [ -z "${RH_COMMUNITY_OPERATORHUB_REPO_PATH}" ]; then
 	echo "RH_COMMUNITY_OPERATORHUB_REPO_PATH is not set"
 	exit 1
 fi
 
+if [ -z "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}" ]; then
+    echo "RH_COMMUNITY_OPENSHIFT_REPO_PATH is not set"
+    exit 1
+fi
+
 operatorhub="${RH_COMMUNITY_OPERATORHUB_REPO_PATH}/operators/mongodb-atlas-kubernetes/${version}"
 openshift="${RH_COMMUNITY_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes/${version}"
 
-cd "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}"
+# Change to OpenShift repo root
+cleanup() {
+  echo "Returning to original directory: ${PROJECT_ROOT}"
+  popd > /dev/null 2>&1 || cd "${PROJECT_ROOT}"
+}
+trap cleanup EXIT
+pushd "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}"
 
 # Fetch latest from both upstream and fork
 git fetch upstream main
@@ -38,7 +51,7 @@ git fetch origin main
 git reset --hard upstream/main
 
 # Create branch from upstream/main state
-git checkout -b "mongodb-atlas-operator-community-${version}"
+git checkout -B "mongodb-atlas-operator-community-${version}"
 
 # Copy operator from community-operators repo
 cp -r "${operatorhub}" "${openshift}"
