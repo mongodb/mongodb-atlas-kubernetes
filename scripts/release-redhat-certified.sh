@@ -54,8 +54,7 @@ git fetch upstream main
 git reset --hard upstream/main
 
 # Create branch from upstream/main state
-git checkout -b "mongodb-atlas-kubernetes-operator-${version}" || git checkout "mongodb-atlas-kubernetes-operator-${version}"
-git reset --hard upstream/main
+git checkout -b "mongodb-atlas-kubernetes-operator-${version}"
 
 mkdir -p "${REPO}/${version}"
 
