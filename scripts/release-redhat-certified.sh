@@ -99,6 +99,11 @@ cd "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}"
 git checkout upstream/main -- .github/ || true
 
 # Commit ONLY operator changes (workflow files are already identical to upstream, so no diff)
+
+# Add dummy file to force a diff for permission testing
+repo="${RH_CERTIFIED_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
+echo "dummy change $(date)" > "${repo}/${version}/dummy.txt"
+
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff || true
 
