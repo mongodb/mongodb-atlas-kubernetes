@@ -73,10 +73,6 @@ git checkout upstream/main -- .github/ || true
 
 # Commit ONLY operator changes (workflow files are already identical to upstream, so no diff)
 cd "${RH_COMMUNITY_OPERATORHUB_REPO_PATH}"
-
-# Add dummy file to force a diff for permission testing
-echo "dummy change $(date)" > "${repo}/${version}/dummy.txt"
-
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
 
