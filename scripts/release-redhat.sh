@@ -43,8 +43,7 @@ git fetch origin main
 git reset --hard upstream/main
 
 # Create branch from upstream/main state
-git checkout -b "mongodb-atlas-operator-community-${version}" || git checkout "mongodb-atlas-operator-community-${version}"
-git reset --hard upstream/main
+git checkout -b "mongodb-atlas-operator-community-${version}"
 
 # Change back to operator directory for file operations
 cd "${repo}"
