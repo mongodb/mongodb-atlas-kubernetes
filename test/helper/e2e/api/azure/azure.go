@@ -115,7 +115,7 @@ func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpoint
 
 func retryFunction(attempt int, sleep time.Duration, function func() error) error {
 	var err error
-	for i := 0; i < attempt; i++ {
+	for range attempt {
 		err = function()
 		if err != nil {
 			fmt.Print("waiting PE...")

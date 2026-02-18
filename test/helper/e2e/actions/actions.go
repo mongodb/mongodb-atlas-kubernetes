@@ -112,7 +112,7 @@ func AddTeamResourcesWithNUsers(data *model.TestDataProvider, teams []akov2.Team
 		for _, team := range teams {
 			By(fmt.Sprintf("Add Team \"%s\" resource to k8s", team.TeamRef.Name), func() {
 				usernames := make([]akov2.TeamUser, 0, n)
-				for i := 0; i < n; i++ {
+				for i := range n {
 					usernames = append(usernames, akov2.TeamUser(users[i].Username))
 				}
 

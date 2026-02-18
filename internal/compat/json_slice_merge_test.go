@@ -36,7 +36,7 @@ func TestJSONSliceMerge(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		dst, src, expected interface{}
+		dst, src, expected any
 		expectedError      error
 	}{
 		{

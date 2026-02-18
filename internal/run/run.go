@@ -175,7 +175,7 @@ func parseConfiguration(fs *flag.FlagSet, args []string) (Config, error) {
 	watchedNamespace := strings.TrimSpace(os.Getenv("WATCH_NAMESPACE"))
 	if watchedNamespace != "" {
 		config.WatchedNamespaces = make(map[string]bool)
-		for _, namespace := range strings.Split(watchedNamespace, ",") {
+		for namespace := range strings.SplitSeq(watchedNamespace, ",") {
 			namespace = strings.TrimSpace(namespace)
 			config.WatchedNamespaces[namespace] = true
 		}

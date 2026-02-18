@@ -202,7 +202,7 @@ type atlasPE struct {
 	admin.EndpointService
 }
 
-func (a atlasPE) Identifier() interface{} {
+func (a atlasPE) Identifier() any {
 	return a.CloudProvider + status.TransformRegionToID(a.GetRegionName())
 }
 
@@ -539,7 +539,7 @@ func getEndpointsNotInAtlas(specPEs []akov2.PrivateEndpoint, atlasPEs []atlasPE)
 	return getUniqueDifference(specPEs, atlasPEs)
 }
 
-func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []ResultType, right []OtherType) (uniques []ResultType, counts []int) {
+func getUniqueDifference[ResultType any, OtherType any](left []ResultType, right []OtherType) (uniques []ResultType, counts []int) {
 	difference := set.DeprecatedDifference(left, right)
 
 	uniqueItems := make(map[string]itemCount)
@@ -565,7 +565,7 @@ func getUniqueDifference[ResultType interface{}, OtherType interface{}](left []R
 }
 
 type itemCount struct {
-	Item  interface{}
+	Item  any
 	Count int
 }
 

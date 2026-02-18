@@ -18,6 +18,7 @@ package objmap
 import (
 	"errors"
 	"fmt"
+	"maps"
 )
 
 // GetField gets the value of a named path within the given unstructured map
@@ -159,9 +160,7 @@ func GetOrCreateField[T any](obj map[string]any, defaultValue T, fields ...strin
 
 // CopyFields copies all unstructured fields from an source to a target
 func CopyFields(target, source map[string]any) {
-	for field, value := range source {
-		target[field] = value
-	}
+	maps.Copy(target, source)
 }
 
 // FieldsOf returns the names of the fields at the given obj value

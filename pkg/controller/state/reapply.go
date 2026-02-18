@@ -103,11 +103,11 @@ func PatchReapplyTimestamp(ctx context.Context, kubeClient client.Client, obj cl
 		return diff, nil
 	}
 
-	patch := []byte(fmt.Sprintf(`[{
+	patch := fmt.Appendf(nil, `[{
 	"op":    "replace",
 	"path":  "/metadata/annotations/%v",
 	"value": "%v"
-}]`, jsonPatchReplacer.Replace(AnnotationReapplyTimestamp), now.UnixMilli()))
+}]`, jsonPatchReplacer.Replace(AnnotationReapplyTimestamp), now.UnixMilli())
 
 	if err := kubeClient.Patch(ctx, obj, client.RawPatch(types.JSONPatchType, patch)); err != nil {
 		return 0, fmt.Errorf("failed to patch object: %w", err)

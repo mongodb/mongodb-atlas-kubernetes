@@ -28,7 +28,7 @@ func UnsetFinalizers(ctx context.Context, c client.Client, o client.Object, fina
 		controllerutil.RemoveFinalizer(o, f)
 	}
 
-	data, err := json.Marshal([]map[string]interface{}{{
+	data, err := json.Marshal([]map[string]any{{
 		"op":    "replace",
 		"path":  "/metadata/finalizers",
 		"value": o.GetFinalizers(),
@@ -55,7 +55,7 @@ func EnsureFinalizers(ctx context.Context, c client.Client, o client.Object, fin
 		controllerutil.AddFinalizer(o, f)
 	}
 
-	data, err := json.Marshal([]map[string]interface{}{{
+	data, err := json.Marshal([]map[string]any{{
 		"op":    "replace",
 		"path":  "/metadata/finalizers",
 		"value": o.GetFinalizers(),

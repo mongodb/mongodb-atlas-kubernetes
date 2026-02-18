@@ -14,6 +14,8 @@
 
 package compare
 
+import "slices"
+
 func IsEqualWithoutOrder[T comparable](a, b []T) bool {
 	if len(a) != len(b) {
 		return false
@@ -41,10 +43,5 @@ func PtrValuesEqual[T comparable](a, b *T) bool {
 }
 
 func Contains[T comparable](a []T, b T) bool {
-	for _, item := range a {
-		if item == b {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(a, b)
 }

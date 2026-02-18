@@ -115,7 +115,7 @@ func TestSpecEquality(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 100_000; i++ {
+	for range 100_000 {
 		perm := ref.DeepCopy()
 		internalcmp.PermuteOrder(perm, r)
 		err := internalcmp.Normalize(perm)

@@ -51,12 +51,10 @@ func (e *EmbeddedOperator) Start(t testingT) {
 		return
 	}
 	e.ctx, e.cancelFn = context.WithCancel(context.Background())
-	e.wg.Add(1)
-	go func() {
-		defer e.wg.Done()
+	e.wg.Go(func() {
 		fs := flag.NewFlagSet("", flag.ContinueOnError)
 		e.runnerFunc(e.ctx, fs, e.args)
-	}()
+	})
 }
 
 func (e *EmbeddedOperator) Running() bool {

@@ -58,7 +58,7 @@ func (s *sessionGCP) AddIPAddress(region, addressName, subnet string) (string, e
 }
 
 func (s *sessionGCP) GetIP(region, addressName string, try, interval int) (string, error) {
-	for i := 0; i < try; i++ {
+	for range try {
 		r, err := s.computeService.Addresses.Get(s.gProjectID, region, addressName).Do()
 		if err != nil {
 			return "", err
@@ -114,7 +114,7 @@ func (s *sessionGCP) DeleteForwardRule(region, ruleName string, try int, interva
 	}
 
 	deleted := false
-	for i := 0; i < try; i++ {
+	for range try {
 		r, err := s.computeService.ForwardingRules.List(s.gProjectID, region).Do()
 		if err != nil {
 			return fmt.Errorf("computeService.ForwardingRule.List: %w", err)

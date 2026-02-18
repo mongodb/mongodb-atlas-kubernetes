@@ -31,7 +31,7 @@ type labelSet struct {
 	skipPrefixes string
 }
 
-func jsonDump(data interface{}) string {
+func jsonDump(data any) string {
 	r, _ := json.Marshal(data)
 	return string(r)
 }

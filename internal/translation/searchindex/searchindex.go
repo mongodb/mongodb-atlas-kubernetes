@@ -421,11 +421,11 @@ func jsonToMap(in *apiextensionsv1.JSON) (map[string]any, error) {
 	return result, nil
 }
 
-func jsonToInterface(in *apiextensionsv1.JSON) (*[]interface{}, error) {
+func jsonToInterface(in *apiextensionsv1.JSON) (*[]any, error) {
 	if in == nil {
-		return pointer.MakePtr([]interface{}{}), nil
+		return pointer.MakePtr([]any{}), nil
 	}
-	var result []interface{}
+	var result []any
 	if err := json.Unmarshal(in.Raw, &result); err != nil {
 		return nil, err
 	}
@@ -549,7 +549,7 @@ func convertStoredSource(in any) (*apiextensionsv1.JSON, error) {
 	return &apiextensionsv1.JSON{Raw: val}, nil
 }
 
-func convertFilters(in *[]interface{}) (*apiextensionsv1.JSON, error) {
+func convertFilters(in *[]any) (*apiextensionsv1.JSON, error) {
 	if in == nil {
 		return nil, nil
 	}

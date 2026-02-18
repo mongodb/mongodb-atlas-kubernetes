@@ -31,6 +31,7 @@ package cel
 
 import (
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -65,7 +66,7 @@ func PatternValidatorsFromFile(t *testing.T, crdFilePath string) (validatorsByVe
 	return ret
 }
 
-type PatternValidateFunc func(obj interface{}) error
+type PatternValidateFunc func(obj any) error
 
 func findPattern(t *testing.T, s *schema.Structural, pth *field.Path) (map[string]PatternValidateFunc, error) {
 	t.Helper()
@@ -74,7 +75,7 @@ func findPattern(t *testing.T, s *schema.Structural, pth *field.Path) (map[strin
 	if len(s.ValueValidation.Pattern) > 0 {
 		s := *s
 		pth := *pth
-		ret[pth.String()] = func(obj interface{}) error {
+		ret[pth.String()] = func(obj any) error {
 			p, err := regexp.Compile(s.ValueValidation.Pattern)
 			if err != nil {
 				return err
@@ -92,27 +93,21 @@ func findPattern(t *testing.T, s *schema.Structural, pth *field.Path) (map[strin
 			return nil, err
 		}
 
-		for pth, val := range sub {
-			ret[pth] = val
-		}
+		maps.Copy(ret, sub)
 	}
 	if s.Items != nil {
 		sub, err := findPattern(t, s.Items, pth.Child("items"))
 		if err != nil {
 			return nil, err
 		}
-		for pth, val := range sub {
-			ret[pth] = val
-		}
+		maps.Copy(ret, sub)
 	}
 	if s.AdditionalProperties != nil && s.AdditionalProperties.Structural != nil {
 		sub, err := findPattern(t, s.AdditionalProperties.Structural, pth.Child("additionalProperties"))
 		if err != nil {
 			return nil, err
 		}
-		for pth, val := range sub {
-			ret[pth] = val
-		}
+		maps.Copy(ret, sub)
 	}
 
 	return ret, nil

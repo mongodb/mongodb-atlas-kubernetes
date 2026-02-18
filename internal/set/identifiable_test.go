@@ -34,7 +34,7 @@ func newSome(name, property string) someID {
 	}
 }
 
-func (s someID) Identifier() interface{} {
+func (s someID) Identifier() any {
 	return s.name
 }
 

@@ -17,7 +17,7 @@ package compat
 import "encoding/json"
 
 // JSONCopy will copy src to dst via JSON serialization/deserialization.
-func JSONCopy(dst, src interface{}) error {
+func JSONCopy(dst, src any) error {
 	b, err := json.Marshal(src)
 	if err != nil {
 		return err

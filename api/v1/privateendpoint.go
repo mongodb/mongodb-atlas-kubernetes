@@ -58,7 +58,7 @@ type GCPEndpoint struct {
 }
 
 // Identifier is required to satisfy "Identifiable" iterface
-func (i PrivateEndpoint) Identifier() interface{} {
+func (i PrivateEndpoint) Identifier() any {
 	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }
 

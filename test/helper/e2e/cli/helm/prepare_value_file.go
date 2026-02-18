@@ -28,7 +28,7 @@ func PrepareHelmChartValuesFile(input model.UserInputs) {
 		Password string `json:"password,omitempty"`
 	}
 	type values struct {
-		Project     model.ProjectSpec      `json:"project,omitempty"`
+		Project     model.ProjectSpec      `json:"project"`
 		Deployments []model.DeploymentSpec `json:"deployments,omitempty"`
 		Users       []usersType            `json:"users,omitempty"`
 	}

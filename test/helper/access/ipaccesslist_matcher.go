@@ -35,7 +35,7 @@ type ipAccessListMatcher struct {
 	ExpectedIPAccessList project.IPAccessList
 }
 
-func (m *ipAccessListMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *ipAccessListMatcher) Match(actual any) (success bool, err error) {
 	var c admin.NetworkPermissionEntry
 	var ok bool
 	if c, ok = actual.(admin.NetworkPermissionEntry); !ok {
@@ -63,10 +63,10 @@ func (m *ipAccessListMatcher) Match(actual interface{}) (success bool, err error
 	return true, nil
 }
 
-func (m *ipAccessListMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *ipAccessListMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, "to match", m.ExpectedIPAccessList)
 }
 
-func (m *ipAccessListMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *ipAccessListMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, "not to match", m.ExpectedIPAccessList)
 }

@@ -25,7 +25,7 @@ import (
 func TestRoundtrip_DataFederation(t *testing.T) {
 	f := fuzz.New()
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		fuzzed := &DataFederation{}
 		f.Fuzz(fuzzed)
 		fuzzed, err := NewDataFederation(fuzzed.DataFederationSpec, fuzzed.ProjectID, fuzzed.Hostnames)

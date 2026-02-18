@@ -27,11 +27,11 @@ import (
 // 2. If `dst` is longer, only the first `len(src)` elements are merged
 //
 // 3. If `src` is longer, first `len(dst)` elements are merged, then remaining elements are appended to `dst`
-func JSONSliceMerge(dst, src interface{}) error {
+func JSONSliceMerge(dst, src any) error {
 	dstVal := reflect.ValueOf(dst)
 	srcVal := reflect.ValueOf(src)
 
-	if dstVal.Kind() != reflect.Ptr {
+	if dstVal.Kind() != reflect.Pointer {
 		return errors.New("dst must be a pointer to slice")
 	}
 
@@ -46,13 +46,10 @@ func JSONSliceMerge(dst, src interface{}) error {
 		return errors.New("src must be a slice or a pointer to slice")
 	}
 
-	minLen := dstVal.Len()
-	if srcVal.Len() < minLen {
-		minLen = srcVal.Len()
-	}
+	minLen := min(srcVal.Len(), dstVal.Len())
 
 	// merge common elements
-	for i := 0; i < minLen; i++ {
+	for i := range minLen {
 		dstX := dstVal.Index(i).Addr().Interface()
 		if err := JSONCopy(dstX, srcVal.Index(i).Interface()); err != nil {
 			return fmt.Errorf("cannot copy value at index %d: %w", i, err)

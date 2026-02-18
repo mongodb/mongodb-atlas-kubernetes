@@ -40,7 +40,7 @@ type conditionMatcher struct {
 	ExpectedCondition api.Condition
 }
 
-func (m *conditionMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *conditionMatcher) Match(actual any) (success bool, err error) {
 	var c api.Condition
 	var ok bool
 	if c, ok = actual.(api.Condition); !ok {
@@ -62,11 +62,11 @@ func (m *conditionMatcher) Match(actual interface{}) (success bool, err error) {
 	return true, nil
 }
 
-func (m *conditionMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *conditionMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, "to match", m.ExpectedCondition)
 }
 
-func (m *conditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *conditionMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, "not to match", m.ExpectedCondition)
 }
 

@@ -77,7 +77,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 
 				bytes, err := k8s.GetPodLogsByDeployment("mongodb-atlas-operator", config.DefaultOperatorNS, corev1.PodLogOptions{})
 				if err != nil {
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v\n", err)))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v\n", err))
 				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs-default.txt", data.Resources.Namespace),
@@ -85,7 +85,7 @@ var _ = Describe("HELM charts", Ordered, FlakeAttempts(2), func() {
 				)
 				bytes, err = k8s.GetPodLogsByDeployment("mongodb-atlas-operator", data.Resources.Namespace, corev1.PodLogOptions{})
 				if err != nil {
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v\n", err)))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v\n", err))
 				}
 				utils.SaveToFile(
 					fmt.Sprintf("output/%s/operator-logs.txt", data.Resources.Namespace),

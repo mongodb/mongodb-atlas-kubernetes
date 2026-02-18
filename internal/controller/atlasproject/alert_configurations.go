@@ -68,7 +68,7 @@ func (r *AtlasProjectReconciler) ensureAlertConfigurations(service *workflow.Con
 func (r *AtlasProjectReconciler) readAlertConfigurationsSecretsData(project *akov2.AtlasProject, service *workflow.Context, alertConfigs []akov2.AlertConfiguration) error {
 	projectNs := project.Namespace
 
-	for i := 0; i < len(alertConfigs); i++ {
+	for i := range alertConfigs {
 		ac := &alertConfigs[i]
 		for j := 0; j < len(ac.Notifications); j++ {
 			nf := &ac.Notifications[j]

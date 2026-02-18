@@ -279,9 +279,7 @@ func dryRunEventsFunc(ctx context.Context, kubeClient client.Client, timeout tim
 	})
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		eventCh := watch.ResultChan()
@@ -315,7 +313,7 @@ func dryRunEventsFunc(ctx context.Context, kubeClient client.Client, timeout tim
 				return
 			}
 		}
-	}()
+	})
 
 	return func() ([]*corev1.Event, bool) {
 		wg.Wait()

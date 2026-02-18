@@ -401,10 +401,10 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 			app := appclient.NewTestAppClient(port)
 			By("Test restarted App access", func() {
 				getRoot := app.Get("")
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET: %q\n", getRoot)))
+				GinkgoWriter.Write(fmt.Appendf(nil, "Test App GET: %q\n", getRoot))
 				ExpectWithOffset(1, getRoot).Should(Equal("It is working"))
 				getKey := app.Get("/mongo/" + key)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET /mongo/%s: %q\n", key, getKey)))
+				GinkgoWriter.Write(fmt.Appendf(nil, "Test App GET /mongo/%s: %q\n", key, getKey))
 				ExpectWithOffset(1, getKey).Should(Equal(expectedData))
 			})
 
@@ -412,10 +412,10 @@ func CheckUsersCanUseOldApp(data *model.TestDataProvider) {
 				key = port + "up"
 				dataUpdated := fmt.Sprintf("{\"key\":\"%s\",\"shipmodel\":\"heavy\",\"hp\":150}", key)
 				err := app.Post(dataUpdated)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App POST %v: %v\n", dataUpdated, err)))
+				GinkgoWriter.Write(fmt.Appendf(nil, "Test App POST %v: %v\n", dataUpdated, err))
 				ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
 				getKey := app.Get("/mongo/" + key)
-				GinkgoWriter.Write([]byte(fmt.Sprintf("Test App GET /mongo/%s: %q\n", key, getKey)))
+				GinkgoWriter.Write(fmt.Appendf(nil, "Test App GET /mongo/%s: %q\n", key, getKey))
 				ExpectWithOffset(1, getKey).Should(Equal(dataUpdated))
 			})
 		})

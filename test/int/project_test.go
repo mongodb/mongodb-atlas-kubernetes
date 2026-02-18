@@ -314,7 +314,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(k8sClient.Create(context.Background(), &globalConnectionSecret)).To(Succeed())
 			})
 
-			for i := 0; i < totalProject; i++ {
+			for i := range totalProject {
 				go func(i int) {
 					defer GinkgoRecover()
 					defer wg.Done()
@@ -323,7 +323,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 					By(fmt.Sprintf("Creating several projects: %s", projectName))
 					createdProjects[i] = akov2.DefaultProject(namespace.Name, "").WithAtlasName(projectName).WithName(projectName)
 					Expect(k8sClient.Create(context.Background(), createdProjects[i])).ShouldNot(HaveOccurred())
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v", createdProjects[i])))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%+v", createdProjects[i]))
 
 					Eventually(func() bool {
 						return resources.CheckCondition(k8sClient, createdProjects[i], api.TrueCondition(api.ReadyType))
@@ -331,16 +331,16 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 					By(fmt.Sprintf("Deleting the project: %s", projectName))
 					Expect(k8sClient.Delete(context.Background(), createdProjects[i])).Should(Succeed())
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%+v\n", createdProjects[i]))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v=======================NAME: %s\n", i, projectName))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v=========================ID: %s\n", i, createdProjects[i].Status.ID))
 					Eventually(checkAtlasProjectRemoved(createdProjects[i].Status.ID), 2*time.Minute, 5*time.Second).Should(BeTrue())
 
 					By(fmt.Sprintf("Check if project wasn't created again: %s", projectName))
 					time.Sleep(1 * time.Minute)
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%+v\n", createdProjects[i])))
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=======================NAME: %s\n", i, projectName)))
-					GinkgoWriter.Write([]byte(fmt.Sprintf("%v=========================ID: %s\n", i, createdProjects[i].Status.ID)))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%+v\n", createdProjects[i]))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v=======================NAME: %s\n", i, projectName))
+					GinkgoWriter.Write(fmt.Appendf(nil, "%v=========================ID: %s\n", i, createdProjects[i].Status.ID))
 					Expect(checkAtlasProjectRemoved(createdProjects[i].Status.ID)()).Should(BeTrue())
 				}(i)
 			}

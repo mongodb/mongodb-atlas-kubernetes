@@ -98,7 +98,7 @@ func (m *Manager) SetupReconciler(r reconciler) {
 }
 
 //nolint:unparam
-func (m *Manager) eventf(ctx context.Context, object runtime.Object, eventType, reason, messageFmt string, args ...interface{}) error {
+func (m *Manager) eventf(ctx context.Context, object runtime.Object, eventType, reason, messageFmt string, args ...any) error {
 	ref, err := reference.GetReference(m.Cluster.GetScheme(), object)
 	if err != nil {
 		return fmt.Errorf("unable to get reference from object: %w", err)
@@ -290,15 +290,13 @@ func (m *Manager) Start(ctx context.Context) error {
 	)
 
 	cancelCtx, stopCluster := context.WithCancel(ctx)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		// this blocks until it errors out or the context is canceled
 		// where we instruct the Cluster to stop.
 		if err := m.Cluster.Start(cancelCtx); err != nil {
 			clusterErr = fmt.Errorf("cluster start failed: %w", err)
 		}
-	}()
+	})
 
 	err := m.executeDryRun(cancelCtx)
 	if err != nil {

@@ -63,8 +63,8 @@ func SaveToFile(path string, data []byte) error {
 	return nil
 }
 
-func JSONToYAMLConvert(cnfg interface{}) []byte {
-	var jsonI interface{}
+func JSONToYAMLConvert(cnfg any) []byte {
+	var jsonI any
 	j, _ := json.Marshal(cnfg)
 	err := yaml.Unmarshal(j, &jsonI)
 	if err != nil {
@@ -75,7 +75,7 @@ func JSONToYAMLConvert(cnfg interface{}) []byte {
 }
 
 // ReadInYAMLFileAndConvert reads in the yaml file given by the path given
-func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface{} {
+func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg any) any {
 	// Read in the yaml file at the path given
 	yamlFile, err := os.ReadFile(filepath.Clean(pathToYamlFile))
 	if err != nil {
@@ -83,7 +83,7 @@ func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface
 	}
 
 	// Map yamlFile to interface
-	var body interface{}
+	var body any
 	if err := yaml.Unmarshal(yamlFile, &body); err != nil {
 		panic(err)
 	}
@@ -105,15 +105,15 @@ func ReadInYAMLFileAndConvert(pathToYamlFile string, cnfg interface{}) interface
 }
 
 // ConvertYAMLtoJSONHelper converts the yaml to json recursively
-func ConvertYAMLtoJSONHelper(i interface{}) interface{} {
+func ConvertYAMLtoJSONHelper(i any) any {
 	switch item := i.(type) {
-	case map[interface{}]interface{}:
-		document := map[string]interface{}{}
+	case map[any]any:
+		document := map[string]any{}
 		for k, v := range item {
 			document[k.(string)] = ConvertYAMLtoJSONHelper(v)
 		}
 		return document
-	case []interface{}:
+	case []any:
 		for i, arr := range item {
 			item[i] = ConvertYAMLtoJSONHelper(arr)
 		}

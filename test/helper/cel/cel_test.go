@@ -167,7 +167,7 @@ func ValidateFromFile(t *testing.T, crdFilePath string, version string, old, cur
 
 	var (
 		err                error
-		currentRaw, oldRaw map[string]interface{}
+		currentRaw, oldRaw map[string]any
 	)
 
 	if current != nil {

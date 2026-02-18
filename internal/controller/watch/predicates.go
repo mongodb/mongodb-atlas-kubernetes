@@ -16,6 +16,7 @@ package watch
 
 import (
 	"reflect"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,13 +53,7 @@ func SelectNamespacesPredicate(namespaces []string) predicate.Funcs {
 			return true
 		}
 
-		for _, ns := range namespaces {
-			if object.GetNamespace() == ns {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(namespaces, object.GetNamespace())
 	})
 }
 

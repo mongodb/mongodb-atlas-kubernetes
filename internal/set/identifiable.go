@@ -23,7 +23,7 @@ import (
 //
 // Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
 type DeprecatedIdentifiable interface {
-	Identifier() interface{}
+	Identifier() any
 }
 
 // DeprecatedDifference returns all 'Identifiable' elements that are in left slice and not in the right one.
@@ -31,7 +31,7 @@ type DeprecatedIdentifiable interface {
 // 'Identifiable' interface (this is needed to solve lack of covariance in Go).
 //
 // Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
-func DeprecatedDifference(left, right interface{}) []DeprecatedIdentifiable {
+func DeprecatedDifference(left, right any) []DeprecatedIdentifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
@@ -44,7 +44,7 @@ func DeprecatedDifference(left, right interface{}) []DeprecatedIdentifiable {
 // 'Identifiable' interface (this is needed to solve lack of covariance in Go)
 //
 // Note: this construct is DEPRECATED. Instead, use the translation layer for comparing types.
-func DeprecatedIntersection(left, right interface{}) [][]DeprecatedIdentifiable {
+func DeprecatedIntersection(left, right any) [][]DeprecatedIdentifiable {
 	leftIdentifiers := toIdentifiableSlice(left)
 	rightIdentifiers := toIdentifiableSlice(right)
 
@@ -81,7 +81,7 @@ func intersectionIdentifiable(left, right []DeprecatedIdentifiable) [][]Deprecat
 }
 
 // toIdentifiableSlice uses reflection to cast the array
-func toIdentifiableSlice(data interface{}) []DeprecatedIdentifiable {
+func toIdentifiableSlice(data any) []DeprecatedIdentifiable {
 	value := reflect.ValueOf(data)
 
 	result := make([]DeprecatedIdentifiable, value.Len())

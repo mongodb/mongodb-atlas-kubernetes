@@ -17,6 +17,7 @@ package flexcluster_test
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"testing"
 
@@ -1099,9 +1100,7 @@ func withAnnotations(flexCluster *akov2generated.FlexCluster, annotations map[st
 	if flexCluster.Annotations == nil {
 		flexCluster.Annotations = make(map[string]string)
 	}
-	for k, v := range annotations {
-		flexCluster.Annotations[k] = v
-	}
+	maps.Copy(flexCluster.Annotations, annotations)
 	return flexCluster
 }
 

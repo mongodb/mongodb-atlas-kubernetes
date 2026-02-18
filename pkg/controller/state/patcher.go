@@ -102,7 +102,7 @@ func (p *Patcher) UpdateConditions(conditions []metav1.Condition) *Patcher {
 		return p
 	}
 
-	content := make([]interface{}, 0, len(conditions))
+	content := make([]any, 0, len(conditions))
 	for i := range conditions {
 		c, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&conditions[i])
 		if err != nil {
