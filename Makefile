@@ -768,7 +768,7 @@ bump-version-file:
 	@cat $(VERSION_FILE)
 
 .PHONY: api-docs
-api-docs: manifests
+api-docs: manifests gen-crds
 	go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
 
 .PHONY: validate-api-docs
