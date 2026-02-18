@@ -59,11 +59,12 @@ sed -i.bak 's/COPY bundle\/metadata/COPY metadata/' "${repo}/${version}/bundle.D
 sed -i.bak 's/COPY bundle\/tests\/scorecard/COPY tests\/scorecard/' "${repo}/${version}/bundle.Dockerfile"
 rm "${repo}/${version}/bundle.Dockerfile.bak"
 
-# Idempotent yq commands
-yq e -i '.metadata.annotations.containerImage |= (if test("^quay.io/") then . else "quay.io/" + . end)' \
+export REG_PX="quay.io/"
+
+yq e -i '(.metadata.annotations.containerImage | select(. == (env(REG_PX) + "*") | not)) |= env(REG_PX) + .' \
   "${repo}/${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
 
-yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image |= (if test("^quay.io/") then . else "quay.io/" + . end)' \
+yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].image | select(. == (env(REG_PX) + "*") | not)) |= env(REG_PX) + .' \
   "${repo}/${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
 
 # CRITICAL: Ensure workflow files match upstream exactly (no diff)
