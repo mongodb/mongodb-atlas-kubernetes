@@ -29,7 +29,7 @@ vars=(
 	RH_CERTIFIED_OPENSHIFT_REPO_PATH
 )
 for envar in "${vars[@]}"; do
-	if [ -z "${envar}" ]; then
+	if [ -z "${!envar:-}" ]; then
 		echo "missing required ${envar} env var"
 		exit 1
 	fi

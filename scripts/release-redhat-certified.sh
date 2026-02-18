@@ -18,6 +18,8 @@ set -eou pipefail
 
 version=${1:-$VERSION}
 
+PROJECT_ROOT=$(pwd)
+
 if [ -z "${version}" ]; then
 	echo "version is not set as arguiment or VERSION env var"
 	exit 1
@@ -43,7 +45,13 @@ echo "${IMG_SHA_AMD64}"
 REPO="${RH_CERTIFIED_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 
 # Change to repo root for git operations
-cd "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}"
+cleanup() {
+  echo "Returning to original directory: ${PROJECT_ROOT}"
+  popd > /dev/null 2>&1 || cd "${PROJECT_ROOT}"
+}
+trap cleanup EXIT
+pushd "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}"
+
 git checkout main
 git fetch origin main
 git fetch upstream main
@@ -54,14 +62,14 @@ git fetch upstream main
 git reset --hard upstream/main
 
 # Create branch from upstream/main state
-git checkout -b "mongodb-atlas-kubernetes-operator-${version}"
+git checkout -B "mongodb-atlas-kubernetes-operator-${version}"
 
 mkdir -p "${REPO}/${version}"
 
-cp -r "releases/v${version}/bundle.Dockerfile" \
-      "releases/v${version}/bundle/manifests" \
-      "releases/v${version}/bundle/metadata" \
-      "releases/v${version}/bundle/tests" "${REPO}/${version}"
+cp -r "${PROJECT_ROOT}/releases/v${version}/bundle.Dockerfile" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/manifests" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/metadata" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/tests" "${REPO}/${version}"
 
 # Replace deployment image version with SHA256
 value="${IMG_SHA_AMD64}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
