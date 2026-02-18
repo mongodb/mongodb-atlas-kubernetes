@@ -25,7 +25,7 @@ import (
 	crd2gok8s "github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312014/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
