@@ -924,9 +924,8 @@ tools/scaffolder/bin/scaffolder:
 	make -C tools/scaffolder build
 
 .PHONY: gen-crds
-gen-crds: | tools/openapi2crd/bin/openapi2crd
+gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
-	$(MAKE) -C tools/openapi2crd build
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
