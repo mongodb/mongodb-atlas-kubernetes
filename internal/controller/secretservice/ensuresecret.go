@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,10 +142,33 @@ func formatSecretName(projectName, clusterName, dbUserName string) string {
 }
 
 func AddCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
-	cs, err := url.Parse(connURL)
-	if err != nil {
-		return "", err
+	if connURL == "" {
+		return "", nil
 	}
-	cs.User = url.UserPassword(userName, password)
-	return cs.String(), nil
+
+	var prefix string
+	switch {
+	case strings.HasPrefix(connURL, connstring.SchemeMongoDBSRV+"://"):
+		prefix = connstring.SchemeMongoDBSRV + "://"
+	case strings.HasPrefix(connURL, connstring.SchemeMongoDB+"://"):
+		prefix = connstring.SchemeMongoDB + "://"
+	default:
+		return "", fmt.Errorf("unsupported MongoDB connection string scheme: %q", connURL)
+	}
+
+	rest := connURL[len(prefix):]
+	end := len(rest)
+	if i := strings.IndexAny(rest, "/?"); i >= 0 {
+		end = i
+	}
+	authority := rest[:end]
+	tail := rest[end:]
+
+	if strings.Contains(authority, "@") {
+		parts := strings.SplitN(authority, "@", 2)
+		authority = parts[1]
+	}
+
+	userinfo := url.UserPassword(userName, password).String()
+	return prefix + userinfo + "@" + authority + tail, nil
 }

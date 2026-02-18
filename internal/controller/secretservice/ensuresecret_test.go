@@ -41,6 +41,11 @@ func TestAddCredentialsToConnectionURL(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "mongodb+srv://ldap_user:Simple%23@server.example.com/?authSource=$external&authMechanism=PLAIN&connectTimeoutMS=300000", url)
 	})
+	t.Run("Adding credentials to a seed list", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("mongodb://ia-dev-dr-test-config-00-00.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-01.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-02.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-03.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-04.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-05.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-06.vvna5x.mongo.com:27016/?ssl=true&authSource=admin", "super-user", "P@ssword!")
+		assert.NoError(t, err)
+		assert.Equal(t, "mongodb://super-user:P%40ssword%21@ia-dev-dr-test-config-00-00.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-01.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-02.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-03.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-04.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-05.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-06.vvna5x.mongo.com:27016/?ssl=true&authSource=admin", url)
+	})
 }
 
 func TestEnsure(t *testing.T) {
