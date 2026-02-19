@@ -189,9 +189,14 @@ send_to_slack() {
 
 # Check Kubernetes range support
 check_k8s_range() {
-    local current_min="$1"
-    local current_max="$2"
+    local current_raw_min="$1"
+    local current_raw_max="$2"
     
+    # Normalize versions once at the start (API returns X.Y, config may have X.Y.Z)
+    local current_min current_max
+    current_min=$(normalize_version "$current_raw_min")
+    current_max=$(normalize_version "$current_raw_max")
+
     info "### Checking Kubernetes Range ($current_min - $current_max)"
     
     local data
@@ -203,8 +208,8 @@ check_k8s_range() {
         error "Could not determine target max Kubernetes version"
         return 1
     fi
-    
-    if [ "$target_max" == "$current_max" ]; then
+
+    if [ "$current_max" == "$target_max" ]; then
         success "Max version is correct ($current_max)"
     else
         local newer
@@ -222,7 +227,7 @@ check_k8s_range() {
     min_eol=$(echo "$data" | jq -r --arg ver "$current_min" '.[] | select(.cycle == $ver) | .eol // empty')
     
     if [ -z "$min_eol" ] || [ "$min_eol" == "null" ] || [ "$min_eol" == "false" ]; then
-        success "Min version $current_min has no EOL date set"
+        success "Min version $current_raw_min has no EOL date set"
     else
         # Convert dates to epoch for proper comparison
         local eol_epoch min_eol_epoch
@@ -247,9 +252,13 @@ check_k8s_range() {
 
 # Check OpenShift single version commitment
 check_ocp_single() {
-    local current_ver="$1"
-    
-    info "### Checking OpenShift Version ($current_ver)"
+    local current_raw_ver="$1"
+
+    # Normalize version once at the start (API returns X.Y, config may have X.Y.Z)
+    local current_ver
+    current_ver=$(normalize_version "$current_raw_ver")
+
+    info "### Checking OpenShift Version ($current_raw_ver)"
     
     local data
     data=$(fetch_api_data "$OCP_API" "OpenShift") || return 1
@@ -261,17 +270,17 @@ check_ocp_single() {
         return 1
     fi
     
-    if [ "$target_ver" == "$current_ver" ]; then
-        success "OpenShift version is correct ($current_ver)"
+    if [ "$current_ver" == "$target_ver" ]; then
+        success "OpenShift version is correct ($current_raw_ver)"
     else
         local newer
         newer=$(compare_versions "$current_ver" "$target_ver")
         
         if [ "$newer" == "$target_ver" ] && [ "$current_ver" != "$target_ver" ]; then
-            warning "UPDATE REQUIRED: Latest eligible OpenShift version is $target_ver (current: $current_ver)"
-            display "  (Your config says $current_ver, but $target_ver was released before threshold date)"
+            warning "UPDATE REQUIRED: Latest eligible OpenShift version is $target_ver (current: $current_raw_ver)"
+            display "  (Your config says $current_raw_ver, but $target_ver was released before threshold date)"
         elif [ "$newer" == "$current_ver" ]; then
-            success "You are ahead of policy ($current_ver > $target_ver). This is fine"
+            success "You are ahead of policy ($current_raw_ver > $target_ver). This is fine"
         fi
     fi
     display ""
@@ -333,13 +342,20 @@ compare_versions() {
     echo -e "$ver1\n$ver2" | sort -V | tail -n1
 }
 
-# Validate version format (X.Y)
+# Validate version format (X.Y or X.Y.Z)
 validate_version_format() {
     local version="$1"
-    if [[ ! "$version" =~ ^[0-9]+\.[0-9]+$ ]]; then
-        error "Invalid version format: $version (expected X.Y)"
+    if [[ ! "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+        error "Invalid version format: $version (expected X.Y or X.Y.Z)"
         return 1
     fi
+}
+
+# Normalize version to X.Y format (strip patch version if present)
+# This is used when comparing against API data which only provides X.Y format
+normalize_version() {
+    local version="$1"
+    echo "$version" | cut -d. -f1,2
 }
 
 # Calculate date with month offset
@@ -354,7 +370,12 @@ calc_date() {
             # Negative months: remove minus sign and use -v-${abs}m
             local abs_months="${months#-}"
             date -v-"${abs_months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
+        elif [[ $months =~ ^\+ ]]; then
+            # Positive months: remove plus sign and use -v+${abs}m
+            local abs_months="${months#+}"
+            date -v+"${abs_months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
         else
+            # No sign prefix, assume positive
             date -v+"${months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
         fi
     else

@@ -92,11 +92,14 @@ jobs:
       - id: test
         name: Compute test matrix for k8s versions
         run: |
+          K8S_MIN_VERSION=$(./scripts/get-k8s-version.sh min)
+          K8S_MAX_VERSION=$(./scripts/get-k8s-version.sh max)
+
           # Note the use of external single quotes to allow for double quotes at inline YAML array
-          matrix='["v1.32.8-kind"]'
+          matrix="[\"${K8S_MIN_VERSION}\"]"
           # Nightly runs in both the newest and oldest supported Kubernetes versions
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
-            matrix='["v1.32.8-kind", "v1.34.0-kind"]'
+            matrix="[\"${K8S_MIN_VERSION}\", \"${K8S_MAX_VERSION}\"]"
             echo "Nightly runs oldest and newest Kubernetes supported versions"
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
