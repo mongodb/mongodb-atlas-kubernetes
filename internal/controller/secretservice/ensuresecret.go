@@ -20,7 +20,6 @@ import (
 	"net/url"
 	"strings"
 
-	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +41,9 @@ const (
 	privateShardKey string = "connectionStringPrivateShard"
 	userNameKey     string = "username"
 	passwordKey     string = "password"
+
+	schemeMongoDBSRV string = "mongodb+srv://"
+	schemeMongoDB    string = "mongodb://"
 )
 
 type ConnectionData struct {
@@ -148,10 +150,10 @@ func AddCredentialsToConnectionURL(connURL, userName, password string) (string, 
 
 	var prefix string
 	switch {
-	case strings.HasPrefix(connURL, connstring.SchemeMongoDBSRV+"://"):
-		prefix = connstring.SchemeMongoDBSRV + "://"
-	case strings.HasPrefix(connURL, connstring.SchemeMongoDB+"://"):
-		prefix = connstring.SchemeMongoDB + "://"
+	case strings.HasPrefix(connURL, schemeMongoDBSRV):
+		prefix = schemeMongoDBSRV
+	case strings.HasPrefix(connURL, schemeMongoDB):
+		prefix = schemeMongoDB
 	default:
 		return "", fmt.Errorf("unsupported MongoDB connection string scheme: %q", connURL)
 	}
