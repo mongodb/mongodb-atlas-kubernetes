@@ -216,6 +216,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 		b.featureFlags,
 		b.apiSecret,
 		b.maxConcurrentReconciles,
+		b.atlasDomain,
 	)
 
 	var akoCluster cluster.Cluster

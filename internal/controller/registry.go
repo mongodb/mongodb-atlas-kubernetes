@@ -43,6 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
 	integrations "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasthirdpartyintegrations"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/serviceaccount"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -74,12 +75,13 @@ type Registry struct {
 	logger          *zap.Logger
 	reconcilers     []Reconciler
 	globalSecretRef client.ObjectKey
+	atlasDomain     string
 
 	reapplySupport          bool
 	maxConcurrentReconciles int
 }
 
-func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *Registry {
+func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, featureFlags *featureflags.FeatureFlags, globalSecretRef client.ObjectKey, maxConcurrentReconciles int, atlasDomain string) *Registry {
 	return &Registry{
 		sharedPredicates:        predicates,
 		deletionProtection:      deletionProtection,
@@ -89,6 +91,7 @@ func NewRegistry(predicates []predicate.Predicate, deletionProtection bool, logg
 		globalSecretRef:         globalSecretRef,
 		reapplySupport:          DefaultReapplySupport,
 		maxConcurrentReconciles: maxConcurrentReconciles,
+		atlasDomain:             atlasDomain,
 	}
 }
 
@@ -137,6 +140,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, serviceaccount.NewServiceAccountReconciler(c, r.logger, r.atlasDomain, r.maxConcurrentReconciles))
 
 	orgSettingsReconciler := atlasorgsettings.NewAtlasOrgSettingsReconciler(c, ap, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(orgSettingsReconciler, r.maxConcurrentReconciles))
