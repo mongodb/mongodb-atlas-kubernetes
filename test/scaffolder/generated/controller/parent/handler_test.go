@@ -24,7 +24,7 @@ import (
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312014/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
