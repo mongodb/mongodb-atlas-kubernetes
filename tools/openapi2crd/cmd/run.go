@@ -33,10 +33,11 @@ import (
 )
 
 const (
-	outputOption = "output"
-	configOption = "config"
-	forceOption  = "force"
-	crdsOption   = "crds"
+	outputOption    = "output"
+	configOption    = "config"
+	forceOption     = "force"
+	crdsOption      = "crds"
+	multiFileOption = "multi-file"
 
 	crdsDefaultValue = "all"
 	readOnly         = os.O_RDONLY
@@ -50,6 +51,7 @@ type RunnerConfig struct {
 	Input     string
 	Output    string
 	Overwrite bool
+	MultiFile bool
 	Kinds     map[string]struct{}
 }
 
@@ -68,10 +70,13 @@ func RunCmd(ctx context.Context) *cobra.Command {
 			forceOverwrite := viper.GetBool(forceOption)
 			crds := viper.GetString(crdsOption)
 
+			multiFile := viper.GetBool(multiFileOption)
+
 			c := &RunnerConfig{
 				Input:     configPath,
 				Output:    outputPath,
 				Overwrite: forceOverwrite,
+				MultiFile: multiFile,
 				Kinds:     make(map[string]struct{}),
 			}
 
@@ -89,11 +94,12 @@ func RunCmd(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP(outputOption, "o", "", "Path to output file (required)")
+	cmd.Flags().StringP(outputOption, "o", "", "Path to output file/directory (required)")
 	_ = cmd.MarkFlagRequired(outputOption)
 	cmd.Flags().StringP(configOption, "c", "", "Path to the config file (required)")
 	_ = cmd.MarkFlagRequired(configOption)
 	cmd.Flags().BoolP(forceOption, "f", false, "Force overwrite the output file if it exists")
+	cmd.Flags().Bool(multiFileOption, false, "Write each CRD to its own file in the output directory instead of a single file")
 	cmd.Flags().String(crdsOption, crdsDefaultValue, "One or more Kind names to generate, separated by comma. Use 'all' to generate all CRDs.")
 	cobra.OnInitialize(initConfig)
 
@@ -118,13 +124,14 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 		return fmt.Errorf("error parsing config: %w", err)
 	}
 
-	fsExporter, err := exporter.New(fs, runnerConfig.Output, runnerConfig.Overwrite)
-	if err != nil {
-		return fmt.Errorf("error creating the exporter: %w", err)
+	var fsExporter exporter.Exporter
+	if runnerConfig.MultiFile {
+		fsExporter = exporter.NewMultiFileExporter(fs, runnerConfig.Output, runnerConfig.Overwrite)
+	} else {
+		fsExporter = exporter.NewSingleFileExporter(fs, runnerConfig.Output, runnerConfig.Overwrite)
 	}
 
-	err = fsExporter.Start()
-	if err != nil {
+	if err = fsExporter.Open(); err != nil {
 		return fmt.Errorf("error starting the exporter: %w", err)
 	}
 
