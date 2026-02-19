@@ -15,10 +15,14 @@
 package atlas
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -141,6 +145,49 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 			assert.Equal(t, data.expectation, p.IsResourceSupported(data.resource))
 		})
 	}
+}
+
+func TestProvider_SdkClientSet_NilCredentials(t *testing.T) {
+	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
+	_, err := p.SdkClientSet(context.Background(), &Credentials{}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no credentials provided")
+}
+
+func TestProvider_SdkClientSet_APIKeys(t *testing.T) {
+	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
+	creds := &Credentials{APIKeys: &APIKeys{PublicKey: "pub", PrivateKey: "priv"}}
+	cs, err := p.SdkClientSet(context.Background(), creds, zap.NewNop().Sugar())
+	require.NoError(t, err)
+	assert.NotNil(t, cs)
+	assert.NotNil(t, cs.SdkClient20250312013)
+}
+
+func TestProvider_SdkClientSet_ServiceAccount(t *testing.T) {
+	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
+	creds := &Credentials{ServiceAccount: &ServiceAccountToken{BearerToken: "test-token"}}
+	cs, err := p.SdkClientSet(context.Background(), creds, zap.NewNop().Sugar())
+	require.NoError(t, err)
+	assert.NotNil(t, cs)
+	assert.NotNil(t, cs.SdkClient20250312013)
+}
+
+func TestBearerTokenTransport(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer my-token", r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	transport := &bearerTokenTransport{token: "my-token"}
+	httpClient := &http.Client{Transport: transport}
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+	resp, err := httpClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestOperatorUserAgent(t *testing.T) {

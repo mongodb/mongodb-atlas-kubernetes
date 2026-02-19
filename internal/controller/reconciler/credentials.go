@@ -29,6 +29,14 @@ const (
 	orgIDKey      = "orgId"
 	publicAPIKey  = "publicApiKey"
 	privateAPIKey = "privateApiKey"
+
+	clientIDKey     = "clientId"
+	clientSecretKey = "clientSecret"
+
+	AccessTokenAnnotation = "atlas.mongodb.com/access-token" //nolint:gosec // annotation key, not a credential
+
+	accessTokenKey = "accessToken"
+	expiryKey      = "expiry"
 )
 
 func (r *AtlasReconciler) ResolveConnectionConfig(ctx context.Context, referrer project.ProjectReferrerObject) (*atlas.ConnectionConfig, error) {
@@ -78,14 +86,30 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
-	cfg := &atlas.ConnectionConfig{
-		OrgID: string(secret.Data[orgIDKey]),
-		Credentials: &atlas.Credentials{
-			APIKeys: &atlas.APIKeys{
-				PublicKey:  string(secret.Data[publicAPIKey]),
-				PrivateKey: string(secret.Data[privateAPIKey]),
+	hasAPIKeys := len(secret.Data[publicAPIKey]) > 0 || len(secret.Data[privateAPIKey]) > 0
+	hasServiceAccount := len(secret.Data[clientIDKey]) > 0 || len(secret.Data[clientSecretKey]) > 0
+
+	if hasAPIKeys && hasServiceAccount {
+		return nil, fmt.Errorf("secret %v contains both API key and service account credentials; only one type is allowed", secretRef)
+	}
+
+	var cfg *atlas.ConnectionConfig
+	if hasServiceAccount {
+		var err error
+		cfg, err = buildServiceAccountConfig(ctx, k8sClient, secret)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cfg = &atlas.ConnectionConfig{
+			OrgID: string(secret.Data[orgIDKey]),
+			Credentials: &atlas.Credentials{
+				APIKeys: &atlas.APIKeys{
+					PublicKey:  string(secret.Data[publicAPIKey]),
+					PrivateKey: string(secret.Data[privateAPIKey]),
+				},
 			},
-		},
+		}
 	}
 
 	if missingFields, valid := validate(cfg); !valid {
@@ -93,6 +117,35 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 	}
 
 	return cfg, nil
+}
+
+func buildServiceAccountConfig(ctx context.Context, k8sClient client.Client, secret *corev1.Secret) (*atlas.ConnectionConfig, error) {
+	tokenSecretName, ok := secret.Annotations[AccessTokenAnnotation]
+	if !ok || tokenSecretName == "" {
+		return nil, fmt.Errorf("service account secret %s/%s is missing the %s annotation; "+
+			"the service-account controller may not have processed it yet",
+			secret.Namespace, secret.Name, AccessTokenAnnotation)
+	}
+
+	tokenSecret := &corev1.Secret{}
+	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
+	if err := k8sClient.Get(ctx, tokenRef, tokenSecret); err != nil {
+		return nil, fmt.Errorf("failed to read access token secret %s: %w", tokenRef.String(), err)
+	}
+
+	bearerToken := string(tokenSecret.Data[accessTokenKey])
+	if bearerToken == "" {
+		return nil, fmt.Errorf("access token secret %s has an empty accessToken field", tokenRef.String())
+	}
+
+	return &atlas.ConnectionConfig{
+		OrgID: string(secret.Data[orgIDKey]),
+		Credentials: &atlas.Credentials{
+			ServiceAccount: &atlas.ServiceAccountToken{
+				BearerToken: bearerToken,
+			},
+		},
+	}, nil
 }
 
 func validate(cfg *atlas.ConnectionConfig) ([]string, bool) {
@@ -106,8 +159,22 @@ func validate(cfg *atlas.ConnectionConfig) ([]string, bool) {
 		missingFields = append(missingFields, orgIDKey)
 	}
 
-	if cfg.Credentials == nil || cfg.Credentials.APIKeys == nil {
-		return append(missingFields, []string{publicAPIKey, privateAPIKey}...), false
+	if cfg.Credentials == nil {
+		return append(missingFields, publicAPIKey, privateAPIKey), false
+	}
+
+	if cfg.Credentials.ServiceAccount != nil {
+		if cfg.Credentials.ServiceAccount.BearerToken == "" {
+			missingFields = append(missingFields, accessTokenKey)
+		}
+		if len(missingFields) > 0 {
+			return missingFields, false
+		}
+		return nil, true
+	}
+
+	if cfg.Credentials.APIKeys == nil {
+		return append(missingFields, publicAPIKey, privateAPIKey), false
 	}
 
 	if cfg.Credentials.APIKeys.PublicKey == "" {

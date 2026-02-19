@@ -48,6 +48,7 @@ import (
 const instanceNotFound = "STREAM_TENANT_NOT_FOUND_FOR_NAME"
 
 type AtlasStreamsInstanceReconciler struct {
+	reconciler.AtlasReconciler
 	Client                      client.Client
 	Scheme                      *runtime.Scheme
 	GlobalPredicates            []predicate.Predicate

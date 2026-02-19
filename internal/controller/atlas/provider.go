@@ -62,16 +62,23 @@ type ConnectionConfig struct {
 }
 
 // Credentials is the type that holds credentials to authenticate against the Atlas API.
-// Currently, only API keys are support but more credential types could be added,
-// see https://www.mongodb.com/docs/atlas/configure-api-access/.
+// Either APIKeys or ServiceAccount must be set, but not both.
+// See https://www.mongodb.com/docs/atlas/configure-api-access/.
 type Credentials struct {
-	APIKeys *APIKeys
+	APIKeys        *APIKeys
+	ServiceAccount *ServiceAccountToken
 }
 
 // APIKeys is the type that holds Public/Private API keys to authenticate against the Atlas API.
 type APIKeys struct {
 	PublicKey  string
 	PrivateKey string
+}
+
+// ServiceAccountToken holds a pre-fetched OAuth2 bearer token obtained
+// by the service-account controller via the client credentials flow.
+type ServiceAccountToken struct {
+	BearerToken string
 }
 
 func NewProductionProvider(atlasDomain string, dryRun, isLogInDebug bool) *ProductionProvider {
@@ -123,8 +130,17 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 }
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
-	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
-	transport = p.newTransport(transport, log)
+	var baseTransport http.RoundTripper
+	switch {
+	case creds.ServiceAccount != nil:
+		baseTransport = &bearerTokenTransport{token: creds.ServiceAccount.BearerToken}
+	case creds.APIKeys != nil:
+		baseTransport = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
+	default:
+		return nil, fmt.Errorf("no credentials provided")
+	}
+
+	transport := p.newTransport(baseTransport, log)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 	if p.isLogInDebug {
 		log.Debug("JSON payload diff is enabled for Atlas API requests (PATCH & PUT)")
@@ -144,6 +160,16 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	return &ClientSet{
 		SdkClient20250312013: clientv20250312013,
 	}, nil
+}
+
+type bearerTokenTransport struct {
+	token string
+}
+
+func (t *bearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	reqCopy := req.Clone(req.Context())
+	reqCopy.Header.Set("Authorization", "Bearer "+t.token)
+	return http.DefaultTransport.RoundTrip(reqCopy)
 }
 
 func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {

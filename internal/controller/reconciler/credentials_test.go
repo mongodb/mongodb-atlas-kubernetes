@@ -280,6 +280,109 @@ func TestResolveConnectionConfig(t *testing.T) {
 	}
 }
 
+func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("service account secret without annotation returns error", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, secret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing the atlas.mongodb.com/access-token annotation")
+	})
+
+	t.Run("service account secret with valid token", func(t *testing.T) {
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds-token-abc", Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken": []byte("bearer-token-value"),
+				"expiry":      []byte("2099-01-01T00:00:00Z"),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "sa-creds",
+				Namespace: "ns",
+				Annotations: map[string]string{
+					AccessTokenAnnotation: "sa-creds-token-abc",
+				},
+			},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		cfg, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "org-123", cfg.OrgID)
+		require.NotNil(t, cfg.Credentials.ServiceAccount)
+		assert.Equal(t, "bearer-token-value", cfg.Credentials.ServiceAccount.BearerToken)
+		assert.Nil(t, cfg.Credentials.APIKeys)
+	})
+
+	t.Run("secret with both API keys and service account is rejected", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "bad-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+				"clientId":      []byte("client-id"),
+				"clientSecret":  []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, secret)
+		ref := client.ObjectKey{Name: "bad-creds", Namespace: "ns"}
+
+		_, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "both API key and service account credentials")
+	})
+
+	t.Run("token secret with empty accessToken is rejected", func(t *testing.T) {
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds-token-abc", Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken": []byte(""),
+				"expiry":      []byte("2099-01-01T00:00:00Z"),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "sa-creds",
+				Namespace: "ns",
+				Annotations: map[string]string{
+					AccessTokenAnnotation: "sa-creds-token-abc",
+				},
+			},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "empty accessToken")
+	})
+}
+
 func TestValidateConnectionConfig(t *testing.T) {
 	t.Run("should be invalid and all missing data", func(t *testing.T) {
 		missing, ok := validate(nil)
@@ -309,6 +412,38 @@ func TestValidateConnectionConfig(t *testing.T) {
 		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
 		assert.True(t, ok)
 		assert.Empty(t, missing)
+	})
+
+	t.Run("should be valid with service account token", func(t *testing.T) {
+		missing, ok := validate(&atlas.ConnectionConfig{
+			OrgID: "some",
+			Credentials: &atlas.Credentials{
+				ServiceAccount: &atlas.ServiceAccountToken{BearerToken: "token"},
+			},
+		})
+		assert.True(t, ok)
+		assert.Empty(t, missing)
+	})
+
+	t.Run("should be invalid with service account token missing bearer", func(t *testing.T) {
+		missing, ok := validate(&atlas.ConnectionConfig{
+			OrgID: "some",
+			Credentials: &atlas.Credentials{
+				ServiceAccount: &atlas.ServiceAccountToken{},
+			},
+		})
+		assert.False(t, ok)
+		assert.Contains(t, missing, "accessToken")
+	})
+
+	t.Run("should be invalid with service account token missing orgId", func(t *testing.T) {
+		missing, ok := validate(&atlas.ConnectionConfig{
+			Credentials: &atlas.Credentials{
+				ServiceAccount: &atlas.ServiceAccountToken{BearerToken: "token"},
+			},
+		})
+		assert.False(t, ok)
+		assert.Contains(t, missing, "orgId")
 	})
 }
 
