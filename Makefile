@@ -924,15 +924,31 @@ tools/scaffolder/bin/scaffolder:
 gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
 	$(MAKE) -C tools/openapi2crd build
+ifeq ($(ENV),prod)
+ifndef CRD
+	$(error CRD is required when ENV=prod)
+endif
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
+	--output $(realpath .)/config/generated/crd/bases \
+	--multi-file \
+	$(if $(CRD),--crds $(CRD))
+else
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
+endif
 
 .PHONY: regen-crds
 regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
+ifeq ($(ENV),prod)
+	@for f in $(realpath .)/config/generated/crd/bases/*.yaml; do echo "---"; cat "$$f"; done > $(realpath .)/config/generated/crd/bases/crds.yaml
+	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
+	--output $(realpath .)/api/generated/v1
+	rm -f $(realpath .)/config/generated/crd/bases/crds.yaml
+else
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--output $(realpath .)/internal/nextapi/generated/v1
 
@@ -943,12 +959,25 @@ gen-go-types:
 	@echo "==> Generating Go models for scaffolder test Atlas CRDs..."
 	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/atlas-crds.yaml \
 	--output $(realpath .)/test/scaffolder/generated/types/v1
+endif
 
 # In order to override all of the generated versioned handler, use SCAFFOLDER_FLAGS="--all --override" make gen-all
 # In order to override a specific generated versioned handler for the Group CRD, use SCAFFOLDER_FLAGS="--kind=Group --override" make gen-all
 run-scaffolder: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(MAKE) -C tools/scaffolder build
+ifeq ($(ENV),prod)
+ifndef CRD
+	$(error CRD is required when ENV=prod)
+endif
+	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/$(shell echo $(CRD) | tr '[:upper:]' '[:lower:]')s.atlas.generated.mongodb.com.yaml \
+	$(SCAFFOLDER_FLAGS) \
+	--generators indexers,atlas-controllers \
+	--indexer-out $(realpath .)/internal/generated/indexers \
+	--controller-out $(realpath .)/internal/generated/controller \
+	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/api/generated/v1 \
+	--override
+else
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	$(SCAFFOLDER_FLAGS) \
 	--generators indexers,atlas-controllers \
@@ -972,6 +1001,7 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
 	--indexer-types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
 	--indexer-import-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/indexers
+endif
 
 gen-all: gen-crds gen-go-types run-scaffolder fmt ## Generate all CRDs, Go types, and scaffolding
 
