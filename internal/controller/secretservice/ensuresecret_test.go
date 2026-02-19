@@ -46,6 +46,42 @@ func TestAddCredentialsToConnectionURL(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "mongodb://super-user:P%40ssword%21@ia-dev-dr-test-config-00-00.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-01.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-02.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-03.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-04.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-05.vvna5x.mongo.com:27016,ia-dev-dr-test-config-00-06.vvna5x.mongo.com:27016/?ssl=true&authSource=admin", url)
 	})
+	t.Run("Empty URL returns empty string without error", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("", "user", "pass")
+		assert.NoError(t, err)
+		assert.Empty(t, url)
+	})
+	t.Run("Unsupported scheme returns error", func(t *testing.T) {
+		_, err := AddCredentialsToConnectionURL("postgres://host:5432/db", "user", "pass")
+		assert.Error(t, err)
+	})
+	t.Run("URL without path or query string", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("mongodb://host:27017", "user", "pass")
+		assert.NoError(t, err)
+		assert.Equal(t, "mongodb://user:pass@host:27017", url)
+	})
+	t.Run("SRV URL without path or query string", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("mongodb+srv://host.example.com", "user", "pass")
+		assert.NoError(t, err)
+		assert.Equal(t, "mongodb+srv://user:pass@host.example.com", url)
+	})
+	t.Run("Replaces existing credentials", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("mongodb://olduser:oldpass@host:27017/?authSource=admin", "newuser", "newpass")
+		assert.NoError(t, err)
+		assert.Equal(t, "mongodb://newuser:newpass@host:27017/?authSource=admin", url)
+	})
+	t.Run("Idempotent - applying twice gives the same result", func(t *testing.T) {
+		first, err := AddCredentialsToConnectionURL("mongodb://host:27017/?authSource=admin", "user", "p@ss!")
+		assert.NoError(t, err)
+		second, err := AddCredentialsToConnectionURL(first, "user", "p@ss!")
+		assert.NoError(t, err)
+		assert.Equal(t, first, second)
+	})
+	t.Run("Special characters in username are percent-encoded", func(t *testing.T) {
+		url, err := AddCredentialsToConnectionURL("mongodb://host:27017/?authSource=$external", "user@domain", "pass")
+		assert.NoError(t, err)
+		assert.Equal(t, "mongodb://user%40domain:pass@host:27017/?authSource=$external", url)
+	})
 }
 
 func TestEnsure(t *testing.T) {

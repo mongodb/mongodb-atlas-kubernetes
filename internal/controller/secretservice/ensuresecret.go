@@ -166,9 +166,8 @@ func AddCredentialsToConnectionURL(connURL, userName, password string) (string, 
 	hosts := rest[:end]
 	tail := rest[end:]
 
-	if strings.Contains(hosts, "@") {
-		parts := strings.SplitN(hosts, "@", 2)
-		hosts = parts[1]
+	if i := strings.LastIndex(hosts, "@"); i >= 0 {
+		hosts = hosts[i+1:]
 	}
 
 	userinfo := url.UserPassword(userName, password).String()
