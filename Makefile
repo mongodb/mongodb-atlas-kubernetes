@@ -492,7 +492,7 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 
 .PHONY: clean-gen-crds
 clean-gen-crds: ## Clean only generated CRD files
-	rm -f config/generated/crd/bases/crds.yaml
+	rm -f config/generated/crd/bases/crds.*yaml
 
 clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
@@ -926,8 +926,9 @@ gen-crds: tools/openapi2crd/bin/openapi2crd
 	$(MAKE) -C tools/openapi2crd build
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/crd/bases/crds.generated.yaml
-	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
+	cp $(realpath .)/config/crd/bases/crds.generated.yaml $(realpath .)/internal/generated/crds/crds.yaml
 ifdef EXPERIMENTAL
+	@echo "==> Generating experimental CRDs..."
 	$(OPENAPI2CRD) --config config/openapi2crd.experimental.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.experimental.yaml
 endif
@@ -937,7 +938,8 @@ regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
-	$(CRD2GO) --input $(realpath .)config/crd/bases/crds.generated.yaml \
+	mkdir -p $(realpath .)/api/generated/v1
+	$(CRD2GO) --input $(realpath .)/config/crd/bases/crds.generated.yaml \
 	--output $(realpath .)/api/generated/v1
 
 	@echo "==> Generating Go models for scaffolder test CRDs..."
@@ -949,6 +951,7 @@ gen-go-types:
 	--output $(realpath .)/test/scaffolder/generated/types/v1
 ifdef EXPERIMENTAL
 	@echo "==> Generating Go models from experimental CRDs..."
+	@mkdir -p $(realpath .)/internal/nextapi/generated/v1
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.experimental.yaml \
 	--output $(realpath .)/internal/nextapi/generated/v1
 endif
@@ -984,6 +987,7 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 ifdef EXPERIMENTAL
 	@echo "==> Generating Go controller experimenal scaffolding and indexers..."
 	$(MAKE) -C tools/scaffolder build
+	@mkdir -p $(realpath .)/internal/generated/experimental
 	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.experimental.yaml \
 	$(SCAFFOLDER_FLAGS) \
 	--generators indexers,atlas-controllers \
