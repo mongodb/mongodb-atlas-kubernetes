@@ -328,7 +328,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/v1/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
@@ -360,7 +360,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/v1/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
 endif
@@ -924,9 +924,13 @@ tools/scaffolder/bin/scaffolder:
 gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
 	$(MAKE) -C tools/openapi2crd build
+	@echo "==> Generating individual CRD files..."
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
-	--output $(realpath .)/config/crd/bases/crds.generated.yaml
-	cp $(realpath .)/config/crd/bases/crds.generated.yaml $(realpath .)/internal/generated/crds/crds.yaml
+	--multi-file --output $(realpath .)/config/crd/bases
+	@echo "==> Generating combined CRD file for embedding and Go types..."
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
+	--output $(realpath .)/config/generated/crd/bases/crds.yaml
+	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
 ifdef EXPERIMENTAL
 	@echo "==> Generating experimental CRDs..."
 	$(OPENAPI2CRD) --config config/openapi2crd.experimental.yaml \
@@ -939,7 +943,7 @@ regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
 	mkdir -p $(realpath .)/api/generated/v1
-	$(CRD2GO) --input $(realpath .)/config/crd/bases/crds.generated.yaml \
+	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	--output $(realpath .)/api/generated/v1
 
 	@echo "==> Generating Go models for scaffolder test CRDs..."
@@ -961,7 +965,7 @@ endif
 run-scaffolder: tools/scaffolder/bin/scaffolder
 	@echo "==> Generating Go controller scaffolding and indexers..."
 	$(MAKE) -C tools/scaffolder build
-	$(SCAFFOLDER) --input $(realpath .)/config/crd/bases/crds.generated.yaml \
+	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
 	$(SCAFFOLDER_FLAGS) \
 	--generators indexers,atlas-controllers \
 	--indexer-out $(realpath .)/internal/generated/indexers \
