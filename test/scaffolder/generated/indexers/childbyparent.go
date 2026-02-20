@@ -62,7 +62,7 @@ func (i *ChildByParentIndexer) Keys(object client.Object) []string {
 	return keys
 }
 
-//nolint:dupl
+//nolint:dupl // Generated code - similar structure to other indexer map functions
 func NewChildByParentMapFunc(kubeClient client.Client) handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		logger := log.FromContext(ctx)

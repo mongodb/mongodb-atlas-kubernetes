@@ -10,7 +10,7 @@ import (
 var (
 	// GroupVersion is group version used to register these objects
 	GroupVersion = schema.GroupVersion{
-		Group:   "atlas.generated.experimental.mongodb.com",
+		Group:   "atlas.generated.mongodb.com",
 		Version: "v1",
 	}
 

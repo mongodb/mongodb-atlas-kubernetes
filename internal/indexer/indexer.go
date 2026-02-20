@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	connectionsecretindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
-	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
