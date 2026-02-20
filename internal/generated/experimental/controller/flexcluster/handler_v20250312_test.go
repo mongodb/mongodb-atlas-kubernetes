@@ -15,9 +15,12 @@
 package flexcluster_test
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/crd2go/crd2go/k8s"
@@ -28,6 +31,7 @@ import (
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
 	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,8 +39,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/flexcluster"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -942,6 +946,12 @@ type testFixture struct {
 
 // setupTestFixture creates a test fixture with common dependencies
 func setupTestFixture(t *testing.T) *testFixture {
+	// Skip tests if experimental CRDs file doesn't exist
+	crdPath := "../../../../config/generated/crd/bases/crds.experimental.yaml"
+	if _, err := os.Stat(crdPath); os.IsNotExist(err) {
+		t.Skipf("Skipping test: experimental CRDs file does not exist at %q. Run 'EXPERIMENTAL=1 make gen-crds' to generate it", crdPath)
+	}
+
 	fixture := &testFixture{
 		scheme: createTestScheme(t),
 	}
@@ -989,11 +999,37 @@ func setGroupRef(flexCluster *akov2generated.FlexCluster, groupRef string) *akov
 	return flexCluster
 }
 
-func translatorFromEmbeddedCRD(scheme *runtime.Scheme, kind, apiVersion, majorVersion string) (crapi.Translator, error) {
-	crd, err := crds.EmbeddedCRD(kind)
+// loadExperimentalCRD loads a CRD from the experimental CRDs file.
+// Path relative to this test file: internal/generated/experimental/controller/flexcluster/
+// Target: config/generated/crd/bases/crds.experimental.yaml
+func loadExperimentalCRD(kind string) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crdPath := "../../../../config/generated/crd/bases/crds.experimental.yaml"
+
+	data, err := os.ReadFile(crdPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get embedded CRD for %s: %w", kind, err)
+		return nil, fmt.Errorf("failed to read experimental CRDs file: %w", err)
 	}
+
+	parsed, err := crds.ParseCRDs(bufio.NewScanner(bytes.NewBuffer(data)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse experimental CRDs: %w", err)
+	}
+
+	for _, c := range parsed {
+		if c.Spec.Names.Kind == kind {
+			return c, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find CRD %q in experimental CRDs file", kind)
+}
+
+func translatorFromEmbeddedCRD(scheme *runtime.Scheme, kind, apiVersion, majorVersion string) (crapi.Translator, error) {
+	crd, err := loadExperimentalCRD(kind)
+	if err != nil {
+		return nil, err
+	}
+
 	tr, err := crapi.NewTranslator(scheme, crd, apiVersion, majorVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get translator for %s: %w", kind, err)

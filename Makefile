@@ -328,7 +328,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/v1/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
@@ -360,7 +360,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/v1/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
 endif
@@ -492,7 +492,7 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 
 .PHONY: clean-gen-crds
 clean-gen-crds: ## Clean only generated CRD files
-	rm -f config/generated/crd/bases/crds.yaml
+	rm -f config/generated/crd/bases/crds.*yaml
 
 clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
@@ -924,17 +924,27 @@ tools/scaffolder/bin/scaffolder:
 gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
 	$(MAKE) -C tools/openapi2crd build
+	@echo "==> Generating individual CRD files..."
+	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
+	--multi-file --output $(realpath .)/config/crd/bases
+	@echo "==> Generating combined CRD file for embedding and Go types..."
 	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
+ifdef EXPERIMENTAL
+	@echo "==> Generating experimental CRDs..."
+	$(OPENAPI2CRD) --config config/openapi2crd.experimental.yaml \
+	--output $(realpath .)/config/generated/crd/bases/crds.experimental.yaml
+endif
 
 .PHONY: regen-crds
 regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
+	mkdir -p $(realpath .)/api/generated/v1
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--output $(realpath .)/internal/nextapi/generated/v1
+	--output $(realpath .)/api/generated/v1
 
 	@echo "==> Generating Go models for scaffolder test CRDs..."
 	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/crds.yaml \
@@ -943,6 +953,12 @@ gen-go-types:
 	@echo "==> Generating Go models for scaffolder test Atlas CRDs..."
 	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/atlas-crds.yaml \
 	--output $(realpath .)/test/scaffolder/generated/types/v1
+ifdef EXPERIMENTAL
+	@echo "==> Generating Go models from experimental CRDs..."
+	@mkdir -p $(realpath .)/internal/nextapi/generated/v1
+	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.experimental.yaml \
+	--output $(realpath .)/internal/nextapi/generated/v1
+endif
 
 # In order to override all of the generated versioned handler, use SCAFFOLDER_FLAGS="--all --override" make gen-all
 # In order to override a specific generated versioned handler for the Group CRD, use SCAFFOLDER_FLAGS="--kind=Group --override" make gen-all
@@ -972,6 +988,17 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
 	--indexer-types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1 \
 	--indexer-import-path github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/indexers
+ifdef EXPERIMENTAL
+	@echo "==> Generating Go controller experimenal scaffolding and indexers..."
+	$(MAKE) -C tools/scaffolder build
+	@mkdir -p $(realpath .)/internal/generated/experimental
+	$(SCAFFOLDER) --input $(realpath .)/config/generated/crd/bases/crds.experimental.yaml \
+	$(SCAFFOLDER_FLAGS) \
+	--generators indexers,atlas-controllers \
+	--indexer-out $(realpath .)/internal/generated/experimental/indexers \
+	--controller-out $(realpath .)/internal/generated/experimental/controller \
+	--exporter-out $(realpath .)/internal/generated/experimental/exporter
+endif
 
 gen-all: gen-crds gen-go-types run-scaffolder fmt ## Generate all CRDs, Go types, and scaffolding
 

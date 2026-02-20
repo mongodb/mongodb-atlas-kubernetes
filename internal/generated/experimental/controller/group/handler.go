@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package databaseuser
+package group
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
-	handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -38,16 +34,16 @@ import (
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
-func (h *Handler) getHandlerForResource(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.StateHandler[akov2generated.DatabaseUser], error) {
-	atlasClients, err := h.getSDKClientSet(ctx, databaseuser)
+func (h *Handler) getHandlerForResource(ctx context.Context, group *akov2generated.Group) (ctrlstate.StateHandler[akov2generated.Group], error) {
+	atlasClients, err := h.getSDKClientSet(ctx, group)
 	if err != nil {
 		return nil, err
 	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
-	var selectedHandler ctrlstate.StateHandler[akov2generated.DatabaseUser]
+	var selectedHandler ctrlstate.StateHandler[akov2generated.Group]
 
-	if databaseuser.Spec.V20250312 != nil {
+	if group.Spec.V20250312 != nil {
 		translator, ok := h.translators["v20250312"]
 		if ok != true {
 			return nil, errors.New("unsupported version v20250312 set in CR")
@@ -66,103 +62,103 @@ func (h *Handler) getHandlerForResource(ctx context.Context, databaseuser *akov2
 }
 
 // HandleInitial delegates to the version-specific handler
-func (h *Handler) HandleInitial(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleInitial(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateInitial, err)
 	}
-	return handler.HandleInitial(ctx, databaseuser)
+	return handler.HandleInitial(ctx, group)
 }
 
 // HandleImportRequested delegates to the version-specific handler
-func (h *Handler) HandleImportRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateImportRequested, err)
 	}
-	return handler.HandleImportRequested(ctx, databaseuser)
+	return handler.HandleImportRequested(ctx, group)
 }
 
 // HandleImported delegates to the version-specific handler
-func (h *Handler) HandleImported(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleImported(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateImported, err)
 	}
-	return handler.HandleImported(ctx, databaseuser)
+	return handler.HandleImported(ctx, group)
 }
 
 // HandleCreating delegates to the version-specific handler
-func (h *Handler) HandleCreating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleCreating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateCreating, err)
 	}
-	return handler.HandleCreating(ctx, databaseuser)
+	return handler.HandleCreating(ctx, group)
 }
 
 // HandleCreated delegates to the version-specific handler
-func (h *Handler) HandleCreated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleCreated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateCreated, err)
 	}
-	return handler.HandleCreated(ctx, databaseuser)
+	return handler.HandleCreated(ctx, group)
 }
 
 // HandleUpdating delegates to the version-specific handler
-func (h *Handler) HandleUpdating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleUpdating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateUpdating, err)
 	}
-	return handler.HandleUpdating(ctx, databaseuser)
+	return handler.HandleUpdating(ctx, group)
 }
 
 // HandleUpdated delegates to the version-specific handler
-func (h *Handler) HandleUpdated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleUpdated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateUpdated, err)
 	}
-	return handler.HandleUpdated(ctx, databaseuser)
+	return handler.HandleUpdated(ctx, group)
 }
 
 // HandleDeletionRequested delegates to the version-specific handler
-func (h *Handler) HandleDeletionRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateDeletionRequested, err)
 	}
-	return handler.HandleDeletionRequested(ctx, databaseuser)
+	return handler.HandleDeletionRequested(ctx, group)
 }
 
 // HandleDeleting delegates to the version-specific handler
-func (h *Handler) HandleDeleting(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, databaseuser)
+func (h *Handler) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
 		return result.Error(state.StateDeleting, err)
 	}
-	return handler.HandleDeleting(ctx, databaseuser)
+	return handler.HandleDeleting(ctx, group)
 }
 
 // For returns the resource and predicates for the controller
 func (h *Handler) For() (client.Object, builder.Predicates) {
-	obj := &akov2generated.DatabaseUser{}
+	obj := &akov2generated.Group{}
 	return obj, builder.WithPredicates(h.predicates...)
 }
 func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	return controllerruntime.NewControllerManagedBy(mgr).Named("DatabaseUser").For(h.For()).Watches(&v1.Secret{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserBySecretMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewDatabaseUserByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
+	return controllerruntime.NewControllerManagedBy(mgr).Named("Group").For(h.For()).WithOptions(defaultOptions).Complete(rec)
 }
 
 // getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret
-func (h *Handler) getSDKClientSet(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (*atlas.ClientSet, error) {
+func (h *Handler) getSDKClientSet(ctx context.Context, group *akov2generated.Group) (*atlas.ClientSet, error) {
 	var connectionSecretRef *client.ObjectKey
-	if databaseuser.Spec.ConnectionSecretRef != nil {
+	if group.Spec.ConnectionSecretRef != nil {
 		connectionSecretRef = &client.ObjectKey{
-			Name:      databaseuser.Spec.ConnectionSecretRef.Name,
-			Namespace: databaseuser.Namespace,
+			Name:      group.Spec.ConnectionSecretRef.Name,
+			Namespace: group.Namespace,
 		}
 	}
 

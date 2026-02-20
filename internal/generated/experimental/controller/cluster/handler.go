@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flexcluster
+package cluster
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -37,16 +37,16 @@ import (
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
-func (h *Handler) getHandlerForResource(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.StateHandler[akov2generated.FlexCluster], error) {
-	atlasClients, err := h.getSDKClientSet(ctx, flexcluster)
+func (h *Handler) getHandlerForResource(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.StateHandler[akov2generated.Cluster], error) {
+	atlasClients, err := h.getSDKClientSet(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
-	var selectedHandler ctrlstate.StateHandler[akov2generated.FlexCluster]
+	var selectedHandler ctrlstate.StateHandler[akov2generated.Cluster]
 
-	if flexcluster.Spec.V20250312 != nil {
+	if cluster.Spec.V20250312 != nil {
 		translator, ok := h.translators["v20250312"]
 		if ok != true {
 			return nil, errors.New("unsupported version v20250312 set in CR")
@@ -65,103 +65,103 @@ func (h *Handler) getHandlerForResource(ctx context.Context, flexcluster *akov2g
 }
 
 // HandleInitial delegates to the version-specific handler
-func (h *Handler) HandleInitial(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleInitial(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateInitial, err)
 	}
-	return handler.HandleInitial(ctx, flexcluster)
+	return handler.HandleInitial(ctx, cluster)
 }
 
 // HandleImportRequested delegates to the version-specific handler
-func (h *Handler) HandleImportRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleImportRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateImportRequested, err)
 	}
-	return handler.HandleImportRequested(ctx, flexcluster)
+	return handler.HandleImportRequested(ctx, cluster)
 }
 
 // HandleImported delegates to the version-specific handler
-func (h *Handler) HandleImported(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleImported(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateImported, err)
 	}
-	return handler.HandleImported(ctx, flexcluster)
+	return handler.HandleImported(ctx, cluster)
 }
 
 // HandleCreating delegates to the version-specific handler
-func (h *Handler) HandleCreating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleCreating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateCreating, err)
 	}
-	return handler.HandleCreating(ctx, flexcluster)
+	return handler.HandleCreating(ctx, cluster)
 }
 
 // HandleCreated delegates to the version-specific handler
-func (h *Handler) HandleCreated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleCreated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateCreated, err)
 	}
-	return handler.HandleCreated(ctx, flexcluster)
+	return handler.HandleCreated(ctx, cluster)
 }
 
 // HandleUpdating delegates to the version-specific handler
-func (h *Handler) HandleUpdating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleUpdating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateUpdating, err)
 	}
-	return handler.HandleUpdating(ctx, flexcluster)
+	return handler.HandleUpdating(ctx, cluster)
 }
 
 // HandleUpdated delegates to the version-specific handler
-func (h *Handler) HandleUpdated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleUpdated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateUpdated, err)
 	}
-	return handler.HandleUpdated(ctx, flexcluster)
+	return handler.HandleUpdated(ctx, cluster)
 }
 
 // HandleDeletionRequested delegates to the version-specific handler
-func (h *Handler) HandleDeletionRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleDeletionRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateDeletionRequested, err)
 	}
-	return handler.HandleDeletionRequested(ctx, flexcluster)
+	return handler.HandleDeletionRequested(ctx, cluster)
 }
 
 // HandleDeleting delegates to the version-specific handler
-func (h *Handler) HandleDeleting(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	handler, err := h.getHandlerForResource(ctx, flexcluster)
+func (h *Handler) HandleDeleting(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+	handler, err := h.getHandlerForResource(ctx, cluster)
 	if err != nil {
 		return result.Error(state.StateDeleting, err)
 	}
-	return handler.HandleDeleting(ctx, flexcluster)
+	return handler.HandleDeleting(ctx, cluster)
 }
 
 // For returns the resource and predicates for the controller
 func (h *Handler) For() (client.Object, builder.Predicates) {
-	obj := &akov2generated.FlexCluster{}
+	obj := &akov2generated.Cluster{}
 	return obj, builder.WithPredicates(h.predicates...)
 }
 func (h *Handler) SetupWithManager(mgr controllerruntime.Manager, rec reconcile.Reconciler, defaultOptions controller.Options) error {
 	h.Client = mgr.GetClient()
-	return controllerruntime.NewControllerManagedBy(mgr).Named("FlexCluster").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewFlexClusterByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
+	return controllerruntime.NewControllerManagedBy(mgr).Named("Cluster").For(h.For()).Watches(&akov2generated.Group{}, handler.EnqueueRequestsFromMapFunc(indexers.NewClusterByGroupMapFunc(h.Client)), builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).WithOptions(defaultOptions).Complete(rec)
 }
 
 // getSDKClientSet creates an Atlas SDK client set using credentials from the resource's connection secret
-func (h *Handler) getSDKClientSet(ctx context.Context, flexcluster *akov2generated.FlexCluster) (*atlas.ClientSet, error) {
+func (h *Handler) getSDKClientSet(ctx context.Context, cluster *akov2generated.Cluster) (*atlas.ClientSet, error) {
 	var connectionSecretRef *client.ObjectKey
-	if flexcluster.Spec.ConnectionSecretRef != nil {
+	if cluster.Spec.ConnectionSecretRef != nil {
 		connectionSecretRef = &client.ObjectKey{
-			Name:      flexcluster.Spec.ConnectionSecretRef.Name,
-			Namespace: flexcluster.Namespace,
+			Name:      cluster.Spec.ConnectionSecretRef.Name,
+			Namespace: cluster.Namespace,
 		}
 	}
 
