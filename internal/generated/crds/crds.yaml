@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:
@@ -229,7 +229,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   creationTimestamp: null
   name: clusters.atlas.generated.mongodb.com
 spec:
@@ -281,6 +281,19 @@ spec:
               v20250312:
                 description: The spec of the cluster resource for version v20250312.
                 properties:
+                  Use-Effective-Fields-Replication-Specs:
+                    description: Controls how `replicationSpecs` fields are returned
+                      in the response. When set to `true`, stores the client's view
+                      of `replicationSpecs` and returns it in `replicationSpecs`,
+                      while the actual cluster state (including auto-scaled hardware
+                      and auto-added shards) is returned in `effectiveReplicationSpecs`.
+                      When `false` (default), `replicationSpecs` contains the actual
+                      cluster state.
+                    type: boolean
+                    x-kubernetes-validations:
+                    - message: Use-Effective-Fields-Replication-Specs cannot be modified
+                        after creation
+                      rule: self == oldSelf
                   entry:
                     description: The entry fields of the cluster resource spec. These
                       fields can be set for creating and updating clusters.
@@ -294,7 +307,7 @@ spec:
                           loss if replicated writes (even majority committed writes)
                           have not been replicated to the new primary node. MongoDB
                           Atlas docs contain more information. To proceed with an
-                          operation which carries that risk, set **acceptDataRisksAndForceReplicaSetReconfig**
+                          operation which carries that risk, set `acceptDataRisksAndForceReplicaSetReconfig`
                           to the current date. This parameter expresses its value
                           in the ISO 8601 timestamp format in UTC.
                         type: string
@@ -361,12 +374,12 @@ spec:
                         description: Configuration of nodes that comprise the cluster.
                         type: string
                       configServerManagementMode:
-                        description: |-
-                          Config Server Management Mode for creating or updating a sharded cluster.
-
-                          When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
-
-                          When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
+                        description: Config Server Management Mode for creating or
+                          updating a sharded cluster. When configured as `ATLAS_MANAGED`,
+                          Atlas may automatically switch the cluster's config server
+                          type for optimal performance and savings. When configured
+                          as `FIXED_TO_DEDICATED`, the cluster will always use a dedicated
+                          config server.
                         type: string
                       configServerType:
                         description: Describes a sharded cluster's config server type.
@@ -374,11 +387,592 @@ spec:
                       diskWarmingMode:
                         description: Disk warming mode selection.
                         type: string
+                      effectiveReplicationSpecs:
+                        description: List of settings that represent the actual cluster
+                          state. This is read-only and always returned in the response.
+                          It reflects the current cluster configuration, which may
+                          differ from `replicationSpecs` due to system-managed changes.
+                        items:
+                          description: Details that explain how MongoDB Cloud replicates
+                            data on the specified MongoDB database.
+                          properties:
+                            id:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies the replication object for a shard in a
+                                Cluster. If you include existing shard replication
+                                configurations in the request, you must specify this
+                                parameter. If you add a new shard to an existing Cluster,
+                                you may specify this parameter. The request deletes
+                                any existing shards  in the Cluster that you exclude
+                                from the request. This corresponds to Shard ID displayed
+                                in the UI.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
+                            regionConfigs:
+                              description: |-
+                                Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
+
+                                **Example:**
+
+                                If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
+                              items:
+                                description: Cloud service provider on which MongoDB
+                                  Cloud provisions the hosts.
+                                properties:
+                                  analyticsAutoScaling:
+                                    description: Options that determine how this cluster
+                                      handles resource scaling.
+                                    properties:
+                                      compute:
+                                        description: Options that determine how this
+                                          cluster handles CPU scaling.
+                                        properties:
+                                          enabled:
+                                            description: |-
+                                              Flag that indicates whether instance size reactive auto-scaling is enabled.
+
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
+                                              - Set to `false` to disable instance size reactive auto-scaling.
+                                            type: boolean
+                                          maxInstanceSize:
+                                            description: Instance size boundary to
+                                              which your cluster can automatically
+                                              scale.
+                                            type: string
+                                          minInstanceSize:
+                                            description: Instance size boundary to
+                                              which your cluster can automatically
+                                              scale.
+                                            type: string
+                                          scaleDownEnabled:
+                                            description: Flag that indicates whether
+                                              the instance size may scale down via
+                                              reactive auto-scaling. MongoDB Cloud
+                                              requires this parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
+                                              is `true`. If you enable this option,
+                                              specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
+                                            type: boolean
+                                        title: Automatic Compute Scaling Settings
+                                        type: object
+                                      diskGB:
+                                        description: Setting that enables disk auto-scaling.
+                                        properties:
+                                          enabled:
+                                            description: Flag that indicates whether
+                                              this cluster enables disk auto-scaling.
+                                              The maximum memory allowed for the selected
+                                              cluster tier and the oplog size can
+                                              limit storage auto-scaling.
+                                            type: boolean
+                                        type: object
+                                    title: Automatic Scaling Settings
+                                    type: object
+                                  analyticsSpecs:
+                                    description: The current hardware specifications
+                                      for read only nodes in the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
+                                        title: GCP Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  autoScaling:
+                                    description: Options that determine how this cluster
+                                      handles resource scaling.
+                                    properties:
+                                      compute:
+                                        description: Options that determine how this
+                                          cluster handles CPU scaling.
+                                        properties:
+                                          enabled:
+                                            description: |-
+                                              Flag that indicates whether instance size reactive auto-scaling is enabled.
+
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
+                                              - Set to `false` to disable instance size reactive auto-scaling.
+                                            type: boolean
+                                          maxInstanceSize:
+                                            description: Instance size boundary to
+                                              which your cluster can automatically
+                                              scale.
+                                            type: string
+                                          minInstanceSize:
+                                            description: Instance size boundary to
+                                              which your cluster can automatically
+                                              scale.
+                                            type: string
+                                          scaleDownEnabled:
+                                            description: Flag that indicates whether
+                                              the instance size may scale down via
+                                              reactive auto-scaling. MongoDB Cloud
+                                              requires this parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
+                                              is `true`. If you enable this option,
+                                              specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
+                                            type: boolean
+                                        title: Automatic Compute Scaling Settings
+                                        type: object
+                                      diskGB:
+                                        description: Setting that enables disk auto-scaling.
+                                        properties:
+                                          enabled:
+                                            description: Flag that indicates whether
+                                              this cluster enables disk auto-scaling.
+                                              The maximum memory allowed for the selected
+                                              cluster tier and the oplog size can
+                                              limit storage auto-scaling.
+                                            type: boolean
+                                        type: object
+                                    title: Automatic Scaling Settings
+                                    type: object
+                                  backingProviderName:
+                                    description: "Cloud service provider on which
+                                      MongoDB Cloud provisioned the multi-tenant cluster.
+                                      The resource returns this parameter when `providerName`
+                                      is `TENANT` and `electableSpecs.instanceSize`
+                                      is `M0`, `M2` or `M5`. \n\nPlease note that
+                                      \ using an `instanceSize` of `M2` or `M5` will
+                                      create a Flex cluster instead. Support for the
+                                      `instanceSize` of `M2` or `M5` will be discontinued
+                                      in January 2026. We recommend using the Create
+                                      Flex Cluster API for such configurations moving
+                                      forward."
+                                    type: string
+                                  effectiveAnalyticsSpecs:
+                                    description: The current hardware specifications
+                                      for read only nodes in the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
+                                        title: GCP Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  effectiveElectableSpecs:
+                                    description: The current hardware specifications
+                                      for read only nodes in the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
+                                        title: GCP Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  effectiveReadOnlySpecs:
+                                    description: The current hardware specifications
+                                      for read only nodes in the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
+                                        title: GCP Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  electableSpecs:
+                                    description: Hardware specifications for all electable
+                                      nodes deployed in the region. Electable nodes
+                                      can become the primary and can enable local
+                                      reads. If you don't specify this option, MongoDB
+                                      Cloud deploys no electable nodes to the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      effectiveInstanceSize:
+                                        description: The true tenant instance size.
+                                          This is present to support backwards compatibility
+                                          for deprecated provider types and/or instance
+                                          sizes.
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instances in this M0/M2/M5 tier cluster.
+                                        title: Tenant Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  priority:
+                                    description: |-
+                                      Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
+
+                                      **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
+                                    type: integer
+                                  providerName:
+                                    description: Cloud service provider on which MongoDB
+                                      Cloud provisions the hosts. Set dedicated clusters
+                                      to `AWS`, `GCP`, `AZURE` or `TENANT`.
+                                    type: string
+                                  readOnlySpecs:
+                                    description: The current hardware specifications
+                                      for read only nodes in the region.
+                                    properties:
+                                      diskIOPS:
+                                        description: |-
+                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          Changing this value impacts cluster cost.
+                                        type: integer
+                                      diskSizeGB:
+                                        description: "Storage capacity of instance
+                                          data volumes expressed in gigabytes. Increase
+                                          this number to add capacity.\n\n This value
+                                          must be equal for all shards and node types.\n\n
+                                          This value is not configurable on M0/M2/M5
+                                          clusters.\n\n MongoDB Cloud requires this
+                                          parameter if you set `replicationSpecs`.\n\n
+                                          If you specify a disk size below the minimum
+                                          (10 GB), this parameter defaults to the
+                                          minimum disk size value. \n\n Storage charge
+                                          calculations depend on whether you choose
+                                          the default value or a custom value.\n\n
+                                          The maximum value for disk storage cannot
+                                          exceed 50 times the maximum RAM for the
+                                          selected cluster. If you require more storage
+                                          space, consider upgrading your cluster to
+                                          a higher tier."
+                                        type: number
+                                      ebsVolumeType:
+                                        description: "Type of storage you want to
+                                          attach to your AWS-provisioned cluster.\n\n-
+                                          `STANDARD` volume types can't exceed the
+                                          default input/output operations per second
+                                          (IOPS) rate for the selected volume size.
+                                          \n\n- `PROVISIONED` volume types must fall
+                                          within the allowable IOPS range for the
+                                          selected volume size. You must set this
+                                          value to (`PROVISIONED`) for NVMe clusters."
+                                        type: string
+                                      instanceSize:
+                                        description: Hardware specification for the
+                                          instance sizes in this region in this shard.
+                                          Each instance size has a default storage
+                                          and memory capacity. Electable nodes and
+                                          read-only nodes (known as "base nodes")
+                                          within a single shard must use the same
+                                          instance size. Analytics nodes can scale
+                                          independently from base nodes within a shard.
+                                          Both base nodes and analytics nodes can
+                                          scale independently from their equivalents
+                                          in other shards.
+                                        title: GCP Instance Sizes
+                                        type: string
+                                      nodeCount:
+                                        description: Number of nodes of the given
+                                          type for MongoDB Cloud to deploy to the
+                                          region.
+                                        type: integer
+                                    type: object
+                                  regionName:
+                                    description: Physical location of your MongoDB
+                                      cluster nodes. The region you choose can affect
+                                      network latency for clients accessing your databases.
+                                      The region name is only returned in the response
+                                      for single-region clusters. When MongoDB Cloud
+                                      deploys a dedicated cluster, it checks if a
+                                      VPC or VPC connection exists for that provider
+                                      and region. If not, MongoDB Cloud creates them
+                                      as part of the deployment. It assigns the VPC
+                                      a Classless Inter-Domain Routing (CIDR) block.
+                                      To limit a new VPC peering connection to one
+                                      Classless Inter-Domain Routing (CIDR) block
+                                      and region, create the connection first. Deploy
+                                      the cluster after the connection starts. GCP
+                                      Clusters and Multi-region clusters require one
+                                      VPC peering connection for each region. MongoDB
+                                      nodes can use only the peering connection that
+                                      resides in the same region as the nodes to communicate
+                                      with the peered VPC.
+                                    type: string
+                                title: Cloud Service Provider Settings
+                                type: object
+                              type: array
+                            zoneId:
+                              description: Unique 24-hexadecimal digit string that
+                                identifies the zone in a Global Cluster. This value
+                                can be used to configure Global Cluster backup policies.
+                              example: 32b6e34b3d91647abb20e7b8
+                              type: string
+                            zoneName:
+                              description: 'Human-readable label that describes the
+                                zone this shard belongs to in a Global Cluster. Provide
+                                this value only if `clusterType` : `GEOSHARDED` but
+                                not `selfManagedSharding` : `true`.'
+                              type: string
+                          title: Replication Specifications
+                          type: object
+                        type: array
                       encryptionAtRestProvider:
                         description: 'Cloud service provider that manages your customer
                           keys to provide an additional layer of encryption at rest
                           for the cluster. To enable customer key management for encryption
-                          at rest, the cluster **replicationSpecs[n].regionConfigs[m].{type}Specs.instanceSize**
+                          at rest, the cluster `replicationSpecs[n].regionConfigs[m].{type}Specs.instanceSize`
                           setting must be `M10` or higher and `"backupEnabled" : false`
                           or omitted entirely.'
                         type: string
@@ -490,11 +1084,11 @@ spec:
                         description: |-
                           Set this field to configure the replica set scaling mode for your cluster.
 
-                          By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+                          By default, Atlas scales under `WORKLOAD_TYPE`. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
 
-                          When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+                          When configured as `SEQUENTIAL`, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
 
-                          When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+                          When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
                         type: string
                       replicationSpecs:
                         description: List of settings that configure your cluster
@@ -507,11 +1101,11 @@ spec:
                           properties:
                             regionConfigs:
                               description: |-
-                                Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+                                Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
 
                                 **Example:**
 
-                                If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+                                If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
                               items:
                                 description: Cloud service provider on which MongoDB
                                   Cloud provisions the hosts.
@@ -528,7 +1122,7 @@ spec:
                                             description: |-
                                               Flag that indicates whether instance size reactive auto-scaling is enabled.
 
-                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
                                               - Set to `false` to disable instance size reactive auto-scaling.
                                             type: boolean
                                           maxInstanceSize:
@@ -545,9 +1139,9 @@ spec:
                                             description: Flag that indicates whether
                                               the instance size may scale down via
                                               reactive auto-scaling. MongoDB Cloud
-                                              requires this parameter if **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled**
+                                              requires this parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
                                               is `true`. If you enable this option,
-                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
+                                              specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
                                             type: boolean
                                         title: Automatic Compute Scaling Settings
                                         type: object
@@ -572,10 +1166,10 @@ spec:
                                         description: |-
                                           Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                          The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
                                         type: integer
@@ -586,7 +1180,7 @@ spec:
                                           must be equal for all shards and node types.\n\n
                                           This value is not configurable on M0/M2/M5
                                           clusters.\n\n MongoDB Cloud requires this
-                                          parameter if you set **replicationSpecs**.\n\n
+                                          parameter if you set `replicationSpecs`.\n\n
                                           If you specify a disk size below the minimum
                                           (10 GB), this parameter defaults to the
                                           minimum disk size value. \n\n Storage charge
@@ -641,7 +1235,7 @@ spec:
                                             description: |-
                                               Flag that indicates whether instance size reactive auto-scaling is enabled.
 
-                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
+                                              - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
                                               - Set to `false` to disable instance size reactive auto-scaling.
                                             type: boolean
                                           maxInstanceSize:
@@ -658,9 +1252,9 @@ spec:
                                             description: Flag that indicates whether
                                               the instance size may scale down via
                                               reactive auto-scaling. MongoDB Cloud
-                                              requires this parameter if **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled**
+                                              requires this parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
                                               is `true`. If you enable this option,
-                                              specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
+                                              specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
                                             type: boolean
                                         title: Automatic Compute Scaling Settings
                                         type: object
@@ -680,14 +1274,15 @@ spec:
                                   backingProviderName:
                                     description: "Cloud service provider on which
                                       MongoDB Cloud provisioned the multi-tenant cluster.
-                                      The resource returns this parameter when **providerName**
-                                      is `TENANT` and **electableSpecs.instanceSize**
+                                      The resource returns this parameter when `providerName`
+                                      is `TENANT` and `electableSpecs.instanceSize`
                                       is `M0`, `M2` or `M5`. \n\nPlease note that
-                                      \ using an instanceSize of M2 or M5 will create
-                                      a Flex cluster instead. Support for the instanceSize
-                                      of M2 or M5 will be discontinued in January
-                                      2026. We recommend using the createFlexCluster
-                                      API for such configurations moving forward."
+                                      \ using an `instanceSize` of `M2` or `M5` will
+                                      create a Flex cluster instead. Support for the
+                                      `instanceSize` of `M2` or `M5` will be discontinued
+                                      in January 2026. We recommend using the Create
+                                      Flex Cluster API for such configurations moving
+                                      forward."
                                     type: string
                                   electableSpecs:
                                     description: Hardware specifications for all electable
@@ -700,10 +1295,10 @@ spec:
                                         description: |-
                                           Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                          The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
                                         type: integer
@@ -714,7 +1309,7 @@ spec:
                                           must be equal for all shards and node types.\n\n
                                           This value is not configurable on M0/M2/M5
                                           clusters.\n\n MongoDB Cloud requires this
-                                          parameter if you set **replicationSpecs**.\n\n
+                                          parameter if you set `replicationSpecs`.\n\n
                                           If you specify a disk size below the minimum
                                           (10 GB), this parameter defaults to the
                                           minimum disk size value. \n\n Storage charge
@@ -756,7 +1351,7 @@ spec:
                                     type: object
                                   priority:
                                     description: |-
-                                      Precedence is given to this region when a primary election occurs. If your **regionConfigs** has only **readOnlySpecs**, **analyticsSpecs**, or both, set this value to `0`. If you have multiple **regionConfigs** objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
+                                      Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
 
                                       **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
                                     type: integer
@@ -773,10 +1368,10 @@ spec:
                                         description: |-
                                           Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                          The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                          The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                           This parameter defaults to the cluster tier's standard IOPS value.
                                           Changing this value impacts cluster cost.
                                         type: integer
@@ -787,7 +1382,7 @@ spec:
                                           must be equal for all shards and node types.\n\n
                                           This value is not configurable on M0/M2/M5
                                           clusters.\n\n MongoDB Cloud requires this
-                                          parameter if you set **replicationSpecs**.\n\n
+                                          parameter if you set `replicationSpecs`.\n\n
                                           If you specify a disk size below the minimum
                                           (10 GB), this parameter defaults to the
                                           minimum disk size value. \n\n Storage charge
@@ -863,8 +1458,8 @@ spec:
                             zoneName:
                               description: 'Human-readable label that describes the
                                 zone this shard belongs to in a Global Cluster. Provide
-                                this value only if "clusterType" : "GEOSHARDED" but
-                                not "selfManagedSharding" : true.'
+                                this value only if `clusterType` : `GEOSHARDED` but
+                                not `selfManagedSharding` : `true`.'
                               type: string
                           title: Replication Specifications
                           type: object
@@ -918,7 +1513,7 @@ spec:
                       versionReleaseSystem:
                         description: Method by which the cluster maintains the MongoDB
                           versions. If value is `CONTINUOUS`, you must not specify
-                          **mongoDBMajorVersion**.
+                          `mongoDBMajorVersion`.
                         type: string
                     type: object
                   groupId:
@@ -1029,12 +1624,11 @@ spec:
                         type: string
                     type: object
                   configServerManagementMode:
-                    description: |-
-                      Config Server Management Mode for creating or updating a sharded cluster.
-
-                      When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
-
-                      When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
+                    description: Config Server Management Mode for creating or updating
+                      a sharded cluster. When configured as `ATLAS_MANAGED`, Atlas
+                      may automatically switch the cluster's config server type for
+                      optimal performance and savings. When configured as `FIXED_TO_DEDICATED`,
+                      the cluster will always use a dedicated config server.
                     type: string
                   configServerType:
                     description: Describes a sharded cluster's config server type.
@@ -1098,7 +1692,7 @@ spec:
                           connection string uses this Uniform Resource Identifier
                           (URI) format, you don't need to append the seed list or
                           change the URI if the nodes change. Use this URI format
-                          if your driver supports it. If it doesn't, use connectionStrings.private.
+                          if your driver supports it. If it doesn't, use `connectionStrings.private`.
                           For Amazon Web Services (AWS) clusters, this resource returns
                           this parameter only if you enable custom DNS.
                         type: string
@@ -1121,8 +1715,8 @@ spec:
                             endpoints:
                               description: List that contains the private endpoints
                                 through which you connect to MongoDB Cloud when you
-                                use **connectionStrings.privateEndpoint[n].connectionString**
-                                or **connectionStrings.privateEndpoint[n].srvConnectionString**.
+                                use `connectionStrings.privateEndpoint[n].connectionString`
+                                or `connectionStrings.privateEndpoint[n].srvConnectionString`.
                               items:
                                 description: Details of a private endpoint deployed
                                   for this cluster.
@@ -1155,7 +1749,7 @@ spec:
                                 change the Uniform Resource Identifier (URI) if the
                                 nodes change. Use this Uniform Resource Identifier
                                 (URI) format if your application supports it. If it
-                                doesn't, use connectionStrings.privateEndpoint[n].connectionString.
+                                doesn't, use `connectionStrings.privateEndpoint[n].connectionString`.
                               type: string
                             srvShardOptimizedConnectionString:
                               description: Private endpoint-aware connection string
@@ -1167,7 +1761,7 @@ spec:
                                 nodes change. Use this Uniform Resource Identifier
                                 (URI) format if your application and Atlas cluster
                                 supports it. If it doesn't, use and consult the documentation
-                                for connectionStrings.privateEndpoint[n].srvConnectionString.
+                                for `connectionStrings.privateEndpoint[n].srvConnectionString`.
                               type: string
                             type:
                               description: MongoDB process type to which your application
@@ -1210,6 +1804,551 @@ spec:
                     description: Date and time when MongoDB Cloud created this cluster.
                       This parameter expresses its value in ISO 8601 format in UTC.
                     type: string
+                  effectiveReplicationSpecs:
+                    description: List of settings that represent the actual cluster
+                      state. This is read-only and always returned in the response.
+                      It reflects the current cluster configuration, which may differ
+                      from `replicationSpecs` due to system-managed changes.
+                    items:
+                      description: Details that explain how MongoDB Cloud replicates
+                        data on the specified MongoDB database.
+                      properties:
+                        id:
+                          description: Unique 24-hexadecimal digit string that identifies
+                            the replication object for a shard in a Cluster. If you
+                            include existing shard replication configurations in the
+                            request, you must specify this parameter. If you add a
+                            new shard to an existing Cluster, you may specify this
+                            parameter. The request deletes any existing shards  in
+                            the Cluster that you exclude from the request. This corresponds
+                            to Shard ID displayed in the UI.
+                          example: 32b6e34b3d91647abb20e7b8
+                          type: string
+                        regionConfigs:
+                          description: |-
+                            Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
+
+                            **Example:**
+
+                            If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
+                          items:
+                            description: Cloud service provider on which MongoDB Cloud
+                              provisions the hosts.
+                            properties:
+                              analyticsAutoScaling:
+                                description: Options that determine how this cluster
+                                  handles resource scaling.
+                                properties:
+                                  compute:
+                                    description: Options that determine how this cluster
+                                      handles CPU scaling.
+                                    properties:
+                                      enabled:
+                                        description: |-
+                                          Flag that indicates whether instance size reactive auto-scaling is enabled.
+
+                                          - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
+                                          - Set to `false` to disable instance size reactive auto-scaling.
+                                        type: boolean
+                                      maxInstanceSize:
+                                        description: Instance size boundary to which
+                                          your cluster can automatically scale.
+                                        type: string
+                                      minInstanceSize:
+                                        description: Instance size boundary to which
+                                          your cluster can automatically scale.
+                                        type: string
+                                      scaleDownEnabled:
+                                        description: Flag that indicates whether the
+                                          instance size may scale down via reactive
+                                          auto-scaling. MongoDB Cloud requires this
+                                          parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
+                                          is `true`. If you enable this option, specify
+                                          a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
+                                        type: boolean
+                                    title: Automatic Compute Scaling Settings
+                                    type: object
+                                  diskGB:
+                                    description: Setting that enables disk auto-scaling.
+                                    properties:
+                                      enabled:
+                                        description: Flag that indicates whether this
+                                          cluster enables disk auto-scaling. The maximum
+                                          memory allowed for the selected cluster
+                                          tier and the oplog size can limit storage
+                                          auto-scaling.
+                                        type: boolean
+                                    type: object
+                                title: Automatic Scaling Settings
+                                type: object
+                              analyticsSpecs:
+                                description: The current hardware specifications for
+                                  read only nodes in the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instance
+                                      sizes in this region in this shard. Each instance
+                                      size has a default storage and memory capacity.
+                                      Electable nodes and read-only nodes (known as
+                                      "base nodes") within a single shard must use
+                                      the same instance size. Analytics nodes can
+                                      scale independently from base nodes within a
+                                      shard. Both base nodes and analytics nodes can
+                                      scale independently from their equivalents in
+                                      other shards.
+                                    title: GCP Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              autoScaling:
+                                description: Options that determine how this cluster
+                                  handles resource scaling.
+                                properties:
+                                  compute:
+                                    description: Options that determine how this cluster
+                                      handles CPU scaling.
+                                    properties:
+                                      enabled:
+                                        description: |-
+                                          Flag that indicates whether instance size reactive auto-scaling is enabled.
+
+                                          - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
+                                          - Set to `false` to disable instance size reactive auto-scaling.
+                                        type: boolean
+                                      maxInstanceSize:
+                                        description: Instance size boundary to which
+                                          your cluster can automatically scale.
+                                        type: string
+                                      minInstanceSize:
+                                        description: Instance size boundary to which
+                                          your cluster can automatically scale.
+                                        type: string
+                                      scaleDownEnabled:
+                                        description: Flag that indicates whether the
+                                          instance size may scale down via reactive
+                                          auto-scaling. MongoDB Cloud requires this
+                                          parameter if `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled`
+                                          is `true`. If you enable this option, specify
+                                          a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
+                                        type: boolean
+                                    title: Automatic Compute Scaling Settings
+                                    type: object
+                                  diskGB:
+                                    description: Setting that enables disk auto-scaling.
+                                    properties:
+                                      enabled:
+                                        description: Flag that indicates whether this
+                                          cluster enables disk auto-scaling. The maximum
+                                          memory allowed for the selected cluster
+                                          tier and the oplog size can limit storage
+                                          auto-scaling.
+                                        type: boolean
+                                    type: object
+                                title: Automatic Scaling Settings
+                                type: object
+                              backingProviderName:
+                                description: "Cloud service provider on which MongoDB
+                                  Cloud provisioned the multi-tenant cluster. The
+                                  resource returns this parameter when `providerName`
+                                  is `TENANT` and `electableSpecs.instanceSize` is
+                                  `M0`, `M2` or `M5`. \n\nPlease note that  using
+                                  an `instanceSize` of `M2` or `M5` will create a
+                                  Flex cluster instead. Support for the `instanceSize`
+                                  of `M2` or `M5` will be discontinued in January
+                                  2026. We recommend using the Create Flex Cluster
+                                  API for such configurations moving forward."
+                                type: string
+                              effectiveAnalyticsSpecs:
+                                description: The current hardware specifications for
+                                  read only nodes in the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instance
+                                      sizes in this region in this shard. Each instance
+                                      size has a default storage and memory capacity.
+                                      Electable nodes and read-only nodes (known as
+                                      "base nodes") within a single shard must use
+                                      the same instance size. Analytics nodes can
+                                      scale independently from base nodes within a
+                                      shard. Both base nodes and analytics nodes can
+                                      scale independently from their equivalents in
+                                      other shards.
+                                    title: GCP Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              effectiveElectableSpecs:
+                                description: The current hardware specifications for
+                                  read only nodes in the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instance
+                                      sizes in this region in this shard. Each instance
+                                      size has a default storage and memory capacity.
+                                      Electable nodes and read-only nodes (known as
+                                      "base nodes") within a single shard must use
+                                      the same instance size. Analytics nodes can
+                                      scale independently from base nodes within a
+                                      shard. Both base nodes and analytics nodes can
+                                      scale independently from their equivalents in
+                                      other shards.
+                                    title: GCP Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              effectiveReadOnlySpecs:
+                                description: The current hardware specifications for
+                                  read only nodes in the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instance
+                                      sizes in this region in this shard. Each instance
+                                      size has a default storage and memory capacity.
+                                      Electable nodes and read-only nodes (known as
+                                      "base nodes") within a single shard must use
+                                      the same instance size. Analytics nodes can
+                                      scale independently from base nodes within a
+                                      shard. Both base nodes and analytics nodes can
+                                      scale independently from their equivalents in
+                                      other shards.
+                                    title: GCP Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              electableSpecs:
+                                description: Hardware specifications for all electable
+                                  nodes deployed in the region. Electable nodes can
+                                  become the primary and can enable local reads. If
+                                  you don't specify this option, MongoDB Cloud deploys
+                                  no electable nodes to the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  effectiveInstanceSize:
+                                    description: The true tenant instance size. This
+                                      is present to support backwards compatibility
+                                      for deprecated provider types and/or instance
+                                      sizes.
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instances
+                                      in this M0/M2/M5 tier cluster.
+                                    title: Tenant Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              priority:
+                                description: |-
+                                  Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
+
+                                  **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
+                                type: integer
+                              providerName:
+                                description: Cloud service provider on which MongoDB
+                                  Cloud provisions the hosts. Set dedicated clusters
+                                  to `AWS`, `GCP`, `AZURE` or `TENANT`.
+                                type: string
+                              readOnlySpecs:
+                                description: The current hardware specifications for
+                                  read only nodes in the region.
+                                properties:
+                                  diskIOPS:
+                                    description: |-
+                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
+                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      Changing this value impacts cluster cost.
+                                    type: integer
+                                  diskSizeGB:
+                                    description: "Storage capacity of instance data
+                                      volumes expressed in gigabytes. Increase this
+                                      number to add capacity.\n\n This value must
+                                      be equal for all shards and node types.\n\n
+                                      This value is not configurable on M0/M2/M5 clusters.\n\n
+                                      MongoDB Cloud requires this parameter if you
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
+                                    type: number
+                                  ebsVolumeType:
+                                    description: "Type of storage you want to attach
+                                      to your AWS-provisioned cluster.\n\n- `STANDARD`
+                                      volume types can't exceed the default input/output
+                                      operations per second (IOPS) rate for the selected
+                                      volume size. \n\n- `PROVISIONED` volume types
+                                      must fall within the allowable IOPS range for
+                                      the selected volume size. You must set this
+                                      value to (`PROVISIONED`) for NVMe clusters."
+                                    type: string
+                                  instanceSize:
+                                    description: Hardware specification for the instance
+                                      sizes in this region in this shard. Each instance
+                                      size has a default storage and memory capacity.
+                                      Electable nodes and read-only nodes (known as
+                                      "base nodes") within a single shard must use
+                                      the same instance size. Analytics nodes can
+                                      scale independently from base nodes within a
+                                      shard. Both base nodes and analytics nodes can
+                                      scale independently from their equivalents in
+                                      other shards.
+                                    title: GCP Instance Sizes
+                                    type: string
+                                  nodeCount:
+                                    description: Number of nodes of the given type
+                                      for MongoDB Cloud to deploy to the region.
+                                    type: integer
+                                type: object
+                              regionName:
+                                description: Physical location of your MongoDB cluster
+                                  nodes. The region you choose can affect network
+                                  latency for clients accessing your databases. The
+                                  region name is only returned in the response for
+                                  single-region clusters. When MongoDB Cloud deploys
+                                  a dedicated cluster, it checks if a VPC or VPC connection
+                                  exists for that provider and region. If not, MongoDB
+                                  Cloud creates them as part of the deployment. It
+                                  assigns the VPC a Classless Inter-Domain Routing
+                                  (CIDR) block. To limit a new VPC peering connection
+                                  to one Classless Inter-Domain Routing (CIDR) block
+                                  and region, create the connection first. Deploy
+                                  the cluster after the connection starts. GCP Clusters
+                                  and Multi-region clusters require one VPC peering
+                                  connection for each region. MongoDB nodes can use
+                                  only the peering connection that resides in the
+                                  same region as the nodes to communicate with the
+                                  peered VPC.
+                                type: string
+                            title: Cloud Service Provider Settings
+                            type: object
+                          type: array
+                        zoneId:
+                          description: Unique 24-hexadecimal digit string that identifies
+                            the zone in a Global Cluster. This value can be used to
+                            configure Global Cluster backup policies.
+                          example: 32b6e34b3d91647abb20e7b8
+                          type: string
+                        zoneName:
+                          description: 'Human-readable label that describes the zone
+                            this shard belongs to in a Global Cluster. Provide this
+                            value only if `clusterType` : `GEOSHARDED` but not `selfManagedSharding`
+                            : `true`.'
+                          type: string
+                      title: Replication Specifications
+                      type: object
+                    type: array
                   featureCompatibilityVersion:
                     description: Feature compatibility version of the cluster. This
                       will always appear regardless of whether FCV is pinned.
@@ -1241,8 +2380,8 @@ spec:
                     type: string
                   internalClusterRole:
                     description: 'Internal classification of the cluster''s role.
-                      Possible values: NONE (regular user cluster), SYSTEM_CLUSTER
-                      (system cluster for backup), INTERNAL_SHADOW_CLUSTER (internal
+                      Possible values: `NONE` (regular user cluster), `SYSTEM_CLUSTER`
+                      (system cluster for backup), `INTERNAL_SHADOW_CLUSTER` (internal
                       use shadow cluster for testing).'
                     type: string
                   mongoDBEmployeeAccessGrant:
@@ -1298,11 +2437,11 @@ spec:
                     description: |-
                       Set this field to configure the replica set scaling mode for your cluster.
 
-                      By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+                      By default, Atlas scales under `WORKLOAD_TYPE`. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
 
-                      When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+                      When configured as `SEQUENTIAL`, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
 
-                      When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+                      When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
                     type: string
                   replicationSpecs:
                     description: List of settings that configure your cluster regions.
@@ -1326,11 +2465,11 @@ spec:
                           type: string
                         regionConfigs:
                           description: |-
-                            Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+                            Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
 
                             **Example:**
 
-                            If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+                            If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
                           items:
                             description: Cloud service provider on which MongoDB Cloud
                               provisions the hosts.
@@ -1343,10 +2482,10 @@ spec:
                                     description: |-
                                       Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                      The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                       This parameter defaults to the cluster tier's standard IOPS value.
                                       Changing this value impacts cluster cost.
                                     type: integer
@@ -1357,16 +2496,15 @@ spec:
                                       be equal for all shards and node types.\n\n
                                       This value is not configurable on M0/M2/M5 clusters.\n\n
                                       MongoDB Cloud requires this parameter if you
-                                      set **replicationSpecs**.\n\n If you specify
-                                      a disk size below the minimum (10 GB), this
-                                      parameter defaults to the minimum disk size
-                                      value. \n\n Storage charge calculations depend
-                                      on whether you choose the default value or a
-                                      custom value.\n\n The maximum value for disk
-                                      storage cannot exceed 50 times the maximum RAM
-                                      for the selected cluster. If you require more
-                                      storage space, consider upgrading your cluster
-                                      to a higher tier."
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
                                     type: number
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1404,10 +2542,10 @@ spec:
                                     description: |-
                                       Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                      The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                       This parameter defaults to the cluster tier's standard IOPS value.
                                       Changing this value impacts cluster cost.
                                     type: integer
@@ -1418,16 +2556,15 @@ spec:
                                       be equal for all shards and node types.\n\n
                                       This value is not configurable on M0/M2/M5 clusters.\n\n
                                       MongoDB Cloud requires this parameter if you
-                                      set **replicationSpecs**.\n\n If you specify
-                                      a disk size below the minimum (10 GB), this
-                                      parameter defaults to the minimum disk size
-                                      value. \n\n Storage charge calculations depend
-                                      on whether you choose the default value or a
-                                      custom value.\n\n The maximum value for disk
-                                      storage cannot exceed 50 times the maximum RAM
-                                      for the selected cluster. If you require more
-                                      storage space, consider upgrading your cluster
-                                      to a higher tier."
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
                                     type: number
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1465,10 +2602,10 @@ spec:
                                     description: |-
                                       Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-                                      The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+                                      The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
                                       This parameter defaults to the cluster tier's standard IOPS value.
                                       Changing this value impacts cluster cost.
                                     type: integer
@@ -1479,16 +2616,15 @@ spec:
                                       be equal for all shards and node types.\n\n
                                       This value is not configurable on M0/M2/M5 clusters.\n\n
                                       MongoDB Cloud requires this parameter if you
-                                      set **replicationSpecs**.\n\n If you specify
-                                      a disk size below the minimum (10 GB), this
-                                      parameter defaults to the minimum disk size
-                                      value. \n\n Storage charge calculations depend
-                                      on whether you choose the default value or a
-                                      custom value.\n\n The maximum value for disk
-                                      storage cannot exceed 50 times the maximum RAM
-                                      for the selected cluster. If you require more
-                                      storage space, consider upgrading your cluster
-                                      to a higher tier."
+                                      set `replicationSpecs`.\n\n If you specify a
+                                      disk size below the minimum (10 GB), this parameter
+                                      defaults to the minimum disk size value. \n\n
+                                      Storage charge calculations depend on whether
+                                      you choose the default value or a custom value.\n\n
+                                      The maximum value for disk storage cannot exceed
+                                      50 times the maximum RAM for the selected cluster.
+                                      If you require more storage space, consider
+                                      upgrading your cluster to a higher tier."
                                     type: number
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1580,7 +2716,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   creationTimestamp: null
   name: flexclusters.atlas.generated.mongodb.com
 spec:
@@ -1792,7 +2928,7 @@ spec:
                       standard:
                         description: Public connection string that you can use to
                           connect to this cluster. This connection string uses the
-                          mongodb:// protocol.
+                          `mongodb://` protocol.
                         type: string
                       standardSrv:
                         description: Public connection string that you can use to
@@ -1915,7 +3051,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   creationTimestamp: null
   name: databaseusers.atlas.generated.mongodb.com
 spec:
@@ -2024,7 +3160,7 @@ spec:
                           new database user or group authenticates with OIDC federated
                           authentication. To create a federated authentication user,
                           specify the value of USER in this field. To create a federated
-                          authentication group, specify the value of IDP_GROUP in
+                          authentication group, specify the value of `IDP_GROUP` in
                           this field.
                         type: string
                       passwordSecretRef:
@@ -2103,15 +3239,15 @@ spec:
 
                           | Authentication Method | Parameter Needed | Parameter Value | username Format |
                           |---|---|---|---|
-                          | AWS IAM | awsIAMType | ROLE | <abbr title="Amazon Resource Name">ARN</abbr> |
-                          | AWS IAM | awsIAMType | USER | <abbr title="Amazon Resource Name">ARN</abbr> |
-                          | x.509 | x509Type | CUSTOMER | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
-                          | x.509 | x509Type | MANAGED | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
-                          | LDAP | ldapAuthType | USER | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
-                          | LDAP | ldapAuthType | GROUP | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
-                          | OIDC Workforce | oidcAuthType | IDP_GROUP | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP group name |
-                          | OIDC Workload | oidcAuthType | USER | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP user name |
-                          | SCRAM-SHA | awsIAMType, x509Type, ldapAuthType, oidcAuthType | NONE | Alphanumeric string |
+                          | AWS IAM | `awsIAMType` | `ROLE` | <abbr title="Amazon Resource Name">ARN</abbr> |
+                          | AWS IAM | `awsIAMType` | `USER` | <abbr title="Amazon Resource Name">ARN</abbr> |
+                          | x.509 | `x509Type` | `CUSTOMER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | x.509 | `x509Type` | `MANAGED` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | LDAP | `ldapAuthType` | `USER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | LDAP | `ldapAuthType` | `GROUP` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+                          | OIDC Workforce | `oidcAuthType` | `IDP_GROUP` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP group name |
+                          | OIDC Workload | `oidcAuthType` | `USER` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP user name |
+                          | SCRAM-SHA | `awsIAMType`, `x509Type`, `ldapAuthType`, `oidcAuthType` | `NONE` | Alphanumeric string |
                         type: string
                       x509Type:
                         description: |-

@@ -53,7 +53,7 @@ spec:
 
   openapi:
     - name: v20250312
-      package: go.mongodb.org/atlas-sdk/v20250312013/admin
+      package: go.mongodb.org/atlas-sdk/v20250312014/admin
 
   crd:
     - gvk:
