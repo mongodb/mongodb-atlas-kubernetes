@@ -21,7 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/aws/smithy-go v1.24.0
-	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
+	github.com/crd2go/crd2go v0.0.0-20260210162247-7c6a7b5e8c94
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
@@ -46,6 +46,7 @@ require (
 	k8s.io/apiserver v0.35.1
 	k8s.io/client-go v0.35.1
 	sigs.k8s.io/controller-runtime v0.22.4
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.0
 )
 
 require (
@@ -117,7 +118,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	k8s.io/component-base v0.35.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
 
 require (

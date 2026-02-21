@@ -14,6 +14,10 @@ var (
 		Version: "v1",
 	}
 
+	// SchemeGroupVersion is an alias for GroupVersion, required by the
+	// generated apply configuration code (k8s.io/code-generator convention).
+	SchemeGroupVersion = GroupVersion
+
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
