@@ -40,10 +40,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	generatedexpv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
@@ -64,6 +65,7 @@ func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
 	akoScheme := apiruntime.NewScheme()
 	utilruntime.Must(scheme.AddToScheme(akoScheme))
 	utilruntime.Must(akov2.AddToScheme(akoScheme))
+	utilruntime.Must(generatedv1.AddToScheme(akoScheme))
 
 	config, err := parseConfiguration(fs, args)
 	if err != nil {
@@ -81,7 +83,7 @@ func Run(ctx context.Context, fs *flag.FlagSet, args []string) error {
 	setupLog := logger.Named("setup").Sugar()
 	if version.IsExperimental() {
 		setupLog.Warn("Experimental features enabled!")
-		utilruntime.Must(generatedv1.AddToScheme(akoScheme))
+		utilruntime.Must(generatedexpv1.AddToScheme(akoScheme))
 		utilruntime.Must(apiextensionsv1.AddToScheme(akoScheme))
 	}
 	setupLog.Info("starting with configuration", zap.Any("config", config), zap.Any("version", version.Version))

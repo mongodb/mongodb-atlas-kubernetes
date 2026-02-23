@@ -35,6 +35,7 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -94,6 +95,8 @@ var _ = BeforeSuite(func() {
 
 	By("Setup test dependencies", func() {
 		err := akov2.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+		err = generatedv1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 
 		// It's recommended to construct the client directly for tests

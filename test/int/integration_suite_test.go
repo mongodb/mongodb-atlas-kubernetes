@@ -40,6 +40,7 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -78,6 +79,7 @@ func TestAPIs(t *testing.T) {
 
 	utilruntime.Must(scheme.AddToScheme(scheme.Scheme))
 	utilruntime.Must(akov2.AddToScheme(scheme.Scheme))
+	utilruntime.Must(generatedv1.AddToScheme(scheme.Scheme))
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator Namespaced Integration Test Suite")

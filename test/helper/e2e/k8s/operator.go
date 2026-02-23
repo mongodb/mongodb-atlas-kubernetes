@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/collection"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
@@ -48,6 +49,7 @@ func BuildCluster(initCfg *Config) (cluster.Cluster, error) {
 	akoScheme := runtime.NewScheme()
 	utilruntime.Must(scheme.AddToScheme(akoScheme))
 	utilruntime.Must(akov2.AddToScheme(akoScheme))
+	utilruntime.Must(generatedv1.AddToScheme(akoScheme))
 
 	config := mergeConfiguration(initCfg)
 	logger := zaptest.NewLogger(
