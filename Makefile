@@ -375,7 +375,6 @@ ifneq ($(shell git ls-files -o -m --directory --exclude-standard --no-empty-dire
 	$(info Detected files that need to be committed:)
 	$(info $(shell git ls-files -o -m --directory --exclude-standard --no-empty-directory | sed -e "s/^/  /"))
 	$(info )
-	$(info $(shell git diff))
 	$(info Try running: make generate manifests api-docs)
 	$(error Check: FAILED)
 else
