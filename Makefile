@@ -361,8 +361,10 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
+	$(CONTROLLER_GEN) applyconfiguration:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
+	$(CONTROLLER_GEN) applyconfiguration:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
 endif
 	go tool -modfile=tools/toolbox/go.mod mockery
 	$(MAKE) fmt

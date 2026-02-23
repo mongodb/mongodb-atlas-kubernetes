@@ -124,8 +124,8 @@ github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f h1:Y8xYupdHxryycyPlc9Y+bSQAYZnetRJ70VMVKm5CKI0=
 github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f/go.mod h1:HlzOvOjVBOfTGSRXRyY0OiCS/3J1akRGQQpRO/7zyF4=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
-github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92 h1:qR6FxuxKcGJErELSR1MqL0MXREGEsuxjY9Rk0adXjKw=
-github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92/go.mod h1:DHvyrawrBmGhvUdcTQpe+muW4GLwLh4niAyt/xtXp/g=
+github.com/crd2go/crd2go v0.0.0-20260210162247-7c6a7b5e8c94 h1:UyrRDcCijYrcc+AiPkASvLabT3W9Q9Ew0dpXecBAcRQ=
+github.com/crd2go/crd2go v0.0.0-20260210162247-7c6a7b5e8c94/go.mod h1:WyQI5plKGx0Xz5ua6Ss+NotaoEkgSFFIaR/2P3+3TP8=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

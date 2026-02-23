@@ -49,3 +49,8 @@ plugins:
 deepCopy:
   generate: auto
   # controllerGenPath: path/to/controller-gen ## customize as needed
+
+# applyConfiguration controls the integration with controller-gen to generate apply configuration code
+applyConfiguration:
+  generate: auto
+  outputPackage: ../../applyconfiguration
