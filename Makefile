@@ -328,7 +328,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
 manifests: ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/v1/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
@@ -360,7 +360,7 @@ vet: $(TIMESTAMPS_DIR)/vet ## Run go vet against code
 
 .PHONY: generate
 generate: ${GO_SOURCES} ## Generate code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/v1/..." paths="./internal/controller/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./internal/controller/..."
 ifdef EXPERIMENTAL
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./internal/nextapi/generated/v1/..."
 endif
@@ -940,9 +940,9 @@ regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 gen-go-types:
 	@echo "==> Generating Go models from CRDs..."
-	mkdir -p $(realpath .)/api/generated/v1
+	mkdir -p $(realpath .)/generated/v1
 	$(CRD2GO) --input $(realpath .)/config/generated/crd/bases/crds.yaml \
-	--output $(realpath .)/api/generated/v1
+	--output $(realpath .)/generated/v1
 
 	@echo "==> Generating Go models for scaffolder test CRDs..."
 	$(CRD2GO) --input $(realpath .)/test/scaffolder/testdata/crds.yaml \
