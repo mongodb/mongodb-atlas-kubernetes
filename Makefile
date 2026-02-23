@@ -968,7 +968,7 @@ run-scaffolder: tools/scaffolder/bin/scaffolder
 	--generators indexers,atlas-controllers \
 	--indexer-out $(realpath .)/internal/generated/indexers \
 	--controller-out $(realpath .)/internal/generated/controller \
-	--exporter-out $(realpath .)/pkg/generated/exporter
+	--types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1
 
 	@echo "==> Generating scaffolder test exporters for Atlas CRDs..."
 	$(SCAFFOLDER) --input $(realpath .)/test/scaffolder/testdata/atlas-crds.yaml \
