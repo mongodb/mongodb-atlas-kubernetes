@@ -84,6 +84,8 @@ value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.i
 yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-v4.18" }' \
   "${REPO}/${version}"/metadata/annotations.yaml
 
+date -u > "${REPO}/${version}"/dummy-change.txt
+
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff || true
 

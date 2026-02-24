@@ -58,6 +58,9 @@ yq e -i '(.spec.install.spec.deployments[0].spec.template.spec.containers[0].ima
   "${repo}/${version}/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml"
 
 cd "${RH_COMMUNITY_OPERATORHUB_REPO_PATH}"
+
+date -u > "${repo}/${version}"/dummy-change.txt
+
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
 
