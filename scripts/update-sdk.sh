@@ -31,6 +31,6 @@ echo  "==> Updating SDK to latest major version ${LATEST_SDK_TAG}"
 go tool --modfile tools/toolbox/go.mod gomajor get --rewrite "go.mongodb.org/atlas-sdk/${CURRENT_SDK_RELEASE}" "go.mongodb.org/atlas-sdk/${LATEST_SDK_RELEASE}@${LATEST_SDK_TAG}"
 go mod tidy
 
-sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" config/openapi2crd.yaml
+sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" openapi2crd.yaml
 
 echo "Done"

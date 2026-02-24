@@ -923,15 +923,15 @@ tools/scaffolder/bin/scaffolder:
 
 gen-crds: tools/openapi2crd/bin/openapi2crd
 	@echo "==> Generating CRDs..."
-	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
+	$(OPENAPI2CRD) --config openapi2crd.yaml \
 	--multi-file --output $(realpath .)/config/crd/bases
 	@echo "==> Generating combined CRD file for embedding and Go types..."
-	$(OPENAPI2CRD) --config config/openapi2crd.yaml \
+	$(OPENAPI2CRD) --config openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
 	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
 ifdef EXPERIMENTAL
 	@echo "==> Generating experimental CRDs..."
-	$(OPENAPI2CRD) --config config/openapi2crd.experimental.yaml \
+	$(OPENAPI2CRD) --config openapi2crd.experimental.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.experimental.yaml
 endif
 

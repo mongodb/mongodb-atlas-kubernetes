@@ -174,7 +174,7 @@ The pipeline has three stages, orchestrated by `make gen-all`:
 
 **1. CRD generation (`make gen-crds`)**
 
-The `openapi2crd` tool (in `tools/openapi2crd/`) reads the Atlas OpenAPI spec and produces CRD YAML. It is configured by `config/openapi2crd.yaml`, which defines:
+The `openapi2crd` tool (in `tools/openapi2crd/`) reads the Atlas OpenAPI spec and produces CRD YAML. It is configured by `openapi2crd.yaml`, which defines:
 
 - Which OpenAPI spec version to use (e.g. `v20250312`).
 - Which CRDs to generate (Group, Cluster, FlexCluster, DatabaseUser, CustomRole, etc.), each mapped to an Atlas API path and OpenAPI schema.
