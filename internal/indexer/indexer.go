@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	connectionsecretindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
-	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
+	indexerexp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -78,10 +78,10 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 			connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
 			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
 
-			indexer.NewFlexClusterByGroupIndexer(logger),
-			indexer.NewClusterByGroupIndexer(logger),
-			indexer.NewDatabaseUserBySecretIndexer(logger),
-			indexer.NewDatabaseUserByGroupIndexer(logger),
+			indexerexp.NewFlexClusterByGroupIndexer(logger),
+			indexerexp.NewClusterByGroupIndexer(logger),
+			indexerexp.NewDatabaseUserBySecretIndexer(logger),
+			indexerexp.NewDatabaseUserByGroupIndexer(logger),
 		)
 	}
 	return Register(ctx, c, indexers...)
