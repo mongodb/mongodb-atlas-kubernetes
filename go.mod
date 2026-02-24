@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
-	github.com/aws/smithy-go v1.24.0
+	github.com/aws/smithy-go v1.24.1
 	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-logr/zapr v1.3.0
