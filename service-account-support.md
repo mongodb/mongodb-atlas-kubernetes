@@ -32,7 +32,7 @@ service-account controller for access token lifecycle management.
 sequenceDiagram
     participant User
     participant K8s as Kubernetes API
-    participant SACtrl as ServiceAccount Controller
+    participant SACtrl as ServiceAccountToken Controller
     participant SDK as Atlas SDK clientcredentials
     participant Atlas as Atlas OAuth Endpoint
     participant Reconciler as Resource Reconciler
