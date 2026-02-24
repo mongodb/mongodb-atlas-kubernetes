@@ -43,4 +43,4 @@ jobs:
           enable-cache: 'true'
 
       - name: Run all linters
-        run: devbox run -- 'make -j3 all-lints'
+        run: devbox run -- 'make all-lints'

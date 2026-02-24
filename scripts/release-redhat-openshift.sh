@@ -41,39 +41,19 @@ cleanup() {
 trap cleanup EXIT
 pushd "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}"
 
-# Fetch latest from both upstream and fork
 git fetch upstream main
-git fetch origin main
-
-# CRITICAL: Reset completely to upstream/main to ensure we're identical to upstream
-# This ensures we aren't "carrying" any old differences from our fork
-# Workflow files will match upstream exactly, so they won't show as changes
-git reset --hard upstream/main
-
-# Create branch from upstream/main state
-git checkout -B "mongodb-atlas-operator-community-${version}"
+git checkout -B "mongodb-atlas-operator-community-${version}" upstream/main
 
 # Copy operator from community-operators repo
+# Remove destination if it exists to avoid nested directory structure
+rm -rf "${openshift}"
 cp -r "${operatorhub}" "${openshift}"
 
-# CRITICAL: Ensure workflow files match upstream exactly (no diff)
-# This ensures workflow files won't be included in our commit diff
-git checkout upstream/main -- .github/ || true
-
-# Commit ONLY operator changes (workflow files are already identical to upstream, so no diff)
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
 
-# Verify that our commit only includes operator changes, not workflow files
-if git diff --name-only upstream/main HEAD | grep -q "^\.github/"; then
-	echo "WARNING: Commit includes workflow file changes. This may cause push to fail."
-	echo "Workflow files in commit:"
-	git diff --name-only upstream/main HEAD | grep "^\.github/"
-fi
-
 if [ "${RH_DRYRUN}" == "false" ]; then
-  # Push - should only push operator changes since workflow files match upstream exactly
-  git push origin "mongodb-atlas-operator-community-${version}" --force
+  git push -fu origin "mongodb-atlas-operator-community-${version}"
 else
   echo "DRYRUN Push (set RH_DRYRUN=true to push for real)"
   git push -fu --dry-run origin "mongodb-atlas-operator-community-${version}"
