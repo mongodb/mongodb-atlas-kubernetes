@@ -26,9 +26,10 @@ updates:
     labels:
       - dependencies
       - github_actions
-    github-actions-deps:
-      patterns:
-        - "*"
+    groups:
+      github-actions-deps:
+        patterns:
+          - "*"
 
   - package-ecosystem: gomod
     directory: "/tools/clean"
@@ -39,9 +40,10 @@ updates:
       - dependencies
       - tools_clean
       - go
-    tools-clean-deps:
-      patterns:
-        - "*"
+    groups:
+      tools-clean-deps:
+        patterns:
+          - "*"
 
   - package-ecosystem: gomod
     directory: "/tools/makejwt"
@@ -52,6 +54,7 @@ updates:
       - dependencies
       - tools_makejwt
       - go
-    tools-makejwt-deps:
-      patterns:
-        - "*"
+    groups:
+      tools-makejwt-deps:
+        patterns:
+          - "*"
