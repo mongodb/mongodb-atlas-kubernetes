@@ -49,9 +49,6 @@ git checkout -B "mongodb-atlas-operator-community-${version}" upstream/main
 rm -rf "${openshift}"
 cp -r "${operatorhub}" "${openshift}"
 
-REPO="${RH_COMMUNITY_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
-date -u > "${REPO}/${version}"/dummy-change.txt
-
 git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff
 
