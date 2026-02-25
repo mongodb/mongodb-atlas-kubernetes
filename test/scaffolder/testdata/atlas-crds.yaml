@@ -22,7 +22,7 @@ metadata:
               x-openapi-mapping:
                 property: $.groupId
             flexSpec:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   name: flexclusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com

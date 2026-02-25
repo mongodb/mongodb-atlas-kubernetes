@@ -23,7 +23,7 @@ metadata:
                               kind: Secret
                               resource: secrets
                               version: v1
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   name: parents.test.mongodb.com
 spec:
   group: test.mongodb.com
@@ -138,7 +138,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.parentId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   name: children.test.mongodb.com
 spec:
   group: test.mongodb.com
