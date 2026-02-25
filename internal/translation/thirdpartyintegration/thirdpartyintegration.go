@@ -38,7 +38,7 @@ type ThirdPartyIntegrationService interface {
 }
 
 func NewThirdPartyIntegrationServiceFromClientSet(clientSet *atlas.ClientSet) ThirdPartyIntegrationService {
-	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312013.ThirdPartyIntegrationsApi)
+	return NewThirdPartyIntegrationService(clientSet.SdkClientLatest.ThirdPartyIntegrationsApi)
 }
 
 func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsApi) ThirdPartyIntegrationService {

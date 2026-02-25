@@ -65,9 +65,9 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
-	dbUserService := dbuser.NewAtlasUsers(sdkClientSet.SdkClient20250312013.DatabaseUsersApi)
-	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClient20250312013.ClustersApi, sdkClientSet.SdkClient20250312013.GlobalClustersApi, sdkClientSet.SdkClient20250312013.FlexClustersApi, r.AtlasProvider.IsCloudGov())
-	atlasProject, err := r.ResolveProject(ctx.Context, sdkClientSet.SdkClient20250312013, atlasDatabaseUser)
+	dbUserService := dbuser.NewAtlasUsers(sdkClientSet.SdkClientLatest.DatabaseUsersApi)
+	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClientLatest.ClustersApi, sdkClientSet.SdkClientLatest.GlobalClustersApi, sdkClientSet.SdkClientLatest.FlexClustersApi, r.AtlasProvider.IsCloudGov())
+	atlasProject, err := r.ResolveProject(ctx.Context, sdkClientSet.SdkClientLatest, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
