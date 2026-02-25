@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312013/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312014/admin
   creationTimestamp: null
   name: groups.atlas.generated.mongodb.com
 spec:

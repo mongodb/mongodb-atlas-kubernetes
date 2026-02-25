@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312014/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
