@@ -174,7 +174,7 @@ The pipeline has three stages, orchestrated by `make gen-all`:
 
 **1. CRD generation (`make gen-crds`)**
 
-The `openapi2crd` tool (in `tools/openapi2crd/`) reads the Atlas OpenAPI spec and produces CRD YAML. It is configured by `openapi2crd.yaml`, which defines:
+The `openapi2crd` tool (in `tools/openapi2crd/`) reads the Atlas OpenAPI spec and produces CRD YAML. It is configured by `crd2go/openapi2crd.yaml`, which defines:
 
 - Which OpenAPI spec version to use (e.g. `v20250312`).
 - Which CRDs to generate (Group, Cluster, FlexCluster, DatabaseUser, CustomRole, etc.), each mapped to an Atlas API path and OpenAPI schema.
@@ -186,7 +186,7 @@ Output goes to `config/generated/crd/bases/crds.yaml` and is copied to `internal
 
 **2. Go type generation (`make gen-go-types`)**
 
-The `crd2go` tool reads the generated CRD YAML and produces Go structs into `internal/nextapi/generated/v1/`. Configuration is in `crd2go.yaml`, which controls type renames, imports, and deep copy generation. Do not edit the generated Go files by hand.
+The `crd2go` tool reads the generated CRD YAML and produces Go structs into `internal/nextapi/generated/v1/`. Configuration is in `crd2go/crd2go.yaml`, which controls type renames, imports, and deep copy generation. Do not edit the generated Go files by hand.
 
 **3. Controller and indexer scaffolding (`make run-scaffolder`)**
 

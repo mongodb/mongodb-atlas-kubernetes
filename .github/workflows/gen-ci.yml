@@ -6,14 +6,14 @@ on:
     paths:
       - 'tools/scaffolder/**'
       - 'tools/openapi2crd/**'
-      - 'openapi2crd*.yaml'
+      - 'crd2go/openapi2crd*.yaml'
       - '.github/workflows/gen-ci.yml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'tools/scaffolder/**'
       - 'tools/openapi2crd/**'
-      - 'openapi2crd*.yaml'
+      - 'crd2go/openapi2crd*.yaml'
       - '.github/workflows/gen-ci.yml'
 
 jobs:

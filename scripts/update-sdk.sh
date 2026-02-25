@@ -31,6 +31,15 @@ echo  "==> Updating SDK to latest major version ${LATEST_SDK_TAG}"
 go tool --modfile tools/toolbox/go.mod gomajor get --rewrite "go.mongodb.org/atlas-sdk/${CURRENT_SDK_RELEASE}" "go.mongodb.org/atlas-sdk/${LATEST_SDK_RELEASE}@${LATEST_SDK_TAG}"
 go mod tidy
 
-sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" openapi2crd.yaml
+CRD_CONFIGS_TO_UPDATE=(
+	"crd2go/openapi2crd.yaml"
+	"crd2go/openapi2crd.experimental.yaml"
+	"test/scaffolder/testdata/crds.yaml"
+	"test/scaffolder/testdata/atlas-crds.yaml"
+)
+for file in "${CRD_CONFIGS_TO_UPDATE[@]}"; do
+	echo "==> Updating ${file}..."
+	sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" "${file}"
+done
 
 echo "Done"
