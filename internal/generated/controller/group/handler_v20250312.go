@@ -34,6 +34,7 @@ import (
 	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
+// Handlerv20250312 is the handler for the v20250312 version of the group resource
 type Handlerv20250312 struct {
 	kubeClient         client.Client
 	atlasClient        *v20250312sdk.APIClient
@@ -41,6 +42,7 @@ type Handlerv20250312 struct {
 	deletionProtection bool
 }
 
+// NewHandlerv20250312 creates a new Handlerv20250312 handler
 func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) *Handlerv20250312 {
 	return &Handlerv20250312{
 		atlasClient:        atlasClient,
