@@ -464,10 +464,14 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 image-push: ## Push the docker image
 	$(CONTAINER_ENGINE) push ${IMG}
 
+# Kubernetes version for the local kind cluster. kind pulls kindest/node:vX.Y.Z.
+# Override with: make run-kind KIND_K8S_VERSION=v1.29.0
+KIND_K8S_VERSION ?= v1.31.0
+
 # Additional make goals
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
-	bash ./scripts/create_kind_cluster.sh;
+	KIND_K8S_VERSION=$(KIND_K8S_VERSION) bash ./scripts/create_kind_cluster.sh;
 
 .PHONY: stop-kind
 stop-kind: ## Stop the local kind cluster
@@ -971,7 +975,7 @@ ifdef EXPERIMENTAL
 endif
 	@$(MAKE) clean-combined-crds
 
-# In order to override all of the generated versioned handler, use SCAFFOLDER_FLAGS="--all --override" make gen-all
+# In order to override all of the generated versioned handlers, use SCAFFOLDER_FLAGS="--all --override" make gen-all
 # In order to override a specific generated versioned handler for the Group CRD, use SCAFFOLDER_FLAGS="--kind=Group --override" make gen-all
 run-scaffolder: tools/scaffolder/bin/scaffolder gen-combined-crds
 	@echo "==> Generating Go controller scaffolding and indexers..."

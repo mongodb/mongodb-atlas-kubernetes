@@ -2677,6 +2677,639 @@ MongoDB employee granted access level and expiration for a cluster.
       </tr></tbody>
 </table>
 
+## DatabaseUser
+<sup><sup>[↩ Parent](#atlasgeneratedmongodbcomv1 )</sup></sup>
+
+
+
+
+
+
+A databaseuser, managed by the MongoDB Kubernetes Atlas Operator.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>atlas.generated.mongodb.com/v1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>DatabaseUser</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          Specification of the databaseuser supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.v20250312.groupId) && has(self.connectionSecretRef)) || (!has(self.v20250312.groupId)): spec.connectionSecretRef must be set if spec.v20250312.groupId is set.</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          Most recently observed read-only status of the databaseuser for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec
+<sup><sup>[↩ Parent](#databaseuser)</sup></sup>
+
+
+
+Specification of the databaseuser supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#databaseuserspecconnectionsecretref">connectionSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The spec of the databaseuser resource for version v20250312.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId) && has(self.groupRef)): groupId and groupRef are mutually exclusive; only one of them can be set</li>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.connectionSecretRef
+<sup><sup>[↩ Parent](#databaseuserspec)</sup></sup>
+
+
+
+SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the secret containing the Atlas credentials.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312
+<sup><sup>[↩ Parent](#databaseuserspec)</sup></sup>
+
+
+
+The spec of the databaseuser resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#databaseuserspecv20250312entry">entry</a></b></td>
+        <td>object</td>
+        <td>
+          The entry fields of the databaseuser resource spec. These fields can be set for creating and updating databaseusers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+**NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: groupId cannot be modified after creation</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312groupref">groupRef</a></b></td>
+        <td>object</td>
+        <td>
+          A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry
+<sup><sup>[↩ Parent](#databaseuserspecv20250312)</sup></sup>
+
+
+
+The entry fields of the databaseuser resource spec. These fields can be set for creating and updating databaseusers.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>databaseName</b></td>
+        <td>string</td>
+        <td>
+          The database against which the database user authenticates. Database users must provide both a username and authentication database to log into MongoDB. If the user authenticates with AWS IAM, x.509, LDAP, or OIDC Workload this value should be `$external`. If the user authenticates with SCRAM-SHA or OIDC Workforce, this value should be `admin`.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>username</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
+
+| Authentication Method | Parameter Needed | Parameter Value | username Format |
+|---|---|---|---|
+| AWS IAM | `awsIAMType` | `ROLE` | <abbr title="Amazon Resource Name">ARN</abbr> |
+| AWS IAM | `awsIAMType` | `USER` | <abbr title="Amazon Resource Name">ARN</abbr> |
+| x.509 | `x509Type` | `CUSTOMER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| x.509 | `x509Type` | `MANAGED` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| LDAP | `ldapAuthType` | `USER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| LDAP | `ldapAuthType` | `GROUP` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| OIDC Workforce | `oidcAuthType` | `IDP_GROUP` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP group name |
+| OIDC Workload | `oidcAuthType` | `USER` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP user name |
+| SCRAM-SHA | `awsIAMType`, `x509Type`, `ldapAuthType`, `oidcAuthType` | `NONE` | Alphanumeric string |
+<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>awsIAMType</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that indicates whether the new database user authenticates with the Amazon Web Services (AWS) Identity and Access Management (IAM) credentials associated with the user or the user's role.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>deleteAfterDate</b></td>
+        <td>string</td>
+        <td>
+          Date and time when MongoDB Cloud deletes the user. This parameter expresses its value in the ISO 8601 timestamp format in UTC and can include the time zone designation. You must specify a future date that falls within one week of making the Application Programming Interface (API) request.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>description</b></td>
+        <td>string</td>
+        <td>
+          Description of this database user.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312entrylabelsindex">labels</a></b></td>
+        <td>[]object</td>
+        <td>
+          List that contains the key-value pairs for tagging and categorizing the MongoDB database user. The labels that you define do not appear in the console.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ldapAuthType</b></td>
+        <td>string</td>
+        <td>
+          Part of the Lightweight Directory Access Protocol (LDAP) record that the database uses to authenticate this database user on the LDAP host.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>oidcAuthType</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that indicates whether the new database user or group authenticates with OIDC federated authentication. To create a federated authentication user, specify the value of USER in this field. To create a federated authentication group, specify the value of `IDP_GROUP` in this field.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312entrypasswordsecretref">passwordSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SENSITIVE FIELD
+
+Reference to a secret containing data for the "password" field:
+
+Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312entryrolesindex">roles</a></b></td>
+        <td>[]object</td>
+        <td>
+          List that provides the pairings of one role with one applicable database.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312entryscopesindex">scopes</a></b></td>
+        <td>[]object</td>
+        <td>
+          List that contains clusters, MongoDB Atlas Data Lakes, and MongoDB Atlas Streams Workspaces that this database user can access. If omitted, MongoDB Cloud grants the database user access to all the clusters, MongoDB Atlas Data Lakes, and MongoDB Atlas Streams Workspaces in the project.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>x509Type</b></td>
+        <td>string</td>
+        <td>
+          X.509 method that MongoDB Cloud uses to authenticate the database user.
+
+- For application-managed X.509, specify `MANAGED`.
+- For self-managed X.509, specify `CUSTOMER`.
+
+Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry.labels[index]
+<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
+
+
+
+Human-readable labels applied to this MongoDB Cloud component.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key applied to tag and categorize this component.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          Value set to the Key applied to tag and categorize this component.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry.passwordSecretRef
+<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
+
+
+
+SENSITIVE FIELD
+
+Reference to a secret containing data for the "password" field:
+
+Alphanumeric string that authenticates this database user against the database specified in `databaseName`. To authenticate with SCRAM-SHA, you must specify this parameter. This parameter doesn't appear in this response.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the secret containing the sensitive field value.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Key of the secret data containing the sensitive field value, defaults to "password".<br/>
+          <br/>
+            <i>Default</i>: password<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry.roles[index]
+<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
+
+
+
+Range of resources available to this database user.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>databaseName</b></td>
+        <td>string</td>
+        <td>
+          Database to which the user is granted access privileges.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>roleName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies a group of privileges assigned to a database user. This value can either be a built-in role or a custom role.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>collectionName</b></td>
+        <td>string</td>
+        <td>
+          Collection on which this role applies.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry.scopes[index]
+<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
+
+
+
+Range of resources available to this database user.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the cluster or MongoDB Atlas Data Lake that this database user can access.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Category of resource that this database user can access.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.groupRef
+<sup><sup>[↩ Parent](#databaseuserspecv20250312)</sup></sup>
+
+
+
+A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the "Group" resource.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.status
+<sup><sup>[↩ Parent](#databaseuser)</sup></sup>
+
+
+
+Most recently observed read-only status of the databaseuser for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#databaseuserstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Represents the latest available observations of a resource's current state.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#databaseuserstatusv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The last observed Atlas state of the databaseuser resource for version v20250312.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.status.conditions[index]
+<sup><sup>[↩ Parent](#databaseuserstatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.status.v20250312
+<sup><sup>[↩ Parent](#databaseuserstatus)</sup></sup>
+
+
+
+The last observed Atlas state of the databaseuser resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>databaseName</b></td>
+        <td>string</td>
+        <td>
+          The database against which the database user authenticates. Database users must provide both a username and authentication database to log into MongoDB. If the user authenticates with AWS IAM, x.509, LDAP, or OIDC Workload this value should be `$external`. If the user authenticates with SCRAM-SHA or OIDC Workforce, this value should be `admin`.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies the project.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>username</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that represents the user that authenticates to MongoDB. The format of this label depends on the method of authentication:
+
+| Authentication Method | Parameter Needed | Parameter Value | username Format |
+|---|---|---|---|
+| AWS IAM | `awsIAMType` | `ROLE` | <abbr title="Amazon Resource Name">ARN</abbr> |
+| AWS IAM | `awsIAMType` | `USER` | <abbr title="Amazon Resource Name">ARN</abbr> |
+| x.509 | `x509Type` | `CUSTOMER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| x.509 | `x509Type` | `MANAGED` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| LDAP | `ldapAuthType` | `USER` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| LDAP | `ldapAuthType` | `GROUP` | [RFC 2253](https://tools.ietf.org/html/2253) Distinguished Name |
+| OIDC Workforce | `oidcAuthType` | `IDP_GROUP` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP group name |
+| OIDC Workload | `oidcAuthType` | `USER` | Atlas OIDC IdP ID (found in federation settings), followed by a '/', followed by the IdP user name |
+| SCRAM-SHA | `awsIAMType`, `x509Type`, `ldapAuthType`, `oidcAuthType` | `NONE` | Alphanumeric string |
+<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
 ## Group
 <sup><sup>[↩ Parent](#atlasgeneratedmongodbcomv1 )</sup></sup>
 

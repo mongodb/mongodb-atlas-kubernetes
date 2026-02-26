@@ -1,0 +1,18 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: DatabaseUser
+metadata:
+  name: my-databaseuser
+spec:
+  connectionSecretRef:
+    name: mongodb-atlas-operator-api-key
+  v20250312:
+    groupRef:
+      name: my-group
+    entry:
+      databaseName: admin
+      username: my-user
+      passwordSecretRef:
+        name: my-password-secret
+      roles:
+        - databaseName: admin
+          roleName: readAnyDatabase

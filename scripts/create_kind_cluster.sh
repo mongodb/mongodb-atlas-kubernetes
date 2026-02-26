@@ -47,7 +47,13 @@ fi
 # https://github.com/kubernetes-sigs/kind/issues/2875
 # https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
 # See: https://github.com/containerd/containerd/blob/main/docs/hosts.md
-cat <<EOF | kind create cluster --config=-
+# Pass --image if KIND_K8S_VERSION is set, so kind pulls the matching node image.
+KIND_IMAGE_ARG=""
+if [[ -n "${KIND_K8S_VERSION:-}" ]]; then
+  KIND_IMAGE_ARG="--image=kindest/node:${KIND_K8S_VERSION}"
+fi
+
+cat <<EOF | kind create cluster ${KIND_IMAGE_ARG} --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
