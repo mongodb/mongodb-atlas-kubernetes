@@ -52,7 +52,7 @@ func (h *Handler) getHandlerForResource(ctx context.Context, child *akov2generat
 			return nil, errors.New("unsupported version v20250312 set in CR")
 		}
 		versionCount++
-		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312014, translator, h.deletionProtection)
+		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClientLatest, translator, h.deletionProtection)
 	}
 
 	if versionCount == 0 {

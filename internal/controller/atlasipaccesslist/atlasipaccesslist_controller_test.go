@@ -92,7 +92,7 @@ func TestReconcile(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312014: &admin.APIClient{
+						SdkClientLatest: &admin.APIClient{
 							ProjectIPAccessListApi: ialAPI,
 							ProjectsApi:            projectAPI,
 						},

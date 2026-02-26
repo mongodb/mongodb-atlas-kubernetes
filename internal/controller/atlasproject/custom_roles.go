@@ -84,7 +84,7 @@ func ensureCustomRoles(workflowCtx *workflow.Context, project *akov2.AtlasProjec
 	r := roleController{
 		ctx:     workflowCtx,
 		project: project,
-		service: customroles.NewCustomRoles(workflowCtx.SdkClientSet.SdkClient20250312014.CustomDatabaseRolesApi),
+		service: customroles.NewCustomRoles(workflowCtx.SdkClientSet.SdkClientLatest.CustomDatabaseRolesApi),
 	}
 
 	currentAtlasCustomRoles, err := r.service.List(r.ctx.Context, r.project.ID())

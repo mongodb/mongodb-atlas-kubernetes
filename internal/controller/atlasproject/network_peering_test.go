@@ -111,7 +111,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClientLatest: &admin.APIClient{
 						NetworkPeeringApi: peeringAPI,
 					},
 				},

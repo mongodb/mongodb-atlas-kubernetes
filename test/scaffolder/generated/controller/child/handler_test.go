@@ -180,7 +180,7 @@ func TestGetHandlerForResource(t *testing.T) {
 
 			provider := &mockProvider{
 				clientSet: &atlas.ClientSet{
-					SdkClient20250312014: &v20250312sdk.APIClient{},
+					SdkClientLatest: &v20250312sdk.APIClient{},
 				},
 			}
 
@@ -211,7 +211,7 @@ func TestGetSDKClientSet(t *testing.T) {
 	perResourceSecret := newCredentialSecret("resource-secret")
 
 	expectedClientSet := &atlas.ClientSet{
-		SdkClient20250312014: &v20250312sdk.APIClient{},
+		SdkClientLatest: &v20250312sdk.APIClient{},
 	}
 
 	tests := []struct {
@@ -317,7 +317,7 @@ func TestHandlerStateTransitions(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &v20250312sdk.APIClient{},
+			SdkClientLatest: &v20250312sdk.APIClient{},
 		},
 	}
 
@@ -375,7 +375,7 @@ func TestHandlerStateTransitions_NoVersion(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &v20250312sdk.APIClient{},
+			SdkClientLatest: &v20250312sdk.APIClient{},
 		},
 	}
 
@@ -477,7 +477,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &v20250312sdk.APIClient{},
+			SdkClientLatest: &v20250312sdk.APIClient{},
 		},
 	}
 

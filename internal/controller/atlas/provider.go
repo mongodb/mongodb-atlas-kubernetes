@@ -46,7 +46,7 @@ type Provider interface {
 }
 
 type ClientSet struct {
-	SdkClient20250312014 *v20250312014.APIClient
+	SdkClientLatest *v20250312014.APIClient
 }
 
 type ProductionProvider struct {
@@ -142,7 +142,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 	}
 
 	return &ClientSet{
-		SdkClient20250312014: clientv20250312014,
+		SdkClientLatest: clientv20250312014,
 	}, nil
 }
 

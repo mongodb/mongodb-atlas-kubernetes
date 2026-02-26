@@ -970,7 +970,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: tt.sdkMock(),
+					SdkClientLatest: tt.sdkMock(),
 				},
 			}
 

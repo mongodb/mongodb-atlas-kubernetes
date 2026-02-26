@@ -242,7 +242,7 @@ func TestHandleCustomResource(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312014: &admin.APIClient{},
+						SdkClientLatest: &admin.APIClient{},
 					}, nil
 				},
 			},
@@ -315,7 +315,7 @@ func TestHandleCustomResource(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312014: &admin.APIClient{
+						SdkClientLatest: &admin.APIClient{
 							ProjectIPAccessListApi: ialAPI,
 							ProjectsApi:            projectAPI,
 						},
