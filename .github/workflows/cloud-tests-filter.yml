@@ -33,6 +33,7 @@ jobs:
                 - 'cmd/**/!(*_test.go)'
                 - 'pkg/**/!(*_test.go)'
                 - 'internal/controller/**/!(*_test.go)'
+                - 'internal/generated/controller/**/!(*_test.go)'
                 - 'Dockerfile'
         # run only if 'production-code' files were changed
         - name: Production code changed
