@@ -454,6 +454,16 @@ build-catalogsource:
 	CATALOG_DISPLAY_NAME="MongoDB Atlas operator $(VERSION)" \
 	./scripts/build_catalogsource.sh
 
+.PHONY: deploy
+deploy: test-docker-image install-credentials ## Build, push, and deploy operator to local kind cluster
+	@mkdir -p $(TARGET_DIR)
+	$(MAKE) $(ALL_IN_ONE_CONFIG) OPERATOR_IMAGE=$(DEFAULT_IMAGE_URL)
+	kubectl apply -f $(ALL_IN_ONE_CONFIG)
+
+.PHONY: undeploy
+undeploy: ## Remove operator deployment from local kind cluster
+	kubectl delete -f $(ALL_IN_ONE_CONFIG) --ignore-not-found
+
 .PHONY: deploy-olm
 # Deploy atlas operator to the running openshift cluster with OLM
 deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsource build-subscription
@@ -492,7 +502,7 @@ x509-cert: ## Create X.509 cert at path tmp/x509/ (see docs/x509-user.md)
 
 .PHONY: clean-gen-crds
 clean-gen-crds: ## Clean only generated CRD files
-	rm -f config/generated/crd/bases/crds.*yaml
+	rm -f config/generated/crd/bases/*.yaml
 
 clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
