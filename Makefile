@@ -327,7 +327,7 @@ uninstall: manifests ## Uninstall CRDs from a cluster
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: ## Generate manifests e.g. CRD, RBAC etc.
+manifests: regen-crds ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
@@ -766,7 +766,7 @@ bump-version-file:
 	@cat $(VERSION_FILE)
 
 .PHONY: api-docs
-api-docs: manifests regen-crds
+api-docs: manifests
 	go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
 
 .PHONY: validate-api-docs
