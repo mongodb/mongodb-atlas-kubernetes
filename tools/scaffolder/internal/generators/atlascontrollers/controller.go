@@ -29,7 +29,7 @@ const (
 	pkgCtrlState = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
-func generateControllerFile(dir, resourceName, typesPath string, mappings []config.MappingWithConfig) error {
+func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *config.ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
 
@@ -45,7 +45,7 @@ func generateControllerFile(dir, resourceName, typesPath string, mappings []conf
 	)
 
 	supportedSDKVersions := []jen.Code{}
-	for _, mapping := range mappings {
+	for _, mapping := range parsedConfig.Mappings {
 		versionSuffix := mapping.Version
 		supportedSDKVersions = append(supportedSDKVersions, jen.Lit(versionSuffix))
 	}
@@ -55,15 +55,16 @@ func generateControllerFile(dir, resourceName, typesPath string, mappings []conf
 	)
 
 	resourcePlural := strings.ToLower(resourceName) + "s"
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s/status,verbs=get;update;patch", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=%s/finalizers,verbs=update", resourcePlural))
+	crdGroup := parsedConfig.CRDGroup
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,resources=%s,verbs=get;list;watch;create;update;patch;delete", crdGroup, resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,resources=%s/status,verbs=get;update;patch", crdGroup, resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,resources=%s/finalizers,verbs=update", crdGroup, resourcePlural))
 	f.Comment("+kubebuilder:rbac:groups=\"\",resources=secrets,verbs=get;list;watch")
 	f.Comment("+kubebuilder:rbac:groups=\"\",resources=events,verbs=create;patch")
 	f.Line()
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s/status,verbs=get;update;patch", resourcePlural))
-	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=%s/finalizers,verbs=update", resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,namespace=default,resources=%s,verbs=get;list;watch;create;update;patch;delete", crdGroup, resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,namespace=default,resources=%s/status,verbs=get;update;patch", crdGroup, resourcePlural))
+	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,namespace=default,resources=%s/finalizers,verbs=update", crdGroup, resourcePlural))
 	f.Comment("+kubebuilder:rbac:groups=\"\",namespace=default,resources=secrets,verbs=get;list;watch")
 	f.Comment("+kubebuilder:rbac:groups=\"\",namespace=default,resources=events,verbs=create;patch")
 	f.Line()
@@ -77,7 +78,7 @@ func generateControllerFile(dir, resourceName, typesPath string, mappings []conf
 	}
 
 	// Version-specific handler for each version
-	for _, mapping := range mappings {
+	for _, mapping := range parsedConfig.Mappings {
 		versionSuffix := mapping.Version
 		sdkImportPath := mapping.OpenAPIConfig.Package
 
@@ -157,7 +158,7 @@ func generateControllerFile(dir, resourceName, typesPath string, mappings []conf
 			d[jen.Id("AtlasReconciler")] = atlasReconcilerBase
 			d[jen.Id("deletionProtection")] = jen.Id("deletionProtection")
 			d[jen.Id("translators")] = jen.Id("translators")
-			for _, mapping := range mappings {
+			for _, mapping := range parsedConfig.Mappings {
 				versionSuffix := mapping.Version
 				d[jen.Id("handler"+versionSuffix)] = jen.Id("handler" + versionSuffix + "Func")
 			}
@@ -171,7 +172,7 @@ func generateControllerFile(dir, resourceName, typesPath string, mappings []conf
 		), jen.Nil()),
 	)
 
-	for _, mapping := range mappings {
+	for _, mapping := range parsedConfig.Mappings {
 		versionSuffix := mapping.Version
 		sdkImportPath := mapping.OpenAPIConfig.Package
 
