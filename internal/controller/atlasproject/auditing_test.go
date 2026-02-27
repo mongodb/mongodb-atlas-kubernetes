@@ -274,7 +274,7 @@ func TestHandleAudit(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClientLatest: &admin.APIClient{
+					SdkClient20250312014: &admin.APIClient{
 						AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t)),
 					},
 				},

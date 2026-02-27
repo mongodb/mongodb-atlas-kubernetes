@@ -232,7 +232,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClientLatest: &admin.APIClient{
+					SdkClient20250312014: &admin.APIClient{
 						ProjectsApi: tc.projectAPI,
 					},
 				},

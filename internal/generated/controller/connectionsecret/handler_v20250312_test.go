@@ -924,7 +924,7 @@ func newMockAtlasProvider(t *testing.T, projectID, projectName string) atlas.Pro
 		IsCloudGovFunc:  func() bool { return false },
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			return &atlas.ClientSet{
-				SdkClientLatest: &admin.APIClient{
+				SdkClient20250312014: &admin.APIClient{
 					ProjectsApi: projectsAPI,
 				},
 			}, nil

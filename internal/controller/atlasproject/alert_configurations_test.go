@@ -534,7 +534,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClientLatest: mockAPIClient,
+				SdkClient20250312014: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -669,7 +669,7 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClientLatest: mockAPIClient,
+				SdkClient20250312014: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -772,7 +772,7 @@ func TestCreateAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClientLatest: mockAPIClient,
+				SdkClient20250312014: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{

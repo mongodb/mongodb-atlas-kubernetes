@@ -392,7 +392,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClientLatest: &admin.APIClient{
+					SdkClient20250312014: &admin.APIClient{
 						CloudBackupsApi: tc.backupAPI,
 					},
 				},

@@ -678,7 +678,7 @@ func TestHandleProject(t *testing.T) {
 				Context: context.Background(),
 				Log:     logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClientLatest: tt.atlasSDKMocker(),
+					SdkClient20250312014: tt.atlasSDKMocker(),
 				},
 			}
 			instancesIndexer := indexer.NewAtlasStreamInstanceByProjectIndexer(zaptest.NewLogger(t))
@@ -1121,7 +1121,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClientLatest: tt.atlasSDKMocker(),
+					SdkClient20250312014: tt.atlasSDKMocker(),
 				},
 				Log: logger,
 			}

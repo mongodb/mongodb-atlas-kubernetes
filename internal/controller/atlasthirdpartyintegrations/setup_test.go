@@ -152,7 +152,7 @@ func TestNewReconcileRequest(t *testing.T) {
 					projectAPI := mockFindFakeParentProject(t)
 					integrationsAPI := mockadmin.NewThirdPartyIntegrationsApi(t)
 					return &atlas.ClientSet{
-						SdkClientLatest: &admin.APIClient{
+						SdkClient20250312014: &admin.APIClient{
 							ProjectsApi:               projectAPI,
 							ThirdPartyIntegrationsApi: integrationsAPI,
 						},
