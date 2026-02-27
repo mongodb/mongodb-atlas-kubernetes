@@ -105,6 +105,7 @@ spec:
             filters:
               skipProperties:
                 - $.Use-Effective-Instance-Fields
+                - $.Use-Effective-Fields-Replication-Specs
           entry:
             schema: 'ClusterDescription20240805'
             filters:
@@ -118,6 +119,7 @@ spec:
                 - $.featureCompatibilityVersion
                 - $.featureCompatibilityVersionExpirationDate
                 - $.internalClusterRole
+                - $.effectiveReplicationSpecs
                 - $.replicationSpecs[*].id
                 - $.replicationSpecs[*].regionConfigs[*].effectiveAnalyticsSpecs
                 - $.replicationSpecs[*].regionConfigs[*].effectiveElectableSpecs
@@ -140,17 +142,7 @@ spec:
                 - $.name
                 - $.paused
                 - $.pitEnabled
-                - $.replicationSpecs[*].numShards
-                - $.replicationSpecs[*].zoneName
-                - $.replicationSpecs[*].regionConfigs[*].analyticsAutoScaling
-                - $.replicationSpecs[*].regionConfigs[*].analyticsSpecs
-                - $.replicationSpecs[*].regionConfigs[*].autoScaling
-                - $.replicationSpecs[*].regionConfigs[*].backingProviderName
-                - $.replicationSpecs[*].regionConfigs[*].electableSpecs
-                - $.replicationSpecs[*].regionConfigs[*].priority
-                - $.replicationSpecs[*].regionConfigs[*].providerName
-                - $.replicationSpecs[*].regionConfigs[*].readOnlySpecs
-                - $.replicationSpecs[*].regionConfigs[*].regionName
+                - $.replicationSpecs
                 - $.rootCertType
                 - $.tags
                 - $.terminationProtectionEnabled
