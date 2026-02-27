@@ -13,3 +13,4 @@ labels:
 resources:
 - ../../../manager
 - ../../../rbac/clusterwide
+- ../../../generated/rbac/clusterwide

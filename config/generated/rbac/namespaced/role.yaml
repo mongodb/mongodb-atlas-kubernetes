@@ -1,0 +1,48 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: generated-manager-role
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - atlas.generated.mongodb.com
+  resources:
+  - groups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - atlas.generated.mongodb.com
+  resources:
+  - groups/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - atlas.generated.mongodb.com
+  resources:
+  - groups/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/
+- ../generated/crd
 
 configurations:
 - kustomizeconfig.yaml
