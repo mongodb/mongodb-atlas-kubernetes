@@ -316,29 +316,14 @@ manager: generate fmt vet bin/manager ## Build manager binary
 .PHONY: build
 build: bin/manager
 
-.PHONY: install
-install: manifests ## Install CRDs from a cluster
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
-
-.PHONY: uninstall
-uninstall: manifests ## Uninstall CRDs from a cluster
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
-
 .PHONY: manifests
 # Produce CRDs that work back to Kubernetes 1.16 (so 'apiVersion: apiextensions.k8s.io/v1')
 manifests: CRD_OPTIONS ?= "crd:crdVersions=v1,ignoreUnexportedFields=true"
-manifests: regen-crds rbac-autogen ## Generate manifests e.g. CRD, RBAC etc.
+manifests: regen-crds manifests-autogen ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 	touch config/crd/bases/kustomization.yaml
 	sh -c 'cd config/crd/bases; $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml'
 	@./scripts/split_roles_yaml.sh
-ifdef EXPERIMENTAL
-	@if [ -d internal/next-crds ] && find internal/next-crds -maxdepth 1 -name '*.yaml' | grep -q .; then \
-	$(CONTROLLER_GEN) crd paths="./internal/nextapi/v1" output:crd:artifacts:config=internal/next-crds; \
-	else \
-	echo "No experimental CRDs found, skipping apply."; \
-	fi
-endif
 
 .PHONY: lint
 lint: ## Run the lint against the code
@@ -681,12 +666,12 @@ gen-sdlc-checklist: ## Generate the SDLC checklist
 	@VERSION="$(VERSION)" AUTHORS="$(AUTHORS)" ./scripts/gen-sdlc-checklist.sh
 
 .PHONY: install-crds
-install-crds: manifests ## Install CRDs in Kubernetes
+install-crds: manifests regen-crds ## Install CRDs in Kubernetes
 	kubectl apply -k config/crd
-ifdef EXPERIMENTAL
-	$(MAKE) regen-crds
-	kubectl apply -f config/generated/crd
-endif
+
+.PHONY: uninstall-crds
+uninstall-crds: ## Install CRDs in Kubernetes
+	kubectl delete -k config/crd
 
 .PHONY: set-namespace
 set-namespace:
@@ -919,8 +904,13 @@ clean-bundle:
 	@rm -f $(BUNDLE_DOCKERFILE)
 	@echo "✅ Cleanup complete."
 
-rbac-autogen:
-	$(CONTROLLER_GEN) rbac:roleName=generated-manager-role paths="./internal/generated/controller/..." output:rbac:artifacts:config=config/generated/rbac
+manifests-autogen: PATHS = paths=./internal/generated/controller/...
+ifdef EXPERIMENTAL
+manifests-autogen: PATHS += paths=./internal/generated/experimental/controller/...
+endif
+manifests-autogen:
+	@cd config/generated/crd/bases && rm -f kustomization.yaml && touch kustomization.yaml && $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml
+	$(CONTROLLER_GEN) rbac:roleName=generated-manager-role $(PATHS) output:rbac:artifacts:config=config/generated/rbac
 	@./scripts/split_roles_yaml.sh config/generated/rbac
 
 tools/openapi2crd/bin/openapi2crd:
@@ -938,7 +928,6 @@ ifdef EXPERIMENTAL
 	$(OPENAPI2CRD) --config $(realpath .)/crd2go/openapi2crd.experimental.yaml \
 	--multi-file --output $(realpath .)/config/generated/crd/bases
 endif
-	@cd config/generated/crd/bases && rm -f kustomization.yaml && touch kustomization.yaml && $(KUSTOMIZE) edit add resource *.yaml kustomization.yaml
 
 .PHONY: regen-crds
 regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
@@ -948,10 +937,11 @@ gen-combined-crds: tools/openapi2crd/bin/openapi2crd ## Generate a transient com
 	@echo "==> Generating transient combined CRD file..."
 	$(OPENAPI2CRD) --config $(realpath .)/crd2go/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
+	cp $(realpath .)/config/generated/crd/bases/crds.yaml $(realpath .)/internal/generated/crds/crds.yaml
 ifdef EXPERIMENTAL
 	@echo "==> Generating transient experimental combined CRD file..."
 	$(OPENAPI2CRD) --config $(realpath .)/crd2go/openapi2crd.experimental.yaml \
-	--output $(realpath .)/config/generated/crd/bases/crds-experimental.yaml
+	--output $(realpath .)/config/generated/crd/bases/crds.experimental.yaml
 endif
 
 gen-go-types: gen-combined-crds
@@ -1015,14 +1005,16 @@ ifdef EXPERIMENTAL
 	--generators indexers,atlas-controllers \
 	--indexer-out $(realpath .)/internal/generated/experimental/indexers \
 	--controller-out $(realpath .)/internal/generated/experimental/controller \
-	--exporter-out $(realpath .)/internal/generated/experimental/exporter
+	--exporter-out $(realpath .)/internal/generated/experimental/exporter \
+	--indexer-types-path github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1 \
+    --indexer-import-path github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers
 endif
 	@$(MAKE) clean-combined-crds
 
 .PHONY: clean-combined-crds
 clean-combined-crds: ## Remove transient combined CRD files
 	@rm -f $(realpath .)/config/generated/crd/bases/crds.yaml
-	@rm -f $(realpath .)/config/generated/crd/bases/crds-experimental.yaml
+	@rm -f $(realpath .)/config/generated/crd/bases/crds.experimental.yaml
 
 gen-all: gen-crds ## Generate all CRDs, Go types, and scaffolding
 	$(MAKE) gen-go-types
