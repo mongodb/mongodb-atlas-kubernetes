@@ -372,7 +372,8 @@ validate-manifests: generate manifests
 
 .PHONY: helm-crds
 helm-crds: bundle
-	@cp -r bundle/manifests/atlas.mongodb.com_* helm-charts/atlas-operator-crds/templates/
+	@cp -r bundle/manifests/atlas.* helm-charts/atlas-operator-crds/templates/
+	@yq '.spec.install.spec.clusterPermissions[0].rules' ./bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml > helm-charts/atlas-operator/rbac.yaml
 
 .PHONY: validate-crds-chart
 validate-crds-chart: ## Validate the CRDs in the Helm chart
