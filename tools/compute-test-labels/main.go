@@ -43,6 +43,9 @@ func MatchWildcards(labels []string, testLabels []string, testType string) []str
 	for _, label := range labels {
 		if label == fmt.Sprintf("test/%s/*", testType) {
 			for _, test := range testLabels {
+				if test == testType { // avoid adding the test type itself and run all tests as it was a label
+					continue
+				}
 				matchedLabels[test] = struct{}{}
 			}
 		} else {
