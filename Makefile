@@ -766,6 +766,7 @@ bump-version-file:
 .PHONY: api-docs
 api-docs: manifests
 	go tool -modfile=tools/toolbox/go.mod crdoc --resources config/crd/bases --output docs/api-docs.md
+	go tool -modfile=tools/toolbox/go.mod crdoc --resources config/generated/crd/bases --output docs/api-docs-generated.md
 
 .PHONY: validate-api-docs
 validate-api-docs: api-docs
