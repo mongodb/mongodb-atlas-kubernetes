@@ -105,7 +105,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	By("Bootstrapping test environment", func() {
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths: []string{
+				filepath.Join("..", "..", "config", "crd", "bases"),
+				filepath.Join("..", "..", "config", "generated", "crd", "bases"),
+			},
 		}
 
 		cfg, err := testEnv.Start()
