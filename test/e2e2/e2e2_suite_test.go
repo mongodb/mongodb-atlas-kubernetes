@@ -23,10 +23,12 @@ import (
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20250312014/admin"
 	"go.uber.org/zap/zaptest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	atlasctrl "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 )
@@ -85,4 +87,32 @@ func runTestAKO(globalCreds, ns string, deletionprotection bool) operator.Operat
 	}
 	args = append(args, fmt.Sprintf("--object-deletion-protection=%v", deletionprotection))
 	return operator.NewOperator(operator.AllNamespacesOperatorEnv(ns), os.Stdout, os.Stderr, args...)
+}
+
+// newTestAtlasClient creates an Atlas API client for e2e2 tests.
+// It reads credentials from environment variables and returns a configured client.
+// Required environment variables:
+//   - MCLI_ORG_ID: Atlas organization ID
+//   - MCLI_PUBLIC_API_KEY: Atlas public API key
+//   - MCLI_PRIVATE_API_KEY: Atlas private API key
+//   - MCLI_OPS_MANAGER_URL: (optional) Atlas API base URL, defaults to "https://cloud.mongodb.com/"
+func newTestAtlasClient() (*admin.APIClient, string) {
+	orgID := os.Getenv("MCLI_ORG_ID")
+	Expect(orgID).NotTo(BeEmpty(), "MCLI_ORG_ID environment variable must be set")
+
+	publicKey := os.Getenv("MCLI_PUBLIC_API_KEY")
+	Expect(publicKey).NotTo(BeEmpty(), "MCLI_PUBLIC_API_KEY environment variable must be set")
+
+	privateKey := os.Getenv("MCLI_PRIVATE_API_KEY")
+	Expect(privateKey).NotTo(BeEmpty(), "MCLI_PRIVATE_API_KEY environment variable must be set")
+
+	atlasDomain := os.Getenv("MCLI_OPS_MANAGER_URL")
+	if atlasDomain == "" {
+		atlasDomain = "https://cloud.mongodb.com/"
+	}
+
+	client, err := atlasctrl.NewClient(atlasDomain, publicKey, privateKey)
+	Expect(err).ToNot(HaveOccurred())
+
+	return client, orgID
 }
