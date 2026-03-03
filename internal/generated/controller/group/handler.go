@@ -37,7 +37,7 @@ import (
 func (h *Handler) getHandlerForResource(ctx context.Context, group *akov2generated.Group) (ctrlstate.StateHandler[akov2generated.Group], error) {
 	atlasClients, err := h.getSDKClientSet(ctx, group)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", state.ErrMissingCredentials, err)
 	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
@@ -128,6 +128,9 @@ func (h *Handler) HandleUpdated(ctx context.Context, group *akov2generated.Group
 func (h *Handler) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
+		if errors.Is(err, state.ErrMissingCredentials) {
+			return result.NextState(state.StateDeleted, err.Error())
+		}
 		return result.Error(state.StateDeletionRequested, err)
 	}
 	return handler.HandleDeletionRequested(ctx, group)
@@ -137,6 +140,9 @@ func (h *Handler) HandleDeletionRequested(ctx context.Context, group *akov2gener
 func (h *Handler) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, group)
 	if err != nil {
+		if errors.Is(err, state.ErrMissingCredentials) {
+			return result.NextState(state.StateDeleted, err.Error())
+		}
 		return result.Error(state.StateDeleting, err)
 	}
 	return handler.HandleDeleting(ctx, group)

@@ -47,7 +47,11 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 			jen.Id(atlasResourceName),
 		),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Id("err")),
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+				jen.Lit("%w: %w"),
+				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "ErrMissingCredentials"),
+				jen.Id("err"),
+			)),
 		),
 
 		jen.Comment("Check which resource spec version is set and validate that only one is specified"),
@@ -88,12 +92,12 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 		}),
 		jen.Line(),
 		jen.If(jen.Id("versionCount").Op("==").Lit(0)).Block(
-			jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("no resource spec version specified - please set one of the available spec versions"))),
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(jen.Lit("no resource spec version specified - please set one of the available spec versions"))),
 		),
 		jen.If(jen.Id("versionCount").Op(">").Lit(1)).Block(
-			jen.Return(jen.Nil().Op(",").Qual("fmt", "Errorf").Call(jen.Lit("multiple resource spec versions specified - please set only one spec version"))),
+			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(jen.Lit("multiple resource spec versions specified - please set only one spec version"))),
 		),
-		jen.Return(jen.Id("selectedHandler").Op(",").Nil()),
+		jen.Return(jen.Id("selectedHandler"), jen.Nil()),
 	)
 
 	generateDelegatingStateHandlers(f, resourceName, apiPkg, indexerImportPath, refsByKind)
@@ -141,12 +145,24 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerI
 				Id("h").
 				Dot("getHandlerForResource").
 				Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName))),
-			jen.If(jen.Id("err").Op("!=").Nil()).Block(
-				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
+
+			jen.If(jen.Id("err").Op("!=").Nil()).BlockFunc(func(g *jen.Group) {
+				if handlerName == "HandleDeletionRequested" || handlerName == "HandleDeleting" {
+					g.If(jen.Qual("errors", "Is").Call(
+						jen.Id("err"),
+						jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "ErrMissingCredentials"),
+					)).Block(
+						jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
+							jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateDeleted"),
+							jen.Id("err").Dot("Error").Call(),
+						)),
+					)
+				}
+				g.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
 					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", startStateMap[handlerName]),
 					jen.Id("err"),
-				)),
-			),
+				))
+			}),
 			jen.Return(jen.Id("handler").Dot(handlerName).Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName)))),
 		)
 	}
