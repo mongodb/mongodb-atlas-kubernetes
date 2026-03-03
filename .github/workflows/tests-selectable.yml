@@ -225,7 +225,7 @@ jobs:
           devbox run -- make e2e label=${{ env.TEST_NAME }}
       - name: Upload operator logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: logs
           path: output/**
@@ -273,7 +273,7 @@ jobs:
         run: devbox run -- make e2e label=${{ env.TEST_NAME }}
       - name: Upload operator logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: logs
           path: output/**
