@@ -34,6 +34,9 @@ linters:
               desc: io/ioutil package has been deprecated
     misspell:
       locale: US
+    gosec:
+      excludes:
+        - G117 # Exported struct field name matching secret pattern - field names are not secrets, only values matter
   exclusions:
     generated: lax
     rules:
@@ -93,6 +96,10 @@ linters:
         text: (G104|G307)
       - path: (.+)\.go$
         text: at least one file in a package should have a package comment
+      - linters:
+          - gosec
+        path: (.+)_test\.go$
+        text: G101
     paths:
       - third_party$
       - builtin$
