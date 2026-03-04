@@ -190,3 +190,36 @@ spec:
                 - $.roles
                 - $.scopes
                 - $.x509Type
+
+    - gvk:
+        version: v1
+        kind: FlexCluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - afc
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/flexClusters'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'FlexClusterDescriptionCreate20241113'
+            filters:
+              skipProperties:
+                - $.links
+                - $.providerSettings.diskSizeGB
+                - $.providerSettings.providerName
+          status:
+            schema: 'FlexClusterDescription20241113'
+            filters:
+              skipProperties:
+                - $.links
+                - $.tags
+                - $.terminationProtectionEnabled

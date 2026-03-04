@@ -12,6 +12,8 @@ Resource Types:
 
 - [DatabaseUser](#databaseuser)
 
+- [FlexCluster](#flexcluster)
+
 - [Group](#group)
 
 
@@ -3309,6 +3311,638 @@ The last observed Atlas state of the databaseuser resource for version v20250312
 <br/>
         </td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+## FlexCluster
+<sup><sup>[↩ Parent](#atlasgeneratedmongodbcomv1 )</sup></sup>
+
+
+
+
+
+
+A flexcluster, managed by the MongoDB Kubernetes Atlas Operator.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>atlas.generated.mongodb.com/v1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>FlexCluster</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          Specification of the flexcluster supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.v20250312.groupId) && has(self.connectionSecretRef)) || (!has(self.v20250312.groupId)): spec.connectionSecretRef must be set if spec.v20250312.groupId is set.</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          Most recently observed read-only status of the flexcluster for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec
+<sup><sup>[↩ Parent](#flexcluster)</sup></sup>
+
+
+
+Specification of the flexcluster supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#flexclusterspecconnectionsecretref">connectionSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterspecv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The spec of the flexcluster resource for version v20250312.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId) && has(self.groupRef)): groupId and groupRef are mutually exclusive; only one of them can be set</li>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.connectionSecretRef
+<sup><sup>[↩ Parent](#flexclusterspec)</sup></sup>
+
+
+
+SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the secret containing the Atlas credentials.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.v20250312
+<sup><sup>[↩ Parent](#flexclusterspec)</sup></sup>
+
+
+
+The spec of the flexcluster resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#flexclusterspecv20250312entry">entry</a></b></td>
+        <td>object</td>
+        <td>
+          The entry fields of the flexcluster resource spec. These fields can be set for creating and updating flexclusters.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+**NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: groupId cannot be modified after creation</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterspecv20250312groupref">groupRef</a></b></td>
+        <td>object</td>
+        <td>
+          A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.v20250312.entry
+<sup><sup>[↩ Parent](#flexclusterspecv20250312)</sup></sup>
+
+
+
+The entry fields of the flexcluster resource spec. These fields can be set for creating and updating flexclusters.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the instance.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterspecv20250312entryprovidersettings">providerSettings</a></b></td>
+        <td>object</td>
+        <td>
+          Group of cloud provider settings that configure the provisioned MongoDB flex cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterspecv20250312entrytagsindex">tags</a></b></td>
+        <td>[]object</td>
+        <td>
+          List that contains key-value pairs between 1 to 255 characters in length for tagging and categorizing the instance.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>terminationProtectionEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether termination protection is enabled on the cluster. If set to `true`, MongoDB Cloud won't delete the cluster. If set to `false`, MongoDB Cloud will delete the cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.v20250312.entry.providerSettings
+<sup><sup>[↩ Parent](#flexclusterspecv20250312entry)</sup></sup>
+
+
+
+Group of cloud provider settings that configure the provisioned MongoDB flex cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>backingProviderName</b></td>
+        <td>string</td>
+        <td>
+          Cloud service provider on which MongoDB Cloud provisioned the flex cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>regionName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the geographic location of your MongoDB flex cluster. The region you choose can affect network latency for clients accessing your databases. For a complete list of region names, see [AWS](https://docs.atlas.mongodb.com/reference/amazon-aws/#std-label-amazon-aws), [GCP](https://docs.atlas.mongodb.com/reference/google-gcp/), and [Azure](https://docs.atlas.mongodb.com/reference/microsoft-azure/).<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.v20250312.entry.tags[index]
+<sup><sup>[↩ Parent](#flexclusterspecv20250312entry)</sup></sup>
+
+
+
+Key-value pair that tags and categorizes a MongoDB Cloud organization, project, or cluster. For example, `environment : production`.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Constant that defines the set of the tag. For example, `environment` in the `environment : production` tag.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          Variable that belongs to the set of the tag. For example, `production` in the `environment : production` tag.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.spec.v20250312.groupRef
+<sup><sup>[↩ Parent](#flexclusterspecv20250312)</sup></sup>
+
+
+
+A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the "Group" resource.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status
+<sup><sup>[↩ Parent](#flexcluster)</sup></sup>
+
+
+
+Most recently observed read-only status of the flexcluster for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#flexclusterstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Represents the latest available observations of a resource's current state.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterstatusv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The last observed Atlas state of the flexcluster resource for version v20250312.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status.conditions[index]
+<sup><sup>[↩ Parent](#flexclusterstatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status.v20250312
+<sup><sup>[↩ Parent](#flexclusterstatus)</sup></sup>
+
+
+
+The last observed Atlas state of the flexcluster resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#flexclusterstatusv20250312providersettings">providerSettings</a></b></td>
+        <td>object</td>
+        <td>
+          Group of cloud provider settings that configure the provisioned MongoDB flex cluster.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterstatusv20250312backupsettings">backupSettings</a></b></td>
+        <td>object</td>
+        <td>
+          Flex backup configuration.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>clusterType</b></td>
+        <td>string</td>
+        <td>
+          Flex cluster topology.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#flexclusterstatusv20250312connectionstrings">connectionStrings</a></b></td>
+        <td>object</td>
+        <td>
+          Collection of Uniform Resource Locators that point to the MongoDB database.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>createDate</b></td>
+        <td>string</td>
+        <td>
+          Date and time when MongoDB Cloud created this instance. This parameter expresses its value in ISO 8601 format in UTC.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal character string that identifies the project.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>id</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies the instance.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mongoDBVersion</b></td>
+        <td>string</td>
+        <td>
+          Version of MongoDB that the instance runs.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the instance.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>stateName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
+
+ - `IDLE`: Atlas is making no changes to this cluster and all changes requested via the UI or API can be assumed to have been applied.
+ - `CREATING`: A cluster being provisioned for the very first time returns state CREATING until it is ready for connections. Ensure IP Access List and DB Users are configured before attempting to connect.
+ - `UPDATING`: A change requested via the UI, API, AutoScaling, or other scheduled activity is taking place.
+ - `DELETING`: The cluster is in the process of deletion and will soon be deleted.
+ - `REPAIRING`: One or more nodes in the cluster are being returned to service by the Atlas control plane. Other nodes should continue to provide service as normal.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>versionReleaseSystem</b></td>
+        <td>string</td>
+        <td>
+          Method by which the cluster maintains the MongoDB versions.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status.v20250312.providerSettings
+<sup><sup>[↩ Parent](#flexclusterstatusv20250312)</sup></sup>
+
+
+
+Group of cloud provider settings that configure the provisioned MongoDB flex cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>backingProviderName</b></td>
+        <td>string</td>
+        <td>
+          Cloud service provider on which MongoDB Cloud provisioned the flex cluster.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>diskSizeGB</b></td>
+        <td>number</td>
+        <td>
+          Storage capacity available to the flex cluster expressed in gigabytes.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>providerName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the provider type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>regionName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the geographic location of your MongoDB flex cluster. The region you choose can affect network latency for clients accessing your databases. For a complete list of region names, see [AWS](https://docs.atlas.mongodb.com/reference/amazon-aws/#std-label-amazon-aws), [GCP](https://docs.atlas.mongodb.com/reference/google-gcp/), and [Azure](https://docs.atlas.mongodb.com/reference/microsoft-azure/).<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status.v20250312.backupSettings
+<sup><sup>[↩ Parent](#flexclusterstatusv20250312)</sup></sup>
+
+
+
+Flex backup configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether backups are performed for this flex cluster. Backup uses flex cluster backups.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### FlexCluster.status.v20250312.connectionStrings
+<sup><sup>[↩ Parent](#flexclusterstatusv20250312)</sup></sup>
+
+
+
+Collection of Uniform Resource Locators that point to the MongoDB database.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>standard</b></td>
+        <td>string</td>
+        <td>
+          Public connection string that you can use to connect to this cluster. This connection string uses the `mongodb://` protocol.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>standardSrv</b></td>
+        <td>string</td>
+        <td>
+          Public connection string that you can use to connect to this flex cluster. This connection string uses the `mongodb+srv://` protocol.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

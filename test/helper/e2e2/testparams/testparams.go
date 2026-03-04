@@ -17,7 +17,7 @@ package testparams
 import (
 	k8s "github.com/crd2go/crd2go/k8s"
 
-	nextapiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 )
 
 // TestParams holds all test parameters for test isolation purposes.
@@ -80,7 +80,7 @@ func (p *TestParams) WithNamespace(namespace string) *TestParams {
 }
 
 // ApplyToGroup mutates a Group object with test parameters.
-func (p *TestParams) ApplyToGroup(group *nextapiv1.Group) {
+func (p *TestParams) ApplyToGroup(group *apiv1.Group) {
 	group.SetNamespace(p.Namespace)
 	group.SetName(p.GroupName)
 
@@ -90,10 +90,10 @@ func (p *TestParams) ApplyToGroup(group *nextapiv1.Group) {
 	group.Spec.ConnectionSecretRef.Name = p.CredentialsSecretName
 
 	if group.Spec.V20250312 == nil {
-		group.Spec.V20250312 = &nextapiv1.V20250312{}
+		group.Spec.V20250312 = &apiv1.V20250312{}
 	}
 	if group.Spec.V20250312.Entry == nil {
-		group.Spec.V20250312.Entry = &nextapiv1.Entry{}
+		group.Spec.V20250312.Entry = &apiv1.Entry{}
 	}
 	group.Spec.V20250312.Entry.OrgId = p.OrgID
 	group.Spec.V20250312.Entry.Name = p.GroupName
