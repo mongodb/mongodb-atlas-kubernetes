@@ -22,15 +22,35 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 )
 
+// GenerateName generates a random name with the given prefix
+func GenerateName(prefix string) string {
+	return fmt.Sprintf("%s-%s", prefix, rand.String(6))
+}
+
+// CopyCredentialsToNamespace copies the credentials secret from the operator namespace
+// to the target namespace. The secret is applied with the specified field owner.
+func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, credentialsName, operatorNamespace, targetNamespace string, fieldOwner client.FieldOwner) error {
+	globalCredsKey := client.ObjectKey{
+		Name:      credentialsName,
+		Namespace: operatorNamespace,
+	}
+	credentialsSecret, err := copySecretToNamespace(ctx, kubeClient, globalCredsKey, targetNamespace)
+	if err != nil {
+		return err
+	}
+	return kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, fieldOwner)
+}
+
 // CopySecretToNamespace copies a secret from one namespace to another.
 // Returns the copied secret ready to be applied to the target namespace.
-func CopySecretToNamespace(ctx context.Context, kubeClient client.Client, key client.ObjectKey, targetNamespace string) (*corev1.Secret, error) {
+func copySecretToNamespace(ctx context.Context, kubeClient client.Client, key client.ObjectKey, targetNamespace string) (*corev1.Secret, error) {
 	secret := corev1.Secret{}
 	if err := kubeClient.Get(ctx, key, &secret); err != nil {
 		return nil, fmt.Errorf("failed to load original secret %v: %w", key, err)
@@ -44,20 +64,6 @@ func CopySecretToNamespace(ctx context.Context, kubeClient client.Client, key cl
 		},
 		Data: secret.Data,
 	}, nil
-}
-
-// CopyCredentialsToNamespace copies the credentials secret from the operator namespace
-// to the target namespace. The secret is applied with the specified field owner.
-func CopyCredentialsToNamespace(ctx context.Context, kubeClient client.Client, credentialsName, operatorNamespace, targetNamespace string, fieldOwner client.FieldOwner) error {
-	globalCredsKey := client.ObjectKey{
-		Name:      credentialsName,
-		Namespace: operatorNamespace,
-	}
-	credentialsSecret, err := CopySecretToNamespace(ctx, kubeClient, globalCredsKey, targetNamespace)
-	if err != nil {
-		return err
-	}
-	return kubeClient.Patch(ctx, credentialsSecret, client.Apply, client.ForceOwnership, fieldOwner)
 }
 
 // ApplyObjectsToNamespace applies a list of objects to a namespace.
@@ -131,4 +137,14 @@ func CheckResourceDeleted(ctx context.Context, kubeClient client.Client, obj cli
 		return fmt.Errorf("failed to check if resource %s/%s is deleted: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 	return ErrResourceNotDeleted
+}
+
+// NameFromObjects returns the name of the first object in the list that matches the given kind.
+func NameFromObjects(objs []client.Object, kind string) string {
+	for _, obj := range objs {
+		if kind == obj.GetObjectKind().GroupVersionKind().Kind {
+			return obj.GetName()
+		}
+	}
+	return ""
 }
