@@ -14,6 +14,19 @@
 
 package state
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-var ErrMissingCredentials = errors.New("missing credentials")
+var ErrOptionalAtlasAccessLost = errors.New("lost optional access to Atlas")
+
+// AtlasAccessLostError returns an error with the appropriate message based on
+// whether the Atlas access is optional or required.
+// When deletion protection is enabled, the error is wrapped as optional.
+func AtlasAccessLostError(err error, optional bool) error {
+	if optional {
+		return fmt.Errorf("%w: %w", ErrOptionalAtlasAccessLost, err)
+	}
+	return err
+}

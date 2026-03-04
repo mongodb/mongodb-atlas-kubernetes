@@ -28,6 +28,7 @@ import (
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	customresource "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -40,7 +41,8 @@ import (
 func (h *Handler) getHandlerForResource(ctx context.Context, child *akov2generated.Child) (ctrlstate.StateHandler[akov2generated.Child], error) {
 	atlasClients, err := h.getSDKClientSet(ctx, child)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", state.ErrMissingCredentials, err)
+		deletionProtected := customresource.IsResourcePolicyKeepOrDefault(child, h.deletionProtection)
+		return nil, state.AtlasAccessLostError(err, deletionProtected)
 	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
@@ -131,7 +133,7 @@ func (h *Handler) HandleUpdated(ctx context.Context, child *akov2generated.Child
 func (h *Handler) HandleDeletionRequested(ctx context.Context, child *akov2generated.Child) (ctrlstate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, child)
 	if err != nil {
-		if errors.Is(err, state.ErrMissingCredentials) {
+		if errors.Is(err, state.ErrOptionalAtlasAccessLost) {
 			return result.NextState(state.StateDeleted, err.Error())
 		}
 		return result.Error(state.StateDeletionRequested, err)
@@ -143,7 +145,7 @@ func (h *Handler) HandleDeletionRequested(ctx context.Context, child *akov2gener
 func (h *Handler) HandleDeleting(ctx context.Context, child *akov2generated.Child) (ctrlstate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, child)
 	if err != nil {
-		if errors.Is(err, state.ErrMissingCredentials) {
+		if errors.Is(err, state.ErrOptionalAtlasAccessLost) {
 			return result.NextState(state.StateDeleted, err.Error())
 		}
 		return result.Error(state.StateDeleting, err)

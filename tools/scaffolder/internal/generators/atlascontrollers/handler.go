@@ -36,6 +36,8 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 	f.ImportAlias(pkgCtrlState, "ctrlstate")
 	f.ImportAlias("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "apiextensionsv1")
 	f.ImportAlias(apiPkg, "akov2generated")
+	f.ImportAlias("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource", "customresource")
+	f.ImportAlias("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "state")
 
 	f.Comment("getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set")
 	f.Func().Params(jen.Id("h").Op("*").Id("Handler")).Id("getHandlerForResource").Params(
@@ -47,10 +49,13 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 			jen.Id(atlasResourceName),
 		),
 		jen.If(jen.Id("err").Op("!=").Nil()).Block(
-			jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
-				jen.Lit("%w: %w"),
-				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "ErrMissingCredentials"),
+			jen.Id("deletionProtected").Op(":=").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource", "IsResourcePolicyKeepOrDefault").Call(
+				jen.Id(atlasResourceName),
+				jen.Id("h").Dot("deletionProtection"),
+			),
+			jen.Return(jen.Nil(), jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "AtlasAccessLostError").Call(
 				jen.Id("err"),
+				jen.Id("deletionProtected"),
 			)),
 		),
 
@@ -150,7 +155,7 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerI
 				if handlerName == "HandleDeletionRequested" || handlerName == "HandleDeleting" {
 					g.If(jen.Qual("errors", "Is").Call(
 						jen.Id("err"),
-						jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "ErrMissingCredentials"),
+						jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "ErrOptionalAtlasAccessLost"),
 					)).Block(
 						jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
 							jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "StateDeleted"),
