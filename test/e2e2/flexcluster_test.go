@@ -49,7 +49,7 @@ type prepareFunc func(objs []client.Object, params *testparams.TestParams) *next
 // updateFunc is a function type for mutating objects during test updates.
 type updateFunc func(cluster *nextapiv1.FlexCluster)
 
-var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() {
+var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() {
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
@@ -144,7 +144,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 
 	_ = BeforeEach(func(ctx context.Context) {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("flexcluster-ctlr-ns"),
+			Name: utils.RandomName("flexcluster-ctrl-ns"),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")

@@ -47,7 +47,7 @@ const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
+var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctrl"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
@@ -77,7 +77,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("integrations-ctlr-ns-%s", rand.String(6)),
+			Name: fmt.Sprintf("integrations-ctrl-ns-%s", rand.String(6)),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace))
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")

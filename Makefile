@@ -289,7 +289,7 @@ e2e: bundle helm-crds manifests run-kind install-crds $(BUILD_DEPENDENCY) ## Run
 	AKO_E2E_TEST=1 $(GINKGO) $(shell pwd)/test/$@
 
 .PHONY: e2e2
-e2e2: bundle helm-crds run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctlr` run integrations-ctlr e2e2 test
+e2e2: bundle helm-crds run-kind manager install-credentials install-crds set-namespace ## Run e2e2 tests. Command `make e2e2 label=integrations-ctrl` run integrations-ctrl e2e2 test
 	NO_GORUN=1 \
 	AKO_E2E2_TEST=1 \
 	OPERATOR_NAMESPACE=$(OPERATOR_NAMESPACE) \
