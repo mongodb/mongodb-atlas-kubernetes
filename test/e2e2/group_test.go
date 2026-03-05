@@ -43,7 +43,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/testparams"
 )
 
-var _ = Describe("Group CRUD", Ordered, Label("group-ctlr"), func() {
+var _ = Describe("Group CRUD", Ordered, Label("group-ctrl"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
@@ -73,7 +73,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group-ctlr"), func() {
 
 	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("group-ctlr-ns-%s", rand.String(6)),
+			Name: fmt.Sprintf("group-ctrl-ns-%s", rand.String(6)),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
@@ -360,7 +360,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group-ctlr"), func() {
 	})
 })
 
-var _ = Describe("Group with Deletion Protection", Ordered, Label("group-ctlr"), func() {
+var _ = Describe("Group with Deletion Protection", Ordered, Label("group-ctrl"), func() {
 	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
@@ -390,7 +390,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group-ctlr"),
 
 	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("group-ctlr-protect-ns-%s", rand.String(6)),
+			Name: fmt.Sprintf("group-ctrl-protect-ns-%s", rand.String(6)),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
