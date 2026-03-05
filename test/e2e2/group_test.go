@@ -111,9 +111,6 @@ var _ = Describe("Group CRUD", Ordered, Label("group-ctlr"), func() {
 				Expect(len(objs)).To(Equal(1))
 				testGroup = objs[0].(*generatedv1.Group)
 				applyTestParamsToGroup(testGroup, testParams)
-				testGroup.SetAnnotations(map[string]string{
-					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete,
-				})
 				Expect(kubeClient.Create(ctx, testGroup)).To(Succeed())
 
 				Eventually(func(g Gomega) {
