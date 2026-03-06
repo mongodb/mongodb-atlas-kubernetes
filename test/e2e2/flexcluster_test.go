@@ -59,7 +59,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 	var orgID string
 	var sharedTestParams *testparams.TestParams
 
-	_ = BeforeAll(func(ctx context.Context) {
+	_ = BeforeAll(func(ctx SpecContext) {
 		if !version.IsExperimental() {
 			Skip("FlexCluster is an experimental CRD and controller. Skipping test as experimental features are not enabled.")
 		}
@@ -69,7 +69,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 
 		// Start operator
 		deletionProtectionOff := false
-		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C

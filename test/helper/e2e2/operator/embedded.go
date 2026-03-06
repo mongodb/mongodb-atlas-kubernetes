@@ -20,8 +20,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func RunEmbeddedSet() bool {
@@ -40,8 +38,9 @@ type EmbeddedOperator struct {
 	args       []string
 }
 
-func NewEmbeddedOperator(runnerFunc RunnerFunc, args []string) *EmbeddedOperator {
-	return &EmbeddedOperator{runnerFunc: runnerFunc, args: args}
+func NewEmbeddedOperator(ctx context.Context, runnerFunc RunnerFunc, args []string) *EmbeddedOperator {
+	localCtx, cancel := context.WithCancel(ctx)
+	return &EmbeddedOperator{ctx: localCtx, cancelFn: cancel, runnerFunc: runnerFunc, args: args}
 }
 
 func (e *EmbeddedOperator) Start(t testingT) {
@@ -52,8 +51,6 @@ func (e *EmbeddedOperator) Start(t testingT) {
 	if e.ctx != nil {
 		return
 	}
-	signalCtx := ctrl.SetupSignalHandler()
-	e.ctx, e.cancelFn = context.WithCancel(signalCtx)
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()

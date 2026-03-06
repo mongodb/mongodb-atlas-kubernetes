@@ -87,6 +87,7 @@ type Operator interface {
 type OperatorProcess struct {
 	cmd     *exec.Cmd
 	cmdLine []string
+	cancel  context.CancelFunc
 }
 
 func DefaultOperatorEnv(namespace string) []string {
@@ -107,13 +108,14 @@ func AllNamespacesOperatorEnv(operatorNamespace string) []string {
 	)
 }
 
-func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
+func NewOperator(ctx context.Context, env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
 	if RunEmbeddedSet() {
-		return NewEmbeddedOperator(run.Run, cmdArgs)
+		return NewEmbeddedOperator(ctx, run.Run, cmdArgs)
 	}
 	cmdLine := append(operatorCommand(), cmdArgs...)
-	//nolint:gosec
-	cmd := exec.CommandContext(context.Background(), cmdLine[0], cmdLine[1:]...)
+	localCtx, cancel := context.WithCancel(ctx)
+	// nolint:gosec // G204: cmdArgs are controlled by test authors, not external user input.
+	cmd := exec.CommandContext(localCtx, cmdLine[0], cmdLine[1:]...)
 
 	// works around  https://github.com/golang/go/issues/40467
 	// to be able to propagate SIGTERM to the child process.
@@ -127,6 +129,7 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Oper
 	return &OperatorProcess{
 		cmd:     cmd,
 		cmdLine: cmdLine,
+		cancel:  cancel,
 	}
 }
 
@@ -154,7 +157,7 @@ func (o *OperatorProcess) Stop(t testingT) {
 		// Process has already terminated, nothing to do
 		return
 	}
-
+	o.cancel()
 	// Ensure child process is killed on cleanup - send the negative of the pid, which is the process group id.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	pid := 0

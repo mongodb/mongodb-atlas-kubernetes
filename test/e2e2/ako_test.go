@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -38,14 +37,13 @@ const (
 )
 
 var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start-stop"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 
-	_ = BeforeAll(func() {
+	_ = BeforeAll(func(ctx SpecContext) {
 		deletionProtectionOff := false
-		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
@@ -56,7 +54,6 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 			}
 		})
 
-		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
@@ -65,7 +62,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		})).To(Succeed())
 	})
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(func(ctx SpecContext) {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: utils.RandomName("ako-ns"),
 		}}
@@ -73,7 +70,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		Expect(
 			kubeClient.Delete(ctx, testNamespace),
 		).To(Succeed())
@@ -82,7 +79,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
-	It("AKO running", func() {
+	It("AKO running", func(ctx SpecContext) {
 		testProject := akov2.AtlasProject{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "test-project",
