@@ -47,10 +47,6 @@ func (e *EmbeddedOperator) Start(t testingT) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	t.Logf("starting operator in-process with args: %v", e.args)
-
-	if e.ctx != nil {
-		return
-	}
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
