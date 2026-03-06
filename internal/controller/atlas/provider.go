@@ -133,17 +133,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 
 	httpClient := &http.Client{Transport: transport}
 
-	clientv20250312014, err := v20250312014.NewClient(
-		v20250312014.UseBaseURL(p.domain),
-		v20250312014.UseHTTPClient(httpClient),
-		v20250312014.UseUserAgent(operatorUserAgent()))
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClientSet{
-		SdkClient20250312014: clientv20250312014,
-	}, nil
+	return NewSDKClientSet(p.domain, creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey, httpClient)
 }
 
 func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
@@ -160,4 +150,18 @@ func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.S
 
 func operatorUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s;%s)", "MongoDBAtlasKubernetesOperator", version.Version, runtime.GOOS, runtime.GOARCH)
+}
+
+func NewSDKClientSet(domain, publicKey, privateKey string, httpClient *http.Client) (*ClientSet, error) {
+	clientv20250312014, err := v20250312014.NewClient(
+		v20250312014.UseBaseURL(domain),
+		v20250312014.UseHTTPClient(httpClient),
+		v20250312014.UseUserAgent(operatorUserAgent()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClientSet{
+		SdkClient20250312014: clientv20250312014,
+	}, nil
 }

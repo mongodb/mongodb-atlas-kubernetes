@@ -20,6 +20,8 @@ import (
 	"os"
 	"strconv"
 	"sync"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func RunEmbeddedSet() bool {
@@ -50,12 +52,15 @@ func (e *EmbeddedOperator) Start(t testingT) {
 	if e.ctx != nil {
 		return
 	}
-	e.ctx, e.cancelFn = context.WithCancel(context.Background())
+	signalCtx := ctrl.SetupSignalHandler()
+	e.ctx, e.cancelFn = context.WithCancel(signalCtx)
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
 		fs := flag.NewFlagSet("", flag.ContinueOnError)
-		e.runnerFunc(e.ctx, fs, e.args)
+		if err := e.runnerFunc(e.ctx, fs, e.args); err != nil {
+			t.Fatalf("error running operator: %v", err)
+		}
 	}()
 }
 
@@ -71,7 +76,20 @@ func (e *EmbeddedOperator) Wait(t testingT) {
 }
 
 func (e *EmbeddedOperator) Stop(t testingT) {
+	e.mutex.Lock()
+	cancelFn := e.cancelFn
+	e.mutex.Unlock()
+
+	if cancelFn == nil {
+		return
+	}
+
 	t.Logf("canceling operator context to force it to stop")
-	e.cancelFn()
+	cancelFn()
 	e.Wait(t)
+
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	e.ctx = nil
+	e.cancelFn = nil
 }
