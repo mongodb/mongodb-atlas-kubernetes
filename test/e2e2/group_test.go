@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -44,14 +43,13 @@ import (
 )
 
 var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
 
-	_ = BeforeAll(func() {
+	_ = BeforeAll(func(ctx SpecContext) {
 		deletionProtectionOff := false
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
@@ -61,8 +59,6 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				ako.Stop(GinkgoT())
 			}
 		})
-
-		ctx = context.Background()
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient
@@ -71,7 +67,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		atlasClient, orgID = newTestAtlasClient()
 	})
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(func(ctx SpecContext) {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("group-ns-%s", rand.String(6)),
 		}}
@@ -86,7 +82,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		).To(Succeed())
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		if kubeClient == nil {
 			return
 		}
@@ -98,8 +94,8 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
-	Describe("Group CRUD lifecycle", func() {
-		It("Should create, update, and delete Group", Label("focus-group-crud"), func() {
+	Describe("Group CRUD lifecycle", Ordered, func() {
+		It("Should create, update, and delete Group", Label("focus-group-crud"), func(ctx SpecContext) {
 			groupName := fmt.Sprintf("test-group-crud-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -176,7 +172,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 			})
 		})
 
-		It("Should Fail if Secret is wrong", Label("focus-group-fail-secret"), func() {
+		It("Should Fail if Secret is wrong", Label("focus-group-fail-secret"), func(ctx SpecContext) {
 			groupName := fmt.Sprintf("test-group-fail-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), "non-existent-secret").
 				WithGroupName(groupName).
@@ -220,7 +216,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		})
 
 		It("Should NOT delete from Atlas when ResourcePolicyKeep annotation is set", Label("focus-group-kept"),
-			func() {
+			func(ctx SpecContext) {
 				groupName := fmt.Sprintf("test-group-keep-%s", rand.String(6))
 				testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 					WithGroupName(groupName).
@@ -267,7 +263,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	})
 
 	Describe("Using the global Connection Secret", func() {
-		It("Should Succeed", Label("focus-group-global-creds"), func() {
+		It("Should Succeed", Label("focus-group-global-creds"), func(ctx SpecContext) {
 			groupName := fmt.Sprintf("test-group-global-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -297,8 +293,8 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		})
 	})
 
-	Describe("Importing existing Group in Atlas project", func() {
-		It("Should reconcile existing project", Label("focus-group-existing"), func() {
+	Describe("Importing existing Group in Atlas project", Ordered, func() {
+		It("Should reconcile existing project", Label("focus-group-existing"), func(ctx SpecContext) {
 			groupName := fmt.Sprintf("existing-group-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -361,14 +357,13 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 })
 
 var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
 
-	_ = BeforeAll(func() {
+	_ = BeforeAll(func(ctx SpecContext) {
 		deletionProtectionOn := true
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOn)
 		ako.Start(GinkgoT())
@@ -379,7 +374,6 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 			}
 		})
 
-		ctx = context.Background()
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient
@@ -388,7 +382,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		atlasClient, orgID = newTestAtlasClient()
 	})
 
-	_ = BeforeEach(func() {
+	_ = BeforeEach(func(ctx SpecContext) {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("group-protect-ns-%s", rand.String(6)),
 		}}
@@ -403,7 +397,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		).To(Succeed())
 	})
 
-	_ = AfterEach(func() {
+	_ = AfterEach(func(ctx SpecContext) {
 		if kubeClient == nil {
 			return
 		}
@@ -416,7 +410,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 	})
 
 	Describe("Deleting the Group", Label("focus-group-deletion-protected"), func() {
-		It("Should NOT delete from Atlas when deletion protection is enabled", func() {
+		It("Should NOT delete from Atlas when deletion protection is enabled", func(ctx SpecContext) {
 			groupName := fmt.Sprintf("test-group-protect-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
