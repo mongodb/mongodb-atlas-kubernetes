@@ -45,8 +45,9 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var resourcePrefix string
+	ctx := context.Background()
 
-	_ = BeforeAll(func(ctx SpecContext) {
+	_ = BeforeAll(func() {
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
 		ako.Start(GinkgoT())
 
@@ -63,7 +64,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		kubeClient = client
 	})
 
-	_ = BeforeEach(func(ctx SpecContext) {
+	_ = BeforeEach(func() {
 		resourcePrefix = utils.RandomName("flex-to-dedicated")
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: resourcePrefix + "-ns",
@@ -72,7 +73,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func(ctx SpecContext) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
@@ -82,7 +83,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		}).WithTimeout(time.Minute).WithPolling(time.Second).To(Succeed())
 	})
 
-	It("Should upgrade a Flex cluster to a Dedicated cluster", func(ctx context.Context) {
+	It("Should upgrade a Flex cluster to a Dedicated cluster", func() {
 		By("Create Atlas Project", func() {
 			project := akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -192,7 +193,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 	DescribeTable(
 		"Should handle invalid upgrade scenarios",
-		func(ctx context.Context, objects, updatedObjets []client.Object, errorMessage string) {
+		func(objects, updatedObjets []client.Object, errorMessage string) {
 			var project *akov2.AtlasProject
 			var deployment *akov2.AtlasDeployment
 			var updateDeployment *akov2.AtlasDeployment

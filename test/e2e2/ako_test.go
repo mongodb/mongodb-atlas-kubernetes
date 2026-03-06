@@ -15,6 +15,7 @@
 package e2e2_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -40,8 +41,9 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	ctx := context.Background()
 
-	_ = BeforeAll(func(ctx SpecContext) {
+	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
@@ -62,7 +64,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		})).To(Succeed())
 	})
 
-	_ = BeforeEach(func(ctx SpecContext) {
+	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: utils.RandomName("ako-ns"),
 		}}
@@ -70,7 +72,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func(ctx SpecContext) {
+	_ = AfterEach(func() {
 		Expect(
 			kubeClient.Delete(ctx, testNamespace),
 		).To(Succeed())
@@ -79,7 +81,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
-	It("AKO running", func(ctx SpecContext) {
+	It("AKO running", func() {
 		testProject := akov2.AtlasProject{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "test-project",

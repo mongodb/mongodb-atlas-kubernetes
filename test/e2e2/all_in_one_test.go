@@ -30,6 +30,7 @@ import (
 
 var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 	var kubeClient client.Client
+	ctx := context.Background()
 
 	_ = BeforeAll(func() {
 		c, err := kube.NewTestClient()
@@ -42,7 +43,7 @@ var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 	})
 
 	It("waits for mongodb-atlas-operator deployment to be Ready", func() {
-		Eventually(func(g Gomega, ctx context.Context) {
+		Eventually(func(g Gomega) {
 			var deployment appsv1.Deployment
 			err := kubeClient.Get(ctx, client.ObjectKey{
 				Namespace: "mongodb-atlas-system",
@@ -58,6 +59,6 @@ var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 				}
 			}
 			g.Expect(ready).To(BeTrue(), "deployment is not Ready")
-		}).WithContext(context.Background()).WithPolling(time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
+		}).WithPolling(time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 	})
 })

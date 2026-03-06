@@ -51,8 +51,9 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	ctx := context.Background()
 
-	_ = BeforeAll(func(ctx SpecContext) {
+	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
@@ -73,7 +74,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		})).To(Succeed())
 	})
 
-	_ = BeforeEach(func(ctx SpecContext) {
+	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("integrations-ctrl-ns-%s", rand.String(6)),
 		}}
@@ -81,7 +82,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func(ctx SpecContext) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
@@ -94,7 +95,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	})
 
 	DescribeTable("Integrations samples",
-		func(ctx SpecContext, objs []client.Object, updates []client.Object, wantReady string) {
+		func(objs []client.Object, updates []client.Object, wantReady string) {
 			By("Prepare & apply test case objects", func() {
 				for _, obj := range objs {
 					objToApply := WithRandomAtlasProject(kube.WithRenamedNamespace(obj, testNamespace.Name))
@@ -204,7 +205,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		),
 	)
 
-	It("Can handle isolated integrations", func(ctx SpecContext) {
+	It("Can handle isolated integrations", func() {
 		project := akov2.AtlasProject{
 			TypeMeta:   v1.TypeMeta{Kind: "AtlasProject", APIVersion: akov2.GroupVersion.String()},
 			ObjectMeta: v1.ObjectMeta{Name: "atlas-project", Namespace: testNamespace.Name},

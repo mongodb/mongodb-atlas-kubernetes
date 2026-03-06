@@ -15,6 +15,7 @@
 package e2e2_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -48,8 +49,9 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
+	ctx := context.Background()
 
-	_ = BeforeAll(func(ctx SpecContext) {
+	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(GinkgoT())
@@ -67,7 +69,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		atlasClient, orgID = newTestAtlasClient()
 	})
 
-	_ = BeforeEach(func(ctx SpecContext) {
+	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("group-ns-%s", rand.String(6)),
 		}}
@@ -82,7 +84,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		).To(Succeed())
 	})
 
-	_ = AfterEach(func(ctx SpecContext) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
@@ -91,11 +93,11 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	Describe("Group CRUD lifecycle", Ordered, func() {
-		It("Should create, update, and delete Group", Label("focus-group-crud"), func(ctx SpecContext) {
+		It("Should create, update, and delete Group", Label("focus-group-crud"), func() {
 			groupName := fmt.Sprintf("test-group-crud-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -111,7 +113,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify status
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -135,7 +137,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceUpdated(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify in Atlas
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -162,17 +164,17 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
-				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 
-		It("Should Fail if Secret is wrong", Label("focus-group-fail-secret"), func(ctx SpecContext) {
+		It("Should Fail if Secret is wrong", Label("focus-group-fail-secret"), func() {
 			groupName := fmt.Sprintf("test-group-fail-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), "non-existent-secret").
 				WithGroupName(groupName).
@@ -194,7 +196,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)).To(Succeed())
 					g.Expect(testGroup.GetConditions()).NotTo(BeEmpty())
-				}).WithContext(ctx).WithTimeout(time.Second * 5).WithPolling(time.Second).Should(Succeed())
+				}).WithTimeout(time.Second * 5).WithPolling(time.Second).Should(Succeed())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "Ready")).To(BeFalse())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "State")).To(BeFalse())
 				readyCondition := meta.FindStatusCondition(testGroup.GetConditions(), "Ready")
@@ -211,12 +213,12 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 
 		It("Should NOT delete from Atlas when ResourcePolicyKeep annotation is set", Label("focus-group-kept"),
-			func(ctx SpecContext) {
+			func() {
 				groupName := fmt.Sprintf("test-group-keep-%s", rand.String(6))
 				testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 					WithGroupName(groupName).
@@ -235,7 +237,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 				})
 
 				By("Delete Group from cluster - should NOT delete from Atlas", func() {
@@ -247,7 +249,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					Eventually(func(g Gomega) {
 						err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 						g.Expect(err).ToNot(Succeed())
-					}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
+					}).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 					// Verify it still exists in Atlas
 					time.Sleep(10 * time.Second)
@@ -263,7 +265,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	})
 
 	Describe("Using the global Connection Secret", func() {
-		It("Should Succeed", Label("focus-group-global-creds"), func(ctx SpecContext) {
+		It("Should Succeed", Label("focus-group-global-creds"), func() {
 			groupName := fmt.Sprintf("test-group-global-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -285,7 +287,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "Ready")).To(BeTrue())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "State")).To(BeTrue())
@@ -294,7 +296,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	})
 
 	Describe("Importing existing Group in Atlas project", Ordered, func() {
-		It("Should reconcile existing project", Label("focus-group-existing"), func(ctx SpecContext) {
+		It("Should reconcile existing project", Label("focus-group-existing"), func() {
 			groupName := fmt.Sprintf("existing-group-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -327,7 +329,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify it has the correct ID
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -350,7 +352,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 	})
@@ -362,8 +364,9 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
+	ctx := context.Background()
 
-	_ = BeforeAll(func(ctx SpecContext) {
+	_ = BeforeAll(func() {
 		deletionProtectionOn := true
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOn)
 		ako.Start(GinkgoT())
@@ -382,7 +385,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		atlasClient, orgID = newTestAtlasClient()
 	})
 
-	_ = BeforeEach(func(ctx SpecContext) {
+	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("group-protect-ns-%s", rand.String(6)),
 		}}
@@ -397,7 +400,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		).To(Succeed())
 	})
 
-	_ = AfterEach(func(ctx SpecContext) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
@@ -406,11 +409,11 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	Describe("Deleting the Group", Label("focus-group-deletion-protected"), func() {
-		It("Should NOT delete from Atlas when deletion protection is enabled", func(ctx SpecContext) {
+		It("Should NOT delete from Atlas when deletion protection is enabled", func() {
 			groupName := fmt.Sprintf("test-group-protect-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 				WithGroupName(groupName).
@@ -426,7 +429,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify it was created in Atlas
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -445,7 +448,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					g.Expect(err).To(HaveOccurred())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
+				}).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				// Verify Group still exists in Atlas (deletion protection prevented deletion)
 				Eventually(func(g Gomega) {
@@ -453,7 +456,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasGroup).NotTo(BeNil())
 					g.Expect(atlasGroup.GetId()).To(Equal(*groupID))
-				}).WithContext(ctx).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
 			By("Clean up Atlas resource manually", func() {
@@ -467,7 +470,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
-				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 	})
