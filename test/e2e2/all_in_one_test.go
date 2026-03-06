@@ -59,6 +59,6 @@ var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 				}
 			}
 			g.Expect(ready).To(BeTrue(), "deployment is not Ready")
-		}).WithPolling(time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
+		}).WithContext(ctx).WithPolling(time.Second).WithTimeout(5 * time.Minute).Should(Succeed())
 	})
 })

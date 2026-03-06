@@ -93,7 +93,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	Describe("Group CRUD lifecycle", Ordered, func() {
@@ -113,7 +113,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify status
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -137,7 +137,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceUpdated(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify in Atlas
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -164,13 +164,13 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
 					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
-				}).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 
@@ -196,7 +196,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)).To(Succeed())
 					g.Expect(testGroup.GetConditions()).NotTo(BeEmpty())
-				}).WithTimeout(time.Second * 5).WithPolling(time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(time.Second * 5).WithPolling(time.Second).Should(Succeed())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "Ready")).To(BeFalse())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "State")).To(BeFalse())
 				readyCondition := meta.FindStatusCondition(testGroup.GetConditions(), "Ready")
@@ -213,7 +213,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 
@@ -237,7 +237,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-					}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 				})
 
 				By("Delete Group from cluster - should NOT delete from Atlas", func() {
@@ -249,7 +249,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					Eventually(func(g Gomega) {
 						err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 						g.Expect(err).ToNot(Succeed())
-					}).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 					// Verify it still exists in Atlas
 					time.Sleep(10 * time.Second)
@@ -287,7 +287,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "Ready")).To(BeTrue())
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "State")).To(BeTrue())
@@ -329,7 +329,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify it has the correct ID
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -352,7 +352,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
 					g.Expect(err).NotTo(Succeed())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 	})
@@ -409,7 +409,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	Describe("Deleting the Group", Label("focus-group-deletion-protected"), func() {
@@ -429,7 +429,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				// Verify it was created in Atlas
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
@@ -448,7 +448,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					g.Expect(err).To(HaveOccurred())
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-				}).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				// Verify Group still exists in Atlas (deletion protection prevented deletion)
 				Eventually(func(g Gomega) {
@@ -456,7 +456,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasGroup).NotTo(BeNil())
 					g.Expect(atlasGroup.GetId()).To(Equal(*groupID))
-				}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
 			By("Clean up Atlas resource manually", func() {
@@ -470,7 +470,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
-				}).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 		})
 	})

@@ -78,7 +78,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	It("AKO running", func() {

@@ -111,7 +111,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 		By("Wait for Group to be Ready and get its ID", func() {
 			Eventually(func(g Gomega) {
 				g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-			}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			Expect(testGroup.Status.V20250312).NotTo(BeNil())
 			Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
 			groupID = *testGroup.Status.V20250312.Id
@@ -129,7 +129,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 				Eventually(func(g Gomega) error {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
 			}
 		})
 		By("Clean up shared group namespace", func() {
@@ -138,7 +138,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 				Expect(kubeClient.Delete(ctx, sharedGroupNamespace)).To(Succeed())
 				Eventually(func(g Gomega) bool {
 					return kubeClient.Get(ctx, client.ObjectKeyFromObject(sharedGroupNamespace), sharedGroupNamespace) == nil
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 			}
 		})
 	})
@@ -160,7 +160,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	DescribeTable("FlexCluster CRUD lifecycle",
@@ -203,7 +203,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 						}
 						Eventually(func(g Gomega) {
 							g.Expect(resources.CheckResourceReady(ctx, kubeClient, groupObj)).To(Succeed())
-						}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+						}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					}
 				}
 			})
@@ -211,7 +211,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 			By("Wait for FlexCluster to be Ready", func() {
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, cluster)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
 			By("Verify cluster was created", func() {
@@ -234,7 +234,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 			By("Wait for FlexCluster to be Ready & updated", func() {
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceUpdated(ctx, kubeClient, cluster)).To(Succeed())
-				}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
 			By("Delete all created resources", func() {
@@ -247,7 +247,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 				for _, obj := range createdObjects {
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, obj)).To(Succeed())
-					}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 				}
 			})
 		},

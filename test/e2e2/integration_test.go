@@ -91,7 +91,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	DescribeTable("Integrations samples",
@@ -117,7 +117,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						return condition.Status == metav1.ConditionTrue
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Apply updates", func() {
@@ -144,7 +144,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						}
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Delete integration", func() {
@@ -230,7 +230,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return true
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		integrationSecret := corev1.Secret{
@@ -291,7 +291,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return condition.Status == metav1.ConditionTrue
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		By("Update integration", func() {
