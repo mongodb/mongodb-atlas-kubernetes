@@ -794,7 +794,7 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: all-lints
-all-lints: fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
+all-lints: helm-crds fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci

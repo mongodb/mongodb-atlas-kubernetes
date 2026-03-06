@@ -10,6 +10,47 @@
   resources:
     - secrets
   verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - atlas.generated.mongodb.com
+  resources:
+    - groups
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - atlas.generated.mongodb.com
+  resources:
+    - groups/finalizers
+  verbs:
+    - update
+- apiGroups:
+    - atlas.generated.mongodb.com
+  resources:
+    - groups/status
+  verbs:
+    - get
+    - patch
+    - update
+- apiGroups:
+    - ""
+  resources:
+    - events
+  verbs:
+    - create
+    - patch
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+  verbs:
     - create
     - delete
     - get
@@ -31,6 +72,7 @@
     - atlasipaccesslists
     - atlasnetworkcontainers
     - atlasnetworkpeerings
+    - atlasorgsettings
     - atlasprivateendpoints
     - atlasprojects
     - atlassearchindexconfigs
@@ -38,7 +80,6 @@
     - atlasstreaminstances
     - atlasteams
     - atlasthirdpartyintegrations
-    - atlasorgsettings
   verbs:
     - create
     - delete
@@ -61,6 +102,7 @@
     - atlasipaccesslists/status
     - atlasnetworkcontainers/status
     - atlasnetworkpeerings/status
+    - atlasorgsettings/status
     - atlasprivateendpoints/status
     - atlasprojects/status
     - atlassearchindexconfigs/status
@@ -68,7 +110,6 @@
     - atlasstreaminstances/status
     - atlasteams/status
     - atlasthirdpartyintegrations/status
-    - atlasorgsettings/status
   verbs:
     - get
     - patch
@@ -79,6 +120,7 @@
     - atlasipaccesslists/finalizers
     - atlasnetworkcontainers/finalizers
     - atlasnetworkpeerings/finalizers
+    - atlasorgsettings/finalizers
     - atlasthirdpartyintegrations/finalizers
   verbs:
     - update
