@@ -16,6 +16,7 @@
 - apiGroups:
     - atlas.generated.mongodb.com
   resources:
+    - clusters
     - groups
   verbs:
     - create
@@ -28,12 +29,14 @@
 - apiGroups:
     - atlas.generated.mongodb.com
   resources:
+    - clusters/finalizers
     - groups/finalizers
   verbs:
     - update
 - apiGroups:
     - atlas.generated.mongodb.com
   resources:
+    - clusters/status
     - groups/status
   verbs:
     - get
