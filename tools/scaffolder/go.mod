@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder
 
-go 1.25.6
+go 1.25.8
 
 // replace github.com/josvazg/crd2go => ../crd2go
 

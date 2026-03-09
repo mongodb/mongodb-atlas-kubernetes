@@ -28,7 +28,7 @@
     "fd":                          "latest",
     "go-licenses":                 "1.6.0",
     "kind":                        "latest",
-    "go":                          "latest",
+    "go":                          "1.25.7",
     "gnused":                      "latest",
     "syft":                        "latest"
   },
