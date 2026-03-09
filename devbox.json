@@ -22,24 +22,22 @@
     "kubernetes-controller-tools": "0.19.0",
     "setup-envtest":               "0.19.0",
     "awscli2":                     "latest",
-    "docker-sbom":                 "latest",
     "openshift":                   "latest",
     "gh":                          "latest",
     "addlicense":                  "latest",
     "fd":                          "latest",
     "go-licenses":                 "1.6.0",
     "kind":                        "latest",
-    "go":                          "latest",
-    "gnused":                      "latest"
+    "go":                          "1.25.7",
+    "gnused":                      "latest",
+    "syft":                        "latest"
+  },
+  "env": {
+    "GOTOOLCHAIN": "auto"
   },
   "shell": {
     "init_hook": [
-      "# Prepend Go's managed GOROOT to PATH",
-      "# This allows Go's toolbox version control, overriding Nix's paths",
-      "export NIX_GOROOT=$(go env GOROOT)",
-      "export PATH=$NIX_GOROOT/bin:$PATH",
-      "unset GOROOT            # force to calculate GOROOT automatically",
-      "export GOTOOLCHAIN=auto # honor go.mod's toolchain"
+      "export PATH=\"$(GOTOOLCHAIN=auto go env GOROOT)/bin:$PATH\""
     ]
   }
 }

@@ -23,5 +23,7 @@ jobs:
         go-version: '1.25'
 
     - name: CI checks
+      env:
+        GOTOOLCHAIN: auto
       working-directory: ./tools/clean
       run: go build ./... && go test ./...
