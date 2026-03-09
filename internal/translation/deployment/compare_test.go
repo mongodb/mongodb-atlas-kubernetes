@@ -547,6 +547,97 @@ func TestComputeChanges(t *testing.T) {
 			expectedChanges: nil,
 			changed:         false,
 		},
+		// Bug exposure: AutoScaling should NOT be included when it hasn't changed (both desired and current are nil).
+		// This exposes the bug where getAutoScalingChanges always returns a non-nil value with default/empty fields
+		// even when desired is nil, causing AutoScaling to always be included in changes.
+		// Expected: AutoScaling should be nil in changes when unchanged
+		// Actual (buggy): AutoScaling is included with {DiskGB: {Enabled: false}, Compute: {Enabled: false}} even when unchanged
+		// This causes reconciliation loops because we send unnecessary updates to Atlas.
+		"BUG_EXPOSURE: should not include AutoScaling in changes when AutoScaling hasn't changed": {
+			akoCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "PROVISIONED", // Explicitly specified, different from Atlas
+									},
+									// AutoScaling is nil (not specified)
+								},
+							},
+						},
+					},
+				},
+			},
+			atlasCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "STANDARD", // Different from desired
+									},
+									// AutoScaling is also nil (no change)
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedChanges: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "PROVISIONED", // Only this should change
+									},
+									// AutoScaling should be nil (not included when unchanged)
+									// Bug: getAutoScalingChanges returns non-nil with default values even when desired is nil
+								},
+							},
+						},
+					},
+				},
+			},
+			changed: true,
+		},
 	}
 
 	for name, tt := range tests {
