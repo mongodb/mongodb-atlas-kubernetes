@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"embed"
 	"time"
 
@@ -45,7 +44,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var resourcePrefix string
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)

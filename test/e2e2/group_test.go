@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -49,7 +48,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
@@ -364,7 +363,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOn := true

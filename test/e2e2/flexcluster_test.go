@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -58,7 +57,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 	var groupID string
 	var orgID string
 	var sharedTestParams *testparams.TestParams
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		if !version.IsExperimental() {

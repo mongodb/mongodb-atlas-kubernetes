@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +29,6 @@ import (
 
 var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 	var kubeClient client.Client
-	ctx := context.Background()
 
 	_ = BeforeAll(func() {
 		c, err := kube.NewTestClient()
@@ -43,6 +41,7 @@ var _ = Describe("all-in-one.yaml", Ordered, Label("all-in-one"), func() {
 	})
 
 	It("waits for mongodb-atlas-operator deployment to be Ready", func() {
+		ctx := suiteCtx
 		Eventually(func(g Gomega) {
 			var deployment appsv1.Deployment
 			err := kubeClient.Get(ctx, client.ObjectKey{

@@ -51,7 +51,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false

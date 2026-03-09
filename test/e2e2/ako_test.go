@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,7 +40,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
-	ctx := context.Background()
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
