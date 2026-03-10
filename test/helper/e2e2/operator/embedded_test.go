@@ -25,8 +25,8 @@ import (
 )
 
 func TestEmbeddedOperator(t *testing.T) {
-	eo := operator.NewEmbeddedOperator(context.Background(), testRun, []string{})
-	eo.Start(t)
+	eo := operator.NewEmbeddedOperator(testRun, []string{})
+	eo.Start(context.Background(), t)
 	assert.True(t, eo.Running())
 	eo.Stop(t)
 }

@@ -52,8 +52,8 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
-		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		ako.Start(ctx, GinkgoT())
 
 		DeferCleanup(func() {
 			if ako != nil {
@@ -367,8 +367,8 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 
 	_ = BeforeAll(func() {
 		deletionProtectionOn := true
-		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOn)
-		ako.Start(GinkgoT())
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOn)
+		ako.Start(ctx, GinkgoT())
 
 		DeferCleanup(func() {
 			if ako != nil {

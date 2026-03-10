@@ -47,8 +47,8 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
-		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
-		ako.Start(GinkgoT())
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.

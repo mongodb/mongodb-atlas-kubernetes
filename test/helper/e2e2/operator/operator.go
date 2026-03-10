@@ -78,16 +78,18 @@ type testingT interface {
 }
 
 type Operator interface {
-	Start(t testingT)
+	Start(ctx context.Context, t testingT)
 	Running() bool
 	Wait(t testingT)
 	Stop(t testingT)
 }
 
 type OperatorProcess struct {
-	cmd     *exec.Cmd
-	cmdLine []string
-	cancel  context.CancelFunc
+	env            []string
+	stdout, stderr io.Writer
+	command        []string
+	cmd            *exec.Cmd
+	cancel         context.CancelFunc
 }
 
 func DefaultOperatorEnv(namespace string) []string {
@@ -108,33 +110,36 @@ func AllNamespacesOperatorEnv(operatorNamespace string) []string {
 	)
 }
 
-func NewOperator(ctx context.Context, env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
+func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Operator {
 	if RunEmbeddedSet() {
-		return NewEmbeddedOperator(ctx, run.Run, cmdArgs)
+		return NewEmbeddedOperator(run.Run, cmdArgs)
 	}
-	cmdLine := append(operatorCommand(), cmdArgs...)
+	return &OperatorProcess{
+		env:     env,
+		stdout:  stdout,
+		stderr:  stderr,
+		command: append(operatorCommand(), cmdArgs...),
+	}
+}
+
+func (o *OperatorProcess) Start(ctx context.Context, t testingT) {
 	localCtx, cancel := context.WithCancel(ctx)
 	// nolint:gosec // G204: cmdArgs are controlled by test authors, not external user input.
-	cmd := exec.CommandContext(localCtx, cmdLine[0], cmdLine[1:]...)
+	cmd := exec.CommandContext(localCtx, o.command[0], o.command[1:]...)
 
 	// works around  https://github.com/golang/go/issues/40467
 	// to be able to propagate SIGTERM to the child process.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	cmd.Env = env
+	cmd.Stdout = o.stdout
+	cmd.Stderr = o.stderr
+	cmd.Env = o.env
 
-	return &OperatorProcess{
-		cmd:     cmd,
-		cmdLine: cmdLine,
-		cancel:  cancel,
-	}
-}
+	o.cmd = cmd
+	o.cancel = cancel
 
-func (o *OperatorProcess) Start(t testingT) {
-	t.Logf("starting operator command: %q", strings.Join(o.cmdLine, " "))
+	t.Logf("starting operator command: %q", strings.Join(o.command, " "))
 	if err := o.cmd.Start(); err != nil {
 		t.Fatalf("failed to start operator: %v", err)
 	}

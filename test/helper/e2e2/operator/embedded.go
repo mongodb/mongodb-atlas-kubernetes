@@ -34,19 +34,19 @@ type EmbeddedOperator struct {
 	mutex      sync.Mutex
 	wg         sync.WaitGroup
 	ctx        context.Context
-	cancelFn   context.CancelFunc
+	cancel     context.CancelFunc
 	args       []string
 }
 
-func NewEmbeddedOperator(ctx context.Context, runnerFunc RunnerFunc, args []string) *EmbeddedOperator {
-	localCtx, cancel := context.WithCancel(ctx)
-	return &EmbeddedOperator{ctx: localCtx, cancelFn: cancel, runnerFunc: runnerFunc, args: args}
+func NewEmbeddedOperator(runnerFunc RunnerFunc, args []string) *EmbeddedOperator {
+	return &EmbeddedOperator{runnerFunc: runnerFunc, args: args}
 }
 
-func (e *EmbeddedOperator) Start(t testingT) {
+func (e *EmbeddedOperator) Start(ctx context.Context, t testingT) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	t.Logf("starting operator in-process with args: %v", e.args)
+	e.ctx, e.cancel = context.WithCancel(ctx)
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
@@ -70,19 +70,19 @@ func (e *EmbeddedOperator) Wait(t testingT) {
 
 func (e *EmbeddedOperator) Stop(t testingT) {
 	e.mutex.Lock()
-	cancelFn := e.cancelFn
+	cancel := e.cancel
 	e.mutex.Unlock()
 
-	if cancelFn == nil {
+	if cancel == nil {
 		return
 	}
 
 	t.Logf("canceling operator context to force it to stop")
-	cancelFn()
+	cancel()
 	e.Wait(t)
 
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	e.ctx = nil
-	e.cancelFn = nil
+	e.cancel = nil
 }

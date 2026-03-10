@@ -84,7 +84,7 @@ func initTestLogging(t *testing.T) {
 }
 
 // nolint:unparam
-func runTestAKO(ctx context.Context, globalCreds, ns string, deletionprotection bool) operator.Operator {
+func runTestAKO(globalCreds, ns string, deletionprotection bool) operator.Operator {
 	args := []string{
 		"--log-level=-9",
 		fmt.Sprintf("--global-api-secret-name=%s", globalCreds),
@@ -92,7 +92,7 @@ func runTestAKO(ctx context.Context, globalCreds, ns string, deletionprotection 
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
 	}
 	args = append(args, fmt.Sprintf("--object-deletion-protection=%v", deletionprotection))
-	return operator.NewOperator(ctx, operator.AllNamespacesOperatorEnv(ns), os.Stdout, os.Stderr, args...)
+	return operator.NewOperator(operator.AllNamespacesOperatorEnv(ns), os.Stdout, os.Stderr, args...)
 }
 
 // newTestAtlasClient creates an Atlas API client for e2e2 tests.

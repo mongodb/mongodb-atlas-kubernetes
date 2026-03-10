@@ -44,8 +44,8 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
-		ako = runTestAKO(ctx, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
