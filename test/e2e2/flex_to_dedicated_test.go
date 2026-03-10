@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"embed"
 	"time"
 
@@ -41,15 +40,15 @@ import (
 var flex2dedicated embed.FS
 
 var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var resourcePrefix string
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
@@ -59,7 +58,6 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 			}
 		})
 
-		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).ToNot(HaveOccurred())
 		kubeClient = client
@@ -81,10 +79,10 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 		Expect(kubeClient.Delete(ctx, testNamespace)).To(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace)).ShouldNot(Succeed())
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(Succeed())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(Succeed())
 	})
 
-	It("Should upgrade a Flex cluster to a Dedicated cluster", func(ctx context.Context) {
+	It("Should upgrade a Flex cluster to a Dedicated cluster", func() {
 		By("Create Atlas Project", func() {
 			project := akov2.AtlasProject{
 				ObjectMeta: metav1.ObjectMeta{
@@ -102,7 +100,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 				condition, err := k8s.GetProjectStatusCondition(ctx, kubeClient, api.ReadyType, testNamespace.Name, resourcePrefix+"-project")
 				g.Expect(err).To(BeNil())
 				g.Expect(condition).To(Equal("True"))
-			}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 		})
 
 		By("Create a Flex cluster", func() {
@@ -132,7 +130,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 				condition, err := k8s.GetDeploymentStatusCondition(ctx, kubeClient, api.ReadyType, testNamespace.Name, resourcePrefix+"-cluster")
 				g.Expect(err).To(BeNil())
 				g.Expect(condition).To(Equal("True"))
-			}).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 		})
 
 		By("Upgrade Flex cluster to Dedicated cluster", func() {
@@ -174,7 +172,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 						g.Expect(c.Status).To(Equal(corev1.ConditionTrue))
 					}
 				}
-			}).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			}).WithContext(ctx).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 
 		By("Delete resources", func() {
@@ -188,13 +186,13 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 			Eventually(func(g Gomega) {
 				g.Expect(kubeClient.Get(ctx, client.ObjectKey{Namespace: testNamespace.Name, Name: resourcePrefix + "-project"}, &project)).ToNot(Succeed())
-			}).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			}).WithContext(ctx).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 	})
 
 	DescribeTable(
 		"Should handle invalid upgrade scenarios",
-		func(ctx context.Context, objects, updatedObjets []client.Object, errorMessage string) {
+		func(objects, updatedObjets []client.Object, errorMessage string) {
 			var project *akov2.AtlasProject
 			var deployment *akov2.AtlasDeployment
 			var updateDeployment *akov2.AtlasDeployment
@@ -252,7 +250,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 							g.Expect(c.Message).To(ContainSubstring(errorMessage))
 						}
 					}
-				}).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 
 			By("Delete resources", func() {
@@ -264,7 +262,7 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKey{Namespace: testNamespace.Name, Name: resourcePrefix + "-project"}, project)).ToNot(Succeed())
-				}).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+				}).WithContext(ctx).WithTimeout(30 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 			})
 		},
 		Entry(

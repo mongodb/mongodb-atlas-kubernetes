@@ -47,16 +47,16 @@ const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctrl"), func() {
-	var ctx context.Context
+var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
@@ -66,7 +66,6 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			}
 		})
 
-		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
@@ -92,7 +91,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	DescribeTable("Integrations samples",
@@ -118,7 +117,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						return condition.Status == metav1.ConditionTrue
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Apply updates", func() {
@@ -145,7 +144,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						}
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Delete integration", func() {
@@ -231,7 +230,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return true
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		integrationSecret := corev1.Secret{
@@ -292,7 +291,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return condition.Status == metav1.ConditionTrue
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		By("Update integration", func() {

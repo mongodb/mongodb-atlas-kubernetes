@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -44,25 +43,23 @@ import (
 )
 
 var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		DeferCleanup(func() {
 			if ako != nil {
 				ako.Stop(GinkgoT())
 			}
 		})
-
-		ctx = context.Background()
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient
@@ -98,7 +95,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
-	Describe("Group CRUD lifecycle", func() {
+	Describe("Group CRUD lifecycle", Ordered, func() {
 		It("Should create, update, and delete Group", Label("focus-group-crud"), func() {
 			groupName := fmt.Sprintf("test-group-crud-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
@@ -297,7 +294,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 		})
 	})
 
-	Describe("Importing existing Group in Atlas project", func() {
+	Describe("Importing existing Group in Atlas project", Ordered, func() {
 		It("Should reconcile existing project", Label("focus-group-existing"), func() {
 			groupName := fmt.Sprintf("existing-group-%s", rand.String(6))
 			testParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
@@ -361,17 +358,17 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 })
 
 var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
 	var atlasClient *admin.APIClient
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOn := true
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOn)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		DeferCleanup(func() {
 			if ako != nil {
@@ -379,7 +376,6 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 			}
 		})
 
-		ctx = context.Background()
 		testClient, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = testClient

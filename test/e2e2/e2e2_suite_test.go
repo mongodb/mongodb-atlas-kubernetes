@@ -15,8 +15,11 @@
 package e2e2_test
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -46,11 +49,14 @@ const (
 
 var GinkGoFieldOwner = client.FieldOwner("ginkgo")
 
+var suiteCtx context.Context
+var suiteCancel context.CancelFunc
+
 func TestE2e(t *testing.T) {
 	control.SkipTestUnless(t, "AKO_E2E2_TEST")
 
 	initTestLogging(t)
-
+	suiteCtx, suiteCancel = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator E2E2 Test Suite tests the operator binary")
 }

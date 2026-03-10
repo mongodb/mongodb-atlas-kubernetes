@@ -207,7 +207,7 @@ func StartDryRunUntil(ctx context.Context, kubeClient client.Client, namespace s
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
 	)
 	t := GinkgoT()
-	o.Start(t)
+	o.Start(ctx, t)
 	DeferCleanup(func() {
 		o.Wait(t)
 	})

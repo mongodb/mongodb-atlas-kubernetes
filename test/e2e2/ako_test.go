@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -38,15 +37,15 @@ const (
 )
 
 var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start-stop"), func() {
-	var ctx context.Context
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
@@ -56,7 +55,6 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 			}
 		})
 
-		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
@@ -79,7 +77,7 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	It("AKO running", func() {
