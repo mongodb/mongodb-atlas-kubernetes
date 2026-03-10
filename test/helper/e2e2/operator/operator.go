@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
@@ -85,6 +86,7 @@ type Operator interface {
 }
 
 type OperatorProcess struct {
+	mutex          sync.Mutex
 	env            []string
 	stdout, stderr io.Writer
 	command        []string
@@ -123,6 +125,11 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Oper
 }
 
 func (o *OperatorProcess) Start(ctx context.Context, t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd != nil {
+		return
+	}
 	localCtx, cancel := context.WithCancel(ctx)
 	// nolint:gosec // G204: cmdArgs are controlled by test authors, not external user input.
 	cmd := exec.CommandContext(localCtx, o.command[0], o.command[1:]...)
@@ -146,10 +153,20 @@ func (o *OperatorProcess) Start(ctx context.Context, t testingT) {
 }
 
 func (o *OperatorProcess) Running() bool {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil {
+		return false
+	}
 	return o.cmd.ProcessState == nil
 }
 
 func (o *OperatorProcess) Wait(t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil {
+		return
+	}
 	t.Logf("waiting for operator to stop")
 	if err := o.cmd.Wait(); err != nil {
 		t.Errorf("error waiting for command: %v", err)
@@ -157,8 +174,13 @@ func (o *OperatorProcess) Wait(t testingT) {
 }
 
 func (o *OperatorProcess) Stop(t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil || o.cancel == nil {
+		return
+	}
 	// Check if process is already terminated
-	if !o.Running() {
+	if o.cmd.ProcessState != nil && o.cmd.ProcessState.Exited() {
 		return
 	}
 
