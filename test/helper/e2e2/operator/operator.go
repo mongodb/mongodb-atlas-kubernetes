@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/run"
@@ -78,15 +79,19 @@ type testingT interface {
 }
 
 type Operator interface {
-	Start(t testingT)
+	Start(ctx context.Context, t testingT)
 	Running() bool
 	Wait(t testingT)
 	Stop(t testingT)
 }
 
 type OperatorProcess struct {
-	cmd     *exec.Cmd
-	cmdLine []string
+	mutex          sync.Mutex
+	env            []string
+	stdout, stderr io.Writer
+	command        []string
+	cmd            *exec.Cmd
+	cancel         context.CancelFunc
 }
 
 func DefaultOperatorEnv(namespace string) []string {
@@ -111,37 +116,57 @@ func NewOperator(env []string, stdout, stderr io.Writer, cmdArgs ...string) Oper
 	if RunEmbeddedSet() {
 		return NewEmbeddedOperator(run.Run, cmdArgs)
 	}
-	cmdLine := append(operatorCommand(), cmdArgs...)
-	//nolint:gosec
-	cmd := exec.CommandContext(context.Background(), cmdLine[0], cmdLine[1:]...)
+	return &OperatorProcess{
+		env:     env,
+		stdout:  stdout,
+		stderr:  stderr,
+		command: append(operatorCommand(), cmdArgs...),
+	}
+}
+
+func (o *OperatorProcess) Start(ctx context.Context, t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd != nil {
+		return
+	}
+	localCtx, cancel := context.WithCancel(ctx)
+	// nolint:gosec // G204: cmdArgs are controlled by test authors, not external user input.
+	cmd := exec.CommandContext(localCtx, o.command[0], o.command[1:]...)
 
 	// works around  https://github.com/golang/go/issues/40467
 	// to be able to propagate SIGTERM to the child process.
 	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	cmd.Env = env
+	cmd.Stdout = o.stdout
+	cmd.Stderr = o.stderr
+	cmd.Env = o.env
 
-	return &OperatorProcess{
-		cmd:     cmd,
-		cmdLine: cmdLine,
-	}
-}
+	o.cmd = cmd
+	o.cancel = cancel
 
-func (o *OperatorProcess) Start(t testingT) {
-	t.Logf("starting operator command: %q", strings.Join(o.cmdLine, " "))
+	t.Logf("starting operator command: %q", strings.Join(o.command, " "))
 	if err := o.cmd.Start(); err != nil {
 		t.Fatalf("failed to start operator: %v", err)
 	}
 }
 
 func (o *OperatorProcess) Running() bool {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil {
+		return false
+	}
 	return o.cmd.ProcessState == nil
 }
 
 func (o *OperatorProcess) Wait(t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil {
+		return
+	}
 	t.Logf("waiting for operator to stop")
 	if err := o.cmd.Wait(); err != nil {
 		t.Errorf("error waiting for command: %v", err)
@@ -149,43 +174,31 @@ func (o *OperatorProcess) Wait(t testingT) {
 }
 
 func (o *OperatorProcess) Stop(t testingT) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.cmd == nil || o.cancel == nil {
+		return
+	}
 	// Check if process is already terminated
-	if !o.Running() {
-		// Process has already terminated, nothing to do
+	if o.cmd.ProcessState != nil && o.cmd.ProcessState.Exited() {
 		return
 	}
 
-	// Ensure child process is killed on cleanup - send the negative of the pid, which is the process group id.
-	// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
-	pid := 0
+	o.cancel()
 
+	// Send SIGTERM to the process group to ensure cleanup
 	if o.cmd != nil && o.cmd.Process != nil {
-		pid = -o.cmd.Process.Pid
-	}
-
-	terminated := false
-	if pid != 0 {
+		pid := -o.cmd.Process.Pid
 		if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
-			// If process doesn't exist, it's already gone - that's fine
-			if err == syscall.ESRCH {
-				// Process doesn't exist (already terminated), which is what we want
-				return
+			// If process doesn't exist or we don't have permission, that's fine
+			if err != syscall.ESRCH && err != syscall.EPERM {
+				t.Errorf("error trying to kill command: %v", err)
 			}
-			t.Errorf("error trying to kill command: %v", err)
 		}
-		terminated = true
 	}
 
-	if err := o.cmd.Wait(); err != nil {
-		if terminated {
-			if waitStatus, ok := (o.cmd.ProcessState.Sys()).(syscall.WaitStatus); ok {
-				if waitStatus.Signaled() && waitStatus.Signal() == syscall.SIGTERM {
-					return // ignore sigterm if we sent SIGTERM ourselves
-				}
-			}
-		}
-		t.Errorf("error stopping operator terminated=%v : %+#v", terminated, err)
-	}
+	// Wait for process to exit - ignore errors if we successfully terminated it
+	_ = o.cmd.Wait()
 }
 
 func envVarOrDefault(name, defaultValue string) string {

@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -58,8 +57,9 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 	var groupID string
 	var orgID string
 	var sharedTestParams *testparams.TestParams
+	var ctx = suiteCtx
 
-	_ = BeforeAll(func(ctx context.Context) {
+	_ = BeforeAll(func() {
 		if !version.IsExperimental() {
 			Skip("FlexCluster is an experimental CRD and controller. Skipping test as experimental features are not enabled.")
 		}
@@ -70,7 +70,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		// Start operator
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
@@ -120,7 +120,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		})
 	})
 
-	_ = AfterAll(func(ctx context.Context) {
+	_ = AfterAll(func() {
 		By("Clean up test Group", func() {
 			if kubeClient != nil && testGroup != nil {
 
@@ -142,7 +142,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		})
 	})
 
-	_ = BeforeEach(func(ctx context.Context) {
+	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
 			Name: utils.RandomName("flexcluster-ctlr-ns"),
 		}}
@@ -150,7 +150,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
 
-	_ = AfterEach(func(ctx context.Context) {
+	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
 		}
@@ -163,7 +163,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctlr"), func() 
 	})
 
 	DescribeTable("FlexCluster CRUD lifecycle",
-		func(ctx SpecContext, sampleFile string, createMutation prepareFunc, updateMutation updateFunc, clusterName string) {
+		func(sampleFile string, createMutation prepareFunc, updateMutation updateFunc, clusterName string) {
 			// Generate randomized group name for this test run (cluster names are unique per group)
 			groupName := utils.RandomName("flex-grp")
 
