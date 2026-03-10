@@ -114,7 +114,7 @@ func newTestAtlasClient() (*admin.APIClient, string) {
 
 	atlasDomain := os.Getenv("MCLI_OPS_MANAGER_URL")
 	if atlasDomain == "" {
-		atlasDomain = "https://cloud.mongodb.com/"
+		atlasDomain = "https://cloud-qa.mongodb.com/"
 	}
 
 	client, err := atlasctrl.NewClient(atlasDomain, publicKey, privateKey)
