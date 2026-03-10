@@ -79,9 +79,9 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 				BackingProviderName: desiredRegionConfig.BackingProviderName,
 				RegionName:          desiredRegionConfig.RegionName,
 				Priority:            desiredRegionConfig.Priority,
-				ElectableSpecs:      getSpecsChanges(desiredRegionConfig.ElectableSpecs),
-				ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs),
-				AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs),
+				ElectableSpecs:      getSpecsChanges(desiredRegionConfig.ElectableSpecs, desiredRegionConfig.ProviderName),
+				ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs, desiredRegionConfig.ProviderName),
+				AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs, desiredRegionConfig.ProviderName),
 			}
 			// Only include AutoScaling if it has changed
 			if autoScalingChanges := getAutoScalingChanges(desiredRegionConfig.AutoScaling, currentRegionConfig); autoScalingChanges != nil {
@@ -103,17 +103,26 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 	return changes, true
 }
 
-func getSpecsChanges(desired *akov2.Specs) *akov2.Specs {
+func getSpecsChanges(desired *akov2.Specs, providerName string) *akov2.Specs {
 	if desired == nil {
 		return nil
 	}
 
-	return &akov2.Specs{
-		InstanceSize:  desired.InstanceSize,
-		NodeCount:     desired.NodeCount,
-		EbsVolumeType: pointer.GetOrDefault(&desired.EbsVolumeType, "STANDARD"),
-		DiskIOPS:      desired.DiskIOPS,
+	specs := &akov2.Specs{
+		InstanceSize: desired.InstanceSize,
+		NodeCount:    desired.NodeCount,
+		DiskIOPS:     desired.DiskIOPS,
 	}
+
+	// Only include EbsVolumeType when:
+	// 1. It's explicitly set (non-empty), OR
+	// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+	// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+	if desired.EbsVolumeType != "" || providerName == "AWS" {
+		specs.EbsVolumeType = pointer.GetOrDefault(&desired.EbsVolumeType, "STANDARD")
+	}
+
+	return specs
 }
 
 func getAutoScalingChanges(desired *akov2.AdvancedAutoScalingSpec, current *akov2.AdvancedRegionConfig) *akov2.AdvancedAutoScalingSpec {
