@@ -1746,8 +1746,8 @@ func deleteDeploymentFromKubernetes(project *akov2.AtlasProject, deployment *ako
 			By("Removing Atlas Deployment " + deployment.Name + " from Atlas manually")
 			Expect(deleteAtlasDeployment(project.Status.ID, deploymentName)).To(Succeed())
 		}
-		Eventually(checkAtlasDeploymentRemoved(project.Status.ID, deploymentName), 900, interval).Should(BeTrue(),
-			"Deployment deletion timed out after 15 minutes. This may indicate Cloud QA environment health issues.")
+		Eventually(checkAtlasDeploymentRemoved(project.Status.ID, deploymentName), 1200, interval).Should(BeTrue(),
+			"Deployment deletion timed out after 20 minutes. This may indicate Cloud QA environment health issues.")
 	})
 }
 
