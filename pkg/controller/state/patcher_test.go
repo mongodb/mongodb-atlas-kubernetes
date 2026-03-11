@@ -149,7 +149,7 @@ func TestPatcher(t *testing.T) {
 				p.UpdateStatus()
 			},
 			interceptors: &interceptor.Funcs{
-				SubResourcePatch: func(ctx context.Context, c client.Client, subResourceName string, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+				SubResourceApply: func(ctx context.Context, c client.Client, subResourceName string, obj runtime.ApplyConfiguration, opts ...client.SubResourceApplyOption) error {
 					return errors.New("status patch failed")
 				},
 			},
@@ -163,7 +163,7 @@ func TestPatcher(t *testing.T) {
 				p.UpdateStatus().UpdateStateTracker()
 			},
 			interceptors: &interceptor.Funcs{
-				SubResourcePatch: func(ctx context.Context, c client.Client, subResourceName string, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+				SubResourceApply: func(ctx context.Context, c client.Client, subResourceName string, obj runtime.ApplyConfiguration, opts ...client.SubResourceApplyOption) error {
 					return errors.New("status patch failed first")
 				},
 			},
