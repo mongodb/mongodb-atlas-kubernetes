@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
+	"go.mongodb.org/atlas-sdk/v20250312015/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
