@@ -47,7 +47,7 @@ const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
+var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctrl"), func() {
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
