@@ -68,7 +68,7 @@ const (
 	interval = PollingInterval
 )
 
-var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-non-backups"), func() {
+var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deployment-non-backups"), func() {
 	var (
 		deploymentService deployment.AtlasDeploymentsService
 		connectionSecret  *corev1.Secret
@@ -166,7 +166,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
 	}
 
-	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("focus-dedicated-termination-protection", "slow"), func() {
+	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("focus-dedicated-termination-protection", "focus-slow"), func() {
 		It("Should succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			deploymentName := createdDeployment.GetDeploymentName()
@@ -328,7 +328,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change it to GEOSHARDED", Label("focus-int", "focus-geosharded", "focus-slow"), func() {
+	Describe("Create deployment & change it to GEOSHARDED", Label("focus-geosharded", "focus-slow"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -398,7 +398,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", Label("focus-int", "focus-create-update-complex-deployment", "slow"), func() {
+	Describe("Create/Update the deployment (more complex scenario)", Label("focus-create-update-complex-deployment", "focus-slow"), func() {
 		It("Should be created", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = string(akov2.TypeReplicaSet)
@@ -1159,7 +1159,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	})
 })
 
-var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "deployment-backups"), func() {
+var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "focus-deployment-backups"), func() {
 	var (
 		connectionSecret  *corev1.Secret
 		createdProject    *akov2.AtlasProject
@@ -1427,7 +1427,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 	})
 })
 
-var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentSharding", "deployment-non-backups"), func() {
+var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentSharding", "focus-deployment-non-backups"), func() {
 	var (
 		connectionSecret  *corev1.Secret
 		createdProject    *akov2.AtlasProject
