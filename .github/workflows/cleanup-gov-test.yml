@@ -10,13 +10,6 @@ on:
         type: number
         default: 1
         required: true
-  workflow_call:
-    inputs:
-      lifetime:
-        description: "Lifetime of project in hours"
-        type: number
-        default: 1
-        required: true
 
 concurrency:
   group: cleanup-gov-test
