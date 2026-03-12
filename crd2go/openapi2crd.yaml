@@ -83,3 +83,68 @@ spec:
               readOnly: true
               skipProperties:
                 - $.links
+
+    - gvk:
+        version: v1
+        kind: Cluster
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - ac
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/clusters'
+              verb: post
+            references:
+              - *groupRef
+            filters:
+              skipProperties:
+                - $.Use-Effective-Instance-Fields
+                - $.Use-Effective-Fields-Replication-Specs
+          entry:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.connectionStrings
+                - $.createDate
+                - $.groupId
+                - $.id
+                - $.links
+                - $.mongoDBVersion
+                - $.featureCompatibilityVersion
+                - $.featureCompatibilityVersionExpirationDate
+                - $.internalClusterRole
+                - $.effectiveReplicationSpecs
+                - $.replicationSpecs[*].id
+                - $.replicationSpecs[*].regionConfigs[*].effectiveAnalyticsSpecs
+                - $.replicationSpecs[*].regionConfigs[*].effectiveElectableSpecs
+                - $.replicationSpecs[*].regionConfigs[*].effectiveReadOnlySpecs
+                - $.stateName
+          status:
+            schema: 'ClusterDescription20240805'
+            filters:
+              skipProperties:
+                - $.acceptDataRisksAndForceReplicaSetReconfig
+                - $.backupEnabled
+                - $.biConnector
+                - $.clusterType
+                - $.diskSizeGB
+                - $.diskWarmingMode
+                - $.encryptionAtRestProvider
+                - $.labels
+                - $.links
+                - $.mongoDBMajorVersion
+                - $.name
+                - $.paused
+                - $.pitEnabled
+                - $.replicationSpecs
+                - $.rootCertType
+                - $.tags
+                - $.terminationProtectionEnabled
+                - $.versionReleaseSystem
+                - $.useAwsTimeBasedSnapshotCopyForFastInitialSync

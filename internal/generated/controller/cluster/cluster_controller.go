@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package child
+package cluster
 
 import (
 	"fmt"
@@ -23,12 +23,12 @@ import (
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
 	predicate "sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
-	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 
 const (
@@ -41,50 +41,50 @@ var (
 	sdkVersions = []string{"v20250312"}
 )
 
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=clusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=clusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=clusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=clusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=clusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=clusters/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 type Handler struct {
-	ctrlstate.StateHandler[akov2generated.Child]
+	ctrlstate.StateHandler[akov2generated.Cluster]
 	reconciler.AtlasReconciler
 	deletionProtection bool
 	predicates         []predicate.Predicate
 	translators        map[string]crapi.Translator
-	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Child]
+	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Cluster]
 }
 
-func NewChildReconciler(
+func NewClusterReconciler(
 	c cluster.Cluster,
 	atlasProvider atlas.Provider,
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
 	deletionProtection bool,
 	reapplySupport bool,
-	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Child], error) {
-	crd, err := crds.EmbeddedCRD("Child")
+	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Cluster], error) {
+	crd, err := crds.EmbeddedCRD("Cluster")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read CRD for Child: %w", err)
+		return nil, fmt.Errorf("failed to read CRD for Cluster: %w", err)
 	}
 	translators, err := crapi.NewPerVersionTranslators(c.GetScheme(), crd, crdVersion, sdkVersions...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get translator set for Child: %w", err)
+		return nil, fmt.Errorf("failed to get translator set for Cluster: %w", err)
 	}
 	// Create main handler dispatcher
-	childHandler := &Handler{
+	clusterHandler := &Handler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			AtlasProvider:   atlasProvider,
 			Client:          c.GetClient(),
 			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Named("controllers").Named("AtlasChild").Sugar(),
+			Log:             logger.Named("controllers").Named("AtlasCluster").Sugar(),
 		},
 		deletionProtection: deletionProtection,
 		handlerv20250312:   handlerv20250312Func,
@@ -92,8 +92,8 @@ func NewChildReconciler(
 		translators:        translators,
 	}
 
-	return ctrlstate.NewStateReconciler(childHandler, ctrlstate.WithCluster[akov2generated.Child](c), ctrlstate.WithReapplySupport[akov2generated.Child](reapplySupport)), nil
+	return ctrlstate.NewStateReconciler(clusterHandler, ctrlstate.WithCluster[akov2generated.Cluster](c), ctrlstate.WithReapplySupport[akov2generated.Cluster](reapplySupport)), nil
 }
-func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Child] {
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Cluster] {
 	return NewHandlerv20250312(kubeClient, atlasClient, translator, deletionProtection)
 }
