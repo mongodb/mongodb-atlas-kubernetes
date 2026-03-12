@@ -598,7 +598,7 @@ func applyTestParamsToDBUser(dbUser *generatedv1.DatabaseUser, namespace, userna
 	dbUser.Spec.V20250312.GroupId = nil
 
 	if dbUser.Spec.V20250312.Entry == nil {
-		dbUser.Spec.V20250312.Entry = &generatedv1.V20250312Entry{}
+		dbUser.Spec.V20250312.Entry = &generatedv1.DatabaseUserV20250312Entry{}
 	}
 	dbUser.Spec.V20250312.Entry.Username = username
 	dbUser.Spec.V20250312.Entry.DatabaseName = "admin"
