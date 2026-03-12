@@ -10,6 +10,8 @@ Resource Types:
 
 - [Cluster](#cluster)
 
+- [DatabaseUser](#databaseuser)
+
 - [Group](#group)
 
 

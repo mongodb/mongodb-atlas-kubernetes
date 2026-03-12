@@ -466,7 +466,7 @@ image-push: ## Push the docker image
 
 # Kubernetes version for the local kind cluster. kind pulls kindest/node:vX.Y.Z.
 # Override with: make run-kind KIND_K8S_VERSION=v1.29.0
-KIND_K8S_VERSION ?= v1.31.0
+KIND_K8S_VERSION ?= v$(shell jq -r '.kubernetes.max' kubernetes-versions.json)
 
 # Additional make goals
 .PHONY: run-kind
