@@ -57,7 +57,7 @@ const (
 	DBUserPassword2     = "H@lla#!"
 )
 
-var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), Ordered, func() {
+var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus-protection-disabled"), Ordered, func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var projectName string

@@ -32,7 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection-enabled"), func() {
+var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-protection-enabled"), func() {
 	const (
 		interval               = PollingInterval
 		dataFederationBaseName = "test-data-federation-%s"
