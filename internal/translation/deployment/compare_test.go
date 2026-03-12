@@ -547,6 +547,97 @@ func TestComputeChanges(t *testing.T) {
 			expectedChanges: nil,
 			changed:         false,
 		},
+		// Bug exposure: AutoScaling should NOT be included when it hasn't changed (both desired and current are nil).
+		// This exposes the bug where getAutoScalingChanges always returns a non-nil value with default/empty fields
+		// even when desired is nil, causing AutoScaling to always be included in changes.
+		// Expected: AutoScaling should be nil in changes when unchanged
+		// Actual (buggy): AutoScaling is included with {DiskGB: {Enabled: false}, Compute: {Enabled: false}} even when unchanged
+		// This causes reconciliation loops because we send unnecessary updates to Atlas.
+		"BUG_EXPOSURE: should not include AutoScaling in changes when AutoScaling hasn't changed": {
+			akoCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "PROVISIONED", // Explicitly specified, different from Atlas
+									},
+									// AutoScaling is nil (not specified)
+								},
+							},
+						},
+					},
+				},
+			},
+			atlasCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "STANDARD", // Different from desired
+									},
+									// AutoScaling is also nil (no change)
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedChanges: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "aws-cluster",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: pointer.MakePtr(true),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize:  "M10",
+										NodeCount:     pointer.MakePtr(3),
+										EbsVolumeType: "PROVISIONED", // Only this should change
+									},
+									// AutoScaling should be nil (not included when unchanged)
+									// Bug: getAutoScalingChanges returns non-nil with default values even when desired is nil
+								},
+							},
+						},
+					},
+				},
+			},
+			changed: true,
+		},
 	}
 
 	for name, tt := range tests {
@@ -1451,6 +1542,127 @@ func TestSpecAreEqual(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, specAreEqual(NewDeployment("project-id", tt.ako).(*Cluster), clusterFromAtlas(tt.atlas)))
+		})
+	}
+}
+
+func TestComputeChangesEbsVolumeTypeBugGCP(t *testing.T) {
+	// This test reproduces the bug where GCP clusters get stuck in a reconcile loop
+	// because getSpecsChanges always includes EbsVolumeType (even when empty),
+	// which gets converted to "STANDARD" by replicationSpecToAtlas, causing Atlas
+	// to reject/ignore it, and the operator to detect it as a change again.
+
+	tests := map[string]struct {
+		akoCRD          *akov2.AtlasDeployment
+		atlasResponse   *admin.ClusterDescription20240805
+		expectedChanges *Cluster
+		expectedChanged bool
+		description     string
+	}{
+		"BUG_REPRODUCTION: GCP cluster with NodeCount change should not include EbsVolumeType": {
+			description: "When a GCP cluster has a real change (NodeCount), getSpecsChanges includes EbsVolumeType " +
+				"as empty string. This gets converted to STANDARD by replicationSpecToAtlas, causing Atlas to reject it for GCP. " +
+				"This is the actual bug flow that causes infinite reconcile loops.",
+			akoCRD: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:          "credit-service-uat",
+						ClusterType:   "REPLICASET",
+						BackupEnabled: pointer.MakePtr(true),
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								ZoneName:  "Zone 1",
+								NumShards: 1,
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "GCP",
+										RegionName:   "EASTERN_US",
+										Priority:     pointer.MakePtr(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M10",
+											NodeCount:    pointer.MakePtr(3), // Different from Atlas to force changes
+											// EbsVolumeType is NOT specified (correct for GCP)
+										},
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											Compute: &akov2.ComputeSpec{
+												Enabled:          pointer.MakePtr(true),
+												MaxInstanceSize:  "M30",
+												MinInstanceSize:  "M10",
+												ScaleDownEnabled: pointer.MakePtr(true),
+											},
+											DiskGB: &akov2.DiskGB{
+												Enabled: pointer.MakePtr(false),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			atlasResponse: &admin.ClusterDescription20240805{
+				Name:          pointer.MakePtr("credit-service-uat"),
+				ClusterType:   pointer.MakePtr("REPLICASET"),
+				BackupEnabled: pointer.MakePtr(true),
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
+					{
+						ZoneName: pointer.MakePtr("Zone 1"),
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
+							{
+								ProviderName: pointer.MakePtr("GCP"),
+								RegionName:   pointer.MakePtr("EASTERN_US"),
+								Priority:     pointer.MakePtr(7),
+								ElectableSpecs: &admin.HardwareSpec20240805{
+									InstanceSize:  pointer.MakePtr("M10"),
+									NodeCount:     pointer.MakePtr(2), // Different from desired
+									EbsVolumeType: nil,                // Atlas doesn't return EbsVolumeType for GCP
+								},
+								AutoScaling: &admin.AdvancedAutoScalingSettings{
+									Compute: &admin.AdvancedComputeAutoScaling{
+										Enabled:          pointer.MakePtr(true),
+										MaxInstanceSize:  pointer.MakePtr("M30"),
+										MinInstanceSize:  pointer.MakePtr("M10"),
+										ScaleDownEnabled: pointer.MakePtr(true),
+									},
+									DiskGB: &admin.DiskGBAutoScaling{
+										Enabled: pointer.MakePtr(false),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedChanged: true, // Changes expected due to NodeCount difference
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Logf("Test description: %s", tt.description)
+
+			// Normalize inputs the same way the code does before comparison
+			akoCluster := NewDeployment("project-id", tt.akoCRD).(*Cluster)
+			atlasCluster := clusterFromAtlas(tt.atlasResponse)
+
+			// Compute changes
+			changes, changed := ComputeChanges(akoCluster, atlasCluster)
+
+			// Verify expectations
+			assert.Equal(t, tt.expectedChanged, changed, "changed flag mismatch")
+			assert.NotNil(t, changes, "changes should not be nil when changed is true")
+
+			atlasUpdateRequest := clusterUpdateToAtlas(changes)
+			assert.NotNil(t, atlasUpdateRequest, "atlasUpdateRequest should not be nil")
+			assert.NotNil(t, atlasUpdateRequest.ReplicationSpecs, "atlasUpdateRequest.ReplicationSpecs should not be nil")
+			for _, repSpec := range *atlasUpdateRequest.ReplicationSpecs {
+				for _, regionConfig := range repSpec.GetRegionConfigs() {
+					assert.NotEqual(t, "AWS", regionConfig.GetProviderName(), "This test is for non AWS configs")
+					assert.NotNil(t, regionConfig.ElectableSpecs, "regionConfig.ElectableSpecs should not be nil")
+					assert.Nil(t, regionConfig.ElectableSpecs.EbsVolumeType, "regionConfig.ElectableSpecs.EbsVolumeType should not be nil")
+				}
+			}
 		})
 	}
 }
