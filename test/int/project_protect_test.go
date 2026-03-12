@@ -34,7 +34,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enabled"), func() {
+var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-enabled"), func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret

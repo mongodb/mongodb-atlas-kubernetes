@@ -30,7 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "independent-crd"), func() {
+var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-independent-crd"), func() {
 	var project *akov2.AtlasProject
 	var deployment *akov2.AtlasDeployment
 

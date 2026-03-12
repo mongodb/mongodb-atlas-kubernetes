@@ -36,7 +36,7 @@ import (
 // nolint:dupl
 var _ = Describe("AtlasDeployment Deletion Protected",
 	Ordered,
-	Label("AtlasDeployment", "deletion-protection", "deployment-deletion-protected"), func() {
+	Label("AtlasDeployment", "deletion-protection", "focus-deployment-deletion-protected"), func() {
 		var testNamespace *corev1.Namespace
 		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret
