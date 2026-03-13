@@ -34,8 +34,8 @@ import (
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	internalkube "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
@@ -259,9 +259,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 
 			By("Verify connection secret is created with correct keys", func() {
 				projectName := testGroup.GetName()
-				secretName := internalkube.NormalizeIdentifier(
-					fmt.Sprintf("%s-%s-%s", projectName, clusterName, username),
-				)
+				secretName := connectionsecret.K8sConnectionSecretName(projectName, clusterName, username, "cluster")
 				connSecret := &corev1.Secret{}
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKey{
