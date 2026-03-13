@@ -35,7 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	internalkube "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
@@ -259,7 +259,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 
 			By("Verify connection secret is created with correct keys", func() {
 				projectName := testGroup.GetName()
-				secretName := kube.NormalizeIdentifier(
+				secretName := internalkube.NormalizeIdentifier(
 					fmt.Sprintf("%s-%s-%s", projectName, clusterName, username),
 				)
 				connSecret := &corev1.Secret{}
