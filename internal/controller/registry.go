@@ -47,6 +47,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	akogeneratedcluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/cluster"
+	akogeneratedconnectionsecret "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
 	akogenerateddatabaseuser "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/databaseuser"
 	akogeneratedgroup "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -186,6 +187,9 @@ func (r *Registry) generatedReconcilers(c cluster.Cluster, ap atlas.Provider) ([
 		return nil, fmt.Errorf("error creating databaseuser reconciler: %w", err)
 	}
 	reconcilers = append(reconcilers, newCtrlStateReconciler(databaseUserReconciler, r.maxConcurrentReconciles))
+
+	connectionSecretReconciler := akogeneratedconnectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef)
+	reconcilers = append(reconcilers, connectionSecretReconciler)
 
 	return reconcilers, nil
 }

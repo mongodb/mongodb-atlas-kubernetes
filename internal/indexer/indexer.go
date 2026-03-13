@@ -73,14 +73,13 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
 		generatedindexer.NewDatabaseUserByGroupIndexer(logger),
 		generatedindexer.NewDatabaseUserBySecretIndexer(logger),
+		connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
 		indexers = append(indexers,
-			connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
-
 			indexerexp.NewFlexClusterByGroupIndexer(logger),
 			indexerexp.NewClusterByGroupIndexer(logger),
 			indexerexp.NewDatabaseUserBySecretIndexer(logger),
