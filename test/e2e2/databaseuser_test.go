@@ -260,8 +260,17 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 			By("Verify connection secret is created with correct keys", func() {
 				projectName := testGroup.GetName()
 				secretName := connectionsecret.K8sConnectionSecretName(projectName, clusterName, username, "cluster")
+				GinkgoWriter.Printf("Expected connection secret name: %q\n", secretName)
 				connSecret := &corev1.Secret{}
 				Eventually(func(g Gomega) {
+					secretList := &corev1.SecretList{}
+					if err := kubeClient.List(ctx, secretList, client.InNamespace(testNamespace.Name)); err == nil {
+						names := make([]string, 0, len(secretList.Items))
+						for _, s := range secretList.Items {
+							names = append(names, s.Name)
+						}
+						GinkgoWriter.Printf("Secrets in namespace %q: %v\n", testNamespace.Name, names)
+					}
 					g.Expect(kubeClient.Get(ctx, client.ObjectKey{
 						Namespace: testNamespace.Name,
 						Name:      secretName,
