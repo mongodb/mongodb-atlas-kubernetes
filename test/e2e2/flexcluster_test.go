@@ -15,7 +15,6 @@
 package e2e2_test
 
 import (
-	"os"
 	"time"
 
 	k8s "github.com/crd2go/crd2go/k8s"
@@ -25,11 +24,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	nextapiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/resources"
@@ -43,31 +40,23 @@ const (
 )
 
 // prepareFunc is a function type for mutating objects during test setup.
-type prepareFunc func(objs []client.Object, params *testparams.TestParams) *nextapiv1.FlexCluster
+type prepareFunc func(objs []client.Object, params *testparams.TestParams) *apiv1.FlexCluster
 
 // updateFunc is a function type for mutating objects during test updates.
-type updateFunc func(cluster *nextapiv1.FlexCluster)
+type updateFunc func(cluster *apiv1.FlexCluster)
 
-var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() {
+var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var sharedGroupNamespace *corev1.Namespace
-	var testGroup *nextapiv1.Group
+	var testGroup *apiv1.Group
 	var groupID string
 	var orgID string
 	var sharedTestParams *testparams.TestParams
 	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
-		if !version.IsExperimental() {
-			Skip("FlexCluster is an experimental CRD and controller. Skipping test as experimental features are not enabled.")
-		}
-
-		orgID = os.Getenv("MCLI_ORG_ID")
-		Expect(orgID).NotTo(BeEmpty(), "MCLI_ORG_ID environment variable must be set")
-
-		// Start operator
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
 		ako.Start(ctx, GinkgoT())
@@ -85,16 +74,19 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 		kubeClient = testClient
 		Expect(kube.AssertCRDNames(ctx, kubeClient, FlexClusterCRDName, GroupCRDName)).To(Succeed())
 
+		// Initialize orgID from environment variable
+		orgID = control.MustEnvVar("MCLI_ORG_ID")
+
 		By("Create namespace and credentials for shared test Group", func() {
 			sharedGroupNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-				Name: utils.RandomName("flex-shared-grp-ns"),
+				Name: resources.GenerateName("flex-shared-grp-ns"),
 			}}
 			Expect(kubeClient.Create(ctx, sharedGroupNamespace)).To(Succeed())
 			Expect(resources.CopyCredentialsToNamespace(ctx, kubeClient, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), sharedGroupNamespace.Name, GinkGoFieldOwner)).To(Succeed())
 		})
 
 		By("Create test Group", func() {
-			groupName := utils.RandomName("flexcluster-test-group")
+			groupName := resources.GenerateName("flexcluster-test-group")
 			// Set up shared test params
 			sharedTestParams = testparams.New(orgID, sharedGroupNamespace.Name, DefaultGlobalCredentials).
 				WithGroupName(groupName)
@@ -102,7 +94,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 			// Load sample Group YAML and apply mutations
 			objs := samples.MustLoadSampleObjects("atlas_generated_v1_group.yaml")
 			Expect(len(objs)).To(Equal(1))
-			testGroup = objs[0].(*nextapiv1.Group)
+			testGroup = objs[0].(*apiv1.Group)
 			sharedTestParams.WithNamespace(sharedGroupNamespace.Name).ApplyToGroup(testGroup)
 			Expect(kubeClient.Create(ctx, testGroup)).To(Succeed())
 		})
@@ -144,7 +136,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 
 	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("flexcluster-ctrl-ns"),
+			Name: resources.GenerateName("flexcluster-ns"),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
@@ -165,14 +157,14 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 	DescribeTable("FlexCluster CRUD lifecycle",
 		func(sampleFile string, createMutation prepareFunc, updateMutation updateFunc, clusterName string) {
 			// Generate randomized group name for this test run (cluster names are unique per group)
-			groupName := utils.RandomName("flex-grp")
+			groupName := resources.GenerateName("flex-grp")
 
 			// Set up test params for this test case (reuse shared values, override groupName and namespace)
 			testParams := sharedTestParams.WithGroupName(groupName).WithNamespace(testNamespace.Name)
 
 			// Track created objects for cleanup
 			var createdObjects []client.Object
-			var cluster *nextapiv1.FlexCluster
+			var cluster *apiv1.FlexCluster
 
 			By("Copy credentials secret to test namespace", func() {
 				Expect(resources.CopyCredentialsToNamespace(ctx, kubeClient, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), testNamespace.Name, GinkGoFieldOwner)).To(Succeed())
@@ -196,8 +188,8 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 			By("Wait for Group to be Ready (if using groupRef)", func() {
 				// Check if any Group objects were created
 				for _, obj := range createdObjects {
-					if group, ok := obj.(*nextapiv1.Group); ok {
-						groupObj := &nextapiv1.Group{
+					if group, ok := obj.(*apiv1.Group); ok {
+						groupObj := &apiv1.Group{
 							ObjectMeta: metav1.ObjectMeta{Name: group.Name, Namespace: testNamespace.Name},
 						}
 						Eventually(func(g Gomega) {
@@ -267,9 +259,9 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster-ctrl"), func() 
 
 // prepareFlexClusterWithGroupId prepares a FlexCluster object to use direct groupId.
 // Returns the mutated FlexCluster if found, nil otherwise.
-func prepareFlexClusterWithGroupId(objs []client.Object, params *testparams.TestParams) *nextapiv1.FlexCluster {
+func prepareFlexClusterWithGroupId(objs []client.Object, params *testparams.TestParams) *apiv1.FlexCluster {
 	for _, obj := range objs {
-		if cluster, ok := obj.(*nextapiv1.FlexCluster); ok {
+		if cluster, ok := obj.(*apiv1.FlexCluster); ok {
 			cluster.SetNamespace(params.Namespace)
 			cluster.Spec.ConnectionSecretRef = &k8s.LocalReference{
 				Name: params.CredentialsSecretName,
@@ -285,13 +277,13 @@ func prepareFlexClusterWithGroupId(objs []client.Object, params *testparams.Test
 // prepareFlexClusterWithGroupRef prepares a FlexCluster object to use groupRef.
 // This also mutates any Group objects in the same list to use test params.
 // Returns the mutated FlexCluster if found, nil otherwise.
-func prepareFlexClusterWithGroupRef(objs []client.Object, params *testparams.TestParams) *nextapiv1.FlexCluster {
-	var cluster *nextapiv1.FlexCluster
+func prepareFlexClusterWithGroupRef(objs []client.Object, params *testparams.TestParams) *apiv1.FlexCluster {
+	var cluster *apiv1.FlexCluster
 	for _, obj := range objs {
 		switch o := obj.(type) {
-		case *nextapiv1.Group:
+		case *apiv1.Group:
 			params.ApplyToGroup(o)
-		case *nextapiv1.FlexCluster:
+		case *apiv1.FlexCluster:
 			o.SetNamespace(params.Namespace)
 			o.Spec.ConnectionSecretRef = &k8s.LocalReference{
 				Name: params.CredentialsSecretName,
@@ -308,12 +300,12 @@ func prepareFlexClusterWithGroupRef(objs []client.Object, params *testparams.Tes
 
 // updateFlexClusterTerminationProtection mutates a FlexCluster for the update scenario.
 // This changes terminationProtectionEnabled from true to false.
-func updateFlexClusterTerminationProtection(cluster *nextapiv1.FlexCluster) {
+func updateFlexClusterTerminationProtection(cluster *apiv1.FlexCluster) {
 	cluster.Spec.V20250312.Entry.TerminationProtectionEnabled = pointer.MakePtr(false)
 }
 
-func freshFlexCluster(cluster *nextapiv1.FlexCluster) *nextapiv1.FlexCluster {
-	return &nextapiv1.FlexCluster{
+func freshFlexCluster(cluster *apiv1.FlexCluster) *apiv1.FlexCluster {
+	return &apiv1.FlexCluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "atlas.generated.mongodb.com/v1",
 			Kind:       "FlexCluster",

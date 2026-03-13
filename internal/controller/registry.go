@@ -46,8 +46,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
-	akogeneratedcluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/cluster"
-	akogeneratedgroup "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
+	akocluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/cluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -168,18 +169,22 @@ func (r *Registry) legacyReconcilers(c cluster.Cluster, ap atlas.Provider) []Rec
 func (r *Registry) generatedReconcilers(c cluster.Cluster, ap atlas.Provider) ([]Reconciler, error) {
 	var reconcilers []Reconciler
 
-	groupReconciler, err := akogeneratedgroup.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+	groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
 	if err != nil {
 		return nil, fmt.Errorf("error creating group reconciler: %w", err)
 	}
-	reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
-
-	clusterReconciler, err := akogeneratedcluster.NewClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+	clusterReconciler, err := akocluster.NewClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
 	if err != nil {
 		return nil, fmt.Errorf("error creating cluster reconciler: %w", err)
 	}
-	reconcilers = append(reconcilers, newCtrlStateReconciler(clusterReconciler, r.maxConcurrentReconciles))
+	flexReconciler, err := flexcluster.NewFlexClusterReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+	if err != nil {
+		return nil, fmt.Errorf("error creating flex cluster reconciler: %w", err)
+	}
 
+	reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, newCtrlStateReconciler(clusterReconciler, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, newCtrlStateReconciler(flexReconciler, r.maxConcurrentReconciles))
 	return reconcilers, nil
 }
 
