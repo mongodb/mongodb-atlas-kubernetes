@@ -519,12 +519,14 @@ type DummyStatus struct {
 
 func newDummyObject(objMeta metav1.ObjectMeta, conditions []metav1.Condition) *dummyObject {
 	return &dummyObject{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "test.dummy.example.com/v1",
+			Kind:       "dummyObject",
+		},
 		ObjectMeta: objMeta,
 		Status:     DummyStatus{Conditions: conditions},
 	}
 }
-
-func (*dummyObject) GetObjectKind() schema.ObjectKind { return schema.EmptyObjectKind }
 
 func (do *dummyObject) GetConditions() []metav1.Condition {
 	return do.Status.Conditions
