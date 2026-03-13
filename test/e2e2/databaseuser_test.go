@@ -35,6 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
@@ -71,6 +72,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 		Expect(kube.AssertCRDNames(ctx, kubeClient,
 			"groups.atlas.generated.mongodb.com",
 			"databaseusers.atlas.generated.mongodb.com",
+			"clusters.atlas.generated.mongodb.com",
 		)).To(Succeed())
 
 		atlasClient, orgID = newTestAtlasClient()
@@ -190,6 +192,108 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
+			By("Delete prerequisite Group", func() {
+				Expect(kubeClient.Delete(ctx, testGroup)).To(Succeed())
+				Eventually(func(g Gomega) {
+					group := &generatedv1.Group{}
+					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), group)
+					g.Expect(err).NotTo(Succeed())
+					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+		})
+
+		It("Should create connection secret when Cluster and DatabaseUser are ready", Label("focus-databaseuser-connection-secret"), func() {
+			groupName := fmt.Sprintf("test-group-%s", rand.String(6))
+			groupParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
+				WithGroupName(groupName).
+				WithNamespace(testNamespace.Name)
+
+			var testGroup *generatedv1.Group
+			By("Create prerequisite Group", func() {
+				objs := samples.MustLoadSampleObjects("atlas_generated_v1_group.yaml")
+				Expect(len(objs)).To(Equal(1))
+				testGroup = objs[0].(*generatedv1.Group)
+				applyTestParamsToGroup(testGroup, groupParams)
+				Expect(kubeClient.Create(ctx, testGroup)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				Expect(testGroup.Status.V20250312).NotTo(BeNil())
+				Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
+			})
+
+			clusterName := fmt.Sprintf("cluster-%s", rand.String(6))
+			var testCluster *generatedv1.Cluster
+			By("Create Cluster (M0)", func() {
+				testCluster = newSharedCluster(clusterName, testNamespace.Name, testGroup.GetName())
+				Expect(kubeClient.Create(ctx, testCluster)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+				Expect(testCluster.Status.V20250312).NotTo(BeNil())
+				Expect(testCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
+			})
+
+			username := fmt.Sprintf("testuser-%s", rand.String(6))
+			passwordSecretName := fmt.Sprintf("dbuser-pass-%s", rand.String(6))
+
+			var testDBUser *generatedv1.DatabaseUser
+			By("Create DatabaseUser", func() {
+				Expect(kubeClient.Create(ctx, newPasswordSecret(testNamespace.Name, passwordSecretName))).To(Succeed())
+
+				objs := samples.MustLoadSampleObjects("atlas_generated_v1_databaseuser_with_groupref.yaml")
+				Expect(len(objs)).To(Equal(1))
+				testDBUser = objs[0].(*generatedv1.DatabaseUser)
+				applyTestParamsToDBUser(testDBUser, testNamespace.Name, username, testGroup.GetName(), passwordSecretName)
+				Expect(kubeClient.Create(ctx, testDBUser)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testDBUser)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
+			By("Verify connection secret is created with correct keys", func() {
+				projectName := testGroup.GetName()
+				secretName := kube.NormalizeIdentifier(
+					fmt.Sprintf("%s-%s-%s", projectName, clusterName, username),
+				)
+				connSecret := &corev1.Secret{}
+				Eventually(func(g Gomega) {
+					g.Expect(kubeClient.Get(ctx, client.ObjectKey{
+						Namespace: testNamespace.Name,
+						Name:      secretName,
+					}, connSecret)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+				Expect(connSecret.Data).To(HaveKey("username"))
+				Expect(connSecret.Data).To(HaveKey("password"))
+				Expect(connSecret.Data).To(HaveKey("connectionStringStandard"))
+				Expect(connSecret.Data).To(HaveKey("connectionStringStandardSrv"))
+				Expect(string(connSecret.Data["username"])).To(Equal(username))
+				Expect(string(connSecret.Data["connectionStringStandard"])).To(ContainSubstring(username))
+				Expect(string(connSecret.Data["connectionStringStandardSrv"])).To(ContainSubstring(username))
+			})
+
+			By("Delete DatabaseUser", func() {
+				Expect(kubeClient.Delete(ctx, testDBUser)).To(Succeed())
+				Eventually(func(g Gomega) {
+					dbUser := &generatedv1.DatabaseUser{}
+					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testDBUser), dbUser)
+					g.Expect(err).NotTo(Succeed())
+					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
+			By("Delete Cluster", func() {
+				Expect(kubeClient.Delete(ctx, testCluster)).To(Succeed())
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 			})
 
 			By("Delete prerequisite Group", func() {
