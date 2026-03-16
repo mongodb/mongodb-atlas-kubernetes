@@ -24,6 +24,7 @@ import (
 
 	connectionsecretindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
 	indexerexp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
+	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -70,6 +71,8 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
 		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
 		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
+		generatedindexer.NewDatabaseUserByGroupIndexer(logger),
+		generatedindexer.NewDatabaseUserBySecretIndexer(logger),
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
@@ -77,7 +80,6 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 			connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
 			connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
 			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
-
 			indexerexp.NewFlexClusterByGroupIndexer(logger),
 			indexerexp.NewClusterByGroupIndexer(logger),
 			indexerexp.NewDatabaseUserBySecretIndexer(logger),
