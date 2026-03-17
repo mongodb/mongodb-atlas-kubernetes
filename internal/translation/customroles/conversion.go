@@ -64,7 +64,7 @@ func toAtlasActions(role *CustomRole) []admin.DatabasePrivilegeAction {
 		}
 		actions = append(actions, admin.DatabasePrivilegeAction{
 			Action:    action.Name,
-			Resources: &resources,
+			Resources: resources,
 		})
 	}
 
@@ -101,8 +101,8 @@ func fromAtlas(role *admin.UserCustomDBRole) CustomRole {
 		for _, atlasAction := range *role.Actions {
 			var resources []akov2.Resource
 			if atlasAction.Resources != nil {
-				resources = make([]akov2.Resource, 0, len(*atlasAction.Resources))
-				for _, atlasResource := range *atlasAction.Resources {
+				resources = make([]akov2.Resource, 0, len(atlasAction.Resources))
+				for _, atlasResource := range atlasAction.Resources {
 					resources = append(resources, akov2.Resource{
 						Cluster:    pointer.MakePtr(atlasResource.Cluster),
 						Database:   pointer.MakePtr(atlasResource.Db),

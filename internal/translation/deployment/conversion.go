@@ -1074,7 +1074,7 @@ func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings
 	}
 
 	return &admin.CustomZoneMappings{
-		CustomZoneMappings: &out,
+		CustomZoneMappings: out,
 	}
 }
 

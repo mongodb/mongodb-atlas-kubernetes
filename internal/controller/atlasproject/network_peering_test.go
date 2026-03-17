@@ -159,6 +159,6 @@ func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContain
 		})
 	}
 	return &admin.PaginatedContainerPeer{
-		Results: &atlasPeers,
+		Results: atlasPeers,
 	}
 }

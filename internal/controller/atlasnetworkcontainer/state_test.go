@@ -313,7 +313,7 @@ func TestHandleCustomResource(t *testing.T) {
 					)
 					ncAPI.EXPECT().ListGroupContainersExecute(mock.Anything).Return(
 						&admin.PaginatedCloudProviderContainer{
-							Results: &[]admin.CloudProviderContainer{},
+							Results: []admin.CloudProviderContainer{},
 						}, nil, nil,
 					)
 					pAPI := mockadmin.NewProjectsApi(t)

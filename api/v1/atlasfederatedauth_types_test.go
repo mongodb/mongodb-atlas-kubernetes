@@ -73,7 +73,7 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
-					RoleAssignments: &[]admin.ConnectedOrgConfigRoleAssignment{
+					RoleAssignments: []admin.ConnectedOrgConfigRoleAssignment{
 						{
 							GroupId: &projectID,
 							Role:    &spec.RoleMappings[0].RoleAssignments[0].Role,

@@ -510,7 +510,7 @@ func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err er
 	).Return(admin.CreateGroupIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
-	paginatedIntegration.Results = &integrations
+	paginatedIntegration.Results = integrations
 	apiMock.EXPECT().CreateGroupIntegrationExecute(
 		mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
@@ -539,7 +539,7 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
 	if integration != nil {
-		paginatedIntegration.Results = &[]admin.ThirdPartyIntegration{
+		paginatedIntegration.Results = []admin.ThirdPartyIntegration{
 			*integration,
 		}
 	}

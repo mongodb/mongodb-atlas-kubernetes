@@ -607,7 +607,7 @@ func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, e
 	)
 
 	results := admin.PaginatedCloudProviderContainer{
-		Results: &apiContainers,
+		Results: apiContainers,
 	}
 	apiMock.EXPECT().ListGroupContainersExecute(
 		mock.AnythingOfType("admin.ListGroupContainersApiRequest"),

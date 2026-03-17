@@ -158,7 +158,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection2"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -247,7 +247,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection2"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -428,7 +428,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -508,7 +508,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection"),
 							Type:        pointer.MakePtr("Cluster"),

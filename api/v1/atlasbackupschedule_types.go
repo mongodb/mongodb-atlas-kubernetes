@@ -122,7 +122,7 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, zoneID string, po
 			RetentionValue:    bpItem.RetentionValue,
 		})
 	}
-	atlasPolicy.PolicyItems = &items
+	atlasPolicy.PolicyItems = items
 
 	result := &admin.DiskBackupSnapshotSchedule20240805{
 		ClusterName:                       pointer.MakePtrOrNil(clusterName),
@@ -131,7 +131,7 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, zoneID string, po
 		ReferenceMinuteOfHour:             pointer.MakePtr(int(in.Spec.ReferenceMinuteOfHour)),
 		RestoreWindowDays:                 pointer.MakePtr(int(in.Spec.RestoreWindowDays)),
 		UpdateSnapshots:                   pointer.MakePtr(in.Spec.UpdateSnapshots),
-		Policies:                          &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{atlasPolicy},
+		Policies:                          []admin.AdvancedDiskBackupSnapshotSchedulePolicy{atlasPolicy},
 		AutoExportEnabled:                 pointer.MakePtr(in.Spec.AutoExportEnabled),
 		UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(in.Spec.UseOrgAndGroupNamesInExportPrefix),
 	}

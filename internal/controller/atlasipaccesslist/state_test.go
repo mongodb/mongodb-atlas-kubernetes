@@ -290,7 +290,7 @@ func TestHandleCustomResource(t *testing.T) {
 					ialAPI.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 						Return(
 							&admin.PaginatedNetworkAccess{
-								Results: &[]admin.NetworkPermissionEntry{
+								Results: []admin.NetworkPermissionEntry{
 									{
 										CidrBlock: pointer.MakePtr("192.168.0.0/24"),
 									},

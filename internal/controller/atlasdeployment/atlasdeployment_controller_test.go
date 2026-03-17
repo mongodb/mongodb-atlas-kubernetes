@@ -477,10 +477,10 @@ func TestRegularClusterReconciliation(t *testing.T) {
 				RestoreWindowDays:     pointer.MakePtr(7),
 				UpdateSnapshots:       pointer.MakePtr(false),
 				CopySettings:          &[]admin.DiskBackupCopySetting20240805{},
-				Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+				Policies: []admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 					{
 						Id: pointer.MakePtr("456987"),
-						PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+						PolicyItems: []admin.DiskBackupApiPolicyItem{
 							{
 								FrequencyInterval: 1,
 								FrequencyType:     "days",

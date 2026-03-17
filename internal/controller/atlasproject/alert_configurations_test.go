@@ -471,7 +471,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
-						Results: &[]admin.GroupAlertsConfig{},
+						Results: []admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
 				return apiMock
 			},
@@ -501,7 +501,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
-						Results: &[]admin.GroupAlertsConfig{},
+						Results: []admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
 
 				createdConfig := admin.GroupAlertsConfig{

@@ -69,7 +69,7 @@ func TestTeamsAPI_ListProjectTeams(t *testing.T) {
 					Return(admin.ListGroupTeamsApiRequest{ApiService: mockTeamAPI})
 				mockTeamAPI.EXPECT().ListGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
-						Results: &[]admin.TeamRole{
+						Results: []admin.TeamRole{
 							{
 								RoleNames: []string{"role1", "role2"},
 								TeamId:    testTeamID1,
@@ -240,7 +240,7 @@ func TestTeamsAPI_Assign(t *testing.T) {
 					Return(admin.AddGroupTeamsApiRequest{ApiService: mockTeamAPI})
 				mockTeamAPI.EXPECT().AddGroupTeamsExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
-						Results: &[]admin.TeamRole{
+						Results: []admin.TeamRole{
 							{
 								RoleNames: []string{"role1", "role2"},
 								TeamId:    testTeamID1,
@@ -394,7 +394,7 @@ func TestTeamsAPI_GetTeamUsers(t *testing.T) {
 					Return(admin.ListTeamUsersApiRequest{ApiService: mockUsersAPI})
 				mockUsersAPI.EXPECT().ListTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedOrgUser{
-						Results: &[]admin.OrgUserResponse{
+						Results: []admin.OrgUserResponse{
 							{
 								Username: "user1",
 								Id:       testUserID,
@@ -459,7 +459,7 @@ func TestTeamsAPI_UpdateRoles(t *testing.T) {
 					Return(admin.UpdateGroupTeamApiRequest{ApiService: mockTeamAPI})
 				mockTeamAPI.EXPECT().UpdateGroupTeamExecute(mock.Anything).
 					Return(&admin.PaginatedTeamRole{
-						Results: &[]admin.TeamRole{
+						Results: []admin.TeamRole{
 							{
 								RoleNames: []string{"role1", "role2"},
 								TeamId:    testTeamID1,
@@ -511,7 +511,7 @@ func TestTeamsAPI_AddUsers(t *testing.T) {
 					Return(admin.AddTeamUsersApiRequest{ApiService: mockTeamAPI})
 				mockTeamAPI.EXPECT().AddTeamUsersExecute(mock.Anything).
 					Return(&admin.PaginatedApiAppUser{
-						Results: &[]admin.CloudAppUser{
+						Results: []admin.CloudAppUser{
 							{
 								Username: "user1",
 								Id:       &testUserID,

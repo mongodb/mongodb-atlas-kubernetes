@@ -402,7 +402,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results:    &[]admin.NetworkPermissionEntry{},
+							Results:    []admin.NetworkPermissionEntry{},
 							TotalCount: pointer.MakePtr(0),
 						},
 						&http.Response{},
@@ -413,7 +413,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
 									IpAddress: pointer.MakePtr("192.168.100.150"),
 									CidrBlock: pointer.MakePtr("192.168.100.150/32"),
@@ -673,6 +673,6 @@ func synthesizeAtlasIPAccessList(peeringIDs []string) *admin.PaginatedNetworkAcc
 		})
 	}
 	return &admin.PaginatedNetworkAccess{
-		Results: &atlasIPAccessList,
+		Results: atlasIPAccessList,
 	}
 }

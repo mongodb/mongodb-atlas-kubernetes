@@ -59,7 +59,7 @@ func listProjectsByName(client *admin.APIClient, projectName string) ([]admin.Gr
 	}
 
 	found := make([]admin.Group, 0, projects.GetTotalCount())
-	for _, project := range *projects.Results {
+	for _, project := range projects.GetResults() {
 		if project.Name == projectName {
 			found = append(found, project)
 		}

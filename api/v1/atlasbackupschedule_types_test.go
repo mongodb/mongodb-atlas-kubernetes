@@ -58,9 +58,9 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 			RestoreWindowDays:                 pointer.MakePtr(7),
 			UpdateSnapshots:                   pointer.MakePtr(false),
 			UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-			Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+			Policies: []admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 				{
-					PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+					PolicyItems: []admin.DiskBackupApiPolicyItem{
 						{
 							FrequencyType:     "hourly",
 							FrequencyInterval: 10,

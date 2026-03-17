@@ -177,11 +177,11 @@ func dateToAtlas(d string) (*time.Time, error) {
 	return pointer.MakePtr(date), nil
 }
 
-func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
+func rolesToAtlas(roles []akov2.RoleSpec) []admin.DatabaseUserRole {
 	if len(roles) == 0 {
 		return nil
 	}
-	atlasRoles := []admin.DatabaseUserRole{}
+	atlasRoles := make([]admin.DatabaseUserRole, 0, len(roles))
 	for _, role := range roles {
 		ar := admin.DatabaseUserRole{
 			RoleName:     role.RoleName,
@@ -192,7 +192,7 @@ func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
 		}
 		atlasRoles = append(atlasRoles, ar)
 	}
-	return &atlasRoles
+	return atlasRoles
 }
 
 func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {

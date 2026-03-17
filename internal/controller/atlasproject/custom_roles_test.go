@@ -134,7 +134,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -196,7 +196,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -210,7 +210,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -309,7 +309,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{
 												Db:         "db",
 												Collection: "test-collection",
@@ -327,7 +327,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db1"},
 										},
 									},
@@ -341,7 +341,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action2",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -379,7 +379,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},

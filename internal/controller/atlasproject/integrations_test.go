@@ -383,7 +383,7 @@ func TestEnsureIntegration(t *testing.T) {
 				integrationsApi.EXPECT().CreateGroupIntegrationExecute(mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest")).
 					Return(
 						&admin.PaginatedIntegration{
-							Results: &[]admin.ThirdPartyIntegration{
+							Results: []admin.ThirdPartyIntegration{
 								{
 									Type: pointer.MakePtr("DATADOG"),
 								},
