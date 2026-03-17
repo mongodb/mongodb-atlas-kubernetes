@@ -311,7 +311,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 			ctx := &workflow.Context{
 				Log: logger,
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: atlasClient,
+					SdkClient20250312: atlasClient,
 				},
 				Context: context.Background(),
 			}

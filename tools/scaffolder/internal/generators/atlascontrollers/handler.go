@@ -27,10 +27,10 @@ import (
 )
 
 // sdkClientFieldNameForPackage returns the ClientSet field name for the given SDK package.
-// The atlas.ClientSet uses SdkClient20250312014 regardless of SDK package version.
+// The atlas.ClientSet uses SdkClient20250312 regardless of SDK package version.
 func sdkClientFieldNameForPackage(pkg string) string {
 	if strings.Contains(pkg, "atlas-sdk") {
-		return "SdkClient20250312014"
+		return "SdkClient20250312"
 	}
 	// For non-Atlas packages (e.g. test scaffolder integrations), derive from path
 	parts := strings.Split(pkg, "/")
@@ -38,7 +38,7 @@ func sdkClientFieldNameForPackage(pkg string) string {
 		suffix := strings.TrimPrefix(parts[len(parts)-2], "v")
 		return "SdkClient" + suffix
 	}
-	return "SdkClient20250312014"
+	return "SdkClient20250312"
 }
 
 func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath string, mappings []config.MappingWithConfig, refsByKind map[string][]indexers.ReferenceField, _ *config.ParsedConfig) error {
@@ -74,7 +74,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 				versionSuffix := mapping.Version
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
 
-				// Use the ClientSet field name - atlas.ClientSet has SdkClient20250312014
+				// Use the ClientSet field name - atlas.ClientSet has SdkClient20250312
 				sdkClientFieldName := sdkClientFieldNameForPackage(mapping.OpenAPIConfig.Package)
 
 				g.If(jen.Id(strings.ToLower(resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
