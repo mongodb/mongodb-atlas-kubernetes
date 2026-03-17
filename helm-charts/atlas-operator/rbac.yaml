@@ -18,6 +18,7 @@
   resources:
     - clusters
     - databaseusers
+    - flexclusters
     - groups
   verbs:
     - create
@@ -32,6 +33,7 @@
   resources:
     - clusters/finalizers
     - databaseusers/finalizers
+    - flexclusters/finalizers
     - groups/finalizers
   verbs:
     - update
@@ -40,6 +42,7 @@
   resources:
     - clusters/status
     - databaseusers/status
+    - flexclusters/status
     - groups/status
   verbs:
     - get

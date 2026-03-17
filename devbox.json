@@ -30,7 +30,8 @@
     "kind":                        "latest",
     "go":                          "1.25.7",
     "gnused":                      "latest",
-    "syft":                        "latest"
+    "syft":                        "latest",
+    "gnumake":                     "latest"	
   },
   "env": {
     "GOTOOLCHAIN": "auto"
