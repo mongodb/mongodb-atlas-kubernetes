@@ -2883,6 +2883,13 @@ The entry fields of the databaseuser resource spec. These fields can be set for 
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b><a href="#databaseuserspecv20250312entryrolesindex">roles</a></b></td>
+        <td>[]object</td>
+        <td>
+          List that provides the pairings of one role with one applicable database.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b>username</b></td>
         <td>string</td>
         <td>
@@ -2956,13 +2963,6 @@ Alphanumeric string that authenticates this database user against the database s
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#databaseuserspecv20250312entryrolesindex">roles</a></b></td>
-        <td>[]object</td>
-        <td>
-          List that provides the pairings of one role with one applicable database.<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#databaseuserspecv20250312entryscopesindex">scopes</a></b></td>
         <td>[]object</td>
         <td>
@@ -2979,6 +2979,47 @@ Alphanumeric string that authenticates this database user against the database s
 - For self-managed X.509, specify `CUSTOMER`.
 
 Users created with the `CUSTOMER` method require a Common Name (CN) in the **username** parameter. You must create externally authenticated users on the `$external` database.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### DatabaseUser.spec.v20250312.entry.roles[index]
+<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
+
+
+
+Range of resources available to this database user.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>databaseName</b></td>
+        <td>string</td>
+        <td>
+          Database to which the user is granted access privileges.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>roleName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies a group of privileges assigned to a database user. This value can either be a built-in role or a custom role.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>collectionName</b></td>
+        <td>string</td>
+        <td>
+          Collection on which this role applies.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3053,47 +3094,6 @@ Alphanumeric string that authenticates this database user against the database s
           Key of the secret data containing the sensitive field value, defaults to "password".<br/>
           <br/>
             <i>Default</i>: password<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### DatabaseUser.spec.v20250312.entry.roles[index]
-<sup><sup>[↩ Parent](#databaseuserspecv20250312entry)</sup></sup>
-
-
-
-Range of resources available to this database user.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>databaseName</b></td>
-        <td>string</td>
-        <td>
-          Database to which the user is granted access privileges.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>roleName</b></td>
-        <td>string</td>
-        <td>
-          Human-readable label that identifies a group of privileges assigned to a database user. This value can either be a built-in role or a custom role.<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>collectionName</b></td>
-        <td>string</td>
-        <td>
-          Collection on which this role applies.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

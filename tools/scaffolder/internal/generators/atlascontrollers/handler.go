@@ -26,6 +26,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder/internal/generators/indexers"
 )
 
+// sdkClientFieldNameForPackage returns the ClientSet field name for the given SDK package.
+// The atlas.ClientSet uses SdkClient20250312014 regardless of SDK package version.
+func sdkClientFieldNameForPackage(pkg string) string {
+	if strings.Contains(pkg, "atlas-sdk") {
+		return "SdkClient20250312014"
+	}
+	// For non-Atlas packages (e.g. test scaffolder integrations), derive from path
+	parts := strings.Split(pkg, "/")
+	if len(parts) >= 2 {
+		suffix := strings.TrimPrefix(parts[len(parts)-2], "v")
+		return "SdkClient" + suffix
+	}
+	return "SdkClient20250312014"
+}
+
 func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath string, mappings []config.MappingWithConfig, refsByKind map[string][]indexers.ReferenceField, _ *config.ParsedConfig) error {
 	atlasResourceName := strings.ToLower(resourceName)
 	apiPkg := typesPath
@@ -59,8 +74,8 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 				versionSuffix := mapping.Version
 				capitalizedVersion := strings.ToUpper(string(versionSuffix[0])) + versionSuffix[1:]
 
-				sdkImportPathSplit := strings.Split(mapping.OpenAPIConfig.Package, "/")
-				sdkVersionSuffix := strings.TrimPrefix(sdkImportPathSplit[len(sdkImportPathSplit)-2], "v")
+				// Use the ClientSet field name - atlas.ClientSet has SdkClient20250312014
+				sdkClientFieldName := sdkClientFieldNameForPackage(mapping.OpenAPIConfig.Package)
 
 				g.If(jen.Id(strings.ToLower(resourceName)).Dot("Spec").Dot(capitalizedVersion).Op("!=").Nil()).Block(
 
@@ -79,7 +94,7 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 						Call(
 							jen.Id("h").
 								Dot("Client"),
-							jen.Id("atlasClients").Dot("SdkClient"+sdkVersionSuffix),
+							jen.Id("atlasClients").Dot(sdkClientFieldName),
 							jen.Id("translator"),
 							jen.Id("h").Dot("deletionProtection"),
 						),

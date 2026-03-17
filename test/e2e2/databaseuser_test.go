@@ -490,7 +490,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 					DatabaseName: "admin",
 					Username:     username,
 					Password:     pointer.MakePtr("Passw0rd!"),
-					Roles: &[]admin.DatabaseUserRole{
+					Roles: []admin.DatabaseUserRole{
 						{RoleName: "readAnyDatabase", DatabaseName: "admin"},
 					},
 				}
