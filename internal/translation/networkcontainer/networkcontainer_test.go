@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -607,7 +607,7 @@ func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, e
 	)
 
 	results := admin.PaginatedCloudProviderContainer{
-		Results: &apiContainers,
+		Results: apiContainers,
 	}
 	apiMock.EXPECT().ListGroupContainersExecute(
 		mock.AnythingOfType("admin.ListGroupContainersApiRequest"),

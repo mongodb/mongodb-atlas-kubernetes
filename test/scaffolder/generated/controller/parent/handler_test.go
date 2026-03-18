@@ -24,7 +24,7 @@ import (
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312014/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312016/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -186,7 +186,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 
 			provider := &mockProvider{
 				clientSet: &atlas.ClientSet{
-					SdkClient20250312014: &integrationssdk.APIClient{},
+					SdkClient20250312: &integrationssdk.APIClient{},
 				},
 			}
 
@@ -217,7 +217,7 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 	perResourceSecret := newCredentialSecret("resource-secret")
 
 	expectedClientSet := &atlas.ClientSet{
-		SdkClient20250312014: &integrationssdk.APIClient{},
+		SdkClient20250312: &integrationssdk.APIClient{},
 	}
 
 	tests := []struct {
@@ -325,7 +325,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -383,7 +383,7 @@ func TestHandlerStateTransitions_Parent_NoVersion(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -450,7 +450,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -537,7 +537,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312014: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 

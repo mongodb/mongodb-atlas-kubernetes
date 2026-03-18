@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -471,7 +471,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
-						Results: &[]admin.GroupAlertsConfig{},
+						Results: []admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
 				return apiMock
 			},
@@ -501,7 +501,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
 					Return(&admin.PaginatedAlertConfig{
-						Results: &[]admin.GroupAlertsConfig{},
+						Results: []admin.GroupAlertsConfig{},
 					}, &http.Response{StatusCode: 200}, nil)
 
 				createdConfig := admin.GroupAlertsConfig{
@@ -534,7 +534,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312014: mockAPIClient,
+				SdkClient20250312: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -669,7 +669,7 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312014: mockAPIClient,
+				SdkClient20250312: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{
@@ -772,7 +772,7 @@ func TestCreateAlertConfigs(t *testing.T) {
 			}
 
 			atlasClientSet := &atlas.ClientSet{
-				SdkClient20250312014: mockAPIClient,
+				SdkClient20250312: mockAPIClient,
 			}
 
 			workflowCtx := &workflow.Context{

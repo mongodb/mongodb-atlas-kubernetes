@@ -20,7 +20,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -73,7 +73,7 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
-					RoleAssignments: &[]admin.ConnectedOrgConfigRoleAssignment{
+					RoleAssignments: []admin.ConnectedOrgConfigRoleAssignment{
 						{
 							GroupId: &projectID,
 							Role:    &spec.RoleMappings[0].RoleAssignments[0].Role,

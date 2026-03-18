@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -67,7 +67,7 @@ func TestReconcile(t *testing.T) {
 					ialAPI.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 						Return(
 							&admin.PaginatedNetworkAccess{
-								Results: &[]admin.NetworkPermissionEntry{
+								Results: []admin.NetworkPermissionEntry{
 									{
 										CidrBlock: pointer.MakePtr("192.168.0.0/24"),
 									},
@@ -92,7 +92,7 @@ func TestReconcile(t *testing.T) {
 						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
 
 					return &atlas.ClientSet{
-						SdkClient20250312014: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							ProjectIPAccessListApi: ialAPI,
 							ProjectsApi:            projectAPI,
 						},

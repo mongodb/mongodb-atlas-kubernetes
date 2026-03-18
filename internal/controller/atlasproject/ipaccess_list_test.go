@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -402,7 +402,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results:    &[]admin.NetworkPermissionEntry{},
+							Results:    []admin.NetworkPermissionEntry{},
 							TotalCount: pointer.MakePtr(0),
 						},
 						&http.Response{},
@@ -413,7 +413,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
 									IpAddress: pointer.MakePtr("192.168.100.150"),
 									CidrBlock: pointer.MakePtr("192.168.100.150/32"),
@@ -480,7 +480,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t)),
 					},
 				},
@@ -629,7 +629,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectIPAccessListApi: ipAccessAPI,
 					},
 				},
@@ -673,6 +673,6 @@ func synthesizeAtlasIPAccessList(peeringIDs []string) *admin.PaginatedNetworkAcc
 		})
 	}
 	return &admin.PaginatedNetworkAccess{
-		Results: &atlasIPAccessList,
+		Results: atlasIPAccessList,
 	}
 }

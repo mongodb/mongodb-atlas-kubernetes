@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -134,7 +134,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -196,7 +196,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -210,7 +210,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -309,7 +309,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{
 												Db:         "db",
 												Collection: "test-collection",
@@ -327,7 +327,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db1"},
 										},
 									},
@@ -341,7 +341,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action2",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -379,7 +379,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -397,7 +397,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						CustomDatabaseRolesApi: tc.roleAPI,
 					},
 				},
@@ -481,7 +481,7 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						CustomDatabaseRolesApi: roleAPI,
 					},
 				},

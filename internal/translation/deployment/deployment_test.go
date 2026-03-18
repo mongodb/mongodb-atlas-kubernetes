@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -86,7 +86,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 			admin.ListClustersApiRequest{ApiService: mockClustersAPI})
 		mockClustersAPI.EXPECT().ListClustersExecute(admin.ListClustersApiRequest{ApiService: mockClustersAPI}).Return(
 			&admin.PaginatedClusterDescription20240805{
-				Results: &[]admin.ClusterDescription20240805{
+				Results: []admin.ClusterDescription20240805{
 					{
 						Name:              pointer.MakePtr("testCluster"),
 						ConnectionStrings: &admin.ClusterConnectionStrings{StandardSrv: pointer.MakePtr("clusterSRV")},
@@ -100,7 +100,7 @@ func TestProductionAtlasDeployments_ListDeploymentConnections(t *testing.T) {
 		mockFlexAPI.EXPECT().ListFlexClustersExecute(
 			admin.ListFlexClustersApiRequest{ApiService: mockFlexAPI}).Return(
 			&admin.PaginatedFlexClusters20241113{
-				Results: &[]admin.FlexClusterDescription20241113{
+				Results: []admin.FlexClusterDescription20241113{
 					{
 						Name:              pointer.MakePtr("testFlex"),
 						ConnectionStrings: &admin.FlexConnectionStrings20241113{StandardSrv: pointer.MakePtr("flexSRV")},

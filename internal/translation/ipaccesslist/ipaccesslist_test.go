@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -57,7 +57,7 @@ func TestIPAccessList_List(t *testing.T) {
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
 									IpAddress:       pointer.MakePtr("192.168.100.150"),
 									CidrBlock:       pointer.MakePtr("192.168.100.150/32"),
@@ -136,7 +136,7 @@ func TestIPAccessList_Add(t *testing.T) {
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
 									IpAddress:       pointer.MakePtr("192.168.100.150"),
 									CidrBlock:       pointer.MakePtr("192.168.100.150/32"),

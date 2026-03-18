@@ -25,7 +25,7 @@ import (
 	crd2gok8s "github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312014/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312016/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -136,7 +136,7 @@ func TestFromAPI(t *testing.T) {
 					OidcAuthType: pointer.MakePtr("NONE OIDC"),
 					// TODO: new crd should put this on a secret
 					Password: pointer.MakePtr("fakepass"),
-					Roles: &[]admin2025.DatabaseUserRole{
+					Roles: []admin2025.DatabaseUserRole{
 						{
 							CollectionName: pointer.MakePtr("collection0"),
 							DatabaseName:   "mydb",
@@ -805,10 +805,10 @@ func TestToAPI(t *testing.T) {
 							RetentionDays: pointer.MakePtr(2),
 						},
 					},
-					Policies: &[]admin2025.AdvancedDiskBackupSnapshotSchedulePolicy{
+					Policies: []admin2025.AdvancedDiskBackupSnapshotSchedulePolicy{
 						{
 							Id: pointer.MakePtr("id0"),
-							PolicyItems: &[]admin2025.DiskBackupApiPolicyItem{
+							PolicyItems: []admin2025.DiskBackupApiPolicyItem{
 								{
 									FrequencyInterval: 1,
 									FrequencyType:     "freq-type0",
@@ -1364,7 +1364,7 @@ func TestToAPI(t *testing.T) {
 					Username:     "test-user",
 					DatabaseName: "admin",
 					GroupId:      "32b6e34b3d91647abb20e7b8",
-					Roles: &[]admin2025.DatabaseUserRole{
+					Roles: []admin2025.DatabaseUserRole{
 						{DatabaseName: "admin", RoleName: "readWrite"},
 					},
 					AwsIAMType:      pointer.MakePtr("aws-iam-type"),
@@ -1758,7 +1758,7 @@ func TestToAPI(t *testing.T) {
 					Actions: &[]admin2025.DatabasePrivilegeAction{
 						{
 							Action: "action1",
-							Resources: &[]admin2025.DatabasePermittedNamespaceResource{
+							Resources: []admin2025.DatabasePermittedNamespaceResource{
 								{
 									Collection: "collection0",
 									Cluster:    true,

@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -113,7 +113,7 @@ func TestReconcile(t *testing.T) {
 				&admin.OrgFederationSettings{
 					Id:                     pointer.MakePtr(fedSettingsID),
 					IdentityProviderId:     pointer.MakePtr("0oawce8e76SR9K7Tq357"),
-					FederatedDomains:       &[]string{"qa-27092023.com", "cloud-qa.mongodb.com"},
+					FederatedDomains:       []string{"qa-27092023.com", "cloud-qa.mongodb.com"},
 					HasRoleMappings:        pointer.MakePtr(false),
 					IdentityProviderStatus: pointer.MakePtr("ACTIVE"),
 				},
@@ -125,7 +125,7 @@ func TestReconcile(t *testing.T) {
 		fedAuthAPI.EXPECT().ListIdentityProvidersExecute(mock.Anything).
 			Return(
 				&admin.PaginatedFederationIdentityProvider{
-					Results: &[]admin.FederationIdentityProvider{
+					Results: []admin.FederationIdentityProvider{
 						{
 							Id:        "65143bd1612f01218e885cf2",
 							OktaIdpId: "0oawce8e76SR9K7Tq357",
@@ -156,7 +156,7 @@ func TestReconcile(t *testing.T) {
 		groupAPI.EXPECT().ListGroupsExecute(mock.Anything).
 			Return(
 				&admin.PaginatedAtlasGroup{
-					Results: &[]admin.Group{
+					Results: []admin.Group{
 						{
 							Id:   pointer.MakePtr(projectID),
 							Name: "MyProject",
@@ -170,7 +170,7 @@ func TestReconcile(t *testing.T) {
 		atlasProvider := atlasmock.TestProvider{
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectsApi:                groupAPI,
 						FederatedAuthenticationApi: fedAuthAPI,
 					},

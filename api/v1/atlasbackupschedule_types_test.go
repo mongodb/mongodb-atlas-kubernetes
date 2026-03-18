@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
@@ -58,9 +58,9 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 			RestoreWindowDays:                 pointer.MakePtr(7),
 			UpdateSnapshots:                   pointer.MakePtr(false),
 			UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-			Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+			Policies: []admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 				{
-					PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+					PolicyItems: []admin.DiskBackupApiPolicyItem{
 						{
 							FrequencyType:     "hourly",
 							FrequencyInterval: 10,

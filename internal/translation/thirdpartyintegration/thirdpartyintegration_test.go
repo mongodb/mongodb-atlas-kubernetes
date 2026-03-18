@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -510,7 +510,7 @@ func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err er
 	).Return(admin.CreateGroupIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
-	paginatedIntegration.Results = &integrations
+	paginatedIntegration.Results = integrations
 	apiMock.EXPECT().CreateGroupIntegrationExecute(
 		mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
@@ -539,7 +539,7 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
 	if integration != nil {
-		paginatedIntegration.Results = &[]admin.ThirdPartyIntegration{
+		paginatedIntegration.Results = []admin.ThirdPartyIntegration{
 			*integration,
 		}
 	}

@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,7 +158,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection2"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -185,7 +185,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312014: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -247,7 +247,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection2"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -270,7 +270,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312014: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -356,7 +356,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312014: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -428,7 +428,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -453,7 +453,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312014: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -508,7 +508,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
 			Return(
 				&admin.PaginatedApiStreamsConnection{
-					Results: &[]admin.StreamsConnection{
+					Results: []admin.StreamsConnection{
 						{
 							Name:        pointer.MakePtr("sample-connection"),
 							Type:        pointer.MakePtr("Cluster"),
@@ -533,7 +533,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312014: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},

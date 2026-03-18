@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
-	"go.mongodb.org/atlas-sdk/v20250312014/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -111,7 +111,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312014: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						NetworkPeeringApi: peeringAPI,
 					},
 				},
@@ -159,6 +159,6 @@ func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContain
 		})
 	}
 	return &admin.PaginatedContainerPeer{
-		Results: &atlasPeers,
+		Results: atlasPeers,
 	}
 }

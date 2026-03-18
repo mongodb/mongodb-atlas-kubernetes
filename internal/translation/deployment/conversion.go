@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
+	"go.mongodb.org/atlas-sdk/v20250312016/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -1074,7 +1074,7 @@ func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings
 	}
 
 	return &admin.CustomZoneMappings{
-		CustomZoneMappings: &out,
+		CustomZoneMappings: out,
 	}
 }
 
