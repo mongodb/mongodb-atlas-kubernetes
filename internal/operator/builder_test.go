@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -87,6 +89,10 @@ func (m *managerMock) GetClient() client.Client {
 
 func (m *managerMock) GetFieldIndexer() client.FieldIndexer {
 	return &informertest.FakeInformers{}
+}
+
+func (m *managerMock) GetRESTMapper() meta.RESTMapper {
+	return testrestmapper.TestOnlyStaticRESTMapper(m.scheme)
 }
 
 func (m *managerMock) New(_ *rest.Config, options manager.Options) (manager.Manager, error) {
