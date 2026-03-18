@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312014/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312016/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
