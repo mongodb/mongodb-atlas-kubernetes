@@ -30,6 +30,7 @@ import (
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -338,7 +339,7 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 				testCluster1 = newSharedCluster(clusterName1, testNamespace.Name, testGroup.GetName())
 				Expect(kubeClient.Create(ctx, testCluster1)).To(Succeed())
 
-				testCluster2 = newSharedCluster(clusterName2, testNamespace.Name, testGroup.GetName())
+				testCluster2 = newDedicatedCluster(clusterName2, testNamespace.Name, testGroup.GetName())
 				Expect(kubeClient.Create(ctx, testCluster2)).To(Succeed())
 
 				Eventually(func(g Gomega) {
@@ -504,7 +505,7 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 				testCluster1 = newSharedCluster(clusterName1, testNamespace.Name, testGroup.GetName())
 				Expect(kubeClient.Create(ctx, testCluster1)).To(Succeed())
 
-				testCluster2 = newSharedCluster(clusterName2, testNamespace.Name, testGroup.GetName())
+				testCluster2 = newDedicatedCluster(clusterName2, testNamespace.Name, testGroup.GetName())
 				Expect(kubeClient.Create(ctx, testCluster2)).To(Succeed())
 
 				Eventually(func(g Gomega) {
@@ -604,4 +605,40 @@ func newDBUserWithScopes(namespace, username, groupRefName, passwordSecretName s
 		dbUser.Spec.V20250312.Entry.Scopes = &scopes
 	}
 	return dbUser
+}
+
+// The reason for this is that Atlas only allows only one M0 cluster per project
+func newDedicatedCluster(name, namespace, groupRefName string) *generatedv1.Cluster {
+	return &generatedv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: generatedv1.ClusterSpec{
+			V20250312: &generatedv1.ClusterSpecV20250312{
+				GroupRef: &k8s.LocalReference{
+					Name: groupRefName,
+				},
+				Entry: &generatedv1.V20250312Entry{
+					Name:        pointer.MakePtr(name),
+					ClusterType: pointer.MakePtr("REPLICASET"),
+					ReplicationSpecs: &[]generatedv1.ReplicationSpecs{
+						{
+							RegionConfigs: &[]generatedv1.RegionConfigs{
+								{
+									ProviderName: pointer.MakePtr("AWS"),
+									RegionName:   pointer.MakePtr("US_EAST_1"),
+									Priority:     pointer.MakePtr(7),
+									ElectableSpecs: &generatedv1.ElectableSpecs{
+										InstanceSize: pointer.MakePtr("M10"),
+										NodeCount:    pointer.MakePtr(3),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
