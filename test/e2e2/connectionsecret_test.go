@@ -22,7 +22,6 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312014/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,9 +67,7 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 			"clusters.atlas.generated.mongodb.com",
 		)).To(Succeed())
 
-		var atlasClient *admin.APIClient
-		atlasClient, orgID = newTestAtlasClient()
-		_ = atlasClient
+		_, orgID = newTestAtlasClient()
 	})
 
 	_ = BeforeEach(func() {
