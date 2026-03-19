@@ -46,6 +46,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
+	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	controllerstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -131,6 +132,11 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		Watches(
 			&generatedv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(generatedindexer.NewDatabaseUserBySecretMapFunc(r.Client)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
