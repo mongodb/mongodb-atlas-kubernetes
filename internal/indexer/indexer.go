@@ -76,12 +76,12 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		generatedindexer.NewClusterByGroupIndexer(logger),
 		generatedindexer.NewFlexClusterByGroupIndexer(logger),
 		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
 		connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
 		indexers = append(indexers,
-			connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
 			indexerexp.NewFlexClusterByGroupIndexer(logger),
 			indexerexp.NewClusterByGroupIndexer(logger),
 			indexerexp.NewDatabaseUserBySecretIndexer(logger),
