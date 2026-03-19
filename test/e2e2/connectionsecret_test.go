@@ -308,8 +308,9 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 			})
 		})
 
-		It("Should NOT create connection secret when Cluster is outside DatabaseUser scopes", Label("focus-connectionsecret-scope-filter"), func() {
-			clusterName := fmt.Sprintf("cluster-%s", rand.String(6))
+		It("Should only create connection secret for Cluster within DatabaseUser scopes", Label("focus-connectionsecret-scope-filter"), func() {
+			clusterName1 := fmt.Sprintf("cluster-%s", rand.String(6))
+			clusterName2 := fmt.Sprintf("cluster-%s", rand.String(6))
 			username := fmt.Sprintf("testuser-%s", rand.String(6))
 
 			groupName := fmt.Sprintf("test-group-%s", rand.String(6))
@@ -332,23 +333,31 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 				Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
 			})
 
-			var testCluster *generatedv1.Cluster
-			By("Create Cluster (M0)", func() {
-				testCluster = newSharedCluster(clusterName, testNamespace.Name, testGroup.GetName())
-				Expect(kubeClient.Create(ctx, testCluster)).To(Succeed())
+			var testCluster1, testCluster2 *generatedv1.Cluster
+			By("Create two Clusters (M0)", func() {
+				testCluster1 = newSharedCluster(clusterName1, testNamespace.Name, testGroup.GetName())
+				Expect(kubeClient.Create(ctx, testCluster1)).To(Succeed())
+
+				testCluster2 = newSharedCluster(clusterName2, testNamespace.Name, testGroup.GetName())
+				Expect(kubeClient.Create(ctx, testCluster2)).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster)).To(Succeed())
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster1)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster2)).To(Succeed())
 				}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 			})
 
 			passwordSecretName := fmt.Sprintf("dbuser-pass-%s", rand.String(6))
 			var testDBUser *generatedv1.DatabaseUser
-			By("Create DatabaseUser with scopes pointing to a different cluster", func() {
+			By("Create DatabaseUser scoped to clusterName1 only", func() {
 				Expect(kubeClient.Create(ctx, newPasswordSecret(testNamespace.Name, passwordSecretName))).To(Succeed())
 
+				// This user is for Cluster1 only, so the secret for Cluster2 must not be created
 				testDBUser = newDBUserWithScopes(testNamespace.Name, username, testGroup.GetName(), passwordSecretName, []generatedv1.Scopes{
-					{Name: "some-other-cluster", Type: "CLUSTER"},
+					{Name: clusterName1, Type: "CLUSTER"},
 				})
 				Expect(kubeClient.Create(ctx, testDBUser)).To(Succeed())
 
@@ -357,13 +366,18 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 				}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
-			By("Verify connection secret is NOT created for the out-of-scope cluster", func() {
-				secretName := connectionSecretName(testGroup, clusterName, username)
+			By("Verify connection secret is created only for clusterName1, not for clusterName2", func() {
+				// Secret for the in-scope cluster should exist
+				secretName1 := connectionSecretName(testGroup, clusterName1, username)
+				waitForSecret(secretName1)
+
+				// Secret for the out-of-scope cluster should never appear
+				secretName2 := connectionSecretName(testGroup, clusterName2, username)
 				Consistently(func(g Gomega) {
 					connSecret := &corev1.Secret{}
 					err := kubeClient.Get(ctx, client.ObjectKey{
 						Namespace: testNamespace.Name,
-						Name:      secretName,
+						Name:      secretName2,
 					}, connSecret)
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				}).WithContext(ctx).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
@@ -377,10 +391,14 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
 
-			By("Delete Cluster", func() {
-				Expect(kubeClient.Delete(ctx, testCluster)).To(Succeed())
+			By("Delete both Clusters", func() {
+				Expect(kubeClient.Delete(ctx, testCluster1)).To(Succeed())
+				Expect(kubeClient.Delete(ctx, testCluster2)).To(Succeed())
 				Eventually(func(g Gomega) {
-					g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster)).To(Succeed())
+					g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster1)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster2)).To(Succeed())
 				}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 			})
 
