@@ -18,7 +18,7 @@ import (
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 )
 
 // nolint:dupl
