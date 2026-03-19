@@ -73,6 +73,8 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
 		generatedindexer.NewDatabaseUserByGroupIndexer(logger),
 		generatedindexer.NewDatabaseUserBySecretIndexer(logger),
+		generatedindexer.NewClusterByGroupIndexer(logger),
+		generatedindexer.NewFlexClusterByGroupIndexer(logger),
 		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
 		connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
 	)
