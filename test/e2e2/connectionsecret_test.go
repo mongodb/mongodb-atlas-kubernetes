@@ -577,6 +577,89 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 			})
 		})
 	})
+
+	Describe("FlexCluster connection secret lifecycle", func() {
+		It("Should create connection secret when FlexCluster and DatabaseUser are ready", Label("focus-connectionsecret-flexcluster"), func() {
+			clusterName := fmt.Sprintf("flexy-%s", rand.String(6))
+			username := fmt.Sprintf("testuser-%s", rand.String(6))
+
+			groupName := fmt.Sprintf("test-group-%s", rand.String(6))
+			groupParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
+				WithGroupName(groupName).
+				WithNamespace(testNamespace.Name)
+
+			var testGroup *generatedv1.Group
+			By("Create prerequisite Group", func() {
+				objs := samples.MustLoadSampleObjects("atlas_generated_v1_group.yaml")
+				Expect(len(objs)).To(Equal(1))
+				testGroup = objs[0].(*generatedv1.Group)
+				applyTestParamsToGroup(testGroup, groupParams)
+				Expect(kubeClient.Create(ctx, testGroup)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
+			var testFlexCluster *generatedv1.FlexCluster
+			By("Create FlexCluster", func() {
+				testFlexCluster = newSharedFlexCluster(clusterName, testNamespace.Name, testGroup.GetName())
+				Expect(kubeClient.Create(ctx, testFlexCluster)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testFlexCluster)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+				Expect(testFlexCluster.Status.V20250312).NotTo(BeNil())
+				Expect(testFlexCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
+			})
+
+			passwordSecretName := fmt.Sprintf("dbuser-pass-%s", rand.String(6))
+			var testDBUser *generatedv1.DatabaseUser
+			By("Create DatabaseUser", func() {
+				Expect(kubeClient.Create(ctx, newPasswordSecret(testNamespace.Name, passwordSecretName))).To(Succeed())
+
+				objs := samples.MustLoadSampleObjects("atlas_generated_v1_databaseuser_with_groupref.yaml")
+				Expect(len(objs)).To(Equal(1))
+				testDBUser = objs[0].(*generatedv1.DatabaseUser)
+				applyTestParamsToDBUser(testDBUser, testNamespace.Name, username, testGroup.GetName(), passwordSecretName)
+				Expect(kubeClient.Create(ctx, testDBUser)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testDBUser)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+
+			By("Verify connection secret is created for FlexCluster", func() {
+				secretName := connectionsecret.K8sConnectionSecretName(testGroup.GetName(), clusterName, username, "flexcluster")
+				connSecret := &corev1.Secret{}
+				Eventually(func(g Gomega) {
+					g.Expect(kubeClient.Get(ctx, client.ObjectKey{
+						Namespace: testNamespace.Name,
+						Name:      secretName,
+					}, connSecret)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+				Expect(connSecret.Data).To(HaveKey("username"))
+				Expect(connSecret.Data).To(HaveKey("password"))
+				Expect(connSecret.Data).To(HaveKey("connectionStringStandard"))
+				Expect(connSecret.Data).To(HaveKey("connectionStringStandardSrv"))
+				Expect(string(connSecret.Data["username"])).To(Equal(username))
+			})
+
+			By("Verify connection secret is deleted when DatabaseUser is deleted", func() {
+				secretName := connectionsecret.K8sConnectionSecretName(testGroup.GetName(), clusterName, username, "flexcluster")
+				Expect(kubeClient.Delete(ctx, testDBUser)).To(Succeed())
+
+				Eventually(func(g Gomega) {
+					err := kubeClient.Get(ctx, client.ObjectKey{
+						Namespace: testNamespace.Name,
+						Name:      secretName,
+					}, &corev1.Secret{})
+					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
+		})
+	})
 })
 
 func newDBUserWithScopes(namespace, username, groupRefName, passwordSecretName string, scopes []generatedv1.Scopes) *generatedv1.DatabaseUser {
@@ -636,6 +719,29 @@ func newDedicatedCluster(name, namespace, groupRefName string) *generatedv1.Clus
 								},
 							},
 						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newSharedFlexCluster(name, namespace, groupRefName string) *generatedv1.FlexCluster {
+	return &generatedv1.FlexCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: generatedv1.FlexClusterSpec{
+			V20250312: &generatedv1.FlexClusterSpecV20250312{
+				GroupRef: &k8s.LocalReference{
+					Name: groupRefName,
+				},
+				Entry: &generatedv1.FlexClusterSpecV20250312Entry{
+					Name: name,
+					ProviderSettings: generatedv1.ProviderSettings{
+						BackingProviderName: "AWS",
+						RegionName:          "US_EAST_1",
 					},
 				},
 			},
