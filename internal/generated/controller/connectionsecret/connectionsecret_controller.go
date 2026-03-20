@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/cluster"
@@ -46,8 +47,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
+	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	controllerstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
@@ -111,8 +112,8 @@ func NewConnectionSecretReconciler(c ctrlcluster.Cluster, predicates []predicate
 
 	// Register all the connectionTarget types
 	r.ConnectionTargetKinds = []target.ConnectionTarget{
-		flexcluster.NewFlexClusterTarget(r.Client),
 		cluster.NewClusterTarget(r.Client),
+		flexcluster.NewFlexClusterTarget(r.Client),
 	}
 
 	return r
@@ -131,13 +132,18 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		For(r.For()).
 		Owns(&corev1.Secret{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
+			&generatedv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(
 			&generatedv1.FlexCluster{},
 			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(
-			&generatedv1.Cluster{},
-			handler.EnqueueRequestsFromMapFunc(r.newConnectionTargetMapFunc),
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(generatedindexer.NewDatabaseUserBySecretMapFunc(r.Client)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{

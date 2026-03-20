@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
 	akov2generatedcluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/cluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/databaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/flexcluster"
@@ -29,8 +28,6 @@ import (
 
 func (r *Registry) experimentalReconcilers(c cluster.Cluster, ap atlas.Provider) ([]Reconciler, error) {
 	var reconcilers []Reconciler
-	// Add experimental controllers here
-	reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
 
 	groupReconciler, err := group.NewGroupReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
 	if err != nil {
