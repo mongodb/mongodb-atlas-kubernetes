@@ -658,6 +658,21 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 			})
+
+			By("Delete FlexCluster", func() {
+				Expect(kubeClient.Delete(ctx, testFlexCluster)).To(Succeed())
+				Eventually(func(g Gomega) {
+					g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testFlexCluster)).To(Succeed())
+				}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+			})
+
+			By("Delete Group", func() {
+				Expect(kubeClient.Delete(ctx, testGroup)).To(Succeed())
+				Eventually(func(g Gomega) {
+					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
+					g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+			})
 		})
 	})
 })
