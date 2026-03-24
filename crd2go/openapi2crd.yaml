@@ -191,7 +191,6 @@ spec:
                 - $.roles
                 - $.scopes
                 - $.x509Type
-
     - gvk:
         version: v1
         kind: FlexCluster
@@ -224,3 +223,34 @@ spec:
                 - $.links
                 - $.tags
                 - $.terminationProtectionEnabled
+                
+    - gvk:
+        version: v1
+        kind: IPAccessListEntry
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - aial
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/accessList'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'NetworkPermissionEntry'
+            filters:
+              skipProperties:
+                - $.groupId
+                - $.links
+          status:
+            schema: 'NetworkPermissionEntry'
+            filters:
+              skipProperties:
+                - $.links
+

@@ -20,6 +20,7 @@
     - databaseusers
     - flexclusters
     - groups
+    - ipaccesslistentries
   verbs:
     - create
     - delete
@@ -35,6 +36,7 @@
     - databaseusers/finalizers
     - flexclusters/finalizers
     - groups/finalizers
+    - ipaccesslistentries/finalizers
   verbs:
     - update
 - apiGroups:
@@ -44,6 +46,7 @@
     - databaseusers/status
     - flexclusters/status
     - groups/status
+    - ipaccesslistentries/status
   verbs:
     - get
     - patch

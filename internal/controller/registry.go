@@ -51,6 +51,7 @@ import (
 	akogenerateddatabaseuser "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/databaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
+	akogeneratedipaccesslistentry "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/ipaccesslistentry"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
@@ -186,11 +187,16 @@ func (r *Registry) generatedReconcilers(c cluster.Cluster, ap atlas.Provider) ([
 	if err != nil {
 		return nil, fmt.Errorf("error creating flex cluster reconciler: %w", err)
 	}
+	ipAccessListReconciler, err := akogeneratedipaccesslistentry.NewIPAccessListEntryReconciler(c, ap, r.logger, r.globalSecretRef, r.deletionProtection, true, r.defaultPredicates())
+	if err != nil {
+		return nil, fmt.Errorf("error creating ipaccesslistentry reconciler: %w", err)
+	}
 
 	reconcilers = append(reconcilers, newCtrlStateReconciler(groupReconciler, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, newCtrlStateReconciler(clusterReconciler, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, newCtrlStateReconciler(databaseUserReconciler, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, newCtrlStateReconciler(flexReconciler, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, newCtrlStateReconciler(ipAccessListReconciler, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, connectionsecret.NewConnectionSecretReconciler(c, r.defaultPredicates(), ap, r.logger, r.globalSecretRef))
 	return reconcilers, nil
 }

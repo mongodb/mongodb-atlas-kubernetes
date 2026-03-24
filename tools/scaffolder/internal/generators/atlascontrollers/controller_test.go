@@ -363,6 +363,7 @@ spec:
   group: atlas.generated.mongodb.com
   names:
     kind: Resource
+    plural: resources
   versions:
   - name: v1
     schema:

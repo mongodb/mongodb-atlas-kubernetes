@@ -103,7 +103,7 @@ type DatabaseUserSpecV20250312Entry struct {
 	PasswordSecretRef *PasswordSecretRef `json:"passwordSecretRef,omitempty"`
 
 	// Roles List that provides the pairings of one role with one applicable database.
-	Roles *[]Roles `json:"roles,omitempty"`
+	Roles []Roles `json:"roles"`
 
 	// Scopes List that contains clusters, MongoDB Atlas Data Lakes, and MongoDB Atlas
 	// Streams Workspaces that this database user can access. If omitted, MongoDB Cloud

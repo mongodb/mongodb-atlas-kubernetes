@@ -65,6 +65,7 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 			"groups.atlas.generated.mongodb.com",
 			"databaseusers.atlas.generated.mongodb.com",
 			"clusters.atlas.generated.mongodb.com",
+			"ipaccesslistentries.atlas.generated.mongodb.com",
 		)).To(Succeed())
 
 		_, orgID = newTestAtlasClient()
@@ -691,7 +692,7 @@ func newDBUserWithScopes(namespace, username, groupRefName, passwordSecretName s
 					PasswordSecretRef: &generatedv1.PasswordSecretRef{
 						Name: passwordSecretName,
 					},
-					Roles: &[]generatedv1.Roles{
+					Roles: []generatedv1.Roles{
 						{RoleName: "readAnyDatabase", DatabaseName: "admin"},
 					},
 				},
