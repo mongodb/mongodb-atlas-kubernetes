@@ -196,7 +196,7 @@ func operatorGlobalKeySecretOrDefault(secretNameOverride string) client.ObjectKe
 		}
 		deploymentName, err := kube.ParseDeploymentNameFromPodName(operatorPodName)
 		if err != nil {
-			log.Fatalf(`Failed to get Operator Deployment name from "OPERATOR_POD_NAME" environment variable: %s`, err.Error())
+			log.Fatalf(`Failed to get Operator Deployment name from "OPERATOR_POD_NAME" environment variable: %s`, err.Error()) //#nosec G706
 		}
 		secretName = deploymentName + "-api-key"
 	}
