@@ -819,7 +819,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 		diskSizeGB = pointer.MakePtr(float64(*diskSize))
 	}
 
-	hSpecOrDefault := func(spec *akov2.Specs) *admin.HardwareSpec20240805 {
+	hSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.HardwareSpec20240805 {
 		if spec == nil {
 			return nil
 		}
@@ -829,15 +829,24 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
 		}
 
-		return &admin.HardwareSpec20240805{
-			InstanceSize:  &spec.InstanceSize,
-			NodeCount:     spec.NodeCount,
-			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
-			DiskIOPS:      diskIOPs,
-			DiskSizeGB:    diskSizeGB,
+		hardwareSpec := &admin.HardwareSpec20240805{
+			InstanceSize: &spec.InstanceSize,
+			NodeCount:    spec.NodeCount,
+			DiskIOPS:     diskIOPs,
+			DiskSizeGB:   diskSizeGB,
 		}
+
+		// Only include EbsVolumeType when:
+		// 1. It's explicitly set (non-empty), OR
+		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+		if spec.EbsVolumeType != "" || providerName == "AWS" {
+			hardwareSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+		}
+
+		return hardwareSpec
 	}
-	dHSpecOrDefault := func(spec *akov2.Specs) *admin.DedicatedHardwareSpec20240805 {
+	dHSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.DedicatedHardwareSpec20240805 {
 		if spec == nil || *spec.NodeCount == 0 {
 			return nil
 		}
@@ -847,13 +856,22 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
 		}
 
-		return &admin.DedicatedHardwareSpec20240805{
-			InstanceSize:  &spec.InstanceSize,
-			NodeCount:     spec.NodeCount,
-			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
-			DiskIOPS:      diskIOPs,
-			DiskSizeGB:    diskSizeGB,
+		dedicatedSpec := &admin.DedicatedHardwareSpec20240805{
+			InstanceSize: &spec.InstanceSize,
+			NodeCount:    spec.NodeCount,
+			DiskIOPS:     diskIOPs,
+			DiskSizeGB:   diskSizeGB,
 		}
+
+		// Only include EbsVolumeType when:
+		// 1. It's explicitly set (non-empty), OR
+		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+		if spec.EbsVolumeType != "" || providerName == "AWS" {
+			dedicatedSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+		}
+
+		return dedicatedSpec
 	}
 	autoScalingOrDefault := func(spec *akov2.AdvancedAutoScalingSpec) *admin.AdvancedAutoScalingSettings {
 		computeExist := spec != nil && spec.Compute != nil
@@ -907,9 +925,9 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 					BackingProviderName: pointer.MakePtrOrNil(regionConfig.BackingProviderName),
 					RegionName:          pointer.MakePtrOrNil(regionConfig.RegionName),
 					Priority:            regionConfig.Priority,
-					ElectableSpecs:      hSpecOrDefault(regionConfig.ElectableSpecs),
-					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.ReadOnlySpecs),
-					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.AnalyticsSpecs),
+					ElectableSpecs:      hSpecOrDefault(regionConfig.ElectableSpecs, regionConfig.ProviderName),
+					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.ReadOnlySpecs, regionConfig.ProviderName),
+					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.AnalyticsSpecs, regionConfig.ProviderName),
 					AutoScaling:         autoScalingOrDefault(regionConfig.AutoScaling),
 				},
 			)

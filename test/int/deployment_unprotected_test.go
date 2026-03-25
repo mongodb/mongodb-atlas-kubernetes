@@ -34,7 +34,7 @@ import (
 
 var _ = Describe("AtlasDeployment Deletion Unprotected",
 	Ordered,
-	Label("AtlasDeployment", "deletion-protection", "deployment-deletion-unprotected"), func() {
+	Label("int", "AtlasDeployment", "deletion-protection", "focus-deployment-deletion-unprotected"), func() {
 		var testNamespace *corev1.Namespace
 		var stopManager context.CancelFunc
 		var connectionSecret corev1.Secret

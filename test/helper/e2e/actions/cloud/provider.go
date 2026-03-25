@@ -455,7 +455,7 @@ func generateVPCWithSubnets() (string, []string, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	ip[2] = byte(r.Int64())
+	ip[2] = byte(r.Int64() & 0xFF)
 
 	vpcCIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask)
 	subnet1CIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask+1)
