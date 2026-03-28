@@ -16,6 +16,8 @@
 package config
 
 import (
+	"context"
+	"sync"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -23,6 +25,60 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const testOpenAPISpec = `openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths: {}`
+
+func writeSpec(t *testing.T, fs afero.Fs, path string) {
+	t.Helper()
+	require.NoError(t, afero.WriteFile(fs, path, []byte(testOpenAPISpec), 0644))
+}
+
+func TestKinOpeAPILoadCachesResult(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeSpec(t, fs, "spec.yaml")
+
+	loader := NewKinOpeAPI(fs)
+
+	first, err := loader.Load(context.Background(), "spec.yaml")
+	require.NoError(t, err)
+
+	second, err := loader.Load(context.Background(), "spec.yaml")
+	require.NoError(t, err)
+
+	// Same pointer — the second call returned the cached result.
+	assert.Same(t, first, second)
+}
+
+func TestKinOpeAPILoadConcurrent(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeSpec(t, fs, "spec.yaml")
+
+	loader := NewKinOpeAPI(fs)
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	results := make([]*openapi3.T, goroutines)
+
+	for i := range goroutines {
+		go func() {
+			defer wg.Done()
+			spec, err := loader.Load(context.Background(), "spec.yaml")
+			require.NoError(t, err)
+			results[i] = spec
+		}()
+	}
+	wg.Wait()
+
+	// All goroutines got the same pointer.
+	for i := 1; i < goroutines; i++ {
+		assert.Same(t, results[0], results[i])
+	}
+}
 
 func TestKinOpeAPILoad(t *testing.T) {
 	tests := map[string]struct {
@@ -74,7 +130,7 @@ paths:
 			tt.expectedOpenAPI.Paths.Extensions = map[string]any{}
 
 			loader := NewKinOpeAPI(fs)
-			openapi, err := loader.Load(nil, tt.filePath)
+			openapi, err := loader.Load(context.Background(), tt.filePath)
 			assert.Equal(t, tt.expectError, err)
 			assert.Equal(t, tt.expectedOpenAPI, openapi)
 		})

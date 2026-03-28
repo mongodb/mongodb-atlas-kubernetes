@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/goccy/go-yaml"
 	"github.com/spf13/afero"
+	"golang.org/x/sync/singleflight"
 )
 
 type Loader interface {
@@ -31,30 +33,68 @@ type Loader interface {
 }
 
 type KinOpeAPI struct {
-	fs afero.Fs
+	fs    afero.Fs
+	mu    sync.Mutex
+	cache map[string]*openapi3.T
+	group singleflight.Group
 }
 
 func NewKinOpeAPI(fs afero.Fs) *KinOpeAPI {
 	return &KinOpeAPI{
-		fs: fs,
+		fs:    fs,
+		cache: make(map[string]*openapi3.T),
 	}
 }
 
 func (a *KinOpeAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
-	loader := &openapi3.Loader{
-		IsExternalRefsAllowed: true,
+	// Fast path: return the cached spec without entering singleflight.
+	// The mutex-guarded cache avoids the overhead of singleflight.Do on
+	// every call after the spec has already been parsed.
+	a.mu.Lock()
+	if spec, ok := a.cache[path]; ok {
+		a.mu.Unlock()
+		return spec, nil
 	}
+	a.mu.Unlock()
 
-	if uri, ok := isURI(path); ok {
-		return loader.LoadFromURI(uri)
-	}
+	// Slow path: singleflight deduplicates concurrent parses of the same spec.
+	// Returns interface{} because singleflight has no generic API.
+	v, err, _ := a.group.Do(path, func() (interface{}, error) {
+		loader := &openapi3.Loader{
+			IsExternalRefsAllowed: true,
+		}
 
-	data, err := a.transform(path)
+		var (
+			spec *openapi3.T
+			err  error
+		)
+
+		if uri, ok := isURI(path); ok {
+			spec, err = loader.LoadFromURI(uri)
+		} else {
+			var data []byte
+			data, err = a.transform(path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to transform the file %s: %w", path, err)
+			}
+			spec, err = loader.LoadFromData(data)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		a.mu.Lock()
+		a.cache[path] = spec
+		a.mu.Unlock()
+
+		return spec, nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to transform the file %s: %w", path, err)
+		return nil, err
 	}
 
-	return loader.LoadFromData(data)
+	return v.(*openapi3.T), nil //nolint:forcetypeassert // singleflight returns interface{}; type is guaranteed by the closure above.
 }
 
 func (a *KinOpeAPI) transform(path string) ([]byte, error) {

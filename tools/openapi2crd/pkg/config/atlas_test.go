@@ -24,6 +24,27 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestAtlas_LoadCachesPath(t *testing.T) {
+	// Calling Load twice with the same package should resolve the path once
+	// and call the file loader twice (once per Load), but with the same resolved path.
+	openapiLoader := NewLoaderMock(t)
+	openapiLoader.EXPECT().Load(context.Background(), mock.AnythingOfType("string")).Return(&openapi3.T{}, nil).Times(2)
+
+	a := NewAtlas(openapiLoader)
+
+	_, err := a.Load(context.Background(), "go.mongodb.org/atlas-sdk/v20250312008/admin")
+	assert.NoError(t, err)
+
+	// The path should now be cached.
+	assert.Len(t, a.pathCache, 1)
+
+	_, err = a.Load(context.Background(), "go.mongodb.org/atlas-sdk/v20250312008/admin")
+	assert.NoError(t, err)
+
+	// Still only one entry — path was reused, not re-resolved.
+	assert.Len(t, a.pathCache, 1)
+}
+
 func TestAtlas_Load(t *testing.T) {
 	tests := map[string]struct {
 		pkg            string
