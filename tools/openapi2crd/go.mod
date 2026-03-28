@@ -22,6 +22,7 @@ require (
 	k8s.io/api v0.32.9
 	k8s.io/apiextensions-apiserver v0.32.9
 	k8s.io/apimachinery v0.32.9
+	golang.org/x/sync v0.19.0
 	k8s.io/client-go v0.32.9
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/yaml v1.4.0
@@ -108,7 +109,6 @@ require (
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.38.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
