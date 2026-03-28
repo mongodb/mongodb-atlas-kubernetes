@@ -28,6 +28,39 @@ type PropertyConvertInput struct {
 	PropertyConfig      *configv1alpha1.PropertyMapping
 	Depth               int
 	Path                []string
+	Visited             map[*openapi3.Schema]struct{}
+}
+
+// NewPropertyConvertInput creates a PropertyConvertInput with an initialized
+// visited set for cycle detection. Use this at entry points; recursive calls
+// should pass the existing Visited map instead.
+func NewPropertyConvertInput(
+	schema *openapi3.SchemaRef,
+	extensionsSchemaRef *openapi3.SchemaRef,
+	propertyConfig *configv1alpha1.PropertyMapping,
+	path []string,
+) PropertyConvertInput {
+	return PropertyConvertInput{
+		Schema:              schema,
+		ExtensionsSchemaRef: extensionsSchemaRef,
+		PropertyConfig:      propertyConfig,
+		Depth:               0,
+		Path:                path,
+		Visited:             map[*openapi3.Schema]struct{}{},
+	}
+}
+
+// Child returns a derived input for recursive conversion, inheriting the
+// property config and visited set from the parent.
+func (p PropertyConvertInput) Child(schema *openapi3.SchemaRef, extensionsSchemaRef *openapi3.SchemaRef, depth int, path []string) PropertyConvertInput {
+	return PropertyConvertInput{
+		Schema:              schema,
+		ExtensionsSchemaRef: extensionsSchemaRef,
+		PropertyConfig:      p.PropertyConfig,
+		Depth:               depth,
+		Path:                path,
+		Visited:             p.Visited,
+	}
 }
 
 type Converter interface {

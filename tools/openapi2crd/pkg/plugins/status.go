@@ -42,13 +42,12 @@ func (p *Status) Process(req *MappingProcessorRequest) error {
 	}
 
 	statusProps := req.Converter.Convert(
-		converter.PropertyConvertInput{
-			Schema:              statusSchema,
-			ExtensionsSchemaRef: openapi3.NewSchemaRef("", openapi3.NewSchema()),
-			PropertyConfig:      &req.MappingConfig.StatusMapping,
-			Depth:               0,
-			Path:                nil,
-		},
+		converter.NewPropertyConvertInput(
+			statusSchema,
+			openapi3.NewSchemaRef("", openapi3.NewSchema()),
+			&req.MappingConfig.StatusMapping,
+			nil,
+		),
 	)
 	if statusProps != nil {
 		statusProps.Description = fmt.Sprintf("The last observed Atlas state of the %v resource for version %v.", req.CRD.Spec.Names.Singular, req.MappingConfig.MajorVersion)
