@@ -34,14 +34,14 @@ type Generator struct {
 	definitions   map[string]v1alpha1.OpenAPIDefinition
 	pluginSet     *plugins.Set
 	openapiLoader config.Loader
-	atlasLoader   config.Loader
+	atlasLoader   config.PackageLoader
 }
 
 func NewGenerator(
 	openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition,
 	pluginSet *plugins.Set,
 	openapiLoader config.Loader,
-	atlasLoader config.Loader,
+	atlasLoader config.PackageLoader,
 ) *Generator {
 	return &Generator{
 		definitions:   openAPIDefinitions,
@@ -184,48 +184,42 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 	return hasExtensions
 }
 
-func loadOpenAPISpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader, atlasLoader config.Loader) (*openapi3.T, error) {
+func loadOpenAPISpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader config.Loader, atlasLoader config.PackageLoader) (*openapi3.T, error) {
 	if def.Flatten {
 		return loadFlattenedSpec(ctx, def, openapiLoader, atlasLoader)
 	}
 
-	switch def.Path {
-	case "":
-		spec, err := atlasLoader.Load(ctx, def.Package)
+	if def.Package != "" {
+		spec, err := atlasLoader.LoadFromPackage(ctx, def.Package, def.Path)
 		if err != nil {
 			return nil, fmt.Errorf("error loading Atlas OpenAPI package %q: %w", def.Package, err)
 		}
 		return spec, nil
-	default:
-		spec, err := openapiLoader.Load(ctx, def.Path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading spec: %w", err)
-		}
-		return spec, nil
 	}
+
+	spec, err := openapiLoader.Load(ctx, def.Path)
+	if err != nil {
+		return nil, fmt.Errorf("error loading spec: %w", err)
+	}
+	return spec, nil
 }
 
-func loadFlattenedSpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader, atlasLoader config.Loader) (*openapi3.T, error) {
-	switch def.Path {
-	case "":
-		fl, ok := atlasLoader.(config.FlattenableLoader)
-		if !ok {
-			return nil, fmt.Errorf("atlas loader does not support flattening for package %q", def.Package)
-		}
-		spec, err := fl.LoadFlattened(ctx, def.Package)
+func loadFlattenedSpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader config.Loader, atlasLoader config.PackageLoader) (*openapi3.T, error) {
+	if def.Package != "" {
+		spec, err := atlasLoader.LoadFlattenedFromPackage(ctx, def.Package, def.Path)
 		if err != nil {
 			return nil, fmt.Errorf("error loading and flattening Atlas OpenAPI package %q: %w", def.Package, err)
 		}
 		return spec, nil
-	default:
-		fl, ok := openapiLoader.(config.FlattenableLoader)
-		if !ok {
-			return nil, fmt.Errorf("openapi loader does not support flattening for path %q", def.Path)
-		}
-		spec, err := fl.LoadFlattened(ctx, def.Path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading and flattening spec %q: %w", def.Path, err)
-		}
-		return spec, nil
 	}
+
+	fl, ok := openapiLoader.(config.FlattenableLoader)
+	if !ok {
+		return nil, fmt.Errorf("openapi loader does not support flattening for path %q", def.Path)
+	}
+	spec, err := fl.LoadFlattened(ctx, def.Path)
+	if err != nil {
+		return nil, fmt.Errorf("error loading and flattening spec %q: %w", def.Path, err)
+	}
+	return spec, nil
 }

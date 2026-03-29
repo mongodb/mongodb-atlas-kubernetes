@@ -44,6 +44,13 @@ type FlattenableLoader interface {
 	LoadFlattened(ctx context.Context, path string) (*openapi3.T, error)
 }
 
+// PackageLoader resolves a Go package to a directory and loads an OpenAPI spec
+// at a path relative to that directory.
+type PackageLoader interface {
+	LoadFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error)
+	LoadFlattenedFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error)
+}
+
 type KinOpeAPI struct {
 	fs    afero.Fs
 	mu    sync.Mutex

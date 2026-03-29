@@ -24,18 +24,21 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestAtlas_Load(t *testing.T) {
+func TestAtlas_LoadFromPackage(t *testing.T) {
 	tests := map[string]struct {
 		pkg            string
+		relPath        string
 		expectedSchema *openapi3.T
 		expectedErrMsg string
 	}{
-		"valid package": {
+		"valid package with relative path": {
 			pkg:            "go.mongodb.org/atlas-sdk/v20250312008/admin",
+			relPath:        "../openapi/atlas-api-transformed.yaml",
 			expectedSchema: &openapi3.T{},
 		},
 		"invalid package": {
 			pkg:            "invalid/package/name",
+			relPath:        "../openapi/atlas-api-transformed.yaml",
 			expectedErrMsg: "failed to load module path: failed to run 'go list' for module 'invalid/package/name'",
 		},
 	}
@@ -47,7 +50,7 @@ func TestAtlas_Load(t *testing.T) {
 			}
 
 			a := NewAtlas(openapiLoader)
-			schema, err := a.Load(context.Background(), tt.pkg)
+			schema, err := a.LoadFromPackage(context.Background(), tt.pkg, tt.relPath)
 			if err != nil {
 				assert.ErrorContains(t, err, tt.expectedErrMsg)
 			}
