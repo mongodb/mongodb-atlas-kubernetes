@@ -231,38 +231,6 @@ func deepCopy(n *yaml.Node) *yaml.Node {
 	return &dst
 }
 
-// normalizeScalarStyles walks the entire tree and sets the correct quoting style
-// on every string scalar, based on YAML 1.2 core-schema rules.
-func normalizeScalarStyles(node *yaml.Node) {
-	if node == nil {
-		return
-	}
-	switch node.Kind {
-	case yaml.ScalarNode:
-		if node.Tag == "!!str" {
-			v := node.Value
-			if strings.Contains(v, "\n") {
-				node.Style = yaml.LiteralStyle
-			} else if needsQuotingYAML12(v) {
-				if strings.Contains(v, `"`) && !strings.Contains(v, "'") {
-					node.Style = yaml.SingleQuotedStyle
-				} else {
-					node.Style = yaml.DoubleQuotedStyle
-				}
-			} else {
-				node.Style = 0
-			}
-		} else {
-			node.Style = 0
-		}
-	case yaml.MappingNode, yaml.SequenceNode, yaml.DocumentNode:
-		for _, child := range node.Content {
-			normalizeScalarStyles(child)
-		}
-	case yaml.AliasNode:
-	}
-}
-
 // ---- Node constructors ----
 
 func newStringNode(value string) *yaml.Node {

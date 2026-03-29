@@ -34,8 +34,6 @@ func Flatten(data []byte) ([]byte, error) {
 
 	applyStructuralTransformations(root)
 
-	normalizeScalarStyles(root)
-
 	return marshalYAML(root)
 }
 

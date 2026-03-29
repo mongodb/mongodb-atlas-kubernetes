@@ -2,11 +2,11 @@ paths:
   /items:
     get:
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Item"
+                $ref: '#/components/schemas/Item'
 components:
   schemas:
     Item:

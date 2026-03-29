@@ -2,11 +2,11 @@ paths:
   /lists:
     get:
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListContainer"
+                $ref: '#/components/schemas/ListContainer'
 components:
   schemas:
     ListContainer:
