@@ -1,0 +1,41 @@
+paths:
+  /shapes:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shape'
+components:
+  schemas:
+    Shape:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/Circle'
+        - $ref: '#/components/schemas/Square'
+      properties:
+        color:
+          type: string
+        area:
+          type: number
+      required:
+        - color
+    Circle:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Shape'
+      properties:
+        radius:
+          type: number
+      required:
+        - radius
+    Square:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Shape'
+      properties:
+        side:
+          type: number
+      required:
+        - side

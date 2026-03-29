@@ -1,0 +1,18 @@
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetKind"
+components:
+  schemas:
+    PetKind:
+      type: string
+      enum:
+        - lion
+        - tiger
+        - cat
+        - dog

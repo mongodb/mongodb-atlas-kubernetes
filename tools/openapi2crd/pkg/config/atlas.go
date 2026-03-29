@@ -36,35 +36,58 @@ type Atlas struct {
 }
 
 func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
+	filename, err := a.resolvePackagePath(ctx, pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.fileLoader.Load(ctx, filename)
+}
+
+// LoadFlattened resolves the Go module package to a file path, then delegates
+// to the underlying file loader's LoadFlattened method. The file loader must
+// implement FlattenableLoader.
+func (a *Atlas) LoadFlattened(ctx context.Context, pkg string) (*openapi3.T, error) {
+	filename, err := a.resolvePackagePath(ctx, pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	fl, ok := a.fileLoader.(FlattenableLoader)
+	if !ok {
+		return nil, fmt.Errorf("file loader does not support flattening")
+	}
+
+	return fl.LoadFlattened(ctx, filename)
+}
+
+func (a *Atlas) resolvePackagePath(ctx context.Context, pkg string) (string, error) {
 	a.mu.Lock()
 	cachedPath, ok := a.pathCache[pkg]
 	a.mu.Unlock()
 
-	var filename string
 	if ok {
-		filename = cachedPath
-	} else {
-		v, err, _ := a.group.Do(pkg, func() (interface{}, error) {
-			path, err := getGoModulePath(ctx, pkg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to load module path: %w", err)
-			}
-
-			resolved := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
-
-			a.mu.Lock()
-			a.pathCache[pkg] = resolved
-			a.mu.Unlock()
-
-			return resolved, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		filename = v.(string)
+		return cachedPath, nil
 	}
 
-	return a.fileLoader.Load(ctx, filename)
+	v, err, _ := a.group.Do(pkg, func() (interface{}, error) {
+		path, err := getGoModulePath(ctx, pkg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load module path: %w", err)
+		}
+
+		resolved := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
+
+		a.mu.Lock()
+		a.pathCache[pkg] = resolved
+		a.mu.Unlock()
+
+		return resolved, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return v.(string), nil
 }
 
 func NewAtlas(loader Loader) *Atlas {

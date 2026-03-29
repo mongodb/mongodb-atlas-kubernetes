@@ -1,0 +1,26 @@
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetKind'
+components:
+  schemas:
+    PetKind:
+      type: string
+      oneOf:
+        - $ref: '#/components/schemas/LargePetKind'
+        - $ref: '#/components/schemas/SmallPetKind'
+    LargePetKind:
+      type: string
+      enum:
+        - lion
+        - tiger
+    SmallPetKind:
+      type: string
+      enum:
+        - cat
+        - dog

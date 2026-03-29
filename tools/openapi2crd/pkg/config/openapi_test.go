@@ -24,6 +24,59 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestKinOpeAPILoadFlattened(t *testing.T) {
+	input := `openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      properties:
+        name:
+          type: string
+    Cat:
+      type: object
+      properties:
+        indoor:
+          type: boolean
+    Dog:
+      type: object
+      properties:
+        breed:
+          type: string`
+
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, "test.yaml", []byte(input), 0644))
+
+	loader := NewKinOpeAPI(fs)
+	spec, err := loader.LoadFlattened(nil, "test.yaml")
+	require.NoError(t, err)
+	require.NotNil(t, spec)
+
+	petSchema := spec.Components.Schemas["Pet"]
+	require.NotNil(t, petSchema)
+
+	assert.Nil(t, petSchema.Value.OneOf, "oneOf should be flattened away")
+	assert.Contains(t, petSchema.Value.Properties, "name")
+	assert.Contains(t, petSchema.Value.Properties, "indoor")
+	assert.Contains(t, petSchema.Value.Properties, "breed")
+}
+
 func TestKinOpeAPILoad(t *testing.T) {
 	tests := map[string]struct {
 		file            string

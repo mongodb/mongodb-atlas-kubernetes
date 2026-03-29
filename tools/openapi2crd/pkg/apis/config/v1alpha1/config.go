@@ -42,6 +42,7 @@ type OpenAPIDefinition struct {
 	Name    string `json:"name"`
 	Path    string `json:"path"`
 	Package string `json:"package"`
+	Flatten bool   `json:"flatten,omitempty"`
 }
 
 type CRDConfig struct {

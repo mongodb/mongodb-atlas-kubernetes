@@ -1,0 +1,29 @@
+paths:
+  /pets:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      properties:
+        name:
+          type: string
+    Cat:
+      type: object
+      properties:
+        indoor:
+          type: boolean
+    Dog:
+      type: object
+      properties:
+        breed:
+          type: string
