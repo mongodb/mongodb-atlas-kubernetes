@@ -18,7 +18,7 @@ package generator
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -130,7 +130,7 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 	}
 
 	if err = ValidateCRD(ctx, crd); err != nil {
-		log.Printf("Error validating CRD: %v", err)
+		slog.Error("CRD validation failed", "phase", "validate", "error", err)
 	}
 
 	return crd, nil

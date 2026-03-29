@@ -1,8 +1,7 @@
 package flatten
 
 import (
-	"fmt"
-	"os"
+	"log/slog"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,7 +37,7 @@ func transformAllOf(schema *yaml.Node, parentName string, root *yaml.Node) {
 		}
 		_, child := resolveRef(root, ref)
 		if child == nil {
-			fmt.Fprintf(os.Stderr, "error: missing object reference %s for %s\n", ref, parentName)
+			slog.Error("missing object reference", "phase", "flatten", "ref", ref, "schema", parentName)
 			continue
 		}
 		if removeParentFromAllOf(child, parentName) {

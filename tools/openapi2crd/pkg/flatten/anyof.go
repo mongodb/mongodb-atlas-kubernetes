@@ -1,8 +1,7 @@
 package flatten
 
 import (
-	"fmt"
-	"os"
+	"log/slog"
 
 	"gopkg.in/yaml.v3"
 )
@@ -39,7 +38,7 @@ func transformAnyOfProperties(path string, schema *yaml.Node, children []*yaml.N
 			props = syntheticPropsFromAllOf(child)
 			if props == nil {
 				typeStr := asString(mappingGet(child, "type"))
-				fmt.Fprintf(os.Stderr, "warning: %s: skipping non-object anyOf variant (type: %s)\n", path, typeStr)
+				slog.Warn("skipping anyOf variant without mergeable properties", "phase", "flatten", "path", path, "type", typeStr)
 				continue
 			}
 			mappingSet(child, "properties", props)

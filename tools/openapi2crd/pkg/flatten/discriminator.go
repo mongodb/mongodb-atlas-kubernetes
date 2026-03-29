@@ -1,8 +1,7 @@
 package flatten
 
 import (
-	"fmt"
-	"os"
+	"log/slog"
 
 	"gopkg.in/yaml.v3"
 )
@@ -37,7 +36,7 @@ func transformDiscriminatorToOneOf(name string, schema *yaml.Node) {
 	}
 	mapping := asMapping(mappingGet(disc, "mapping"))
 	if mapping == nil {
-		fmt.Fprintf(os.Stderr, "warning: skipping discriminator for %s: no mapping and no oneOf\n", name)
+		slog.Warn("skipping discriminator: no mapping and no oneOf", "phase", "flatten", "schema", name)
 		return
 	}
 
@@ -54,7 +53,7 @@ func transformDiscriminatorToOneOf(name string, schema *yaml.Node) {
 
 	for _, ref := range refs {
 		if schemaNameFromRef(ref) == name {
-			fmt.Fprintf(os.Stderr, "error: %s.discriminator.mapping contains $ref to itself\n", name)
+			slog.Error("discriminator mapping contains self-reference", "phase", "flatten", "schema", name)
 			return
 		}
 	}

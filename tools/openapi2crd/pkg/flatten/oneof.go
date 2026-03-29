@@ -1,8 +1,7 @@
 package flatten
 
 import (
-	"fmt"
-	"os"
+	"log/slog"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,13 +11,13 @@ func applyOneOfTransformations(root *yaml.Node) {
 		func(m *yaml.Node) bool { return mappingHas(m, "oneOf") },
 		func(path string, m *yaml.Node) {
 			if isTopLevelSchema(path) {
-				transformOneOf(m, root)
+				transformOneOf(path, m, root)
 			}
 		},
 	)
 }
 
-func transformOneOf(schema *yaml.Node, root *yaml.Node) {
+func transformOneOf(path string, schema *yaml.Node, root *yaml.Node) {
 	oneOf := asSequence(mappingGet(schema, "oneOf"))
 	if oneOf == nil {
 		return
@@ -28,11 +27,11 @@ func transformOneOf(schema *yaml.Node, root *yaml.Node) {
 	if allHaveEnum(children) {
 		mergeEnums(schema, children, "oneOf")
 	} else {
-		transformOneOfProperties(schema, children, root)
+		transformOneOfProperties(path, schema, children, root)
 	}
 }
 
-func transformOneOfProperties(schema *yaml.Node, children []*yaml.Node, root *yaml.Node) {
+func transformOneOfProperties(path string, schema *yaml.Node, children []*yaml.Node, root *yaml.Node) {
 	discExt := buildDiscriminatorExtension(schema, root)
 
 	for _, child := range children {
@@ -41,7 +40,7 @@ func transformOneOfProperties(schema *yaml.Node, children []*yaml.Node, root *ya
 			props = syntheticPropsFromAllOf(child)
 			if props == nil {
 				typeStr := asString(mappingGet(child, "type"))
-				fmt.Fprintf(os.Stderr, "warning: skipping non-object oneOf variant (type: %s)\n", typeStr)
+				slog.Warn("skipping oneOf variant without mergeable properties", "phase", "flatten", "path", path, "type", typeStr)
 				continue
 			}
 			mappingSet(child, "properties", props)

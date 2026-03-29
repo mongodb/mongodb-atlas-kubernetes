@@ -1,8 +1,7 @@
 package flatten
 
 import (
-	"fmt"
-	"os"
+	"log/slog"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,7 +18,7 @@ func resolveSequenceRefs(seq *yaml.Node, root *yaml.Node, kind string) []*yaml.N
 		if ref := asString(mappingGet(m, "$ref")); ref != "" {
 			_, child := resolveRef(root, ref)
 			if child == nil {
-				fmt.Fprintf(os.Stderr, "warning: could not resolve %s reference: %s\n", kind, ref)
+				slog.Warn("could not resolve reference", "phase", "flatten", "kind", kind, "ref", ref)
 				continue
 			}
 			result = append(result, child)
