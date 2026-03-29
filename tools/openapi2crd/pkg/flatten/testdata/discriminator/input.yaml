@@ -1,0 +1,35 @@
+paths:
+  /animals:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Animal'
+components:
+  schemas:
+    Animal:
+      type: object
+      discriminator:
+        propertyName: animalType
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+      properties:
+        animalType:
+          type: string
+        name:
+          type: string
+    Cat:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+      properties:
+        indoor:
+          type: boolean
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+      properties:
+        breed:
+          type: string

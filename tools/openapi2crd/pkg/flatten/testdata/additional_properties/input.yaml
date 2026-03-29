@@ -1,0 +1,25 @@
+paths:
+  /config:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+components:
+  schemas:
+    Config:
+      type: object
+      properties:
+        name:
+          type: string
+        settings:
+          type: object
+          properties:
+            timeout:
+              type: integer
+            retries:
+              type: integer
+          additionalProperties:
+            type: string

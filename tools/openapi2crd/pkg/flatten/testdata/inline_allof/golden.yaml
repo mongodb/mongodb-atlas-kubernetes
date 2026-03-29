@@ -1,0 +1,29 @@
+paths:
+  /items:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        metadata:
+          type: object
+          description: Base metadata
+          properties:
+            id:
+              type: string
+            createdAt:
+              type: string
+            updatedAt:
+              type: string
+            version:
+              type: integer
+          required:
+            - id
+            - version

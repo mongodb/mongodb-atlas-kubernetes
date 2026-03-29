@@ -1,0 +1,37 @@
+paths:
+  /resources:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+components:
+  schemas:
+    Resource:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/FileResource'
+        - $ref: '#/components/schemas/LinkResource'
+      properties:
+        name:
+          type: string
+    FileResource:
+      type: object
+      allOf:
+        - type: object
+          properties:
+            path:
+              type: string
+            size:
+              type: integer
+    LinkResource:
+      type: object
+      allOf:
+        - type: object
+          properties:
+            url:
+              type: string
+            target:
+              type: string
