@@ -1,0 +1,24 @@
+paths:
+  /clusters:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegionConfig"
+components:
+  schemas:
+    RegionConfig:
+      type: object
+      properties:
+        regionName:
+          description: Cloud provider region name.
+          enum:
+            - US_EAST_1
+            - US_WEST_2
+            - US_CENTRAL
+            - US_EAST
+            - US_EAST1
+            - US_WEST1
+          type: string

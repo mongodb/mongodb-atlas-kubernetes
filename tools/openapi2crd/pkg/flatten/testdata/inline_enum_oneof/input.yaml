@@ -1,0 +1,35 @@
+paths:
+  /clusters:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionConfig'
+components:
+  schemas:
+    RegionConfig:
+      type: object
+      properties:
+        regionName:
+          description: Cloud provider region name.
+          oneOf:
+            - description: AWS Regions.
+              title: AWS Regions
+              type: string
+              enum:
+                - US_EAST_1
+                - US_WEST_2
+            - description: Azure Regions.
+              title: Azure Regions
+              type: string
+              enum:
+                - US_CENTRAL
+                - US_EAST
+            - description: GCP Regions.
+              title: GCP Regions
+              type: string
+              enum:
+                - US_EAST1
+                - US_WEST1
