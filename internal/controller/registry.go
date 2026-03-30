@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/serviceaccounttoken"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -43,7 +44,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlassearchindexconfig"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasstream"
 	integrations "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasthirdpartyintegrations"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/serviceaccount"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/watch"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
@@ -140,7 +140,7 @@ func (r *Registry) registerControllers(c cluster.Cluster, ap atlas.Provider) err
 	reconcilers = append(reconcilers, atlasipaccesslist.NewAtlasIPAccessListReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.independentSyncPeriod, r.logger, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasnetworkcontainer.NewAtlasNetworkContainerReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
 	reconcilers = append(reconcilers, atlasnetworkpeering.NewAtlasNetworkPeeringsReconciler(c, r.defaultPredicates(), ap, r.deletionProtection, r.logger, r.independentSyncPeriod, r.globalSecretRef, r.maxConcurrentReconciles))
-	reconcilers = append(reconcilers, serviceaccount.NewServiceAccountReconciler(c, r.logger, r.atlasDomain, r.maxConcurrentReconciles))
+	reconcilers = append(reconcilers, serviceaccounttoken.NewServiceAccountTokenReconciler(c, r.logger, r.atlasDomain, r.maxConcurrentReconciles))
 
 	orgSettingsReconciler := atlasorgsettings.NewAtlasOrgSettingsReconciler(c, ap, r.logger, r.globalSecretRef, r.reapplySupport)
 	reconcilers = append(reconcilers, newCtrlStateReconciler(orgSettingsReconciler, r.maxConcurrentReconciles))

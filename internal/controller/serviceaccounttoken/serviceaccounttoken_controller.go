@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serviceaccount
+package serviceaccounttoken
 
 import (
 	"context"
@@ -54,7 +54,7 @@ type TokenProvider interface {
 
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 
-type ServiceAccountReconciler struct {
+type ServiceAccountTokenReconciler struct {
 	Client        client.Client
 	Scheme        *runtime.Scheme
 	Log           *zap.SugaredLogger
@@ -63,17 +63,17 @@ type ServiceAccountReconciler struct {
 	maxConcurrentReconciles int
 }
 
-func NewServiceAccountReconciler(c cluster.Cluster, logger *zap.Logger, atlasDomain string, maxConcurrentReconciles int) *ServiceAccountReconciler {
-	return &ServiceAccountReconciler{
+func NewServiceAccountTokenReconciler(c cluster.Cluster, logger *zap.Logger, atlasDomain string, maxConcurrentReconciles int) *ServiceAccountTokenReconciler {
+	return &ServiceAccountTokenReconciler{
 		Client:                  c.GetClient(),
 		Scheme:                  c.GetScheme(),
-		Log:                     logger.Named("serviceaccount").Sugar(),
+		Log:                     logger.Named("serviceaccounttoken").Sugar(),
 		TokenProvider:           NewAtlasTokenProvider(atlasDomain),
 		maxConcurrentReconciles: maxConcurrentReconciles,
 	}
 }
 
-func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.With("secret", req.NamespacedName)
 
 	secret := &corev1.Secret{}
@@ -114,7 +114,7 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return r.createToken(ctx, log, secret, clientID, clientSecret)
 }
 
-func (r *ServiceAccountReconciler) refreshToken(
+func (r *ServiceAccountTokenReconciler) refreshToken(
 	ctx context.Context,
 	log *zap.SugaredLogger,
 	tokenSecret *corev1.Secret,
@@ -139,7 +139,7 @@ func (r *ServiceAccountReconciler) refreshToken(
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *ServiceAccountReconciler) createToken(
+func (r *ServiceAccountTokenReconciler) createToken(
 	ctx context.Context,
 	log *zap.SugaredLogger,
 	credentialSecret *corev1.Secret,
@@ -194,11 +194,11 @@ func (r *ServiceAccountReconciler) createToken(
 	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
-func (r *ServiceAccountReconciler) For() (client.Object, builder.Predicates) {
+func (r *ServiceAccountTokenReconciler) For() (client.Object, builder.Predicates) {
 	return &corev1.Secret{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})
 }
 
-func (r *ServiceAccountReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
+func (r *ServiceAccountTokenReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
@@ -206,7 +206,7 @@ func (r *ServiceAccountReconciler) SetupWithManager(mgr ctrl.Manager, skipNameVa
 			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles,
 		}).
-		Named("serviceaccount").
+		Named("serviceaccounttoken").
 		Complete(r)
 }
 

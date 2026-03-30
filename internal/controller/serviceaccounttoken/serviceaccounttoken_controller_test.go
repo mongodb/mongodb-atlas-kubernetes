@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serviceaccount_test
+package serviceaccounttoken_test
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/serviceaccounttoken"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -33,7 +34,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/serviceaccount"
 )
 
 type fakeTokenProvider struct {
@@ -55,11 +55,11 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-func newReconciler(t *testing.T, tp serviceaccount.TokenProvider, objs ...client.Object) (*serviceaccount.ServiceAccountReconciler, client.Client) {
+func newReconciler(t *testing.T, tp serviceaccounttoken.TokenProvider, objs ...client.Object) (*serviceaccounttoken.ServiceAccountTokenReconciler, client.Client) {
 	t.Helper()
 	scheme := newScheme(t)
 	k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
-	r := &serviceaccount.ServiceAccountReconciler{
+	r := &serviceaccounttoken.ServiceAccountTokenReconciler{
 		Client:        k8sClient,
 		Scheme:        scheme,
 		Log:           zap.NewNop().Sugar(),
