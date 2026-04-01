@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312016/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
