@@ -77,8 +77,11 @@ func (t *TransportWithDiff) tryCalculateDiff(req *http.Request, cleanupFuncs ...
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyCopy))
 	}()
 
-	getReq, _ := http.NewRequestWithContext(req.Context(), http.MethodGet, req.URL.String(), nil)
-	getReq.Header = req.Header
+	getReq := req.Clone(req.Context())
+	getReq.Method = http.MethodGet
+	getReq.Body = nil
+	getReq.GetBody = nil
+	getReq.ContentLength = 0
 
 	getResp, err := t.transport.RoundTrip(getReq)
 	if err != nil {

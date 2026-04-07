@@ -131,14 +131,6 @@ func GenID() string {
 	return id
 }
 
-func CopyFile(source, target string) {
-	data, _ := os.ReadFile(filepath.Clean(source))
-	err := os.WriteFile(target, data, fs.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func GenerateX509Cert() ([]byte, *rsa.PrivateKey, *rsa.PublicKey, error) {
 	template := &x509.Certificate{
 		IsCA:                  true,
