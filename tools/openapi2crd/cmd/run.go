@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
 	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
@@ -149,25 +151,44 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 	openapiLoader := config.NewKinOpeAPI(fs)
 	atlasLoader := config.NewAtlas(openapiLoader)
 
+	// Collect the CRD configs to process, respecting the kind filter.
+	var activeCRDs []configv1alpha1.CRDConfig
 	for _, crdConfig := range cfg.Spec.CRDConfig {
 		_, shouldGen := runnerConfig.Kinds[crdConfig.GVK.Kind]
 		if len(runnerConfig.Kinds) > 0 && !shouldGen {
 			continue
 		}
+		activeCRDs = append(activeCRDs, crdConfig)
+	}
 
+	// Generate all CRDs in parallel, preserving config order via indexed results.
+	crdResults := make([]*apiextensions.CustomResourceDefinition, len(activeCRDs))
+
+	g, gctx := errgroup.WithContext(ctx)
+	for i, crdConfig := range activeCRDs {
 		pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
 		if err != nil {
 			return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
 		}
 
-		g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader, atlasLoader)
-		crd, err := g.Generate(ctx, &crdConfig)
-		if err != nil {
-			return err
-		}
+		g.Go(func() error {
+			gen := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader, atlasLoader)
+			crd, genErr := gen.Generate(gctx, &crdConfig)
+			if genErr != nil {
+				return genErr
+			}
+			crdResults[i] = crd
+			return nil
+		})
+	}
 
-		err = fsExporter.Export(crd)
-		if err != nil {
+	// Wait for all generators to finish before exporting.
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	for _, crd := range crdResults {
+		if err := fsExporter.Export(crd); err != nil {
 			return err
 		}
 	}

@@ -22,22 +22,52 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"golang.org/x/sync/singleflight"
 )
 
 type Atlas struct {
 	fileLoader Loader
+	mu         sync.Mutex
+	pathCache  map[string]string
+	group      singleflight.Group
 }
 
 func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
-	path, err := getGoModulePath(ctx, pkg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load module path: %w", err)
-	}
-	_ = path
+	// Fast path: return the cached resolved path without entering singleflight.
+	// The mutex-guarded cache avoids the overhead of singleflight.Do and
+	// repeated `go list` calls after the path has already been resolved.
+	a.mu.Lock()
+	cachedPath, ok := a.pathCache[pkg]
+	a.mu.Unlock()
 
-	filename := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
+	var filename string
+	if ok {
+		filename = cachedPath
+	} else {
+		// Slow path: singleflight deduplicates concurrent `go list` calls for the same package.
+		// Returns interface{} because singleflight has no generic API.
+		v, err, _ := a.group.Do(pkg, func() (interface{}, error) {
+			path, err := getGoModulePath(ctx, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load module path: %w", err)
+			}
+
+			resolved := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
+
+			a.mu.Lock()
+			a.pathCache[pkg] = resolved
+			a.mu.Unlock()
+
+			return resolved, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		filename = v.(string) //nolint:forcetypeassert // singleflight returns interface{}; type is guaranteed by the closure above.
+	}
 
 	return a.fileLoader.Load(ctx, filename)
 }
@@ -45,6 +75,7 @@ func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
 func NewAtlas(loader Loader) *Atlas {
 	return &Atlas{
 		fileLoader: loader,
+		pathCache:  make(map[string]string),
 	}
 }
 
