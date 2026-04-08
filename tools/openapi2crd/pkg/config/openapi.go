@@ -32,21 +32,21 @@ type Loader interface {
 	Load(ctx context.Context, path string) (*openapi3.T, error)
 }
 
-type KinOpeAPI struct {
+type KinOpenAPI struct {
 	fs    afero.Fs
 	mu    sync.Mutex
 	cache map[string]*openapi3.T
 	group singleflight.Group
 }
 
-func NewKinOpeAPI(fs afero.Fs) *KinOpeAPI {
-	return &KinOpeAPI{
+func NewKinOpenAPI(fs afero.Fs) *KinOpenAPI {
+	return &KinOpenAPI{
 		fs:    fs,
 		cache: make(map[string]*openapi3.T),
 	}
 }
 
-func (a *KinOpeAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
+func (a *KinOpenAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
 	// Fast path: return the cached spec without entering singleflight.
 	// The mutex-guarded cache avoids the overhead of singleflight.Do on
 	// every call after the spec has already been parsed.
@@ -97,7 +97,7 @@ func (a *KinOpeAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
 	return v.(*openapi3.T), nil //nolint:forcetypeassert // singleflight returns interface{}; type is guaranteed by the closure above.
 }
 
-func (a *KinOpeAPI) transform(path string) ([]byte, error) {
+func (a *KinOpenAPI) transform(path string) ([]byte, error) {
 	filePath := filepath.Clean(path)
 
 	data, err := afero.ReadFile(a.fs, filePath)
