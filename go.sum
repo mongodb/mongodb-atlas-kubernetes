@@ -368,8 +368,8 @@ github.com/yudai/pp v2.0.1+incompatible h1:Q4//iY4pNF6yPLZIigmvcl7k/bPgrcTPIFIcm
 github.com/yudai/pp v2.0.1+incompatible/go.mod h1:PuxR/8QJ7cyCkFp/aUDS+JY727OFEZkTdatxwunjIkc=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.mongodb.org/atlas-sdk/v20250312016 v20250312016.0.0 h1:vawXOqKgjB3ILKaGS0Lpy6snReu77snVnKwGErage+s=
-go.mongodb.org/atlas-sdk/v20250312016 v20250312016.0.0/go.mod h1:8+Dlww6apRff161epxdyJkN1bn2DjtpHcrmNqGGjOec=
+go.mongodb.org/atlas-sdk/v20250312018 v20250312018.0.0 h1:PdoHt506XZVFQr/hvipws/1d2NDM3+PJDqUhGkAnZWA=
+go.mongodb.org/atlas-sdk/v20250312018 v20250312018.0.0/go.mod h1:Jaz/KTPpC4od8zWi/84FbvsaFasm2+1Oy0yn+BY/2Gs=
 go.mongodb.org/mongo-driver v1.17.9 h1:IexDdCuuNJ3BHrELgBlyaH9p60JXAvdzWR128q+U5tU=
 go.mongodb.org/mongo-driver v1.17.9/go.mod h1:LlOhpH5NUEfhxcAwG0UEkMqwYcc4JU18gtCdGudk/tQ=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
