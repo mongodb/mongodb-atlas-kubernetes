@@ -27,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
@@ -53,7 +52,7 @@ var _ = Describe("Migrate one CustomRole from AtlasProject to AtlasCustomRole re
 				Name: "LIST_SESSIONS",
 				Resources: []akov2.Resource{
 					{
-						Cluster: pointer.MakePtr(true),
+						Cluster: new(true),
 					},
 				},
 			},

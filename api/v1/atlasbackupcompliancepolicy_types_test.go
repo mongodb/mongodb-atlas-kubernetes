@@ -22,8 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestBackupCompliancePolicyToAtlas(t *testing.T) {
@@ -64,11 +62,11 @@ func TestBackupCompliancePolicyToAtlas(t *testing.T) {
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
 			AuthorizedUserLastName:  "Bond",
-			CopyProtectionEnabled:   pointer.MakePtr(true),
-			EncryptionAtRestEnabled: pointer.MakePtr(false),
-			PitEnabled:              pointer.MakePtr(true),
-			ProjectId:               pointer.MakePtr("testProjectID"),
-			RestoreWindowDays:       pointer.MakePtr(24),
+			CopyProtectionEnabled:   new(true),
+			EncryptionAtRestEnabled: new(false),
+			PitEnabled:              new(true),
+			ProjectId:               new("testProjectID"),
+			RestoreWindowDays:       new(24),
 			ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 				{
 					FrequencyType:     "monthly",
@@ -95,11 +93,11 @@ func TestBackupCompliancePolicyFromAtlas(t *testing.T) {
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
 			AuthorizedUserLastName:  "Bond",
-			CopyProtectionEnabled:   pointer.MakePtr(true),
-			EncryptionAtRestEnabled: pointer.MakePtr(false),
-			PitEnabled:              pointer.MakePtr(true),
-			ProjectId:               pointer.MakePtr("testProjectID"),
-			RestoreWindowDays:       pointer.MakePtr(24),
+			CopyProtectionEnabled:   new(true),
+			EncryptionAtRestEnabled: new(false),
+			PitEnabled:              new(true),
+			ProjectId:               new("testProjectID"),
+			RestoreWindowDays:       new(24),
 			ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 				{
 					FrequencyType:     "monthly",
@@ -150,11 +148,11 @@ func TestBackupCompliancePolicyFromAtlasNilOndemandPolicy(t *testing.T) {
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
 			AuthorizedUserLastName:  "Bond",
-			CopyProtectionEnabled:   pointer.MakePtr(true),
-			EncryptionAtRestEnabled: pointer.MakePtr(false),
-			PitEnabled:              pointer.MakePtr(true),
-			ProjectId:               pointer.MakePtr("testProjectID"),
-			RestoreWindowDays:       pointer.MakePtr(24),
+			CopyProtectionEnabled:   new(true),
+			EncryptionAtRestEnabled: new(false),
+			PitEnabled:              new(true),
+			ProjectId:               new("testProjectID"),
+			RestoreWindowDays:       new(24),
 			ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 				{
 					FrequencyType:     "monthly",
@@ -225,11 +223,11 @@ func TestBackupCompliancePolicyToAtlasNilOndemandPolicy(t *testing.T) {
 			AuthorizedEmail:         "example@test.com",
 			AuthorizedUserFirstName: "James",
 			AuthorizedUserLastName:  "Bond",
-			CopyProtectionEnabled:   pointer.MakePtr(true),
-			EncryptionAtRestEnabled: pointer.MakePtr(false),
-			PitEnabled:              pointer.MakePtr(true),
-			ProjectId:               pointer.MakePtr("testProjectID"),
-			RestoreWindowDays:       pointer.MakePtr(24),
+			CopyProtectionEnabled:   new(true),
+			EncryptionAtRestEnabled: new(false),
+			PitEnabled:              new(true),
+			ProjectId:               new("testProjectID"),
+			RestoreWindowDays:       new(24),
 			ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 				{
 					FrequencyType:     "monthly",

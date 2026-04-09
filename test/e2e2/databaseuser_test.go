@@ -36,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -489,7 +488,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 					GroupId:      atlasGroupID,
 					DatabaseName: "admin",
 					Username:     username,
-					Password:     pointer.MakePtr("Passw0rd!"),
+					Password:     new("Passw0rd!"),
 					Roles: []admin.DatabaseUserRole{
 						{RoleName: "readAnyDatabase", DatabaseName: "admin"},
 					},

@@ -40,7 +40,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
@@ -113,8 +112,8 @@ func TestFromAKO(t *testing.T) {
 						Type: "DATADOG",
 						Datadog: &akov2.DatadogIntegration{
 							Region:                       "EU",
-							SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
-							SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+							SendCollectionLatencyMetrics: new("disabled"),
+							SendDatabaseMetrics:          new("disabled"),
 						},
 					},
 					DatadogSecrets: &thirdpartyintegration.DatadogSecrets{
@@ -166,7 +165,7 @@ func TestFromAKO(t *testing.T) {
 					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 						Type: "PROMETHEUS",
 						Prometheus: &akov2.PrometheusIntegration{
-							Enabled:          pointer.MakePtr("enabled"),
+							Enabled:          new("enabled"),
 							ServiceDiscovery: "http",
 						},
 					},
@@ -385,10 +384,10 @@ func TestEnsureIntegration(t *testing.T) {
 						&admin.PaginatedIntegration{
 							Results: []admin.ThirdPartyIntegration{
 								{
-									Type: pointer.MakePtr("DATADOG"),
+									Type: new("DATADOG"),
 								},
 							},
-							TotalCount: pointer.MakePtr(1),
+							TotalCount: new(1),
 						},
 						nil,
 						nil,

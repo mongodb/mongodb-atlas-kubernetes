@@ -34,8 +34,6 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 type GCPAction struct {
@@ -154,9 +152,9 @@ func (a *GCPAction) CreateNetworkPeering(ctx context.Context, vpcName, peerProje
 		Network: vpcName,
 		NetworksAddPeeringRequestResource: &computepb.NetworksAddPeeringRequest{
 			NetworkPeering: &computepb.NetworkPeering{
-				Name:                 pointer.MakePtr(peerName),
-				Network:              pointer.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", peerProjectID, peerVPCName)),
-				ExchangeSubnetRoutes: pointer.MakePtr(true),
+				Name:                 new(peerName),
+				Network:              new(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", peerProjectID, peerVPCName)),
+				ExchangeSubnetRoutes: new(true),
 			},
 		},
 	}
@@ -200,9 +198,9 @@ func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 	vpcRequest := &computepb.InsertNetworkRequest{
 		Project: a.projectID,
 		NetworkResource: &computepb.Network{
-			Name:                  pointer.MakePtr(vpcName),
-			Description:           pointer.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
-			AutoCreateSubnetworks: pointer.MakePtr(false),
+			Name:                  new(vpcName),
+			Description:           new("Atlas Kubernetes Operator E2E Tests VPC"),
+			AutoCreateSubnetworks: new(false),
 		},
 	}
 
@@ -266,9 +264,9 @@ func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRan
 		Project: a.projectID,
 		Region:  region,
 		SubnetworkResource: &computepb.Subnetwork{
-			Name:        pointer.MakePtr(subnetName),
-			Network:     pointer.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, vpcName)),
-			IpCidrRange: pointer.MakePtr(ipRange),
+			Name:        new(subnetName),
+			Network:     new(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, vpcName)),
+			IpCidrRange: new(ipRange),
 		},
 	}
 
@@ -354,11 +352,11 @@ func (a *GCPAction) createVirtualAddress(ctx context.Context, ip, name, subnet, 
 		Project: a.projectID,
 		Region:  region,
 		AddressResource: &computepb.Address{
-			Name:        pointer.MakePtr(name),
-			Description: pointer.MakePtr(name),
-			Address:     pointer.MakePtr(ip),
-			AddressType: pointer.MakePtr("INTERNAL"),
-			Subnetwork: pointer.MakePtr(
+			Name:        new(name),
+			Description: new(name),
+			Address:     new(ip),
+			AddressType: new("INTERNAL"),
+			Subnetwork: new(
 				fmt.Sprintf(
 					"https://www.googleapis.com/compute/v1/projects/%s/regions/%s/subnetworks/%s",
 					a.projectID,
@@ -406,10 +404,10 @@ func (a *GCPAction) createForwardRule(ctx context.Context, rule, address, region
 		Project: a.projectID,
 		Region:  region,
 		ForwardingRuleResource: &computepb.ForwardingRule{
-			Name:      pointer.MakePtr(rule),
-			IPAddress: pointer.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/addresses/%s", a.projectID, region, address)),
-			Network:   pointer.MakePtr(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, a.network.VPC)),
-			Target:    pointer.MakePtr(target),
+			Name:      new(rule),
+			IPAddress: new(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/regions/%s/addresses/%s", a.projectID, region, address)),
+			Network:   new(fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s", a.projectID, a.network.VPC)),
+			Target:    new(target),
 		},
 	}
 
@@ -451,7 +449,7 @@ func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName stri
 		Project: a.projectID,
 		Network: vpcName,
 		NetworksRemovePeeringRequestResource: &computepb.NetworksRemovePeeringRequest{
-			Name: pointer.MakePtr(peerName),
+			Name: new(peerName),
 		},
 	}
 

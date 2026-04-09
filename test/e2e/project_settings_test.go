@@ -22,7 +22,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -57,11 +56,11 @@ var _ = Describe("UserLogin", Label("project-settings"), func() {
 				return model.DataProvider(ctx, "project-settings", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			akov2.ProjectSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-				IsDataExplorerEnabled:                       pointer.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(false),
-				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
-				IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+				IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+				IsDataExplorerEnabled:                       new(false),
+				IsPerformanceAdvisorEnabled:                 new(false),
+				IsRealtimePerformancePanelEnabled:           new(false),
+				IsSchemaAdvisorEnabled:                      new(false),
 			},
 		),
 	)

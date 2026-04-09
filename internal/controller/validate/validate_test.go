@@ -22,7 +22,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestProjectValidation(t *testing.T) {
@@ -134,9 +133,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 			Spec: akov2.AtlasBackupScheduleSpec{
 				CopySettings: []akov2.CopySetting{
 					{
-						RegionName:       pointer.MakePtr("US_WEST_1"),
-						CloudProvider:    pointer.MakePtr("AWS"),
-						ShouldCopyOplogs: pointer.MakePtr(true),
+						RegionName:       new("US_WEST_1"),
+						CloudProvider:    new("AWS"),
+						ShouldCopyOplogs: new(true),
 						Frequencies:      []string{"WEEKLY"},
 					},
 				},
@@ -145,7 +144,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 		deployment := &akov2.AtlasDeployment{
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-					PitEnabled: pointer.MakePtr(true),
+					PitEnabled: new(true),
 				},
 			},
 		}
@@ -158,9 +157,9 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: akov2.AtlasBackupScheduleSpec{
 					CopySettings: []akov2.CopySetting{
 						{
-							RegionName:       pointer.MakePtr("US_WEST_1"),
-							CloudProvider:    pointer.MakePtr("AWS"),
-							ShouldCopyOplogs: pointer.MakePtr(true),
+							RegionName:       new("US_WEST_1"),
+							CloudProvider:    new("AWS"),
+							ShouldCopyOplogs: new(true),
 							Frequencies:      []string{"WEEKLY"},
 						},
 					},
@@ -169,7 +168,7 @@ func TestBackupScheduleValidation(t *testing.T) {
 			deployment := &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						PitEnabled: pointer.MakePtr(true),
+						PitEnabled: new(true),
 					},
 				},
 				Status: status.AtlasDeploymentStatus{
@@ -189,10 +188,10 @@ func TestBackupScheduleValidation(t *testing.T) {
 				Spec: akov2.AtlasBackupScheduleSpec{
 					CopySettings: []akov2.CopySetting{
 						{
-							ShouldCopyOplogs: pointer.MakePtr(true),
+							ShouldCopyOplogs: new(true),
 						},
 						{
-							RegionName: pointer.MakePtr("US_WEST_1"),
+							RegionName: new("US_WEST_1"),
 						},
 					},
 				},
@@ -385,9 +384,9 @@ func sampleAlertConfig(typeName string) akov2.AlertConfiguration {
 		Notifications: []akov2.Notification{
 			{
 				IntervalMin:  5,
-				DelayMin:     pointer.MakePtr(5),
-				EmailEnabled: pointer.MakePtr(true),
-				SMSEnabled:   pointer.MakePtr(false),
+				DelayMin:     new(5),
+				EmailEnabled: new(true),
+				SMSEnabled:   new(false),
 				Roles: []string{
 					"GROUP_OWNER",
 				},

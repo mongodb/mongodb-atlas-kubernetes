@@ -47,7 +47,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
 )
 
@@ -357,10 +356,10 @@ func TestEnsureCustomResource(t *testing.T) {
 					peAPI.EXPECT().GetPrivateEndpointServiceExecute(mock.AnythingOfType("admin.GetPrivateEndpointServiceApiRequest")).
 						Return(
 							&admin.EndpointService{
-								Id:            pointer.MakePtr("pe-service-id"),
+								Id:            new("pe-service-id"),
 								CloudProvider: "AWS",
-								RegionName:    pointer.MakePtr("US_EAST_1"),
-								Status:        pointer.MakePtr("INITIATING"),
+								RegionName:    new("US_EAST_1"),
+								Status:        new("INITIATING"),
 							},
 							nil,
 							nil,

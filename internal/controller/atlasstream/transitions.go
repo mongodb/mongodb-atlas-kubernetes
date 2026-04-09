@@ -29,7 +29,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func (r *AtlasStreamsInstanceReconciler) create(
@@ -43,7 +42,7 @@ func (r *AtlasStreamsInstanceReconciler) create(
 			CloudProvider: streamInstance.Spec.Config.Provider,
 			Region:        streamInstance.Spec.Config.Region,
 		},
-		GroupId: pointer.MakePtr(project.ID()),
+		GroupId: new(project.ID()),
 	}
 
 	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.

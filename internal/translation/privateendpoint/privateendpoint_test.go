@@ -25,8 +25,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestListPrivateEndpoints(t *testing.T) {
@@ -50,10 +48,10 @@ func TestListPrivateEndpoints(t *testing.T) {
 				return []admin.EndpointService{
 					{
 						CloudProvider:       "AWS",
-						Id:                  pointer.MakePtr("pe-service-ID"),
-						RegionName:          pointer.MakePtr("US_EAST_1"),
-						Status:              pointer.MakePtr("AVAILABLE"),
-						EndpointServiceName: pointer.MakePtr("aws/pe-service/name"),
+						Id:                  new("pe-service-ID"),
+						RegionName:          new("US_EAST_1"),
+						Status:              new("AVAILABLE"),
+						EndpointServiceName: new("aws/pe-service/name"),
 						InterfaceEndpoints:  &[]string{"vpcpe-123456"},
 					},
 				}, &http.Response{}, nil
@@ -69,26 +67,26 @@ func TestListPrivateEndpoints(t *testing.T) {
 				return []admin.EndpointService{
 					{
 						CloudProvider:       "AWS",
-						Id:                  pointer.MakePtr("pe-service-ID-1"),
-						RegionName:          pointer.MakePtr("US_EAST_1"),
-						Status:              pointer.MakePtr("AVAILABLE"),
-						EndpointServiceName: pointer.MakePtr("aws/pe-service/name"),
+						Id:                  new("pe-service-ID-1"),
+						RegionName:          new("US_EAST_1"),
+						Status:              new("AVAILABLE"),
+						EndpointServiceName: new("aws/pe-service/name"),
 						InterfaceEndpoints:  &[]string{"vpcpe-123456"},
 					},
 					{
 						CloudProvider:       "AWS",
-						Id:                  pointer.MakePtr("pe-service-ID-2"),
-						RegionName:          pointer.MakePtr("US_EAST_2"),
-						Status:              pointer.MakePtr("AVAILABLE"),
-						EndpointServiceName: pointer.MakePtr("aws/pe-service/name"),
+						Id:                  new("pe-service-ID-2"),
+						RegionName:          new("US_EAST_2"),
+						Status:              new("AVAILABLE"),
+						EndpointServiceName: new("aws/pe-service/name"),
 					},
 				}, &http.Response{}, nil
 			},
 			mockInterfaceReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:       "AWS",
-					ConnectionStatus:    pointer.MakePtr("AVAILABLE"),
-					InterfaceEndpointId: pointer.MakePtr("vpcpe-123456"),
+					ConnectionStatus:    new("AVAILABLE"),
+					InterfaceEndpointId: new("vpcpe-123456"),
 				}, &http.Response{}, nil
 			},
 			expectedPEs: []EndpointService{
@@ -176,12 +174,12 @@ func TestGetPrivateEndpoint(t *testing.T) {
 			mockGetReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return &admin.EndpointService{
 					CloudProvider:                "AZURE",
-					Id:                           pointer.MakePtr("pe-service-ID"),
-					RegionName:                   pointer.MakePtr("GERMANY_NORTH"),
-					Status:                       pointer.MakePtr("AVAILABLE"),
+					Id:                           new("pe-service-ID"),
+					RegionName:                   new("GERMANY_NORTH"),
+					Status:                       new("AVAILABLE"),
 					PrivateEndpoints:             &[]string{"long-azure-resource-ID"},
-					PrivateLinkServiceName:       pointer.MakePtr("pls_name"),
-					PrivateLinkServiceResourceId: pointer.MakePtr("long-azure-resource-ID"),
+					PrivateLinkServiceName:       new("pls_name"),
+					PrivateLinkServiceResourceId: new("long-azure-resource-ID"),
 				}, &http.Response{}, nil
 			},
 			mockInterfaceReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
@@ -194,21 +192,21 @@ func TestGetPrivateEndpoint(t *testing.T) {
 			mockGetReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return &admin.EndpointService{
 					CloudProvider:                "AZURE",
-					Id:                           pointer.MakePtr("pe-service-ID"),
-					RegionName:                   pointer.MakePtr("GERMANY_NORTH"),
-					Status:                       pointer.MakePtr("AVAILABLE"),
+					Id:                           new("pe-service-ID"),
+					RegionName:                   new("GERMANY_NORTH"),
+					Status:                       new("AVAILABLE"),
 					PrivateEndpoints:             &[]string{"long-azure-resource-ID"},
-					PrivateLinkServiceName:       pointer.MakePtr("pls_name"),
-					PrivateLinkServiceResourceId: pointer.MakePtr("long-azure-resource-ID"),
+					PrivateLinkServiceName:       new("pls_name"),
+					PrivateLinkServiceResourceId: new("long-azure-resource-ID"),
 				}, &http.Response{}, nil
 			},
 			mockInterfaceReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:                 "AZURE",
-					PrivateEndpointConnectionName: pointer.MakePtr("atlas-resource-name"),
-					PrivateEndpointIPAddress:      pointer.MakePtr("10.0.0.4"),
-					PrivateEndpointResourceId:     pointer.MakePtr("long-azure-resource-ID"),
-					Status:                        pointer.MakePtr("AVAILABLE"),
+					PrivateEndpointConnectionName: new("atlas-resource-name"),
+					PrivateEndpointIPAddress:      new("10.0.0.4"),
+					PrivateEndpointResourceId:     new("long-azure-resource-ID"),
+					Status:                        new("AVAILABLE"),
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AzureService{
@@ -236,9 +234,9 @@ func TestGetPrivateEndpoint(t *testing.T) {
 			mockGetReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return &admin.EndpointService{
 					CloudProvider:          "GCP",
-					Id:                     pointer.MakePtr("pe-service-ID"),
-					RegionName:             pointer.MakePtr("EUROPE_WEST_3"),
-					Status:                 pointer.MakePtr("AVAILABLE"),
+					Id:                     new("pe-service-ID"),
+					RegionName:             new("EUROPE_WEST_3"),
+					Status:                 new("AVAILABLE"),
 					EndpointGroupNames:     &[]string{"group-name"},
 					ServiceAttachmentNames: &[]string{"service/attachment1", "service/attachment2", "service/attachment3"},
 				}, &http.Response{}, nil
@@ -246,23 +244,23 @@ func TestGetPrivateEndpoint(t *testing.T) {
 			mockInterfaceReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:     "GCP",
-					Status:            pointer.MakePtr("AVAILABLE"),
-					EndpointGroupName: pointer.MakePtr("group-name"),
+					Status:            new("AVAILABLE"),
+					EndpointGroupName: new("group-name"),
 					Endpoints: &[]admin.GCPConsumerForwardingRule{
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-1"),
-							IpAddress:    pointer.MakePtr("10.0.0.1"),
-							Status:       pointer.MakePtr("AVAILABLE"),
+							EndpointName: new("group-name-pe-1"),
+							IpAddress:    new("10.0.0.1"),
+							Status:       new("AVAILABLE"),
 						},
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-2"),
-							IpAddress:    pointer.MakePtr("10.0.0.3"),
-							Status:       pointer.MakePtr("AVAILABLE"),
+							EndpointName: new("group-name-pe-2"),
+							IpAddress:    new("10.0.0.3"),
+							Status:       new("AVAILABLE"),
 						},
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-3"),
-							IpAddress:    pointer.MakePtr("10.0.0.3"),
-							Status:       pointer.MakePtr("AVAILABLE"),
+							EndpointName: new("group-name-pe-3"),
+							IpAddress:    new("10.0.0.3"),
+							Status:       new("AVAILABLE"),
 						},
 					},
 				}, &http.Response{}, nil
@@ -357,9 +355,9 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 			mockCreateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return &admin.EndpointService{
 					CloudProvider: "AWS",
-					Id:            pointer.MakePtr("pe-service-ID"),
-					RegionName:    pointer.MakePtr("US_EAST_1"),
-					Status:        pointer.MakePtr("INITIALIZING"),
+					Id:            new("pe-service-ID"),
+					RegionName:    new("US_EAST_1"),
+					Status:        new("INITIALIZING"),
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AWSService{
@@ -461,8 +459,8 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 			mockCreateReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:       "AWS",
-					InterfaceEndpointId: pointer.MakePtr("vpcpe-123456"),
-					ConnectionStatus:    pointer.MakePtr("INITIALIZING"),
+					InterfaceEndpointId: new("vpcpe-123456"),
+					ConnectionStatus:    new("INITIALIZING"),
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AWSInterface{
@@ -484,10 +482,10 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 			mockCreateReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:                 "AZURE",
-					PrivateEndpointResourceId:     pointer.MakePtr("long-azure-resource-ID"),
-					PrivateEndpointIPAddress:      pointer.MakePtr("10.0.0.2"),
-					PrivateEndpointConnectionName: pointer.MakePtr("atlas-resource-name"),
-					Status:                        pointer.MakePtr("INITIALIZING"),
+					PrivateEndpointResourceId:     new("long-azure-resource-ID"),
+					PrivateEndpointIPAddress:      new("10.0.0.2"),
+					PrivateEndpointConnectionName: new("atlas-resource-name"),
+					Status:                        new("INITIALIZING"),
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AzureInterface{
@@ -524,25 +522,25 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 			mockCreateReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
 					CloudProvider:     "GCP",
-					EndpointGroupName: pointer.MakePtr("group-name"),
+					EndpointGroupName: new("group-name"),
 					Endpoints: &[]admin.GCPConsumerForwardingRule{
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-1"),
-							IpAddress:    pointer.MakePtr("10.0.0.1"),
-							Status:       pointer.MakePtr("INITIALIZING"),
+							EndpointName: new("group-name-pe-1"),
+							IpAddress:    new("10.0.0.1"),
+							Status:       new("INITIALIZING"),
 						},
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-2"),
-							IpAddress:    pointer.MakePtr("10.0.0.2"),
-							Status:       pointer.MakePtr("INITIALIZING"),
+							EndpointName: new("group-name-pe-2"),
+							IpAddress:    new("10.0.0.2"),
+							Status:       new("INITIALIZING"),
 						},
 						{
-							EndpointName: pointer.MakePtr("group-name-pe-3"),
-							IpAddress:    pointer.MakePtr("10.0.0.3"),
-							Status:       pointer.MakePtr("INITIALIZING"),
+							EndpointName: new("group-name-pe-3"),
+							IpAddress:    new("10.0.0.3"),
+							Status:       new("INITIALIZING"),
 						},
 					},
-					Status: pointer.MakePtr("INITIALIZING"),
+					Status: new("INITIALIZING"),
 				}, &http.Response{}, nil
 			},
 			expectedPE: &GCPInterface{

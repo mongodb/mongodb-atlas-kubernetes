@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/testdata"
 )
@@ -164,9 +163,9 @@ func TestToAPIUnstructured(t *testing.T) {
 				},
 			},
 			want: admin2025.GroupAlertsConfig{
-				Enabled:       pointer.MakePtr(true),
-				EventTypeName: pointer.MakePtr("some-event"),
-				GroupId:       pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
+				Enabled:       new(true),
+				EventTypeName: new("some-event"),
+				GroupId:       new("62b6e34b3d91647abb20e7b8"),
 				Matchers: &[]admin2025.StreamsMatcher{
 					{
 						FieldName: "field1",
@@ -181,28 +180,28 @@ func TestToAPIUnstructured(t *testing.T) {
 				},
 				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 					{
-						DatadogApiKey: pointer.MakePtr("sample-api-key"),
-						DatadogRegion: pointer.MakePtr("US"),
+						DatadogApiKey: new("sample-api-key"),
+						DatadogRegion: new("US"),
 					},
 					{
-						WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-						WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
+						WebhookSecret: new("sample-webhook-secret"),
+						WebhookUrl:    new("sample-webhook-url"),
 					},
 				},
-				SeverityOverride: pointer.MakePtr("severe"),
+				SeverityOverride: new("severe"),
 				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 					MetricName: "metric",
-					Mode:       pointer.MakePtr("mode"),
-					Operator:   pointer.MakePtr("operator"),
-					Threshold:  pointer.MakePtr(1.0),
-					Units:      pointer.MakePtr("unit"),
+					Mode:       new("mode"),
+					Operator:   new("operator"),
+					Threshold:  new(1.0),
+					Units:      new("unit"),
 				},
 				Threshold: &admin2025.StreamProcessorMetricThreshold{
-					MetricName: pointer.MakePtr("metric"),
-					Mode:       pointer.MakePtr("mode-t"),
-					Operator:   pointer.MakePtr("op-t"),
-					Threshold:  pointer.MakePtr(2.0),
-					Units:      pointer.MakePtr("unit-t"),
+					MetricName: new("metric"),
+					Mode:       new("mode-t"),
+					Operator:   new("op-t"),
+					Threshold:  new(2.0),
+					Units:      new("unit-t"),
 				},
 			},
 			target: admin2025.GroupAlertsConfig{},
@@ -232,9 +231,9 @@ func TestFromAPIUnstructured(t *testing.T) {
 		{
 			crd: "GroupAlertsConfig",
 			input: admin2025.GroupAlertsConfig{
-				Enabled:       pointer.MakePtr(true),
-				EventTypeName: pointer.MakePtr("some-event"),
-				GroupId:       pointer.MakePtr("62b6e34b3d91647abb20e7b8"),
+				Enabled:       new(true),
+				EventTypeName: new("some-event"),
+				GroupId:       new("62b6e34b3d91647abb20e7b8"),
 				Matchers: &[]admin2025.StreamsMatcher{
 					{
 						FieldName: "field1",
@@ -249,28 +248,28 @@ func TestFromAPIUnstructured(t *testing.T) {
 				},
 				Notifications: &[]admin2025.AlertsNotificationRootForGroup{
 					{
-						DatadogApiKey: pointer.MakePtr("sample-api-key"),
-						DatadogRegion: pointer.MakePtr("US"),
+						DatadogApiKey: new("sample-api-key"),
+						DatadogRegion: new("US"),
 					},
 					{
-						WebhookSecret: pointer.MakePtr("sample-webhook-secret"),
-						WebhookUrl:    pointer.MakePtr("sample-webhook-url"),
+						WebhookSecret: new("sample-webhook-secret"),
+						WebhookUrl:    new("sample-webhook-url"),
 					},
 				},
-				SeverityOverride: pointer.MakePtr("severe"),
+				SeverityOverride: new("severe"),
 				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
 					MetricName: "metric",
-					Mode:       pointer.MakePtr("mode"),
-					Operator:   pointer.MakePtr("operator"),
-					Threshold:  pointer.MakePtr(1.0),
-					Units:      pointer.MakePtr("unit"),
+					Mode:       new("mode"),
+					Operator:   new("operator"),
+					Threshold:  new(1.0),
+					Units:      new("unit"),
 				},
 				Threshold: &admin2025.StreamProcessorMetricThreshold{
-					MetricName: pointer.MakePtr("metric"),
-					Mode:       pointer.MakePtr("mode-t"),
-					Operator:   pointer.MakePtr("op-t"),
-					Threshold:  pointer.MakePtr(2.0),
-					Units:      pointer.MakePtr("unit-t"),
+					MetricName: new("metric"),
+					Mode:       new("mode-t"),
+					Operator:   new("op-t"),
+					Threshold:  new(2.0),
+					Units:      new("unit-t"),
 				},
 			},
 			target: &unstructured.Unstructured{

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/testdata/samples/v1"
 )
 
@@ -38,7 +37,7 @@ func TestIsNil(t *testing.T) {
 		{title: "nil slice", value: []int(nil), want: true},
 		{title: "nil map", value: map[string]int(nil), want: true},
 		{title: "non-nil interface", value: 1, want: false},
-		{title: "non-nil pointer", value: pointer.MakePtr(1), want: false},
+		{title: "non-nil pointer", value: new(1), want: false},
 		{title: "non-nil slice", value: []int{1}, want: false},
 		{title: "non-nil map", value: map[string]int{"1": 1}, want: false},
 	} {

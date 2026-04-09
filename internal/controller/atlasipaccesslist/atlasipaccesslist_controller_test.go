@@ -40,7 +40,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestReconcile(t *testing.T) {
@@ -69,7 +68,7 @@ func TestReconcile(t *testing.T) {
 							&admin.PaginatedNetworkAccess{
 								Results: []admin.NetworkPermissionEntry{
 									{
-										CidrBlock: pointer.MakePtr("192.168.0.0/24"),
+										CidrBlock: new("192.168.0.0/24"),
 									},
 								},
 							},
@@ -89,7 +88,7 @@ func TestReconcile(t *testing.T) {
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
+						Return(&admin.Group{Id: new("123")}, nil, nil)
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{

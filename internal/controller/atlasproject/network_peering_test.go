@@ -30,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
@@ -152,10 +151,10 @@ func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContain
 	for _, id := range peeringIDs {
 		atlasPeers = append(atlasPeers, admin.BaseNetworkPeeringConnectionSettings{
 			ContainerId:  fmt.Sprintf("container-%s", id),
-			Id:           pointer.MakePtr(fmt.Sprintf("np-%s", id)),
-			ProviderName: pointer.MakePtr("AWS"),
-			VpcId:        pointer.MakePtr(id),
-			StatusName:   pointer.MakePtr(StatusReady),
+			Id:           new(fmt.Sprintf("np-%s", id)),
+			ProviderName: new("AWS"),
+			VpcId:        new(id),
+			StatusName:   new(StatusReady),
 		})
 	}
 	return &admin.PaginatedContainerPeer{

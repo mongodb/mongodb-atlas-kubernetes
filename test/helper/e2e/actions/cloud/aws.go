@@ -34,7 +34,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
 
@@ -493,7 +492,7 @@ func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region,
 			},
 		}},
 		VpcId:            aws.String(vpcID),
-		AvailabilityZone: pointer.MakePtr(fmt.Sprintf("%s%s", region, az)),
+		AvailabilityZone: new(fmt.Sprintf("%s%s", region, az)),
 	}
 	result, err := ec2Client.CreateSubnet(ctx, input)
 	if err != nil {

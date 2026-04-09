@@ -37,16 +37,16 @@ func CreateVPC(ctx context.Context, vpcName, cidr, region string) (string, error
 		azr.resourceGroupName,
 		vpcName,
 		armnetwork.VirtualNetwork{
-			Location: pointer.MakePtr(region),
+			Location: new(region),
 			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 				AddressSpace: &armnetwork.AddressSpace{
 					AddressPrefixes: []*string{
-						pointer.MakePtr(cidr),
+						new(cidr),
 					},
 				},
 			},
 			Tags: map[string]*string{
-				"Name":              pointer.MakePtr(vpcName),
+				"Name":              new(vpcName),
 				tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
 				tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
 				tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),

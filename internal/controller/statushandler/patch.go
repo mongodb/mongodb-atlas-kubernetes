@@ -36,7 +36,7 @@ func patchUpdateStatus(ctx *workflow.Context, kubeClient client.Client, resource
 		return nil
 	}
 
-	data, err := json.Marshal([]map[string]interface{}{{
+	data, err := json.Marshal([]map[string]any{{
 		"op":    "replace",
 		"path":  "/status",
 		"value": resourceCopy.GetStatus(),

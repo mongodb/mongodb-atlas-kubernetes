@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestReconcile(t *testing.T) {
@@ -586,17 +585,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.Anything).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "DUBLIN_IRL",
 					},
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
+					GroupId:   new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -607,7 +606,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			Return(
 				&admin.PaginatedApiStreamsConnection{
 					Results:    nil,
-					TotalCount: pointer.MakePtr(0),
+					TotalCount: new(0),
 				},
 				&http.Response{},
 				nil,
@@ -727,17 +726,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().CreateStreamWorkspaceExecute(mock.AnythingOfType("admin.CreateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "DUBLIN_IRL",
 					},
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
+					GroupId:   new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -808,7 +807,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				Name:              "my-stream-processing-instance",
 				Namespace:         "default",
 				Finalizers:        []string{customresource.FinalizerLabel},
-				DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+				DeletionTimestamp: new(metav1.Now()),
 			},
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
@@ -852,17 +851,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "DUBLIN_IRL",
 					},
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
+					GroupId:   new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -970,17 +969,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "FRANKFURT_DEU",
 					},
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
+					GroupId:   new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -990,17 +989,17 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		streamsAPI.EXPECT().UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "DUBLIN_IRL",
 					},
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
-					GroupId:   pointer.MakePtr("my-project-id"),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
+					GroupId:   new("my-project-id"),
 				},
 				&http.Response{},
 				nil,

@@ -22,7 +22,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 var (
@@ -192,8 +191,8 @@ func toAtlas(tpi *ThirdPartyIntegration) (*admin.ThirdPartyIntegration, error) {
 		}
 		ai.ApiKey = &tpi.DatadogSecrets.APIKey
 		ai.Region = &tpi.Datadog.Region
-		ai.SendCollectionLatencyMetrics = pointer.MakePtr(isEnabled(tpi.Datadog.SendCollectionLatencyMetrics))
-		ai.SendDatabaseMetrics = pointer.MakePtr(isEnabled(tpi.Datadog.SendDatabaseMetrics))
+		ai.SendCollectionLatencyMetrics = new(isEnabled(tpi.Datadog.SendCollectionLatencyMetrics))
+		ai.SendDatabaseMetrics = new(isEnabled(tpi.Datadog.SendDatabaseMetrics))
 	case "MICROSOFT_TEAMS":
 		if tpi.MicrosoftTeams == nil || tpi.MicrosoftTeamsSecrets == nil {
 			return nil, errors.New("missing Microsoft teams settings")
@@ -223,7 +222,7 @@ func toAtlas(tpi *ThirdPartyIntegration) (*admin.ThirdPartyIntegration, error) {
 		if tpi.Prometheus == nil || tpi.PrometheusSecrets == nil {
 			return nil, errors.New("missing Prometheus settings")
 		}
-		ai.Enabled = pointer.MakePtr(isEnabled(tpi.Prometheus.Enabled))
+		ai.Enabled = new(isEnabled(tpi.Prometheus.Enabled))
 		ai.Username = &tpi.PrometheusSecrets.Username
 		ai.Password = &tpi.PrometheusSecrets.Password
 		ai.ServiceDiscovery = &tpi.Prometheus.ServiceDiscovery
@@ -352,7 +351,7 @@ func isEnabled(field *string) bool {
 
 func encodeEnabled(on bool) *string {
 	if on {
-		return pointer.MakePtr("enabled")
+		return new("enabled")
 	}
-	return pointer.MakePtr("disabled")
+	return new("disabled")
 }

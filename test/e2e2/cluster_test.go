@@ -29,7 +29,6 @@ import (
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -231,10 +230,10 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)).To(Succeed())
 
 			entry := cluster.Spec.V20250312.Entry
-			entry.BackupEnabled = pointer.MakePtr(true)
-			entry.PitEnabled = pointer.MakePtr(true)
-			entry.MongoDBMajorVersion = pointer.MakePtr("8.0")
-			entry.RedactClientLogData = pointer.MakePtr(true)
+			entry.BackupEnabled = new(true)
+			entry.PitEnabled = new(true)
+			entry.MongoDBMajorVersion = new("8.0")
+			entry.RedactClientLogData = new(true)
 			entry.Tags = &[]generatedv1.Tags{
 				{Key: "environment", Value: "test"},
 				{Key: "managed-by", Value: "ako"},
@@ -242,16 +241,16 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 
 			specs := *entry.ReplicationSpecs
 			rc := &(*specs[0].RegionConfigs)[0]
-			rc.ElectableSpecs.DiskSizeGB = pointer.MakePtr(20.0)
+			rc.ElectableSpecs.DiskSizeGB = new(20.0)
 			rc.AutoScaling = &generatedv1.AnalyticsAutoScaling{
 				Compute: &generatedv1.Compute{
-					Enabled:          pointer.MakePtr(true),
-					MaxInstanceSize:  pointer.MakePtr("M30"),
-					MinInstanceSize:  pointer.MakePtr("M10"),
-					ScaleDownEnabled: pointer.MakePtr(true),
+					Enabled:          new(true),
+					MaxInstanceSize:  new("M30"),
+					MinInstanceSize:  new("M10"),
+					ScaleDownEnabled: new(true),
 				},
 				DiskGB: &generatedv1.DiskGB{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 			}
 
@@ -266,28 +265,28 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)).To(Succeed())
 
 			entry := cluster.Spec.V20250312.Entry
-			entry.ClusterType = pointer.MakePtr("SHARDED")
+			entry.ClusterType = new("SHARDED")
 
 			existingSpecs := *entry.ReplicationSpecs
 			secondShard := generatedv1.ReplicationSpecs{
 				RegionConfigs: &[]generatedv1.RegionConfigs{
 					{
-						ProviderName: pointer.MakePtr("AWS"),
-						RegionName:   pointer.MakePtr("US_EAST_1"),
-						Priority:     pointer.MakePtr(7),
+						ProviderName: new("AWS"),
+						RegionName:   new("US_EAST_1"),
+						Priority:     new(7),
 						ElectableSpecs: &generatedv1.ElectableSpecs{
-							InstanceSize: pointer.MakePtr("M10"),
-							NodeCount:    pointer.MakePtr(3),
+							InstanceSize: new("M10"),
+							NodeCount:    new(3),
 						},
 						AutoScaling: &generatedv1.AnalyticsAutoScaling{
 							Compute: &generatedv1.Compute{
-								Enabled:          pointer.MakePtr(true),
-								MaxInstanceSize:  pointer.MakePtr("M30"),
-								MinInstanceSize:  pointer.MakePtr("M10"),
-								ScaleDownEnabled: pointer.MakePtr(true),
+								Enabled:          new(true),
+								MaxInstanceSize:  new("M30"),
+								MinInstanceSize:  new("M10"),
+								ScaleDownEnabled: new(true),
 							},
 							DiskGB: &generatedv1.DiskGB{
-								Enabled: pointer.MakePtr(true),
+								Enabled: new(true),
 							},
 						},
 					},
@@ -307,7 +306,7 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)).To(Succeed())
 
 			entry := cluster.Spec.V20250312.Entry
-			entry.ReplicaSetScalingStrategy = pointer.MakePtr("NODE_TYPE")
+			entry.ReplicaSetScalingStrategy = new("NODE_TYPE")
 
 			specs := *entry.ReplicationSpecs
 			for i := range specs {
@@ -315,22 +314,22 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 				for j := range rcs {
 					rcs[j].AutoScaling = &generatedv1.AnalyticsAutoScaling{
 						Compute: &generatedv1.Compute{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 						DiskGB: &generatedv1.DiskGB{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 					}
 				}
 			}
 
 			shard1RC := &(*(*entry.ReplicationSpecs)[0].RegionConfigs)[0]
-			shard1RC.ElectableSpecs.InstanceSize = pointer.MakePtr("M10")
-			shard1RC.ElectableSpecs.DiskSizeGB = pointer.MakePtr(30.0)
+			shard1RC.ElectableSpecs.InstanceSize = new("M10")
+			shard1RC.ElectableSpecs.DiskSizeGB = new(30.0)
 
 			shard2RC := &(*(*entry.ReplicationSpecs)[1].RegionConfigs)[0]
-			shard2RC.ElectableSpecs.InstanceSize = pointer.MakePtr("M20")
-			shard2RC.ElectableSpecs.DiskSizeGB = pointer.MakePtr(40.0)
+			shard2RC.ElectableSpecs.InstanceSize = new("M20")
+			shard2RC.ElectableSpecs.DiskSizeGB = new(40.0)
 
 			Expect(kubeClient.Update(ctx, cluster)).To(Succeed())
 
@@ -343,18 +342,18 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)).To(Succeed())
 
 			entry := cluster.Spec.V20250312.Entry
-			entry.ClusterType = pointer.MakePtr("GEOSHARDED")
-			entry.GlobalClusterSelfManagedSharding = pointer.MakePtr(false)
+			entry.ClusterType = new("GEOSHARDED")
+			entry.GlobalClusterSelfManagedSharding = new(false)
 
 			specs := *entry.ReplicationSpecs
 
-			specs[0].ZoneName = pointer.MakePtr("Zone 1")
-			(*specs[0].RegionConfigs)[0].RegionName = pointer.MakePtr("US_EAST_1")
-			(*specs[0].RegionConfigs)[0].ElectableSpecs.InstanceSize = pointer.MakePtr("M10")
+			specs[0].ZoneName = new("Zone 1")
+			(*specs[0].RegionConfigs)[0].RegionName = new("US_EAST_1")
+			(*specs[0].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M10")
 
-			specs[1].ZoneName = pointer.MakePtr("Zone 2")
-			(*specs[1].RegionConfigs)[0].RegionName = pointer.MakePtr("EU_WEST_1")
-			(*specs[1].RegionConfigs)[0].ElectableSpecs.InstanceSize = pointer.MakePtr("M10")
+			specs[1].ZoneName = new("Zone 2")
+			(*specs[1].RegionConfigs)[0].RegionName = new("EU_WEST_1")
+			(*specs[1].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M10")
 
 			Expect(kubeClient.Update(ctx, cluster)).To(Succeed())
 
@@ -376,20 +375,20 @@ func newReplicaSetCluster(name, namespace, groupId, secretName string) *generate
 				Name: secretName,
 			},
 			V20250312: &generatedv1.ClusterSpecV20250312{
-				GroupId: pointer.MakePtr(groupId),
+				GroupId: new(groupId),
 				Entry: &generatedv1.V20250312Entry{
-					Name:        pointer.MakePtr(name),
-					ClusterType: pointer.MakePtr("REPLICASET"),
+					Name:        new(name),
+					ClusterType: new("REPLICASET"),
 					ReplicationSpecs: &[]generatedv1.ReplicationSpecs{
 						{
 							RegionConfigs: &[]generatedv1.RegionConfigs{
 								{
-									ProviderName: pointer.MakePtr("AWS"),
-									RegionName:   pointer.MakePtr("US_EAST_1"),
-									Priority:     pointer.MakePtr(7),
+									ProviderName: new("AWS"),
+									RegionName:   new("US_EAST_1"),
+									Priority:     new(7),
 									ElectableSpecs: &generatedv1.ElectableSpecs{
-										InstanceSize: pointer.MakePtr("M10"),
-										NodeCount:    pointer.MakePtr(3),
+										InstanceSize: new("M10"),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -413,18 +412,18 @@ func newSharedCluster(name, namespace, groupRefName string) *generatedv1.Cluster
 					Name: groupRefName,
 				},
 				Entry: &generatedv1.V20250312Entry{
-					Name:        pointer.MakePtr(name),
-					ClusterType: pointer.MakePtr("REPLICASET"),
+					Name:        new(name),
+					ClusterType: new("REPLICASET"),
 					ReplicationSpecs: &[]generatedv1.ReplicationSpecs{
 						{
 							RegionConfigs: &[]generatedv1.RegionConfigs{
 								{
-									ProviderName:        pointer.MakePtr("TENANT"),
-									BackingProviderName: pointer.MakePtr("AWS"),
-									RegionName:          pointer.MakePtr("US_EAST_1"),
-									Priority:            pointer.MakePtr(7),
+									ProviderName:        new("TENANT"),
+									BackingProviderName: new("AWS"),
+									RegionName:          new("US_EAST_1"),
+									Priority:            new(7),
 									ElectableSpecs: &generatedv1.ElectableSpecs{
-										InstanceSize: pointer.MakePtr("M0"),
+										InstanceSize: new("M0"),
 									},
 								},
 							},

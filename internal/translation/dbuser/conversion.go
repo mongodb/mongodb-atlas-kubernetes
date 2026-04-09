@@ -156,7 +156,7 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		X509Type:        pointer.MakePtrOrNil(au.X509Type),
 		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
-		Description:     pointer.MakePtr(au.Description),
+		Description:     new(au.Description),
 		Labels:          labelsToAtlas(au.Labels),
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
@@ -174,7 +174,7 @@ func dateToAtlas(d string) (*time.Time, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse %q to an ISO date: %w", d, err)
 	}
-	return pointer.MakePtr(date), nil
+	return new(date), nil
 }
 
 func rolesToAtlas(roles []akov2.RoleSpec) []admin.DatabaseUserRole {
@@ -188,7 +188,7 @@ func rolesToAtlas(roles []akov2.RoleSpec) []admin.DatabaseUserRole {
 			DatabaseName: role.DatabaseName,
 		}
 		if role.CollectionName != "" {
-			ar.CollectionName = pointer.MakePtr(role.CollectionName)
+			ar.CollectionName = new(role.CollectionName)
 		}
 		atlasRoles = append(atlasRoles, ar)
 	}
@@ -267,8 +267,8 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	atlasLabels := make([]admin.ComponentLabel, 0, len(labels))
 	for _, label := range labels {
 		atlasLabels = append(atlasLabels, admin.ComponentLabel{
-			Key:   pointer.MakePtr(label.Key),
-			Value: pointer.MakePtr(label.Value),
+			Key:   new(label.Key),
+			Value: new(label.Value),
 		})
 	}
 	return &atlasLabels

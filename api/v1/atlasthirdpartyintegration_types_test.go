@@ -219,8 +219,8 @@ func TestIntegrationCELChecks(t *testing.T) {
 }
 
 func FuzzIntegrationCloning(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i)
+	for i := range uint(fuzzIterations) {
+		f.Add(fmt.Appendf(nil, "seed sample %x", i), i)
 	}
 	f.Fuzz(func(t *testing.T, data []byte, index uint) {
 		integrationData := &AtlasThirdPartyIntegration{}

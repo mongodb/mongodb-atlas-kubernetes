@@ -21,8 +21,6 @@ import (
 	gofuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const fuzzIterations = 100
@@ -40,13 +38,13 @@ var integrationTypes = []string{
 }
 
 var enabledValues = []*string{
-	pointer.MakePtr("enabled"),
-	pointer.MakePtr("disabled"),
+	new("enabled"),
+	new("disabled"),
 }
 
 func FuzzConvertIntegrations(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i)
+	for i := range uint(fuzzIterations) {
+		f.Add(fmt.Appendf(nil, "seed sample %x", i), i)
 	}
 	f.Fuzz(func(t *testing.T, data []byte, index uint) {
 		integration := ThirdPartyIntegration{}

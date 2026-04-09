@@ -25,7 +25,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -62,12 +61,12 @@ var _ = Describe("AtlasOrgSettings", Label("atlas-org-settings"), func() {
 			},
 			Spec: akov2.AtlasOrgSettingsSpec{
 				OrgID:                                  "",
-				ApiAccessListRequired:                  pointer.MakePtr(true),
-				GenAIFeaturesEnabled:                   pointer.MakePtr(false),
-				MultiFactorAuthRequired:                pointer.MakePtr(true),
-				RestrictEmployeeAccess:                 pointer.MakePtr(true),
-				SecurityContact:                        pointer.MakePtr("security@example.com"),
-				MaxServiceAccountSecretValidityInHours: pointer.MakePtr(24),
+				ApiAccessListRequired:                  new(true),
+				GenAIFeaturesEnabled:                   new(false),
+				MultiFactorAuthRequired:                new(true),
+				RestrictEmployeeAccess:                 new(true),
+				SecurityContact:                        new("security@example.com"),
+				MaxServiceAccountSecretValidityInHours: new(24),
 			},
 		}
 

@@ -198,7 +198,7 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 			atlasDataSources := make([]admin.DataLakeDatabaseDataSourceSettings, 0, len(collection.DataSources))
 			for _, dataSource := range collection.DataSources {
 				atlasDataSource := admin.DataLakeDatabaseDataSourceSettings{
-					AllowInsecure:       pointer.MakePtr(dataSource.AllowInsecure),
+					AllowInsecure:       new(dataSource.AllowInsecure),
 					Collection:          pointer.MakePtrOrNil(dataSource.Collection),
 					CollectionRegex:     pointer.MakePtrOrNil(dataSource.CollectionRegex),
 					Database:            pointer.MakePtrOrNil(dataSource.Database),
@@ -235,9 +235,9 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 			Provider:    store.Provider,
 			Bucket:      pointer.MakePtrOrNil(store.Bucket),
 			Delimiter:   pointer.MakePtrOrNil(store.Delimiter),
-			IncludeTags: pointer.MakePtr(store.IncludeTags),
+			IncludeTags: new(store.IncludeTags),
 			Prefix:      pointer.MakePtrOrNil(store.Prefix),
-			Public:      pointer.MakePtr(store.Public),
+			Public:      new(store.Public),
 			Region:      pointer.MakePtrOrNil(store.Region),
 		}
 		additionalStorageClasses := make([]string, 0, len(store.AdditionalStorageClasses))

@@ -294,7 +294,7 @@ func TestPeeringCELChecks(t *testing.T) {
 			unstructuredObject, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.obj)
 			require.NoError(t, err)
 
-			unstructuredOld := map[string]interface{}{}
+			unstructuredOld := map[string]any{}
 			if tc.old != nil {
 				var err error
 				tc.old.Spec.ProjectRef = &common.ResourceRefNamespaced{Name: "some-project"}

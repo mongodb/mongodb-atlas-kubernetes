@@ -32,7 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
 	searchfake "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex/fake"
 )
@@ -147,7 +146,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -241,7 +240,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					Status: pointer.MakePtr("NOT STARTED"),
+					Status: new("NOT STARTED"),
 				}, nil
 			},
 		}
@@ -253,7 +252,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -325,10 +324,10 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 							Type: IndexTypeSearch,
 						},
 						AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-							Analyzer: pointer.MakePtr("testAnalyzer"),
+							Analyzer: new("testAnalyzer"),
 						},
-						ID:     pointer.MakePtr("123"),
-						Status: pointer.MakePtr(IndexStatusActive),
+						ID:     new("123"),
+						Status: new(IndexStatusActive),
 					}, nil
 				}
 				return nil, fmt.Errorf("unexpected")
@@ -340,8 +339,8 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 							Name: "Index1",
 							Type: IndexTypeSearch,
 						},
-						ID:     pointer.MakePtr("123"),
-						Status: pointer.MakePtr("NOT STARTED"),
+						ID:     new("123"),
+						Status: new("NOT STARTED"),
 					}, nil
 				}
 				if idx.Name == "Index2" {
@@ -358,7 +357,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -476,8 +475,8 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				CollectionName: "testCollection",
 				Type:           IndexTypeSearch,
 			},
-			ID:     pointer.MakePtr("testID"),
-			Status: pointer.MakePtr(IndexStatusActive),
+			ID:     new("testID"),
+			Status: new(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
@@ -495,7 +494,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -574,8 +573,8 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				CollectionName: "testCollection",
 				Type:           IndexTypeVector,
 			},
-			ID:     pointer.MakePtr("testID"),
-			Status: pointer.MakePtr(IndexStatusActive),
+			ID:     new("testID"),
+			Status: new(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
@@ -593,7 +592,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}
@@ -674,8 +673,8 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 						CollectionName: "testCollection",
 						Type:           IndexTypeVector,
 					},
-					ID:     pointer.MakePtr("testID"),
-					Status: pointer.MakePtr(IndexStatusActive),
+					ID:     new("testID"),
+					Status: new(IndexStatusActive),
 				}, nil
 			},
 			DeleteIndexFunc: func(_ context.Context, _, _, _ string) error {
@@ -717,7 +716,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 				Namespace: "testNamespace",
 			},
 			Spec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			Status: status.AtlasSearchIndexConfigStatus{},
 		}

@@ -50,7 +50,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestRenconcile(t *testing.T) {
@@ -81,11 +80,11 @@ func TestRenconcile(t *testing.T) {
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",
-							Id:                        pointer.MakePtr("my-project-id"),
+							Id:                        new("my-project-id"),
 							Name:                      "my-project",
 							ClusterCount:              0,
-							RegionUsageRestrictions:   pointer.MakePtr("NONE"),
-							WithDefaultAlertsSettings: pointer.MakePtr(true),
+							RegionUsageRestrictions:   new("NONE"),
+							WithDefaultAlertsSettings: new(true),
 							Tags: &[]admin.ResourceTag{
 								{
 									Key:   "test",

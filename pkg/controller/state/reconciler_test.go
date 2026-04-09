@@ -509,8 +509,8 @@ func addKnownTestTypes(sch *runtime.Scheme) {
 
 type dummyObject struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Status            DummyStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+	Status            DummyStatus `json:"status"`
 }
 
 type DummyStatus struct {

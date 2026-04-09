@@ -26,7 +26,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -76,8 +75,8 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 					Collection:             "somecollection",
 					Db:                     "somedb",
 					CustomShardKey:         "somekey",
-					PresplitHashedZones:    pointer.MakePtr(true),
-					IsCustomShardKeyHashed: pointer.MakePtr(true),
+					PresplitHashedZones:    new(true),
+					IsCustomShardKeyHashed: new(true),
 					NumInitialChunks:       4,
 				},
 			},

@@ -30,7 +30,7 @@ type ProjectSpec akov2.AtlasProjectSpec
 type AProject struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec            ProjectSpec        `json:"spec,omitempty"`
+	Spec            ProjectSpec        `json:"spec"`
 }
 
 type AProjectWithStatus struct {

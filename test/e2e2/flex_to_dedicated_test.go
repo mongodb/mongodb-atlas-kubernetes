@@ -27,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	akov2common "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
@@ -148,10 +147,10 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 							{
 								ProviderName: "AWS",
 								RegionName:   "EU_CENTRAL_1",
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: "M30",
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
 							},
 						},

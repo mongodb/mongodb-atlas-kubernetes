@@ -47,14 +47,12 @@ func (e *EmbeddedOperator) Start(ctx context.Context, t testingT) {
 	defer e.mutex.Unlock()
 	t.Logf("starting operator in-process with args: %v", e.args)
 	e.ctx, e.cancel = context.WithCancel(ctx)
-	e.wg.Add(1)
-	go func() {
-		defer e.wg.Done()
+	e.wg.Go(func() {
 		fs := flag.NewFlagSet("", flag.ContinueOnError)
 		if err := e.runnerFunc(e.ctx, fs, e.args); err != nil {
 			t.Fatalf("error running operator: %v", err)
 		}
-	}()
+	})
 }
 
 func (e *EmbeddedOperator) Running() bool {

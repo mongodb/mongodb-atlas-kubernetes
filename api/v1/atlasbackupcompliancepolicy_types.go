@@ -23,7 +23,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func init() {
@@ -96,8 +95,8 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProte
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
 		EncryptionAtRestEnabled: &b.Spec.EncryptionAtRestEnabled,
 		PitEnabled:              &b.Spec.PITEnabled,
-		ProjectId:               pointer.MakePtr(projectID),
-		RestoreWindowDays:       pointer.MakePtr(b.Spec.RestoreWindowDays),
+		ProjectId:               new(projectID),
+		RestoreWindowDays:       new(b.Spec.RestoreWindowDays),
 	}
 
 	var emptyPolicy AtlasOnDemandPolicy

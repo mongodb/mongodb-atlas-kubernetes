@@ -38,7 +38,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
@@ -850,7 +849,7 @@ func newTestDatabaseUser(name, namespace, projectID string) *generatedv1.Databas
 					DatabaseName: "admin",
 					PasswordSecretRef: &generatedv1.PasswordSecretRef{
 						Name: "password-secret",
-						Key:  pointer.MakePtr("password"),
+						Key:  new("password"),
 					},
 				},
 			},

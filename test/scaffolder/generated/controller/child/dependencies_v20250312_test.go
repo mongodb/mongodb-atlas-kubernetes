@@ -37,8 +37,9 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func TestGetDependencies(t *testing.T) {
@@ -104,7 +105,7 @@ func TestGetDependencies(t *testing.T) {
 				},
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
-						ParentId: strPtr("direct-parent-id"),
+						ParentId: new("direct-parent-id"),
 					},
 				},
 			},

@@ -52,7 +52,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
@@ -367,7 +366,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		},
 	}
 	d := akov2.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
-	d.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+	d.Spec.DeploymentSpec.BackupEnabled = new(true)
 	d.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 		Name:      bSchedule.Name,
 		Namespace: bSchedule.Namespace,
@@ -398,22 +397,22 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
 					&admin.ClusterDescription20240805{
-						GroupId:       pointer.MakePtr(project.ID()),
-						Name:          pointer.MakePtr(d.GetDeploymentName()),
-						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
-						BackupEnabled: pointer.MakePtr(true),
-						StateName:     pointer.MakePtr("IDLE"),
+						GroupId:       new(project.ID()),
+						Name:          new(d.GetDeploymentName()),
+						ClusterType:   new(d.Spec.DeploymentSpec.ClusterType),
+						BackupEnabled: new(true),
+						StateName:     new("IDLE"),
 						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName: pointer.MakePtr("Zone 1"),
+								ZoneName: new("Zone 1"),
 								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
-										ProviderName: pointer.MakePtr("AWS"),
-										RegionName:   pointer.MakePtr("US_EAST_1"),
-										Priority:     pointer.MakePtr(7),
+										ProviderName: new("AWS"),
+										RegionName:   new("US_EAST_1"),
+										Priority:     new(7),
 										ElectableSpecs: &admin.HardwareSpec20240805{
-											InstanceSize: pointer.MakePtr("M10"),
-											NodeCount:    pointer.MakePtr(3),
+											InstanceSize: new("M10"),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -438,8 +437,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 				Return(
 					&admin.ApiSearchDeploymentResponse{
-						GroupId:   pointer.MakePtr(project.ID()),
-						StateName: pointer.MakePtr("IDLE"),
+						GroupId:   new(project.ID()),
+						StateName: new("IDLE"),
 						Specs: &[]admin.ApiSearchDeploymentSpec{
 							{
 								InstanceSize: "S100_LOWCPU_NVME",
@@ -455,7 +454,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+				Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 			globalAPI := mockadmin.NewGlobalClustersApi(t)
 			globalAPI.EXPECT().GetClusterGlobalWrites(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
@@ -469,17 +468,17 @@ func TestRegularClusterReconciliation(t *testing.T) {
 			cloudBackupsAPI.EXPECT().GetBackupSchedule(mock.Anything, project.ID(), d.Spec.DeploymentSpec.Name).
 				Return(admin.GetBackupScheduleApiRequest{ApiService: cloudBackupsAPI})
 			cloudBackupsAPI.EXPECT().GetBackupScheduleExecute(mock.Anything).Return(&admin.DiskBackupSnapshotSchedule20240805{
-				AutoExportEnabled:     pointer.MakePtr(false),
-				ClusterId:             pointer.MakePtr("123789"),
-				ClusterName:           pointer.MakePtr(d.GetDeploymentName()),
-				ReferenceHourOfDay:    pointer.MakePtr(20),
-				ReferenceMinuteOfHour: pointer.MakePtr(30),
-				RestoreWindowDays:     pointer.MakePtr(7),
-				UpdateSnapshots:       pointer.MakePtr(false),
+				AutoExportEnabled:     new(false),
+				ClusterId:             new("123789"),
+				ClusterName:           new(d.GetDeploymentName()),
+				ReferenceHourOfDay:    new(20),
+				ReferenceMinuteOfHour: new(30),
+				RestoreWindowDays:     new(7),
+				UpdateSnapshots:       new(false),
 				CopySettings:          &[]admin.DiskBackupCopySetting20240805{},
 				Policies: []admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 					{
-						Id: pointer.MakePtr("456987"),
+						Id: new("456987"),
 						PolicyItems: []admin.DiskBackupApiPolicyItem{
 							{
 								FrequencyInterval: 1,
@@ -490,7 +489,7 @@ func TestRegularClusterReconciliation(t *testing.T) {
 						},
 					},
 				},
-				UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
+				UseOrgAndGroupNamesInExportPrefix: new(false),
 			}, nil, nil)
 
 			return &atlas.ClientSet{
@@ -599,15 +598,15 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 				Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 			flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(
 				&admin.FlexClusterDescription20241113{
-					GroupId: pointer.MakePtr("abc123"),
-					Name:    pointer.MakePtr("test-serverless-instance"),
+					GroupId: new("abc123"),
+					Name:    new("test-serverless-instance"),
 					ProviderSettings: admin.FlexProviderSettings20241113{
-						BackingProviderName: pointer.MakePtr("AWS"),
-						ProviderName:        pointer.MakePtr("FLEX"),
-						RegionName:          pointer.MakePtr("US_EAST_1"),
+						BackingProviderName: new("AWS"),
+						ProviderName:        new("FLEX"),
+						RegionName:          new("US_EAST_1"),
 					},
-					StateName:                    pointer.MakePtr("IDLE"),
-					TerminationProtectionEnabled: pointer.MakePtr(false),
+					StateName:                    new("IDLE"),
+					TerminationProtectionEnabled: new(false),
 				},
 				nil,
 				nil,
@@ -617,7 +616,7 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+				Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
@@ -717,15 +716,15 @@ func TestFlexClusterReconciliation(t *testing.T) {
 			flexAPI.EXPECT().GetFlexClusterExecute(mock.AnythingOfType("admin.GetFlexClusterApiRequest")).
 				Return(
 					&admin.FlexClusterDescription20241113{
-						GroupId: pointer.MakePtr(project.ID()),
-						Name:    pointer.MakePtr(d.GetDeploymentName()),
+						GroupId: new(project.ID()),
+						Name:    new(d.GetDeploymentName()),
 						ProviderSettings: admin.FlexProviderSettings20241113{
-							BackingProviderName: pointer.MakePtr("AWS"),
-							ProviderName:        pointer.MakePtr("FLEX"),
-							RegionName:          pointer.MakePtr("US_EAST_1"),
+							BackingProviderName: new("AWS"),
+							ProviderName:        new("FLEX"),
+							RegionName:          new("US_EAST_1"),
 						},
-						StateName:                    pointer.MakePtr("IDLE"),
-						TerminationProtectionEnabled: pointer.MakePtr(false),
+						StateName:                    new("IDLE"),
+						TerminationProtectionEnabled: new(false),
 					},
 					nil,
 					nil,
@@ -743,7 +742,7 @@ func TestFlexClusterReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+				Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
@@ -855,7 +854,7 @@ func TestDeletionReconciliation(t *testing.T) {
 		},
 	}
 	d := akov2.DefaultAwsAdvancedDeployment(project.Namespace, project.Name)
-	d.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+	d.Spec.DeploymentSpec.BackupEnabled = new(true)
 	d.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 		Name:      bSchedule.Name,
 		Namespace: bSchedule.Namespace,
@@ -885,22 +884,22 @@ func TestDeletionReconciliation(t *testing.T) {
 			clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 				Return(
 					&admin.ClusterDescription20240805{
-						GroupId:       pointer.MakePtr(project.ID()),
-						Name:          pointer.MakePtr(d.GetDeploymentName()),
-						ClusterType:   pointer.MakePtr(d.Spec.DeploymentSpec.ClusterType),
-						BackupEnabled: pointer.MakePtr(true),
-						StateName:     pointer.MakePtr("IDLE"),
+						GroupId:       new(project.ID()),
+						Name:          new(d.GetDeploymentName()),
+						ClusterType:   new(d.Spec.DeploymentSpec.ClusterType),
+						BackupEnabled: new(true),
+						StateName:     new("IDLE"),
 						ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 							{
-								ZoneName: pointer.MakePtr("Zone 1"),
+								ZoneName: new("Zone 1"),
 								RegionConfigs: &[]admin.CloudRegionConfig20240805{
 									{
-										ProviderName: pointer.MakePtr("AWS"),
-										RegionName:   pointer.MakePtr("US_EAST_1"),
-										Priority:     pointer.MakePtr(7),
+										ProviderName: new("AWS"),
+										RegionName:   new("US_EAST_1"),
+										Priority:     new(7),
 										ElectableSpecs: &admin.HardwareSpec20240805{
-											InstanceSize: pointer.MakePtr("M10"),
-											NodeCount:    pointer.MakePtr(3),
+											InstanceSize: new("M10"),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -919,7 +918,7 @@ func TestDeletionReconciliation(t *testing.T) {
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-				Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+				Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 			return &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
@@ -1262,22 +1261,22 @@ func TestChangeDeploymentType(t *testing.T) {
 					clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 						Return(
 							&admin.ClusterDescription20240805{
-								GroupId:       pointer.MakePtr("abc123"),
-								Name:          pointer.MakePtr("cluster0"),
-								ClusterType:   pointer.MakePtr("REPLICASET"),
-								BackupEnabled: pointer.MakePtr(true),
-								StateName:     pointer.MakePtr("IDLE"),
+								GroupId:       new("abc123"),
+								Name:          new("cluster0"),
+								ClusterType:   new("REPLICASET"),
+								BackupEnabled: new(true),
+								StateName:     new("IDLE"),
 								ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 									{
-										ZoneName: pointer.MakePtr("Zone 1"),
+										ZoneName: new("Zone 1"),
 										RegionConfigs: &[]admin.CloudRegionConfig20240805{
 											{
-												ProviderName: pointer.MakePtr("AWS"),
-												RegionName:   pointer.MakePtr("US_EAST_1"),
-												Priority:     pointer.MakePtr(7),
+												ProviderName: new("AWS"),
+												RegionName:   new("US_EAST_1"),
+												Priority:     new(7),
 												ElectableSpecs: &admin.HardwareSpec20240805{
-													InstanceSize: pointer.MakePtr("M10"),
-													NodeCount:    pointer.MakePtr(3),
+													InstanceSize: new("M10"),
+													NodeCount:    new(3),
 												},
 											},
 										},
@@ -1292,7 +1291,7 @@ func TestChangeDeploymentType(t *testing.T) {
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+						Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
@@ -1344,22 +1343,22 @@ func TestChangeDeploymentType(t *testing.T) {
 					clusterAPI.EXPECT().GetClusterExecute(mock.AnythingOfType("admin.GetClusterApiRequest")).
 						Return(
 							&admin.ClusterDescription20240805{
-								GroupId:       pointer.MakePtr("abc123"),
-								Name:          pointer.MakePtr("cluster0"),
-								ClusterType:   pointer.MakePtr("REPLICASET"),
-								BackupEnabled: pointer.MakePtr(true),
-								StateName:     pointer.MakePtr("IDLE"),
+								GroupId:       new("abc123"),
+								Name:          new("cluster0"),
+								ClusterType:   new("REPLICASET"),
+								BackupEnabled: new(true),
+								StateName:     new("IDLE"),
 								ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 									{
-										ZoneName: pointer.MakePtr("Zone 1"),
+										ZoneName: new("Zone 1"),
 										RegionConfigs: &[]admin.CloudRegionConfig20240805{
 											{
-												ProviderName: pointer.MakePtr("AWS"),
-												RegionName:   pointer.MakePtr("US_EAST_1"),
-												Priority:     pointer.MakePtr(7),
+												ProviderName: new("AWS"),
+												RegionName:   new("US_EAST_1"),
+												Priority:     new(7),
 												ElectableSpecs: &admin.HardwareSpec20240805{
-													InstanceSize: pointer.MakePtr("M10"),
-													NodeCount:    pointer.MakePtr(3),
+													InstanceSize: new("M10"),
+													NodeCount:    new(3),
 												},
 											},
 										},
@@ -1374,7 +1373,7 @@ func TestChangeDeploymentType(t *testing.T) {
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+						Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
@@ -1427,15 +1426,15 @@ func TestChangeDeploymentType(t *testing.T) {
 						Return(admin.GetFlexClusterApiRequest{ApiService: flexAPI})
 					flexAPI.EXPECT().GetFlexClusterExecute(mock.Anything).Return(
 						&admin.FlexClusterDescription20241113{
-							GroupId: pointer.MakePtr("abc123"),
-							Name:    pointer.MakePtr("cluster0"),
+							GroupId: new("abc123"),
+							Name:    new("cluster0"),
 							ProviderSettings: admin.FlexProviderSettings20241113{
-								BackingProviderName: pointer.MakePtr("AWS"),
-								ProviderName:        pointer.MakePtr("FLEX"),
-								RegionName:          pointer.MakePtr("US_EAST_1"),
+								BackingProviderName: new("AWS"),
+								ProviderName:        new("FLEX"),
+								RegionName:          new("US_EAST_1"),
 							},
-							StateName:                    pointer.MakePtr("IDLE"),
-							TerminationProtectionEnabled: pointer.MakePtr(false),
+							StateName:                    new("IDLE"),
+							TerminationProtectionEnabled: new(false),
 						},
 						nil,
 						nil,
@@ -1445,7 +1444,7 @@ func TestChangeDeploymentType(t *testing.T) {
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "MyProject").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("abc123")}, nil, nil)
+						Return(&admin.Group{Id: new("abc123")}, nil, nil)
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{

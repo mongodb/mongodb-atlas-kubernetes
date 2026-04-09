@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -76,9 +75,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -120,9 +119,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -162,9 +161,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -201,9 +200,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -243,9 +242,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -288,9 +287,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -329,9 +328,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},

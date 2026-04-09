@@ -26,7 +26,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 )
 
@@ -38,9 +37,9 @@ func TestEnsureManagedNamespaces(t *testing.T) {
 		Collection:             "test-collection",
 		CustomShardKey:         "test-shard-key",
 		NumInitialChunks:       10,
-		PresplitHashedZones:    pointer.MakePtr(false),
-		IsCustomShardKeyHashed: pointer.MakePtr(true),
-		IsShardKeyUnique:       pointer.MakePtr(true),
+		PresplitHashedZones:    new(false),
+		IsCustomShardKeyHashed: new(true),
+		IsShardKeyUnique:       new(true),
 	}
 
 	for _, tc := range []struct {
@@ -145,9 +144,9 @@ func TestEnsureManagedNamespaces(t *testing.T) {
 					Collection:             "new-test-collection",
 					CustomShardKey:         "new-test-shard-key",
 					NumInitialChunks:       12,
-					PresplitHashedZones:    pointer.MakePtr(false),
-					IsCustomShardKeyHashed: pointer.MakePtr(true),
-					IsShardKeyUnique:       pointer.MakePtr(true),
+					PresplitHashedZones:    new(false),
+					IsCustomShardKeyHashed: new(true),
+					IsShardKeyUnique:       new(true),
 				},
 			},
 			deploymentAPI: func() deployment.AtlasDeploymentsService {
