@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/test/app
 
-go 1.25.8
+go 1.26.2
 
 require (
 	github.com/gorilla/mux v1.8.0
