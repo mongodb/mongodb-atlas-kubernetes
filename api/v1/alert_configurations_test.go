@@ -22,8 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestServerlessMetricThreshold(t *testing.T) {
@@ -57,7 +55,7 @@ func TestServerlessMetricThreshold(t *testing.T) {
 				MetricName: "test",
 				Mode:       new("test"),
 				Operator:   new("IN"),
-				Threshold:  pointer.MakePtr[float64](3),
+				Threshold:  new(float64(3)),
 				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{

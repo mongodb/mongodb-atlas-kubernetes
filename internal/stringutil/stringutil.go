@@ -14,9 +14,10 @@
 
 package stringutil
 
-import "slices"
-
-import "time"
+import (
+	"slices"
+	"time"
+)
 
 // Contains returns true if there is at least one string in `slice`
 // that is equal to `s`.

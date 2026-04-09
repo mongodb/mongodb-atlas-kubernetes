@@ -49,7 +49,7 @@ func JSONSliceMerge(dst, src any) error {
 	minLen := min(srcVal.Len(), dstVal.Len())
 
 	// merge common elements
-	for i := 0; i < minLen; i++ {
+	for i := range minLen {
 		dstX := dstVal.Index(i).Addr().Interface()
 		if err := JSONCopy(dstX, srcVal.Index(i).Interface()); err != nil {
 			return fmt.Errorf("cannot copy value at index %d: %w", i, err)
