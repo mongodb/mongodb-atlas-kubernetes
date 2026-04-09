@@ -178,8 +178,8 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
-	var ctx context.Context
-	ctx, managerCancelFunc = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -215,12 +215,12 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	return &namespace, managerCancelFunc
+	return &namespace, cancel
 }
 
 func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.Duration) (*corev1.Namespace, context.CancelFunc) {
-	var ctx context.Context
-	ctx, managerCancelFunc = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -255,7 +255,7 @@ func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.D
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	return &namespace, managerCancelFunc
+	return &namespace, cancel
 }
 
 func removeControllersAndNamespace() {
