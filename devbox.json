@@ -27,7 +27,7 @@
     "fd":                                                                   "latest",
     "go-licenses":                                                          "1.6.0",
     "kind":                                                                 "latest",
-    "go":                                                                   "1.25.7",
+    "go":                                                                   "1.26",
     "gnused":                                                               "latest",
     "syft":                                                                 "latest",
     "gnumake":                                                              "latest",
