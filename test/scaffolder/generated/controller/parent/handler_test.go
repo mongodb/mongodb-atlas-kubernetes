@@ -553,8 +553,3 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, versionHandler)
 }
-
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}

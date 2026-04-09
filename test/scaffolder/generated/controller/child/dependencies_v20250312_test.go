@@ -37,11 +37,6 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}
-
 func TestGetDependencies(t *testing.T) {
 	tests := []struct {
 		name            string

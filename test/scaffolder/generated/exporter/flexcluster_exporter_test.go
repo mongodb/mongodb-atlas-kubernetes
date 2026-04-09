@@ -101,16 +101,6 @@ func (m *mockClientObject) GetName() string {
 	return m.name
 }
 
-//go:fix inline
-func intPtr(i int) *int {
-	return new(i)
-}
-
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}
-
 func TestExport(t *testing.T) {
 	tests := []struct {
 		name              string

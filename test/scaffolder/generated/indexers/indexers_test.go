@@ -39,11 +39,6 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}
-
 // TestChildByParentIndexer_Keys verifies the indexer extracts correct keys
 // from Child resources referencing a Parent.
 func TestChildByParentIndexer_Keys(t *testing.T) {
