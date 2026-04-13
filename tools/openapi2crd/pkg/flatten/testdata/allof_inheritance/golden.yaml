@@ -1,0 +1,24 @@
+paths:
+  /shapes:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shape"
+components:
+  schemas:
+    Shape:
+      type: object
+      properties:
+        color:
+          type: string
+        area:
+          type: number
+        radius:
+          type: number
+        side:
+          type: number
+      required:
+        - color

@@ -268,6 +268,54 @@ func TestGeneratorGenerate(t *testing.T) {
 	}
 }
 
+func TestLoadOpenAPISpec(t *testing.T) {
+	expected := &openapi3.T{OpenAPI: "3.0.0"}
+
+	t.Run("path without flatten calls Load", func(t *testing.T) {
+		loader := config.NewLoaderMock(t)
+		loader.EXPECT().Load(context.Background(), "spec.yaml").Return(expected, nil)
+		atlas := config.NewLoaderMock(t)
+
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml"}
+		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+
+	t.Run("package without flatten calls atlas Load", func(t *testing.T) {
+		loader := config.NewLoaderMock(t)
+		atlas := config.NewLoaderMock(t)
+		atlas.EXPECT().Load(context.Background(), "go.example.com/pkg").Return(expected, nil)
+
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg"}
+		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+
+	t.Run("path with flatten calls LoadFlattened", func(t *testing.T) {
+		loader := config.NewLoaderMock(t)
+		loader.EXPECT().LoadFlattened(context.Background(), "spec.yaml").Return(expected, nil)
+		atlas := config.NewLoaderMock(t)
+
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml", Flatten: true}
+		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+
+	t.Run("package with flatten calls atlas LoadFlattened", func(t *testing.T) {
+		loader := config.NewLoaderMock(t)
+		atlas := config.NewLoaderMock(t)
+		atlas.EXPECT().LoadFlattened(context.Background(), "go.example.com/pkg").Return(expected, nil)
+
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg", Flatten: true}
+		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, got)
+	})
+}
+
 func baseCRD(crd *apiextensions.CustomResourceDefinition) {
 	crd.ObjectMeta = v1.ObjectMeta{
 		Name: "examples.test.com",
