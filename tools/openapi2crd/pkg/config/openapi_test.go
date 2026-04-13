@@ -37,11 +37,11 @@ func writeSpec(t *testing.T, fs afero.Fs, path string) {
 	require.NoError(t, afero.WriteFile(fs, path, []byte(testOpenAPISpec), 0644))
 }
 
-func TestKinOpeAPILoadCachesResult(t *testing.T) {
+func TestKinOpenAPILoadCachesResult(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writeSpec(t, fs, "spec.yaml")
 
-	loader := NewKinOpeAPI(fs)
+	loader := NewKinOpenAPI(fs)
 
 	first, err := loader.Load(context.Background(), "spec.yaml")
 	require.NoError(t, err)
@@ -53,11 +53,11 @@ func TestKinOpeAPILoadCachesResult(t *testing.T) {
 	assert.Same(t, first, second)
 }
 
-func TestKinOpeAPILoadConcurrent(t *testing.T) {
+func TestKinOpenAPILoadConcurrent(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	writeSpec(t, fs, "spec.yaml")
 
-	loader := NewKinOpeAPI(fs)
+	loader := NewKinOpenAPI(fs)
 
 	const goroutines = 20
 	var wg sync.WaitGroup
@@ -80,7 +80,7 @@ func TestKinOpeAPILoadConcurrent(t *testing.T) {
 	}
 }
 
-func TestKinOpeAPILoad(t *testing.T) {
+func TestKinOpenAPILoad(t *testing.T) {
 	tests := map[string]struct {
 		file            string
 		filePath        string
@@ -129,7 +129,7 @@ paths:
 
 			tt.expectedOpenAPI.Paths.Extensions = map[string]any{}
 
-			loader := NewKinOpeAPI(fs)
+			loader := NewKinOpenAPI(fs)
 			openapi, err := loader.Load(context.Background(), tt.filePath)
 			assert.Equal(t, tt.expectError, err)
 			assert.Equal(t, tt.expectedOpenAPI, openapi)
