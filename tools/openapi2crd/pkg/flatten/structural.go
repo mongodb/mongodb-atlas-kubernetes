@@ -74,6 +74,7 @@ func flattenInlineCompositions(root *yaml.Node, key string) {
 			}
 			children := resolveSequenceRefs(seq, root, key)
 			if len(children) > 0 && allHaveEnum(children) {
+				mergeEnums(m, children, key)
 				return
 			}
 			for _, item := range seq.Content {
