@@ -427,13 +427,13 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 
 		if computeUnsetOrDisabled {
 			regionConfig.AutoScaling.Compute = &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			}
 		}
 
 		if diskUnsetOrDisabled {
 			regionConfig.AutoScaling.DiskGB = &akov2.DiskGB{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			}
 		}
 	}
@@ -445,7 +445,7 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	}
 
 	if args.JavascriptEnabled == nil {
-		args.JavascriptEnabled = pointer.MakePtr(true)
+		args.JavascriptEnabled = new(true)
 	}
 
 	if args.MinimumEnabledTLSProtocol == "" {
@@ -453,7 +453,7 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	}
 
 	if args.NoTableScan == nil {
-		args.NoTableScan = pointer.MakePtr(false)
+		args.NoTableScan = new(false)
 	}
 
 	// those are ignored fields nowadays
@@ -638,7 +638,7 @@ func diskSizeFromAtlas(cluster *admin.ClusterDescription20240805) *int {
 	}
 
 	if value >= 1 {
-		return pointer.MakePtr(int(value))
+		return new(int(value))
 	}
 
 	return nil
@@ -766,7 +766,7 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs20240805) *
 		DefaultWriteConcern:              config.GetDefaultWriteConcern(),
 		MinimumEnabledTLSProtocol:        config.GetMinimumEnabledTlsProtocol(),
 		JavascriptEnabled:                config.JavascriptEnabled,
-		NoTableScan:                      pointer.MakePtr(pointer.GetOrDefault(config.NoTableScan, false)),
+		NoTableScan:                      new(pointer.GetOrDefault(config.NoTableScan, false)),
 		OplogSizeMB:                      pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.OplogSizeMB, 0))),
 		SampleSizeBIConnector:            pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleSizeBIConnector, 0))),
 		SampleRefreshIntervalBIConnector: pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleRefreshIntervalBIConnector, 0))),
@@ -816,7 +816,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 	var diskSizeGB *float64
 	if diskSize != nil {
-		diskSizeGB = pointer.MakePtr(float64(*diskSize))
+		diskSizeGB = new(float64(*diskSize))
 	}
 
 	hSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.HardwareSpec20240805 {
@@ -826,7 +826,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 		var diskIOPs *int
 		if spec.DiskIOPS != nil {
-			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
+			diskIOPs = new(int(*spec.DiskIOPS))
 		}
 
 		hardwareSpec := &admin.HardwareSpec20240805{
@@ -853,7 +853,7 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 		var diskIOPs *int
 		if spec.DiskIOPS != nil {
-			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
+			diskIOPs = new(int(*spec.DiskIOPS))
 		}
 
 		dedicatedSpec := &admin.DedicatedHardwareSpec20240805{
@@ -880,10 +880,10 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 		if !computeExist && !diskGBExist {
 			return &admin.AdvancedAutoScalingSettings{
 				Compute: &admin.AdvancedComputeAutoScaling{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 				DiskGB: &admin.DiskGBAutoScaling{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 			}
 		}
@@ -1088,7 +1088,7 @@ func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace
 		CustomShardKey:         in.CustomShardKey,
 		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
 		IsShardKeyUnique:       in.IsShardKeyUnique,
-		NumInitialChunks:       pointer.MakePtr(int64(in.NumInitialChunks)),
+		NumInitialChunks:       new(int64(in.NumInitialChunks)),
 		PresplitHashedZones:    in.PresplitHashedZones,
 	}
 }

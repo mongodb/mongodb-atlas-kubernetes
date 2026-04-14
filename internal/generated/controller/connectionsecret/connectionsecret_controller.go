@@ -49,7 +49,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
 	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	controllerstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
@@ -148,7 +147,7 @@ func (r *ConnectionSecretReconciler) SetupWithManager(mgr ctrl.Manager, skipName
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation: pointer.MakePtr(skipNameValidation),
+			SkipNameValidation: new(skipNameValidation),
 		}).
 		Complete(r)
 }

@@ -28,7 +28,6 @@ import (
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -70,8 +69,8 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 	body := &v20250312sdk.ClusterDescription20240805{}
 	params := &v20250312sdk.CreateClusterApiParams{
 		ClusterDescription20240805:         body,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -110,8 +109,8 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *a
 
 	params := &v20250312sdk.GetClusterApiParams{
 		ClusterName:                        id,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -145,8 +144,8 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2gen
 
 	params := &v20250312sdk.GetClusterApiParams{
 		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -175,8 +174,8 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2gen
 
 	params := &v20250312sdk.GetClusterApiParams{
 		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -239,8 +238,8 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 
 	params := &v20250312sdk.GetClusterApiParams{
 		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -276,8 +275,8 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 	body := &v20250312sdk.ClusterDescription20240805{}
 	params := &v20250312sdk.UpdateClusterApiParams{
 		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields:         pointer.MakePtr(true),
-		UseEffectiveFieldsReplicationSpecs: pointer.MakePtr(true),
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 		ClusterDescription20240805:         body,
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)

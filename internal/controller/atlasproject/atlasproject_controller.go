@@ -44,7 +44,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -279,7 +278,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager, skipNameVali
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			SkipNameValidation:      new(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }

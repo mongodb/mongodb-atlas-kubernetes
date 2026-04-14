@@ -31,7 +31,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
@@ -565,7 +564,7 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 		By("Updating project doesn't affect private endpoint", func() {
 			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Settings = &akov2.ProjectSettings{
-				IsSchemaAdvisorEnabled: pointer.MakePtr(true),
+				IsSchemaAdvisorEnabled: new(true),
 			}
 
 			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
@@ -686,8 +685,8 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 		By("Updating project doesn't affect private endpoint", func() {
 			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Settings = &akov2.ProjectSettings{
-				IsSchemaAdvisorEnabled:            pointer.MakePtr(true),
-				IsRealtimePerformancePanelEnabled: pointer.MakePtr(true),
+				IsSchemaAdvisorEnabled:            new(true),
+				IsRealtimePerformancePanelEnabled: new(true),
 			}
 
 			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())

@@ -30,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlasdeployment"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -120,8 +119,8 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 					Namespace: testData.InitialDeployments[0].Namespace,
 				},
 				Spec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer:       pointer.MakePtr("lucene.standard"),
-					SearchAnalyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer:       new("lucene.standard"),
+					SearchAnalyzer: new("lucene.standard"),
 				},
 			}
 			Expect(testData.K8SClient.Create(testData.Context, searchIndexConfig)).To(Succeed())

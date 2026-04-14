@@ -35,8 +35,8 @@ var providerNames = []string{
 }
 
 func FuzzConvertConnection(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i)
+	for i := range uint(fuzzIterations) {
+		f.Add(fmt.Appendf(nil, "seed sample %x", i), i)
 	}
 	f.Fuzz(func(t *testing.T, data []byte, index uint) {
 		peerData := NetworkPeer{}
@@ -50,13 +50,13 @@ func FuzzConvertConnection(f *testing.F) {
 }
 
 func FuzzConvertListOfConnections(f *testing.F) {
-	for i := uint(0); i < fuzzIterations; i++ {
-		f.Add(([]byte)(fmt.Sprintf("seed sample %x", i)), i, (i % 5))
+	for i := range uint(fuzzIterations) {
+		f.Add(fmt.Appendf(nil, "seed sample %x", i), i, (i % 5))
 	}
 	f.Fuzz(func(t *testing.T, data []byte, index uint, size uint) {
 		conns := []admin.BaseNetworkPeeringConnectionSettings{}
 		expected := []NetworkPeer{}
-		for i := uint(0); i < size; i++ {
+		for range size {
 			peerData := NetworkPeer{}
 			fuzzPeer(gofuzz.NewFromGoFuzz(data), index, &peerData)
 			atlasConn, err := toAtlas(&peerData)

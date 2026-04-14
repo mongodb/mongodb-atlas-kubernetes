@@ -30,7 +30,7 @@ type DBUser struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec UserSpec `json:"spec,omitempty"`
+	Spec UserSpec `json:"spec"`
 }
 
 type UserCustomRoleType string

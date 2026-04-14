@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/dryrun"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -229,7 +228,7 @@ func (b *Builder) Build(ctx context.Context) (cluster.Cluster, error) {
 			opts.Cache = cacheOpts
 			opts.Scheme = b.scheme
 			opts.Client = client.Options{
-				DryRun: pointer.MakePtr(true),
+				DryRun: new(true),
 			}
 		})
 		if err != nil {

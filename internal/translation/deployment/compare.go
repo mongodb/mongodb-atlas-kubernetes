@@ -29,7 +29,7 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 			ProjectID: desired.ProjectID,
 			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:   desired.Name,
-				Paused: pointer.MakePtr(pointer.GetOrDefault(desired.Paused, false)),
+				Paused: new(pointer.GetOrDefault(desired.Paused, false)),
 			},
 		}, true
 	}
@@ -140,10 +140,10 @@ func getAutoScalingChanges(desired *akov2.AdvancedAutoScalingSpec, current *akov
 	if desired == nil {
 		return &akov2.AdvancedAutoScalingSpec{
 			DiskGB: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 			Compute: &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 		}
 	}

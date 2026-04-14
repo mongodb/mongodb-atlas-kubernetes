@@ -30,7 +30,7 @@ import (
 func TestRoundtrip_DataFederationPE(t *testing.T) {
 	f := fuzz.New()
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		fuzzed := &DatafederationPrivateEndpointEntry{}
 		f.Fuzz(fuzzed)
 		// ignore non-Atlas fields

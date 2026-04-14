@@ -21,7 +21,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestAtlasDeployment(t *testing.T) {
@@ -231,7 +230,7 @@ func TestRegularDeployment(t *testing.T) {
 								RegionName:   "us-east-1",
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
 									Compute: &akov2.ComputeSpec{
-										Enabled:         pointer.MakePtr(true),
+										Enabled:         new(true),
 										MinInstanceSize: "M10",
 										MaxInstanceSize: "M40",
 									},
@@ -242,7 +241,7 @@ func TestRegularDeployment(t *testing.T) {
 								RegionName:   "us-west-1",
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
 									Compute: &akov2.ComputeSpec{
-										Enabled:         pointer.MakePtr(true),
+										Enabled:         new(true),
 										MinInstanceSize: "M20",
 										MaxInstanceSize: "M40",
 									},
@@ -264,7 +263,7 @@ func TestRegularDeployment(t *testing.T) {
 								RegionName:   "us-east-1",
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
 									Compute: &akov2.ComputeSpec{
-										Enabled:         pointer.MakePtr(true),
+										Enabled:         new(true),
 										MinInstanceSize: "M10",
 										MaxInstanceSize: "M40",
 									},
@@ -279,7 +278,7 @@ func TestRegularDeployment(t *testing.T) {
 								RegionName:   "us-west-1",
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
 									Compute: &akov2.ComputeSpec{
-										Enabled:         pointer.MakePtr(true),
+										Enabled:         new(true),
 										MinInstanceSize: "M20",
 										MaxInstanceSize: "M40",
 									},
@@ -326,7 +325,7 @@ func TestRegularDeployment(t *testing.T) {
 								},
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
 									Compute: &akov2.ComputeSpec{
-										Enabled:         pointer.MakePtr(true),
+										Enabled:         new(true),
 										MinInstanceSize: "M20",
 										MaxInstanceSize: "M50",
 									},
@@ -417,14 +416,14 @@ func TestAutoscalingForDeployment(t *testing.T) {
 		"Both AutoScaling are the same": {
 			autoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
 			},
 			previousAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
@@ -434,14 +433,14 @@ func TestAutoscalingForDeployment(t *testing.T) {
 		"AutoScaling.Compute.Enabled are different": {
 			autoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
 			},
 			previousAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(false),
+					Enabled:         new(false),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
@@ -451,14 +450,14 @@ func TestAutoscalingForDeployment(t *testing.T) {
 		"AutoScaling.Compute.MinInstanceSize are different": {
 			autoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M30",
 					MaxInstanceSize: "M40",
 				},
 			},
 			previousAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
@@ -468,14 +467,14 @@ func TestAutoscalingForDeployment(t *testing.T) {
 		"AutoScaling.Compute.MaxInstanceSize are different": {
 			autoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M50",
 				},
 			},
 			previousAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled:         pointer.MakePtr(true),
+					Enabled:         new(true),
 					MinInstanceSize: "M20",
 					MaxInstanceSize: "M40",
 				},
@@ -566,14 +565,14 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			expectedError: "",
 		},
 		"AutoScaling.Compute.Enabled is false": {
-			regionConfig:  &akov2.AdvancedRegionConfig{AutoScaling: &akov2.AdvancedAutoScalingSpec{Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)}}},
+			regionConfig:  &akov2.AdvancedRegionConfig{AutoScaling: &akov2.AdvancedAutoScalingSpec{Compute: &akov2.ComputeSpec{Enabled: new(false)}}},
 			expectedError: "",
 		},
 		"ElectableSpecs instance size below minimum": {
 			regionConfig: &akov2.AdvancedRegionConfig{
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
-						Enabled:         pointer.MakePtr(true),
+						Enabled:         new(true),
 						MinInstanceSize: "M20",
 						MaxInstanceSize: "M40",
 					},
@@ -586,7 +585,7 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			regionConfig: &akov2.AdvancedRegionConfig{
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
-						Enabled:         pointer.MakePtr(true),
+						Enabled:         new(true),
 						MinInstanceSize: "M20",
 						MaxInstanceSize: "M40",
 					},
@@ -599,7 +598,7 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			regionConfig: &akov2.AdvancedRegionConfig{
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
-						Enabled:         pointer.MakePtr(true),
+						Enabled:         new(true),
 						MinInstanceSize: "M20",
 						MaxInstanceSize: "M40",
 					},
@@ -612,7 +611,7 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			regionConfig: &akov2.AdvancedRegionConfig{
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
-						Enabled:         pointer.MakePtr(true),
+						Enabled:         new(true),
 						MinInstanceSize: "M20",
 						MaxInstanceSize: "M40",
 					},

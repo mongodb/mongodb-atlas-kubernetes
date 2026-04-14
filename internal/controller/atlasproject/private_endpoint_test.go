@@ -35,7 +35,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestGetEndpointsNotInAtlas(t *testing.T) {
@@ -95,13 +94,13 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east1"),
+						RegionName:    new("us_east1"),
 					},
 				},
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east2"),
+						RegionName:    new("us_east2"),
 					},
 				},
 			},
@@ -122,13 +121,13 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east1"),
+						RegionName:    new("us_east1"),
 					},
 				},
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_west1"),
+						RegionName:    new("us_west1"),
 					},
 				},
 			},
@@ -145,13 +144,13 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east1"),
+						RegionName:    new("us_east1"),
 					},
 				},
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east2"),
+						RegionName:    new("us_east2"),
 					},
 				},
 			},
@@ -169,7 +168,7 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 				{
 					EndpointService: admin.EndpointService{
 						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    admin.PtrString("us_east2"),
+						RegionName:    new("us_east2"),
 					},
 				},
 			},
@@ -347,7 +346,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 				Return(admin.CreatePrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Maybe()
 			privateEndpointsAPI.EXPECT().CreatePrivateEndpointServiceExecute(
 				mock.AnythingOfType("admin.CreatePrivateEndpointServiceApiRequest")).Return(
-				&admin.EndpointService{CloudProvider: "AWS", RegionName: pointer.MakePtr("fake-region-pe1")}, nil, nil,
+				&admin.EndpointService{CloudProvider: "AWS", RegionName: new("fake-region-pe1")}, nil, nil,
 			).Maybe()
 
 			workflowCtx := workflow.Context{
@@ -407,9 +406,9 @@ func synthesizeAtlasPEs(peIDs []string) []admin.EndpointService {
 	for _, id := range peIDs {
 		atlasPEs = append(atlasPEs, admin.EndpointService{
 			CloudProvider: "AWS",
-			Id:            pointer.MakePtr(id + "-id"),
-			RegionName:    pointer.MakePtr(fmt.Sprintf("fake-region-%s", id)),
-			Status:        pointer.MakePtr("AVAILABLE"),
+			Id:            new(id + "-id"),
+			RegionName:    new(fmt.Sprintf("fake-region-%s", id)),
+			Status:        new("AVAILABLE"),
 		})
 	}
 	return atlasPEs

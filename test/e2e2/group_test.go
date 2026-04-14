@@ -33,7 +33,6 @@ import (
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -306,7 +305,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				atlasGroup := admin.Group{
 					OrgId:                     orgID,
 					Name:                      groupName,
-					WithDefaultAlertsSettings: pointer.MakePtr(true),
+					WithDefaultAlertsSettings: new(true),
 				}
 				createdGroup, _, err := atlasClient.ProjectsApi.CreateGroup(ctx, &atlasGroup).Execute()
 				Expect(err).ToNot(HaveOccurred())

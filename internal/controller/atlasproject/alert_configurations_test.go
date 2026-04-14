@@ -37,7 +37,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestEnsureAlertConfigurations(t *testing.T) {
@@ -505,9 +504,9 @@ func TestSyncAlertConfigurations(t *testing.T) {
 					}, &http.Response{StatusCode: 200}, nil)
 
 				createdConfig := admin.GroupAlertsConfig{
-					Id:            pointer.MakePtr("new-alert-id"),
-					EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-					Enabled:       pointer.MakePtr(true),
+					Id:            new("new-alert-id"),
+					EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+					Enabled:       new(true),
 				}
 
 				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
@@ -725,9 +724,9 @@ func TestCreateAlertConfigs(t *testing.T) {
 				apiMock := mockadmin.NewAlertConfigurationsApi(t)
 
 				createdConfig := admin.GroupAlertsConfig{
-					Id:            pointer.MakePtr("new-alert-id"),
-					EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-					Enabled:       pointer.MakePtr(true),
+					Id:            new("new-alert-id"),
+					EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+					Enabled:       new(true),
 				}
 
 				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
@@ -825,9 +824,9 @@ func TestSortAlertConfigs(t *testing.T) {
 			alertConfigSpecs: []akov2.AlertConfiguration{},
 			atlasAlertConfigs: []admin.GroupAlertsConfig{
 				{
-					Id:            pointer.MakePtr("config-to-delete"),
-					EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-					Enabled:       pointer.MakePtr(true),
+					Id:            new("config-to-delete"),
+					EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+					Enabled:       new(true),
 				},
 			},
 			expectedCreateCount:       0,
@@ -846,9 +845,9 @@ func TestSortAlertConfigs(t *testing.T) {
 			},
 			atlasAlertConfigs: []admin.GroupAlertsConfig{
 				{
-					Id:            pointer.MakePtr("existing-config"),
-					EventTypeName: pointer.MakePtr("HOST_DOWN"),
-					Enabled:       pointer.MakePtr(true),
+					Id:            new("existing-config"),
+					EventTypeName: new("HOST_DOWN"),
+					Enabled:       new(true),
 					Notifications: &[]admin.AlertsNotificationRootForGroup{},
 					Matchers:      &[]admin.StreamsMatcher{},
 				},
@@ -885,7 +884,7 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				EventTypeName: "OUTSIDE_METRIC_THRESHOLD",
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("HOST_DOWN"),
+				EventTypeName: new("HOST_DOWN"),
 			},
 			expectedEqual: false,
 		},
@@ -896,8 +895,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Enabled:       true,
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(false),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(false),
 			},
 			expectedEqual: false,
 		},
@@ -908,7 +907,7 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Enabled:       true,
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
 				Enabled:       nil,
 			},
 			expectedEqual: false,
@@ -921,9 +920,9 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				SeverityOverride: "CRITICAL",
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName:    pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:          pointer.MakePtr(true),
-				SeverityOverride: pointer.MakePtr("WARNING"),
+				EventTypeName:    new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:          new(true),
+				SeverityOverride: new("WARNING"),
 			},
 			expectedEqual: false,
 		},
@@ -941,8 +940,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Matchers:      []akov2.Matcher{},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{},
 				Matchers:      &[]admin.StreamsMatcher{},
 			},
@@ -964,8 +963,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Matchers:      []akov2.Matcher{},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{},
 				Matchers:      &[]admin.StreamsMatcher{},
 			},
@@ -985,8 +984,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Matchers: []akov2.Matcher{},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{},
 				Matchers:      &[]admin.StreamsMatcher{},
 			},
@@ -1007,8 +1006,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{},
 				Matchers:      &[]admin.StreamsMatcher{},
 			},
@@ -1028,12 +1027,12 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Matchers: []akov2.Matcher{},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{
 					{
-						TypeName:     pointer.MakePtr("EMAIL"),
-						EmailAddress: pointer.MakePtr("test2@example.com"),
+						TypeName:     new("EMAIL"),
+						EmailAddress: new("test2@example.com"),
 					},
 				},
 				Matchers: &[]admin.StreamsMatcher{},
@@ -1055,8 +1054,8 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName: pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:       pointer.MakePtr(true),
+				EventTypeName: new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:       new(true),
 				Notifications: &[]admin.AlertsNotificationRootForGroup{},
 				Matchers: &[]admin.StreamsMatcher{
 					{
@@ -1078,9 +1077,9 @@ func TestIsAlertConfigSpecEqualToAtlas(t *testing.T) {
 				Matchers:         []akov2.Matcher{},
 			},
 			atlasAlertConfig: admin.GroupAlertsConfig{
-				EventTypeName:    pointer.MakePtr("OUTSIDE_METRIC_THRESHOLD"),
-				Enabled:          pointer.MakePtr(true),
-				SeverityOverride: pointer.MakePtr("CRITICAL"),
+				EventTypeName:    new("OUTSIDE_METRIC_THRESHOLD"),
+				Enabled:          new(true),
+				SeverityOverride: new("CRITICAL"),
 				Notifications:    &[]admin.AlertsNotificationRootForGroup{},
 				Matchers:         &[]admin.StreamsMatcher{},
 			},

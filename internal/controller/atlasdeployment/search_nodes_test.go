@@ -30,7 +30,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestHandleSearchNodes(t *testing.T) {
@@ -75,8 +74,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -93,8 +92,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().UpdateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S100_LOWCPU_NVME",
@@ -131,8 +130,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -169,8 +168,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -229,8 +228,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().CreateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S100_LOWCPU_NVME",
@@ -309,8 +308,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -354,8 +353,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -433,8 +432,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -472,8 +471,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -511,8 +510,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",

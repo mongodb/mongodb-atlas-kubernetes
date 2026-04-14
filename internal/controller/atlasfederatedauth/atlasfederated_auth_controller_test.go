@@ -43,7 +43,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestReconcile(t *testing.T) {
@@ -88,8 +87,8 @@ func TestReconcile(t *testing.T) {
 					Namespace: secret.Namespace,
 				},
 				DomainAllowList:          []string{"qa-27092023.com", "cloud-qa.mongodb.com"},
-				DomainRestrictionEnabled: pointer.MakePtr(true),
-				SSODebugEnabled:          pointer.MakePtr(false),
+				DomainRestrictionEnabled: new(true),
+				SSODebugEnabled:          new(false),
 				PostAuthRoleGrants:       []string{"ORG_OWNER"},
 			},
 		}
@@ -111,11 +110,11 @@ func TestReconcile(t *testing.T) {
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
 			Return(
 				&admin.OrgFederationSettings{
-					Id:                     pointer.MakePtr(fedSettingsID),
-					IdentityProviderId:     pointer.MakePtr("0oawce8e76SR9K7Tq357"),
+					Id:                     new(fedSettingsID),
+					IdentityProviderId:     new("0oawce8e76SR9K7Tq357"),
 					FederatedDomains:       []string{"qa-27092023.com", "cloud-qa.mongodb.com"},
-					HasRoleMappings:        pointer.MakePtr(false),
-					IdentityProviderStatus: pointer.MakePtr("ACTIVE"),
+					HasRoleMappings:        new(false),
+					IdentityProviderStatus: new("ACTIVE"),
 				},
 				&http.Response{},
 				nil,
@@ -131,7 +130,7 @@ func TestReconcile(t *testing.T) {
 							OktaIdpId: "0oawce8e76SR9K7Tq357",
 						},
 					},
-					TotalCount: pointer.MakePtr(1),
+					TotalCount: new(1),
 				},
 				&http.Response{},
 				nil,
@@ -144,7 +143,7 @@ func TestReconcile(t *testing.T) {
 					OrgId:                    "616ec36209c07e743422b7cc",
 					DomainAllowList:          &[]string{"qa-27092023.com", "cloud-qa.mongodb.com"},
 					DomainRestrictionEnabled: true,
-					IdentityProviderId:       pointer.MakePtr("0oawce8e76SR9K7Tq357"),
+					IdentityProviderId:       new("0oawce8e76SR9K7Tq357"),
 					PostAuthRoleGrants:       &[]string{"ORG_OWNER"},
 				},
 				&http.Response{},
@@ -158,11 +157,11 @@ func TestReconcile(t *testing.T) {
 				&admin.PaginatedAtlasGroup{
 					Results: []admin.Group{
 						{
-							Id:   pointer.MakePtr(projectID),
+							Id:   new(projectID),
 							Name: "MyProject",
 						},
 					},
-					TotalCount: pointer.MakePtr(1),
+					TotalCount: new(1),
 				},
 				&http.Response{},
 				nil,

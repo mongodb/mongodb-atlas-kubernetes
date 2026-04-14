@@ -140,7 +140,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
-						{Name: strPtr("test-integration")},
+						{Name: new("test-integration")},
 					},
 				},
 			},
@@ -167,7 +167,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
-						{Name: strPtr("test-integration")},
+						{Name: new("test-integration")},
 					},
 				},
 			},
@@ -313,7 +313,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -437,7 +437,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -524,7 +524,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -552,8 +552,4 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 	versionHandler, err := handler.getHandlerForResource(ctx, parent)
 	require.NoError(t, err)
 	assert.NotNil(t, versionHandler)
-}
-
-func strPtr(s string) *string {
-	return &s
 }

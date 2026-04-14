@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -334,11 +335,8 @@ func filterScopeDeployments(user *akov2.AtlasDatabaseUser, allDeploymentsInProje
 	if len(scopeDeployments) > 0 {
 		// filtering the scope deployments by the ones existing in Atlas
 		for _, scopeDep := range scopeDeployments {
-			for _, projectDep := range allDeploymentsInProject {
-				if projectDep == scopeDep {
-					deploymentsToCheck = append(deploymentsToCheck, scopeDep)
-					break
-				}
+			if slices.Contains(allDeploymentsInProject, scopeDep) {
+				deploymentsToCheck = append(deploymentsToCheck, scopeDep)
 			}
 		}
 	}

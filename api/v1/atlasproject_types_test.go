@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 
@@ -58,23 +57,23 @@ func TestSpecEquality(t *testing.T) {
 							Name: "foo",
 						},
 						ChannelName: "bar",
-						DelayMin:    admin.PtrInt(1),
+						DelayMin:    new(1),
 					},
 					{
 						ChannelName: "foo",
-						DelayMin:    admin.PtrInt(2),
+						DelayMin:    new(2),
 						Roles:       []string{"2", "3", "1"},
 					},
 					{
 						ChannelName: "foo",
-						DelayMin:    admin.PtrInt(2),
+						DelayMin:    new(2),
 					},
 					{
 						APITokenRef: common.ResourceRefNamespaced{
 							Name: "bar",
 						},
 						ChannelName: "bar",
-						DelayMin:    admin.PtrInt(1),
+						DelayMin:    new(1),
 					},
 				},
 			},
@@ -115,7 +114,7 @@ func TestSpecEquality(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 100_000; i++ {
+	for range 100_000 {
 		perm := ref.DeepCopy()
 		internalcmp.PermuteOrder(perm, r)
 		err := internalcmp.Normalize(perm)

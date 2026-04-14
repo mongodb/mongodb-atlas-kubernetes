@@ -30,7 +30,6 @@ import (
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -718,18 +717,18 @@ func newDedicatedCluster(name, namespace, groupRefName string) *generatedv1.Clus
 					Name: groupRefName,
 				},
 				Entry: &generatedv1.V20250312Entry{
-					Name:        pointer.MakePtr(name),
-					ClusterType: pointer.MakePtr("REPLICASET"),
+					Name:        new(name),
+					ClusterType: new("REPLICASET"),
 					ReplicationSpecs: &[]generatedv1.ReplicationSpecs{
 						{
 							RegionConfigs: &[]generatedv1.RegionConfigs{
 								{
-									ProviderName: pointer.MakePtr("AWS"),
-									RegionName:   pointer.MakePtr("US_EAST_1"),
-									Priority:     pointer.MakePtr(7),
+									ProviderName: new("AWS"),
+									RegionName:   new("US_EAST_1"),
+									Priority:     new(7),
 									ElectableSpecs: &generatedv1.ElectableSpecs{
-										InstanceSize: pointer.MakePtr("M10"),
-										NodeCount:    pointer.MakePtr(3),
+										InstanceSize: new("M10"),
+										NodeCount:    new(3),
 									},
 								},
 							},

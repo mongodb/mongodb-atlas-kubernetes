@@ -31,7 +31,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -158,7 +157,7 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 
 			By("Creating a deployment with backups enabled (default)", func() {
 				testDeployment = akov2.DefaultAWSDeployment(testNamespace.Name, testProject.Name)
-				testDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+				testDeployment.Spec.DeploymentSpec.BackupEnabled = new(true)
 				Expect(k8sClient.Create(context.Background(), testDeployment)).To(Succeed())
 			})
 

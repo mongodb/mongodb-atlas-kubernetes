@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"testing"
@@ -42,7 +43,6 @@ import (
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/flexcluster"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -77,7 +77,7 @@ func TestHandleInitial(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, nil),
 			},
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
-				return &v20250312sdk.FlexClusterDescription20241113{Id: pointer.MakePtr(testClusterName)}, nil, nil
+				return &v20250312sdk.FlexClusterDescription20241113{Id: new(testClusterName)}, nil, nil
 			},
 			want: reenqueueResult(state.StateCreating, "Creating Flex Cluster."),
 		},
@@ -121,7 +121,7 @@ func TestHandleInitial(t *testing.T) {
 			title:       "atlas API error",
 			flexCluster: setGroupRef(defaultTestFlexCluster("test-cluster2", "ns3"), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, "ns3", pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, "ns3", new(testGroupID)),
 			},
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("atlas API error: cluster creation failed")
@@ -136,7 +136,7 @@ func TestHandleInitial(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, nil),
 			},
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
-				return &v20250312sdk.FlexClusterDescription20241113{Id: pointer.MakePtr(testClusterName)}, nil, nil
+				return &v20250312sdk.FlexClusterDescription20241113{Id: new(testClusterName)}, nil, nil
 			},
 			interceptorFuncs: &interceptor.Funcs{
 				SubResourcePatch: func(ctx context.Context, client client.Client, subResourceName string, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
@@ -191,12 +191,12 @@ func TestHandleImportRequested(t *testing.T) {
 				},
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr("external-cluster"),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new("external-cluster"),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: nextStateResult(state.StateImported, "Imported Flex Cluster."),
@@ -228,7 +228,7 @@ func TestHandleImportRequested(t *testing.T) {
 				},
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("failed to get cluster")
@@ -275,12 +275,12 @@ func TestHandleCreating(t *testing.T) {
 			title:       "cluster still creating",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("CREATING"),
+					Id:        new(testClusterID),
+					StateName: new("CREATING"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateCreating, "Upserting Flex Cluster."),
@@ -289,12 +289,12 @@ func TestHandleCreating(t *testing.T) {
 			title:       "cluster created",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: nextStateResult(state.StateCreated, "Upserted Flex Cluster."),
@@ -344,12 +344,12 @@ func TestHandleUpdating(t *testing.T) {
 			title:       "cluster still updating",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("UPDATING"),
+					Id:        new(testClusterID),
+					StateName: new("UPDATING"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateUpdating, "Upserting Flex Cluster."),
@@ -358,12 +358,12 @@ func TestHandleUpdating(t *testing.T) {
 			title:       "cluster updated",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: nextStateResult(state.StateUpdated, "Upserted Flex Cluster."),
@@ -414,7 +414,7 @@ func TestHandleCreated(t *testing.T) {
 				1,
 			)),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want: nextStateResult(state.StateCreated, "Flex cluster up to date. No update required."),
 		},
@@ -428,12 +428,12 @@ func TestHandleCreated(t *testing.T) {
 				1,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
@@ -448,7 +448,7 @@ func TestHandleCreated(t *testing.T) {
 				0,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("update failed")
@@ -472,7 +472,7 @@ func TestHandleCreated(t *testing.T) {
 				},
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want:    errorResult(state.StateCreated),
 			wantErr: "failed to check reapply period",
@@ -491,7 +491,7 @@ func TestHandleCreated(t *testing.T) {
 				"invalid-api-version",
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want:    errorResult(state.StateCreated),
 			wantErr: "failed to translate update flex cluster parameters",
@@ -506,7 +506,7 @@ func TestHandleCreated(t *testing.T) {
 				1,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				// Return nil to trigger "source is nil" check in FromAPI
@@ -525,12 +525,12 @@ func TestHandleCreated(t *testing.T) {
 				1,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			interceptorFuncs: &interceptor.Funcs{
@@ -586,7 +586,7 @@ func TestHandleImported(t *testing.T) {
 				1,
 			)),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want: nextStateResult(state.StateCreated, "Flex cluster up to date. No update required."),
 		},
@@ -600,12 +600,12 @@ func TestHandleImported(t *testing.T) {
 				1,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
@@ -655,7 +655,7 @@ func TestHandleUpdated(t *testing.T) {
 				1,
 			)),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want: nextStateResult(state.StateUpdated, "Flex cluster up to date. No update required."),
 		},
@@ -669,12 +669,12 @@ func TestHandleUpdated(t *testing.T) {
 				1,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("IDLE"),
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
@@ -720,7 +720,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			atlasDeleteFlexClusterFunc: func() (*http.Response, error) {
@@ -736,7 +736,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				),
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			want:               nextStateResult(state.StateDeleted, "Flex Cluster deleted."),
@@ -747,7 +747,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: true,
 			want:               nextStateResult(state.StateDeleted, "Flex Cluster deleted."),
@@ -759,7 +759,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				testGroupName,
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			want:               nextStateResult(state.StateDeleted, "Flex Cluster is unamanged."),
@@ -770,7 +770,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			atlasDeleteFlexClusterFunc: func() (*http.Response, error) {
@@ -786,7 +786,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			atlasDeleteFlexClusterFunc: func() (*http.Response, error) {
@@ -814,7 +814,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				"wrong-api-version",
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
 			want:               errorResult(state.StateDeletionRequested),
@@ -859,7 +859,7 @@ func TestHandleDeleting(t *testing.T) {
 			title:       "cluster deleted",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				apiErr := &v20250312sdk.GenericOpenAPIError{}
@@ -872,12 +872,12 @@ func TestHandleDeleting(t *testing.T) {
 			title:       "cluster still deleting",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{
-					Id:        pointer.MakePtr(testClusterID),
-					StateName: pointer.MakePtr("DELETING"),
+					Id:        new(testClusterID),
+					StateName: new("DELETING"),
 				}, nil, nil
 			},
 			want: reenqueueResult(state.StateDeleting, "Deleting Flex Cluster."),
@@ -886,7 +886,7 @@ func TestHandleDeleting(t *testing.T) {
 			title:       "get cluster fails",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("get failed")
@@ -908,7 +908,7 @@ func TestHandleDeleting(t *testing.T) {
 				"malformed-api-version",
 			),
 			kubeObjects: []client.Object{
-				defaultTestGroup(testGroupName, testNamespace, pointer.MakePtr(testGroupID)),
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			want:    errorResult(state.StateDeleting),
 			wantErr: "failed to translate flex api params",
@@ -1135,9 +1135,7 @@ func withAnnotations(flexCluster *akov2generated.FlexCluster, annotations map[st
 	if flexCluster.Annotations == nil {
 		flexCluster.Annotations = make(map[string]string)
 	}
-	for k, v := range annotations {
-		flexCluster.Annotations[k] = v
-	}
+	maps.Copy(flexCluster.Annotations, annotations)
 	return flexCluster
 }
 

@@ -32,7 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestEnsureCustomRoles(t *testing.T) {
@@ -47,16 +46,16 @@ func TestEnsureCustomRoles(t *testing.T) {
 				{
 					Name: "action1",
 					Resources: []akov2.Resource{
-						{Cluster: pointer.MakePtr(true)},
-						{Database: pointer.MakePtr("db1")},
+						{Cluster: new(true)},
+						{Database: new("db1")},
 					},
 				},
 				{
 					Name: "action2",
 					Resources: []akov2.Resource{
 						{
-							Database:   pointer.MakePtr("db2"),
-							Collection: pointer.MakePtr("test-collection"),
+							Database:   new("db2"),
+							Collection: new("test-collection"),
 						},
 					},
 				},
@@ -170,7 +169,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 									{
 										Name: "action1",
 										Resources: []akov2.Resource{
-											{Database: pointer.MakePtr("db2")},
+											{Database: new("db2")},
 										},
 									},
 								},
@@ -247,9 +246,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 										Name: "action",
 										Resources: []akov2.Resource{
 											{
-												Database:   pointer.MakePtr("db"),
-												Cluster:    pointer.MakePtr(true),
-												Collection: pointer.MakePtr("test-collection"),
+												Database:   new("db"),
+												Cluster:    new(true),
+												Collection: new("test-collection"),
 											},
 										},
 									},
@@ -264,7 +263,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 									{
 										Name: "action2",
 										Resources: []akov2.Resource{
-											{Database: pointer.MakePtr("db2")},
+											{Database: new("db2")},
 										},
 									},
 								},
@@ -285,9 +284,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 							Name: "action",
 							Resources: []akov2.Resource{
 								{
-									Database:   pointer.MakePtr("db"),
-									Cluster:    pointer.MakePtr(true),
-									Collection: pointer.MakePtr("test-collection"),
+									Database:   new("db"),
+									Cluster:    new(true),
+									Collection: new("test-collection"),
 								},
 							},
 						},

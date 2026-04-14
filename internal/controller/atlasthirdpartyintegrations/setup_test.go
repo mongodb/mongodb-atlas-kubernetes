@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
@@ -280,7 +279,7 @@ func mockFindFakeParentProject(t *testing.T) *mockadmin.ProjectsApi {
 	projectAPI.EXPECT().GetGroupByName(mock.Anything, "fake-project").
 		Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 	projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-		Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
+		Return(&admin.Group{Id: new("testProjectID")}, nil, nil)
 	return projectAPI
 }
 

@@ -30,7 +30,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -93,7 +92,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-
 				atlasProject := admin.Group{
 					OrgId:                     orgID,
 					Name:                      projectName,
-					WithDefaultAlertsSettings: pointer.MakePtr(true),
+					WithDefaultAlertsSettings: new(true),
 				}
 				_, _, err := atlasClient.ProjectsApi.CreateGroup(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())

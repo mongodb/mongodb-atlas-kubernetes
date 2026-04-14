@@ -38,7 +38,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
@@ -68,10 +67,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -116,10 +115,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -145,16 +144,16 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 											{
 												ProviderName: "AWS",
 												RegionName:   "US_WEST_1",
-												Priority:     pointer.MakePtr(7),
+												Priority:     new(7),
 												ElectableSpecs: &akov2.Specs{
 													InstanceSize: "M10",
-													NodeCount:    pointer.MakePtr(3),
+													NodeCount:    new(3),
 												},
 											},
 										},
 									},
 								},
-								BackupEnabled:            pointer.MakePtr(false),
+								BackupEnabled:            new(false),
 								EncryptionAtRestProvider: "NONE",
 							},
 						},
@@ -188,10 +187,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -212,10 +211,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -259,10 +258,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -283,10 +282,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -311,16 +310,16 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 											{
 												ProviderName: "AWS",
 												RegionName:   "US_WEST_1",
-												Priority:     pointer.MakePtr(7),
+												Priority:     new(7),
 												ElectableSpecs: &akov2.Specs{
 													InstanceSize: "M20",
-													NodeCount:    pointer.MakePtr(3),
+													NodeCount:    new(3),
 												},
 											},
 										},
 									},
 								},
-								BackupEnabled:            pointer.MakePtr(false),
+								BackupEnabled:            new(false),
 								EncryptionAtRestProvider: "NONE",
 							},
 						},
@@ -358,10 +357,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -382,10 +381,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M20",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -426,10 +425,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -450,10 +449,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M20",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -490,10 +489,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -514,10 +513,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M20",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -557,10 +556,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -568,7 +567,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 						},
 					},
 					ProcessArgs: &akov2.ProcessArgs{
-						JavascriptEnabled:         pointer.MakePtr(true),
+						JavascriptEnabled:         new(true),
 						MinimumEnabledTLSProtocol: "TLS1_2",
 						DefaultReadConcern:        "available",
 					},
@@ -581,12 +580,12 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					EncryptionAtRestProvider: "NONE",
 					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
@@ -596,17 +595,17 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -651,10 +650,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -662,7 +661,7 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 						},
 					},
 					ProcessArgs: &akov2.ProcessArgs{
-						JavascriptEnabled:         pointer.MakePtr(true),
+						JavascriptEnabled:         new(true),
 						MinimumEnabledTLSProtocol: "TLS1_2",
 						DefaultReadConcern:        "available",
 					},
@@ -675,12 +674,12 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					EncryptionAtRestProvider: "NONE",
 					MongoDBMajorVersion:      "7.0",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
@@ -690,17 +689,17 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -715,9 +714,9 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				service.EXPECT().ClusterWithProcessArgs(context.Background(), mock.Anything).
 					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
 						cluster.ProcessArgs = &akov2.ProcessArgs{
-							JavascriptEnabled:         pointer.MakePtr(true),
+							JavascriptEnabled:         new(true),
 							MinimumEnabledTLSProtocol: "LTS1_2",
-							NoTableScan:               pointer.MakePtr(false),
+							NoTableScan:               new(false),
 							DefaultReadConcern:        "available",
 						}
 						return nil
@@ -725,9 +724,9 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				service.EXPECT().UpdateProcessArgs(context.Background(), mock.Anything).
 					RunAndReturn(func(_ context.Context, cluster *deployment.Cluster) error {
 						cluster.ProcessArgs = &akov2.ProcessArgs{
-							JavascriptEnabled:         pointer.MakePtr(true),
+							JavascriptEnabled:         new(true),
 							MinimumEnabledTLSProtocol: "LTS1_2",
-							NoTableScan:               pointer.MakePtr(false),
+							NoTableScan:               new(false),
 						}
 						return nil
 					})
@@ -745,16 +744,16 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 											{
 												ProviderName: "AWS",
 												RegionName:   "US_WEST_1",
-												Priority:     pointer.MakePtr(7),
+												Priority:     new(7),
 												ElectableSpecs: &akov2.Specs{
 													InstanceSize: "M10",
-													NodeCount:    pointer.MakePtr(3),
+													NodeCount:    new(3),
 												},
 											},
 										},
 									},
 								},
-								BackupEnabled:            pointer.MakePtr(false),
+								BackupEnabled:            new(false),
 								EncryptionAtRestProvider: "NONE",
 							},
 						},
@@ -789,10 +788,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -848,10 +847,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -906,10 +905,10 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},

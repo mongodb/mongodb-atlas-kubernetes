@@ -16,6 +16,7 @@ package actions
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -82,10 +83,8 @@ func conditionsAreUnset(userData *model.TestDataProvider, unsetConditionTypes ..
 		}
 
 		for _, condition := range conditions {
-			for _, unsetConditionType := range unsetConditionTypes {
-				if condition.Type == unsetConditionType {
-					return false
-				}
+			if slices.Contains(unsetConditionTypes, condition.Type) {
+				return false
 			}
 		}
 

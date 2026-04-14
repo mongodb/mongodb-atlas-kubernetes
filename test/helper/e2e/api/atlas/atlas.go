@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -68,13 +69,7 @@ func GetClientOrFail() *Atlas {
 }
 
 func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
-	for _, deploymentName := range a.GetDeploymentNames(projectID) {
-		if deploymentName == name {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(a.GetDeploymentNames(projectID), name)
 }
 
 func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
@@ -138,7 +133,7 @@ func (a *Atlas) GetDBUser(database, userName, projectID string) (*admin.CloudDat
 }
 
 // ginkgoPrettyPrintf displays a message and a formatted json object through the Ginkgo Writer.
-func ginkgoPrettyPrintf(obj interface{}, msg string, formatArgs ...interface{}) {
+func ginkgoPrettyPrintf(obj any, msg string, formatArgs ...any) {
 	ginkgo.GinkgoWriter.Println(fmt.Sprintf(msg, formatArgs...))
 	ginkgo.GinkgoWriter.Println(debug.PrettyString(obj))
 }

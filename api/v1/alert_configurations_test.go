@@ -22,8 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestServerlessMetricThreshold(t *testing.T) {
@@ -37,10 +35,10 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			name: "Should be able to parse float Theshold",
 			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
-				Mode:       pointer.MakePtr("test"),
-				Operator:   pointer.MakePtr("IN"),
-				Threshold:  pointer.MakePtr(3.14),
-				Units:      pointer.MakePtr("test"),
+				Mode:       new("test"),
+				Operator:   new("IN"),
+				Threshold:  new(3.14),
+				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{
 				MetricName: "test",
@@ -55,10 +53,10 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			name: "Should be able to parse int Theshold",
 			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
-				Mode:       pointer.MakePtr("test"),
-				Operator:   pointer.MakePtr("IN"),
-				Threshold:  pointer.MakePtr[float64](3),
-				Units:      pointer.MakePtr("test"),
+				Mode:       new("test"),
+				Operator:   new("IN"),
+				Threshold:  new(float64(3)),
+				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{
 				MetricName: "test",
@@ -73,10 +71,10 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			name: "Should be false if Theshold is not a number",
 			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
-				Mode:       pointer.MakePtr("test"),
-				Operator:   pointer.MakePtr("IN"),
-				Threshold:  pointer.MakePtr(3.14),
-				Units:      pointer.MakePtr("test"),
+				Mode:       new("test"),
+				Operator:   new("IN"),
+				Threshold:  new(3.14),
+				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{
 				MetricName: "test",
@@ -103,10 +101,10 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			name: "Should be false if operator mismatched",
 			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
-				Mode:       pointer.MakePtr("test"),
-				Operator:   pointer.MakePtr("IN"),
-				Threshold:  pointer.MakePtr(3.14),
-				Units:      pointer.MakePtr("test"),
+				Mode:       new("test"),
+				Operator:   new("IN"),
+				Threshold:  new(3.14),
+				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{
 				MetricName: "test",
@@ -121,10 +119,10 @@ func TestServerlessMetricThreshold(t *testing.T) {
 			name: "Should fail if Threshold mismatched",
 			atlasData: &admin.FlexClusterMetricThreshold{
 				MetricName: "test",
-				Mode:       pointer.MakePtr("test"),
-				Operator:   pointer.MakePtr("IN"),
-				Threshold:  pointer.MakePtr(3.14),
-				Units:      pointer.MakePtr("test"),
+				Mode:       new("test"),
+				Operator:   new("IN"),
+				Threshold:  new(3.14),
+				Units:      new("test"),
 			},
 			akoData: &MetricThreshold{
 				MetricName: "test",

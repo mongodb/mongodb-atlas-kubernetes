@@ -313,7 +313,7 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(ctx context.Context, prov
 			return pe.State == "available"
 		case provider.ProviderGCP:
 			res := true
-			for i := 0; i < gcpNumAttachments; i++ {
+			for i := range gcpNumAttachments {
 				rule, err := a.gcpProvider.GetForwardingRule(ctx, endpoint, region, i)
 				g.Expect(err).To(BeNil())
 

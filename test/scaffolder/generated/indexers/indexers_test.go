@@ -39,10 +39,6 @@ func newScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
-func strPtr(s string) *string {
-	return &s
-}
-
 // TestChildByParentIndexer_Keys verifies the indexer extracts correct keys
 // from Child resources referencing a Parent.
 func TestChildByParentIndexer_Keys(t *testing.T) {
@@ -98,7 +94,7 @@ func TestChildByParentIndexer_Keys(t *testing.T) {
 				},
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
-						ParentId: strPtr("some-id"),
+						ParentId: new("some-id"),
 						// ParentRef is nil
 					},
 				},
@@ -199,7 +195,7 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
-							Name: strPtr("integration-1"),
+							Name: new("integration-1"),
 							Credentials: &[]v1.Credentials{
 								{SecretRef: &k8s.LocalReference{Name: "secret-1"}},
 							},
@@ -219,14 +215,14 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
-							Name: strPtr("integration-1"),
+							Name: new("integration-1"),
 							Credentials: &[]v1.Credentials{
 								{SecretRef: &k8s.LocalReference{Name: "secret-1"}},
 								{SecretRef: &k8s.LocalReference{Name: "secret-2"}},
 							},
 						},
 						{
-							Name: strPtr("integration-2"),
+							Name: new("integration-2"),
 							Credentials: &[]v1.Credentials{
 								{SecretRef: &k8s.LocalReference{Name: "secret-3"}},
 							},
@@ -246,7 +242,7 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
-							Name: strPtr("integration-1"),
+							Name: new("integration-1"),
 							// Credentials is nil
 						},
 					},
@@ -264,7 +260,7 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
-							Name: strPtr("integration-1"),
+							Name: new("integration-1"),
 							Credentials: &[]v1.Credentials{
 								{SecretRef: nil},
 							},
@@ -284,7 +280,7 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
-							Name: strPtr("integration-1"),
+							Name: new("integration-1"),
 							Credentials: &[]v1.Credentials{
 								{SecretRef: &k8s.LocalReference{Name: ""}},
 							},

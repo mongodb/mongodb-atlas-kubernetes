@@ -25,7 +25,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNewDeployment(t *testing.T) {
@@ -116,15 +115,15 @@ func TestNewDeployment(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "cluster0",
 						ClusterType:   "REPLICASET",
-						BackupEnabled: pointer.MakePtr(true),
+						BackupEnabled: new(true),
 						BiConnector: &akov2.BiConnectorSpec{
-							Enabled:        pointer.MakePtr(true),
+							Enabled:        new(true),
 							ReadPreference: "secondary",
 						},
-						DiskSizeGB:               pointer.MakePtr(20),
+						DiskSizeGB:               new(20),
 						EncryptionAtRestProvider: "AWS",
-						Paused:                   pointer.MakePtr(false),
-						PitEnabled:               pointer.MakePtr(true),
+						Paused:                   new(false),
+						PitEnabled:               new(true),
 						MongoDBMajorVersion:      "8.0",
 						VersionReleaseSystem:     "LTS",
 						RootCertType:             "ISRGROOTX1",
@@ -136,10 +135,10 @@ func TestNewDeployment(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},
@@ -162,7 +161,7 @@ func TestNewDeployment(t *testing.T) {
 					},
 					ProcessArgs: &akov2.ProcessArgs{
 						MinimumEnabledTLSProtocol: "TLS1_2",
-						JavascriptEnabled:         pointer.MakePtr(true),
+						JavascriptEnabled:         new(true),
 					},
 				},
 			},
@@ -172,15 +171,15 @@ func TestNewDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
+					BackupEnabled: new(true),
 					BiConnector: &akov2.BiConnectorSpec{
-						Enabled:        pointer.MakePtr(true),
+						Enabled:        new(true),
 						ReadPreference: "secondary",
 					},
-					DiskSizeGB:               pointer.MakePtr(20),
+					DiskSizeGB:               new(20),
 					EncryptionAtRestProvider: "AWS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(true),
+					Paused:                   new(false),
+					PitEnabled:               new(true),
 					MongoDBMajorVersion:      "8.0",
 					VersionReleaseSystem:     "LTS",
 					RootCertType:             "ISRGROOTX1",
@@ -192,17 +191,17 @@ func TestNewDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -226,8 +225,8 @@ func TestNewDeployment(t *testing.T) {
 				},
 				ProcessArgs: &akov2.ProcessArgs{
 					MinimumEnabledTLSProtocol: "TLS1_2",
-					JavascriptEnabled:         pointer.MakePtr(true),
-					NoTableScan:               pointer.MakePtr(false),
+					JavascriptEnabled:         new(true),
+					NoTableScan:               new(false),
 				},
 				//nolint:dupl
 				customResource: &akov2.AtlasDeployment{
@@ -236,15 +235,15 @@ func TestNewDeployment(t *testing.T) {
 						DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 							Name:          "cluster0",
 							ClusterType:   "REPLICASET",
-							BackupEnabled: pointer.MakePtr(true),
+							BackupEnabled: new(true),
 							BiConnector: &akov2.BiConnectorSpec{
-								Enabled:        pointer.MakePtr(true),
+								Enabled:        new(true),
 								ReadPreference: "secondary",
 							},
-							DiskSizeGB:               pointer.MakePtr(20),
+							DiskSizeGB:               new(20),
 							EncryptionAtRestProvider: "AWS",
-							Paused:                   pointer.MakePtr(false),
-							PitEnabled:               pointer.MakePtr(true),
+							Paused:                   new(false),
+							PitEnabled:               new(true),
 							MongoDBMajorVersion:      "8.0",
 							VersionReleaseSystem:     "LTS",
 							RootCertType:             "ISRGROOTX1",
@@ -256,10 +255,10 @@ func TestNewDeployment(t *testing.T) {
 										{
 											ProviderName: "AWS",
 											RegionName:   "US_EAST_1",
-											Priority:     pointer.MakePtr(7),
+											Priority:     new(7),
 											ElectableSpecs: &akov2.Specs{
 												InstanceSize: "M10",
-												NodeCount:    pointer.MakePtr(3),
+												NodeCount:    new(3),
 											},
 										},
 									},
@@ -282,7 +281,7 @@ func TestNewDeployment(t *testing.T) {
 						},
 						ProcessArgs: &akov2.ProcessArgs{
 							MinimumEnabledTLSProtocol: "TLS1_2",
-							JavascriptEnabled:         pointer.MakePtr(true),
+							JavascriptEnabled:         new(true),
 						},
 					},
 				},
@@ -315,10 +314,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: nil,
@@ -338,10 +337,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -365,10 +364,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -398,10 +397,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -437,10 +436,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -454,10 +453,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ReadOnlySpecs:  nil,
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -488,10 +487,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -505,10 +504,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ReadOnlySpecs:  nil,
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -530,8 +529,8 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ReadOnlySpecs:  &akov2.Specs{},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(false),
-											ScaleDownEnabled: pointer.MakePtr(false),
+											Enabled:          new(false),
+											ScaleDownEnabled: new(false),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M10",
 										},
@@ -547,10 +546,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 					ClusterType:              "REPLICASET",
 					EncryptionAtRestProvider: "NONE",
 					VersionReleaseSystem:     "LTS",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					Tags:                     []*akov2.TagSpec{},
 
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -564,10 +563,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ReadOnlySpecs:  nil,
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -609,10 +608,10 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 									ProviderName:        "AWS",
 									BackingProviderName: "AWS",
 									RegionName:          "US_EAST_1",
-									Priority:            pointer.MakePtr(7),
+									Priority:            new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									ReadOnlySpecs: &akov2.Specs{
 										InstanceSize: "M10",
@@ -627,11 +626,11 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
+					BackupEnabled:            new(false),
 					VersionReleaseSystem:     "LTS",
 					EncryptionAtRestProvider: "NONE",
-					Paused:                   pointer.MakePtr(false),
-					PitEnabled:               pointer.MakePtr(false),
+					Paused:                   new(false),
+					PitEnabled:               new(false),
 					RootCertType:             "ISRGROOTX1",
 					Labels: []common.LabelSpec{
 
@@ -663,17 +662,17 @@ func TestNormalizeClusterDeployment(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -704,17 +703,17 @@ func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(5),
+					Priority:     new(5),
 				},
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_WEST_1",
-					Priority:     pointer.MakePtr(7),
+					Priority:     new(7),
 				},
 				{
 					ProviderName: "AWS",
 					RegionName:   "EU_WEST_1",
-					Priority:     pointer.MakePtr(6),
+					Priority:     new(6),
 				},
 			},
 			expectedOrder: []int{7, 6, 5},
@@ -724,17 +723,17 @@ func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(5),
+					Priority:     new(5),
 				},
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(7),
+					Priority:     new(7),
 				},
 				{
 					ProviderName: "GCP",
 					RegionName:   "US_CENTRAL_1",
-					Priority:     pointer.MakePtr(6),
+					Priority:     new(6),
 				},
 			},
 			expectedOrder: []int{7, 6, 5},
@@ -749,12 +748,12 @@ func TestNormalizeRegionConfigsPriorityOrdering(t *testing.T) {
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_WEST_1",
-					Priority:     pointer.MakePtr(7),
+					Priority:     new(7),
 				},
 				{
 					ProviderName: "AWS",
 					RegionName:   "EU_WEST_1",
-					Priority:     pointer.MakePtr(5),
+					Priority:     new(5),
 				},
 			},
 			expectedOrder: []int{7, 5, 0},
@@ -988,15 +987,15 @@ func TestDeprecated(t *testing.T) {
 									{
 										AnalyticsSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 									},
 								},
@@ -1017,15 +1016,15 @@ func TestDeprecated(t *testing.T) {
 									{
 										AnalyticsSpecs: &akov2.Specs{
 											InstanceSize: "M2",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M2",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M2",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 									},
 								},
@@ -1049,15 +1048,15 @@ func TestDeprecated(t *testing.T) {
 									{
 										AnalyticsSpecs: &akov2.Specs{
 											InstanceSize: "M5",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M5",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M5",
-											NodeCount:    pointer.MakePtr(1),
+											NodeCount:    new(1),
 										},
 									},
 								},
@@ -1090,7 +1089,7 @@ func TestDeprecated(t *testing.T) {
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{},
 					ProcessArgs: &akov2.ProcessArgs{
-						FailIndexKeyTooLong: pointer.MakePtr(true),
+						FailIndexKeyTooLong: new(true),
 					},
 				},
 			},
@@ -1123,10 +1122,10 @@ func TestDeprecated(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 									},
 								},

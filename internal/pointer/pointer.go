@@ -54,8 +54,10 @@ func NonZeroOrDefault[T comparable](val T, defaultValue T) *T {
 }
 
 // MakePtr returns a pointer to the given value
+//
+//go:fix inline
 func MakePtr[T any](value T) *T {
-	return &value
+	return new(value)
 }
 
 // MakePtrOrNil returns a pointer only when value is not empty.

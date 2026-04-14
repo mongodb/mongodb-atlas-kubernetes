@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,13 +63,7 @@ func TestFilterLabelsContain(t *testing.T) {
 				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
 			}
 			for _, label := range tt.expectedResult {
-				found := false
-				for _, res := range result {
-					if res == label {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(result, label)
 				if !found {
 					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
 				}
@@ -117,13 +112,7 @@ func TestFilterLabelsDoNotContain(t *testing.T) {
 				t.Errorf("Test %s failed: expected %v, got %v", tt.name, tt.expectedResult, result)
 			}
 			for _, label := range tt.expectedResult {
-				found := false
-				for _, res := range result {
-					if res == label {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(result, label)
 				if !found {
 					t.Errorf("Test %s failed: expected %v to be in the result", tt.name, label)
 				}

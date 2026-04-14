@@ -30,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -224,11 +223,11 @@ func streamConnectionToAtlas(ctx context.Context, k8sClient client.Client) strea
 			connection.BootstrapServers = &streamConnection.Spec.KafkaConfig.BootstrapServers
 			connection.Authentication = &admin.StreamsKafkaAuthentication{
 				Mechanism: &streamConnection.Spec.KafkaConfig.Authentication.Mechanism,
-				Username:  pointer.MakePtr(authData[kafkaConnectionAuthUsername]),
-				Password:  pointer.MakePtr(authData[kafkaConnectionAuthPassword]),
+				Username:  new(authData[kafkaConnectionAuthUsername]),
+				Password:  new(authData[kafkaConnectionAuthPassword]),
 			}
 			connection.Security = &admin.StreamsKafkaSecurity{
-				BrokerPublicCertificate: pointer.MakePtr(secData[kafkaConnectionSecCertificate]),
+				BrokerPublicCertificate: new(secData[kafkaConnectionSecCertificate]),
 				Protocol:                &streamConnection.Spec.KafkaConfig.Security.Protocol,
 			}
 			connection.Config = &streamConnection.Spec.KafkaConfig.Config

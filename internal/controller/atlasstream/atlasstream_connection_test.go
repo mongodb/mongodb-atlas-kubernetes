@@ -38,7 +38,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestHandleConnectionRegistry(t *testing.T) {
@@ -125,8 +124,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			CreateStreamConnectionExecute(mock.AnythingOfType("admin.CreateStreamConnectionApiRequest")).
 			Return(
 				&admin.StreamsConnection{
-					Name: pointer.MakePtr("sample-connection1"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection1"),
+					Type: new("Sample"),
 				},
 				&http.Response{},
 				nil,
@@ -138,8 +137,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			UpdateStreamConnectionExecute(mock.AnythingOfType("admin.UpdateStreamConnectionApiRequest")).
 			Return(
 				&admin.StreamsConnection{
-					Name: pointer.MakePtr("sample-connection2"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection2"),
+					Type: new("Sample"),
 				},
 				&http.Response{},
 				nil,
@@ -160,24 +159,24 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				&admin.PaginatedApiStreamsConnection{
 					Results: []admin.StreamsConnection{
 						{
-							Name:        pointer.MakePtr("sample-connection2"),
-							Type:        pointer.MakePtr("Cluster"),
-							ClusterName: pointer.MakePtr("my-cluster"),
+							Name:        new("sample-connection2"),
+							Type:        new("Cluster"),
+							ClusterName: new("my-cluster"),
 							DbRoleToExecute: &admin.DBRoleToExecute{
-								Role: pointer.MakePtr("readWrite"),
-								Type: pointer.MakePtr("BUILT_IN"),
+								Role: new("readWrite"),
+								Type: new("BUILT_IN"),
 							},
 						},
 						{
-							Name: pointer.MakePtr("sample-connection3"),
-							Type: pointer.MakePtr("Sample"),
+							Name: new("sample-connection3"),
+							Type: new("Sample"),
 						},
 						{
-							Name: pointer.MakePtr("sample-connection4"),
-							Type: pointer.MakePtr("Sample"),
+							Name: new("sample-connection4"),
+							Type: new("Sample"),
 						},
 					},
-					TotalCount: pointer.MakePtr(2),
+					TotalCount: new(2),
 				},
 				&http.Response{},
 				nil,
@@ -191,7 +190,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
-			Name: pointer.MakePtr("instance-0"),
+			Name: new("instance-0"),
 		}
 
 		result, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -249,20 +248,20 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				&admin.PaginatedApiStreamsConnection{
 					Results: []admin.StreamsConnection{
 						{
-							Name:        pointer.MakePtr("sample-connection2"),
-							Type:        pointer.MakePtr("Cluster"),
-							ClusterName: pointer.MakePtr("my-cluster"),
+							Name:        new("sample-connection2"),
+							Type:        new("Cluster"),
+							ClusterName: new("my-cluster"),
 							DbRoleToExecute: &admin.DBRoleToExecute{
-								Role: pointer.MakePtr("readWrite"),
-								Type: pointer.MakePtr("BUILT_IN"),
+								Role: new("readWrite"),
+								Type: new("BUILT_IN"),
 							},
 						},
 						{
-							Name: pointer.MakePtr("sample-connection3"),
-							Type: pointer.MakePtr("Sample"),
+							Name: new("sample-connection3"),
+							Type: new("Sample"),
 						},
 					},
-					TotalCount: pointer.MakePtr(2),
+					TotalCount: new(2),
 				},
 				&http.Response{},
 				nil,
@@ -276,7 +275,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
-			Name: pointer.MakePtr("instance-0"),
+			Name: new("instance-0"),
 		}
 
 		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -342,7 +341,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Return(
 				&admin.PaginatedApiStreamsConnection{
 					Results:    nil,
-					TotalCount: pointer.MakePtr(0),
+					TotalCount: new(0),
 				},
 				&http.Response{},
 				nil,
@@ -362,7 +361,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
-			Name:        pointer.MakePtr("instance-0"),
+			Name:        new("instance-0"),
 			Connections: &[]admin.StreamsConnection{},
 		}
 
@@ -430,16 +429,16 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				&admin.PaginatedApiStreamsConnection{
 					Results: []admin.StreamsConnection{
 						{
-							Name:        pointer.MakePtr("sample-connection"),
-							Type:        pointer.MakePtr("Cluster"),
-							ClusterName: pointer.MakePtr("my-cluster"),
+							Name:        new("sample-connection"),
+							Type:        new("Cluster"),
+							ClusterName: new("my-cluster"),
 							DbRoleToExecute: &admin.DBRoleToExecute{
-								Role: pointer.MakePtr("readWrite"),
-								Type: pointer.MakePtr("BUILT_IN"),
+								Role: new("readWrite"),
+								Type: new("BUILT_IN"),
 							},
 						},
 					},
-					TotalCount: pointer.MakePtr(1),
+					TotalCount: new(1),
 				},
 				&http.Response{},
 				nil,
@@ -459,7 +458,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
-			Name: pointer.MakePtr("instance-0"),
+			Name: new("instance-0"),
 		}
 
 		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -510,16 +509,16 @@ func TestHandleConnectionRegistry(t *testing.T) {
 				&admin.PaginatedApiStreamsConnection{
 					Results: []admin.StreamsConnection{
 						{
-							Name:        pointer.MakePtr("sample-connection"),
-							Type:        pointer.MakePtr("Cluster"),
-							ClusterName: pointer.MakePtr("my-cluster"),
+							Name:        new("sample-connection"),
+							Type:        new("Cluster"),
+							ClusterName: new("my-cluster"),
 							DbRoleToExecute: &admin.DBRoleToExecute{
-								Role: pointer.MakePtr("readWrite"),
-								Type: pointer.MakePtr("BUILT_IN"),
+								Role: new("readWrite"),
+								Type: new("BUILT_IN"),
 							},
 						},
 					},
-					TotalCount: pointer.MakePtr(1),
+					TotalCount: new(1),
 				},
 				&http.Response{},
 				nil,
@@ -539,7 +538,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		atlasInstance := &admin.StreamsTenant{
-			Name: pointer.MakePtr("instance-0"),
+			Name: new("instance-0"),
 		}
 
 		_, err := reconciler.handleConnectionRegistry(ctx, project, streamInstance, atlasInstance)
@@ -644,17 +643,17 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 		ctx := &workflow.Context{}
 		atlasInstanceConnections := []admin.StreamsConnection{
 			{
-				Name:        pointer.MakePtr("sample-connection2"),
-				Type:        pointer.MakePtr("Cluster"),
-				ClusterName: pointer.MakePtr("my-cluster"),
+				Name:        new("sample-connection2"),
+				Type:        new("Cluster"),
+				ClusterName: new("my-cluster"),
 				DbRoleToExecute: &admin.DBRoleToExecute{
-					Role: pointer.MakePtr("readWrite"),
-					Type: pointer.MakePtr("BUILT_IN"),
+					Role: new("readWrite"),
+					Type: new("BUILT_IN"),
 				},
 			},
 			{
-				Name: pointer.MakePtr("sample-connection3"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection3"),
+				Type: new("Sample"),
 			},
 		}
 
@@ -698,8 +697,8 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			t,
 			[]*admin.StreamsConnection{
 				{
-					Name: pointer.MakePtr("sample-connection3"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection3"),
+					Type: new("Sample"),
 				},
 			},
 			ops.Delete,
@@ -724,8 +723,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.Equal(
 			t,
 			&admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			},
 			conn,
 		)
@@ -754,12 +753,12 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.Equal(
 			t,
 			&admin.StreamsConnection{
-				Name:        pointer.MakePtr("cluster-connection"),
-				Type:        pointer.MakePtr("Cluster"),
-				ClusterName: pointer.MakePtr("my-cluster"),
+				Name:        new("cluster-connection"),
+				Type:        new("Cluster"),
+				ClusterName: new("my-cluster"),
 				DbRoleToExecute: &admin.DBRoleToExecute{
-					Role: pointer.MakePtr("read"),
-					Type: pointer.MakePtr("BUILT_IN"),
+					Role: new("read"),
+					Type: new("BUILT_IN"),
 				},
 			},
 			conn,
@@ -830,17 +829,17 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.Equal(
 			t,
 			&admin.StreamsConnection{
-				Name: pointer.MakePtr("kafka-connection"),
-				Type: pointer.MakePtr("Kafka"),
+				Name: new("kafka-connection"),
+				Type: new("Kafka"),
 				Authentication: &admin.StreamsKafkaAuthentication{
-					Mechanism: pointer.MakePtr("SCRAM-512"),
-					Username:  pointer.MakePtr("my-user"),
-					Password:  pointer.MakePtr("my-pass"),
+					Mechanism: new("SCRAM-512"),
+					Username:  new("my-user"),
+					Password:  new("my-pass"),
 				},
-				BootstrapServers: pointer.MakePtr("kafka:server1,kafka:server2"),
+				BootstrapServers: new("kafka:server1,kafka:server2"),
 				Security: &admin.StreamsKafkaSecurity{
-					BrokerPublicCertificate: pointer.MakePtr("hash"),
-					Protocol:                pointer.MakePtr("SSL"),
+					BrokerPublicCertificate: new("hash"),
+					Protocol:                new("SSL"),
 				},
 				Config: &map[string]string{
 					"option1": "value1",
@@ -1066,8 +1065,8 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 
 	t.Run("should return false when data haven't changed", func(t *testing.T) {
 		atlasConnection := admin.StreamsConnection{
-			Name: pointer.MakePtr("sample-connection"),
-			Type: pointer.MakePtr("Sample"),
+			Name: new("sample-connection"),
+			Type: new("Sample"),
 		}
 		akoConnection := akov2.AtlasStreamConnection{
 			Spec: akov2.AtlasStreamConnectionSpec{
@@ -1081,8 +1080,8 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 			&atlasConnection,
 			func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 				return &admin.StreamsConnection{
-					Name: pointer.MakePtr("sample-connection"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection"),
+					Type: new("Sample"),
 				}, nil
 			},
 		)
@@ -1093,8 +1092,8 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 
 	t.Run("should return true when data have changed", func(t *testing.T) {
 		atlasConnection := admin.StreamsConnection{
-			Name: pointer.MakePtr("sample-connection"),
-			Type: pointer.MakePtr("Sample"),
+			Name: new("sample-connection"),
+			Type: new("Sample"),
 		}
 		akoConnection := akov2.AtlasStreamConnection{
 			Spec: akov2.AtlasStreamConnectionSpec{
@@ -1115,12 +1114,12 @@ func TestHasStreamConnectionChanged(t *testing.T) {
 			&atlasConnection,
 			func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 				return &admin.StreamsConnection{
-					Name:        pointer.MakePtr("cluster-connection"),
-					Type:        pointer.MakePtr("Cluster"),
-					ClusterName: pointer.MakePtr("my-cluster"),
+					Name:        new("cluster-connection"),
+					Type:        new("Cluster"),
+					ClusterName: new("my-cluster"),
 					DbRoleToExecute: &admin.DBRoleToExecute{
-						Role: pointer.MakePtr("read"),
-						Type: pointer.MakePtr("BUILT_IN"),
+						Role: new("read"),
+						Type: new("BUILT_IN"),
 					},
 				}, nil
 			},

@@ -41,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
 )
 
@@ -205,9 +204,9 @@ func TestAtlasOrgSettingsHandler_NewReconcileContext(t *testing.T) {
 			ConnectionSecretRef: &api.LocalObjectReference{
 				Name: "test-atlas-secret",
 			},
-			ApiAccessListRequired:   pointer.MakePtr(true),
-			GenAIFeaturesEnabled:    pointer.MakePtr(false),
-			MultiFactorAuthRequired: pointer.MakePtr(true),
+			ApiAccessListRequired:   new(true),
+			GenAIFeaturesEnabled:    new(false),
+			MultiFactorAuthRequired: new(true),
 		},
 	}
 

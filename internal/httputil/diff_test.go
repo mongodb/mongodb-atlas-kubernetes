@@ -86,7 +86,7 @@ func TestTransportWithDiff_RoundTrip_PUT_Request_Success(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	transport := NewTransportWithDiff(mockTransport, logger)
 
-	originalData := map[string]interface{}{
+	originalData := map[string]any{
 		"id":      1,
 		"name":    "old name",
 		"links":   []string{"link1", "link2"},
@@ -94,7 +94,7 @@ func TestTransportWithDiff_RoundTrip_PUT_Request_Success(t *testing.T) {
 	}
 	originalJSON, _ := json.Marshal(originalData)
 
-	updatedData := map[string]interface{}{
+	updatedData := map[string]any{
 		"id":   1,
 		"name": "new name",
 	}
@@ -121,13 +121,13 @@ func TestTransportWithDiff_RoundTrip_PATCH_Request_Success(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	transport := NewTransportWithDiff(mockTransport, logger)
 
-	originalData := map[string]interface{}{
+	originalData := map[string]any{
 		"id":   1,
 		"name": "old name",
 	}
 	originalJSON, _ := json.Marshal(originalData)
 
-	updatedData := map[string]interface{}{
+	updatedData := map[string]any{
 		"id":   1,
 		"name": "new name",
 	}
@@ -154,7 +154,7 @@ func TestTransportWithDiff_RoundTrip_PUT_Request_GET_Error(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	transport := NewTransportWithDiff(mockTransport, logger)
 
-	updatedData := map[string]interface{}{
+	updatedData := map[string]any{
 		"id":   1,
 		"name": "new name",
 	}
@@ -219,7 +219,7 @@ func TestTransportWithDiff_RoundTrip_PUT_Request_No_Body(t *testing.T) {
 }
 
 func TestCleanLinksField(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"id":    1,
 		"name":  "test",
 		"links": []string{"link1", "link2"},
@@ -234,7 +234,7 @@ func TestCleanLinksField(t *testing.T) {
 }
 
 func TestCleanLinksField_NoLinksField(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"id":   1,
 		"name": "test",
 	}
@@ -246,7 +246,7 @@ func TestCleanLinksField_NoLinksField(t *testing.T) {
 }
 
 func TestCleanCreatedField(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"id":      1,
 		"name":    "test",
 		"created": "2023-01-01",
@@ -261,7 +261,7 @@ func TestCleanCreatedField(t *testing.T) {
 }
 
 func TestCleanCreatedField_NoCreatedField(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"id":   1,
 		"name": "test",
 	}
@@ -277,7 +277,7 @@ func TestTransportWithDiff_tryCalculateDiff_Success(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	transport := NewTransportWithDiff(mockTransport, logger)
 
-	originalData := map[string]interface{}{
+	originalData := map[string]any{
 		"id":      1,
 		"name":    "old name",
 		"links":   []string{"link1", "link2"},
@@ -285,7 +285,7 @@ func TestTransportWithDiff_tryCalculateDiff_Success(t *testing.T) {
 	}
 	originalJSON, _ := json.Marshal(originalData)
 
-	updatedData := map[string]interface{}{
+	updatedData := map[string]any{
 		"id":   1,
 		"name": "new name",
 	}
@@ -364,7 +364,7 @@ func TestTransportWithDiff_Integration(t *testing.T) {
 	// Create a test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			response := map[string]interface{}{
+			response := map[string]any{
 				"id":      1,
 				"name":    "original name",
 				"links":   []string{"link1", "link2"},
@@ -381,7 +381,7 @@ func TestTransportWithDiff_Integration(t *testing.T) {
 	logger := zaptest.NewLogger(t).Sugar()
 	transport := NewTransportWithDiff(http.DefaultTransport, logger)
 
-	updatedData := map[string]interface{}{
+	updatedData := map[string]any{
 		"id":   1,
 		"name": "new name",
 	}

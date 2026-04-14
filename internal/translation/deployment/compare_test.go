@@ -22,7 +22,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestComputeChanges(t *testing.T) {
@@ -38,8 +37,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(false),
-					Paused:        pointer.MakePtr(true),
+					BackupEnabled: new(false),
+					Paused:        new(true),
 				},
 			},
 			atlasCluster: &Cluster{
@@ -47,15 +46,15 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					Paused:        pointer.MakePtr(false),
+					BackupEnabled: new(true),
+					Paused:        new(false),
 				},
 			},
 			expectedChanges: &Cluster{
 				ProjectID: "project-id",
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:   "cluster0",
-					Paused: pointer.MakePtr(true),
+					Paused: new(true),
 				},
 			},
 			changed: true,
@@ -66,7 +65,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(false),
+					BackupEnabled: new(false),
 				},
 			},
 			atlasCluster: &Cluster{
@@ -74,8 +73,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(true),
+					DiskSizeGB:    new(20),
 				},
 			},
 			expectedChanges: &Cluster{
@@ -83,7 +82,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:             "cluster0",
 					ClusterType:      "REPLICASET",
-					BackupEnabled:    pointer.MakePtr(false),
+					BackupEnabled:    new(false),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{},
 				},
 			},
@@ -95,8 +94,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(false),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(false),
+					DiskSizeGB:    new(20),
 				},
 			},
 			atlasCluster: &Cluster{
@@ -104,8 +103,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(true),
+					DiskSizeGB:    new(20),
 				},
 			},
 			expectedChanges: &Cluster{
@@ -113,7 +112,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:             "cluster0",
 					ClusterType:      "REPLICASET",
-					BackupEnabled:    pointer.MakePtr(false),
+					BackupEnabled:    new(false),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{},
 				},
 			},
@@ -125,8 +124,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(false),
-					DiskSizeGB:    pointer.MakePtr(30),
+					BackupEnabled: new(false),
+					DiskSizeGB:    new(30),
 				},
 			},
 			atlasCluster: &Cluster{
@@ -134,8 +133,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(true),
+					DiskSizeGB:    new(20),
 				},
 			},
 			expectedChanges: &Cluster{
@@ -143,8 +142,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:             "cluster0",
 					ClusterType:      "REPLICASET",
-					BackupEnabled:    pointer.MakePtr(false),
-					DiskSizeGB:       pointer.MakePtr(30),
+					BackupEnabled:    new(false),
+					DiskSizeGB:       new(30),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{},
 				},
 			},
@@ -157,14 +156,14 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "ISRGROOTX1",
-					PitEnabled:               pointer.MakePtr(true),
+					PitEnabled:               new(true),
 					BiConnector: &akov2.BiConnectorSpec{
-						Enabled:        pointer.MakePtr(true),
+						Enabled:        new(true),
 						ReadPreference: "secondary",
 					},
 					Labels: []common.LabelSpec{
@@ -189,10 +188,10 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -205,8 +204,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(true),
+					DiskSizeGB:    new(20),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
 							ZoneName:  "Zone 1",
@@ -215,18 +214,18 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(true),
+											Enabled: new(true),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(true),
-											ScaleDownEnabled: pointer.MakePtr(true),
+											Enabled:          new(true),
+											ScaleDownEnabled: new(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M40",
 										},
@@ -243,14 +242,14 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "ISRGROOTX1",
-					PitEnabled:               pointer.MakePtr(true),
+					PitEnabled:               new(true),
 					BiConnector: &akov2.BiConnectorSpec{
-						Enabled:        pointer.MakePtr(true),
+						Enabled:        new(true),
 						ReadPreference: "secondary",
 					},
 					Labels: []common.LabelSpec{
@@ -275,17 +274,17 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 									},
 								},
@@ -303,14 +302,14 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "ISRGROOTX1",
-					PitEnabled:               pointer.MakePtr(true),
+					PitEnabled:               new(true),
 					BiConnector: &akov2.BiConnectorSpec{
-						Enabled:        pointer.MakePtr(true),
+						Enabled:        new(true),
 						ReadPreference: "secondary",
 					},
 					Labels: []common.LabelSpec{
@@ -335,18 +334,18 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(true),
+											Enabled: new(true),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(true),
-											ScaleDownEnabled: pointer.MakePtr(true),
+											Enabled:          new(true),
+											ScaleDownEnabled: new(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M40",
 										},
@@ -362,8 +361,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "cluster0",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
-					DiskSizeGB:    pointer.MakePtr(20),
+					BackupEnabled: new(true),
+					DiskSizeGB:    new(20),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
 							ZoneName:  "Zone 1",
@@ -372,10 +371,10 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 								},
 							},
@@ -389,14 +388,14 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "ISRGROOTX1",
-					PitEnabled:               pointer.MakePtr(true),
+					PitEnabled:               new(true),
 					BiConnector: &akov2.BiConnectorSpec{
-						Enabled:        pointer.MakePtr(true),
+						Enabled:        new(true),
 						ReadPreference: "secondary",
 					},
 					Labels: []common.LabelSpec{
@@ -421,18 +420,18 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(true),
+											Enabled: new(true),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(true),
-											ScaleDownEnabled: pointer.MakePtr(true),
+											Enabled:          new(true),
+											ScaleDownEnabled: new(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M40",
 										},
@@ -452,8 +451,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "",
@@ -473,18 +472,18 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(true),
+											Enabled: new(true),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(true),
-											ScaleDownEnabled: pointer.MakePtr(true),
+											Enabled:          new(true),
+											ScaleDownEnabled: new(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M40",
 										},
@@ -501,8 +500,8 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:                     "cluster0",
 					ClusterType:              "REPLICASET",
-					BackupEnabled:            pointer.MakePtr(false),
-					DiskSizeGB:               pointer.MakePtr(30),
+					BackupEnabled:            new(false),
+					DiskSizeGB:               new(30),
 					EncryptionAtRestProvider: "AWS",
 					MongoDBMajorVersion:      "8.0",
 					RootCertType:             "",
@@ -522,18 +521,18 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(3),
+										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(true),
+											Enabled: new(true),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(true),
-											ScaleDownEnabled: pointer.MakePtr(true),
+											Enabled:          new(true),
+											ScaleDownEnabled: new(true),
 											MinInstanceSize:  "M10",
 											MaxInstanceSize:  "M40",
 										},
@@ -559,7 +558,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "aws-cluster",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
+					BackupEnabled: new(true),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
 							ZoneName:  "Zone 1",
@@ -568,10 +567,10 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize:  "M10",
-										NodeCount:     pointer.MakePtr(3),
+										NodeCount:     new(3),
 										EbsVolumeType: "PROVISIONED", // Explicitly specified, different from Atlas
 									},
 									// AutoScaling is nil (not specified)
@@ -586,7 +585,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "aws-cluster",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
+					BackupEnabled: new(true),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
 							ZoneName:  "Zone 1",
@@ -595,10 +594,10 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize:  "M10",
-										NodeCount:     pointer.MakePtr(3),
+										NodeCount:     new(3),
 										EbsVolumeType: "STANDARD", // Different from desired
 									},
 									// AutoScaling is also nil (no change)
@@ -613,7 +612,7 @@ func TestComputeChanges(t *testing.T) {
 				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name:          "aws-cluster",
 					ClusterType:   "REPLICASET",
-					BackupEnabled: pointer.MakePtr(true),
+					BackupEnabled: new(true),
 					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 						{
 							ZoneName:  "Zone 1",
@@ -622,10 +621,10 @@ func TestComputeChanges(t *testing.T) {
 								{
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize:  "M10",
-										NodeCount:     pointer.MakePtr(3),
+										NodeCount:     new(3),
 										EbsVolumeType: "PROVISIONED", // Only this should change
 									},
 									// AutoScaling should be nil (not included when unchanged)
@@ -664,19 +663,19 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				ClusterType: pointer.MakePtr("REPLICASET"),
+				ClusterType: new("REPLICASET"),
 			},
 		},
 		"should return false when backup enabled flag are different": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						BackupEnabled: pointer.MakePtr(true),
+						BackupEnabled: new(true),
 					},
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				BackupEnabled: pointer.MakePtr(false),
+				BackupEnabled: new(false),
 			},
 		},
 		"should return false when BI connector config are different": {
@@ -684,7 +683,7 @@ func TestSpecAreEqual(t *testing.T) {
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						BiConnector: &akov2.BiConnectorSpec{
-							Enabled:        pointer.MakePtr(true),
+							Enabled:        new(true),
 							ReadPreference: "secondary",
 						},
 					},
@@ -692,8 +691,8 @@ func TestSpecAreEqual(t *testing.T) {
 			},
 			atlas: &admin.ClusterDescription20240805{
 				BiConnector: &admin.BiConnector{
-					Enabled:        pointer.MakePtr(false),
-					ReadPreference: pointer.MakePtr("secondary"),
+					Enabled:        new(false),
+					ReadPreference: new("secondary"),
 				},
 			},
 		},
@@ -701,7 +700,7 @@ func TestSpecAreEqual(t *testing.T) {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						DiskSizeGB: pointer.MakePtr(20),
+						DiskSizeGB: new(20),
 					},
 				},
 			},
@@ -711,7 +710,7 @@ func TestSpecAreEqual(t *testing.T) {
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									DiskSizeGB: pointer.MakePtr(10.0),
+									DiskSizeGB: new(10.0),
 								},
 							},
 						},
@@ -728,7 +727,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
+				EncryptionAtRestProvider: new("NONE"),
 			},
 		},
 		"should return false when config server management are different": {
@@ -740,7 +739,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				ConfigServerManagementMode: pointer.MakePtr("FIXED_TO_DEDICATED"),
+				ConfigServerManagementMode: new("FIXED_TO_DEDICATED"),
 			},
 		},
 		"should return false when mongodb version are different": {
@@ -752,7 +751,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				MongoDBMajorVersion: pointer.MakePtr("7.0"),
+				MongoDBMajorVersion: new("7.0"),
 			},
 		},
 		"should return false when version release system are different": {
@@ -764,7 +763,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				VersionReleaseSystem: pointer.MakePtr("LTS"),
+				VersionReleaseSystem: new("LTS"),
 			},
 		},
 		"should return false when root cert type are different": {
@@ -776,31 +775,31 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				RootCertType: pointer.MakePtr("NONE"),
+				RootCertType: new("NONE"),
 			},
 		},
 		"should return false when paused flag are different": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						Paused: pointer.MakePtr(true),
+						Paused: new(true),
 					},
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Paused: pointer.MakePtr(false),
+				Paused: new(false),
 			},
 		},
 		"should return false when pit flag are different": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
-						PitEnabled: pointer.MakePtr(true),
+						PitEnabled: new(true),
 					},
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				PitEnabled: pointer.MakePtr(false),
+				PitEnabled: new(false),
 			},
 		},
 		"should return false when termination protection flag are different": {
@@ -812,7 +811,7 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				TerminationProtectionEnabled: pointer.MakePtr(false),
+				TerminationProtectionEnabled: new(false),
 			},
 		},
 		"should return false when num of shards are different": {
@@ -829,10 +828,10 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				ClusterType: pointer.MakePtr("SHARDED"),
+				ClusterType: new("SHARDED"),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
-						Id: pointer.MakePtr("abc123"),
+						Id: new("abc123"),
 					},
 				},
 			},
@@ -860,8 +859,8 @@ func TestSpecAreEqual(t *testing.T) {
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
 							},
 						},
 					},
@@ -881,8 +880,8 @@ func TestSpecAreEqual(t *testing.T) {
 										RegionName:   "US_EAST_1",
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
 											Compute: &akov2.ComputeSpec{
-												Enabled:          pointer.MakePtr(true),
-												ScaleDownEnabled: pointer.MakePtr(true),
+												Enabled:          new(true),
+												ScaleDownEnabled: new(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M40",
 											},
@@ -899,11 +898,11 @@ func TestSpecAreEqual(t *testing.T) {
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
 								AutoScaling: &admin.AdvancedAutoScalingSettings{
 									Compute: &admin.AdvancedComputeAutoScaling{
-										Enabled: pointer.MakePtr(false),
+										Enabled: new(false),
 									},
 								},
 							},
@@ -928,8 +927,8 @@ func TestSpecAreEqual(t *testing.T) {
 			atlas: &admin.ClusterDescription20240805{
 				Labels: &[]admin.ComponentLabel{
 					{
-						Key:   pointer.MakePtr("label2"),
-						Value: pointer.MakePtr("label2"),
+						Key:   new("label2"),
+						Value: new("label2"),
 					},
 				},
 			},
@@ -980,17 +979,17 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Name:        pointer.MakePtr("cluster0"),
-				ClusterType: pointer.MakePtr("REPLICASET"),
+				Name:        new("cluster0"),
+				ClusterType: new("REPLICASET"),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName:        pointer.MakePtr("TENANT"),
-								BackingProviderName: pointer.MakePtr("AWS"),
-								RegionName:          pointer.MakePtr("US_EAST_1"),
+								ProviderName:        new("TENANT"),
+								BackingProviderName: new("AWS"),
+								RegionName:          new("US_EAST_1"),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M0"),
+									InstanceSize: new("M0"),
 								},
 							},
 						},
@@ -1012,10 +1011,10 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 									},
 								},
@@ -1025,18 +1024,18 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				ClusterType: pointer.MakePtr("SHARDED"),
+				ClusterType: new("SHARDED"),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1044,13 +1043,13 @@ func TestSpecAreEqual(t *testing.T) {
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1065,8 +1064,8 @@ func TestSpecAreEqual(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "cluster0",
 						ClusterType:   "SHARDED",
-						BackupEnabled: pointer.MakePtr(true),
-						DiskSizeGB:    pointer.MakePtr(20),
+						BackupEnabled: new(true),
+						DiskSizeGB:    new(20),
 						Labels: []common.LabelSpec{
 							{
 								Key:   "label1",
@@ -1074,7 +1073,7 @@ func TestSpecAreEqual(t *testing.T) {
 							},
 						},
 						MongoDBMajorVersion: "7.0",
-						PitEnabled:          pointer.MakePtr(true),
+						PitEnabled:          new(true),
 						RootCertType:        "ISRGROOTX1",
 						Tags: []*akov2.TagSpec{
 							{
@@ -1091,10 +1090,10 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 									},
 								},
@@ -1104,40 +1103,40 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Name:                     pointer.MakePtr("cluster0"),
-				ClusterType:              pointer.MakePtr("SHARDED"),
-				BackupEnabled:            pointer.MakePtr(true),
-				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
-				Paused:                   pointer.MakePtr(false),
+				Name:                     new("cluster0"),
+				ClusterType:              new("SHARDED"),
+				BackupEnabled:            new(true),
+				EncryptionAtRestProvider: new("NONE"),
+				Paused:                   new(false),
 				Labels: &[]admin.ComponentLabel{
 					{
-						Key:   pointer.MakePtr("label1"),
-						Value: pointer.MakePtr("label1"),
+						Key:   new("label1"),
+						Value: new("label1"),
 					},
 				},
-				MongoDBMajorVersion: pointer.MakePtr("7.0"),
-				MongoDBVersion:      pointer.MakePtr("7.1.5"),
-				PitEnabled:          pointer.MakePtr(true),
-				RootCertType:        pointer.MakePtr("ISRGROOTX1"),
+				MongoDBMajorVersion: new("7.0"),
+				MongoDBVersion:      new("7.1.5"),
+				PitEnabled:          new(true),
+				RootCertType:        new("ISRGROOTX1"),
 				Tags: &[]admin.ResourceTag{
 					{
 						Key:   "tag1",
 						Value: "tag1",
 					},
 				},
-				VersionReleaseSystem:         pointer.MakePtr("LTS"),
-				TerminationProtectionEnabled: pointer.MakePtr(false),
+				VersionReleaseSystem:         new("LTS"),
+				TerminationProtectionEnabled: new(false),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1145,13 +1144,13 @@ func TestSpecAreEqual(t *testing.T) {
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1159,13 +1158,13 @@ func TestSpecAreEqual(t *testing.T) {
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1180,8 +1179,8 @@ func TestSpecAreEqual(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "cluster0",
 						ClusterType:   "REPLICASET",
-						BackupEnabled: pointer.MakePtr(true),
-						DiskSizeGB:    pointer.MakePtr(20),
+						BackupEnabled: new(true),
+						DiskSizeGB:    new(20),
 						Labels: []common.LabelSpec{
 							{
 								Key:   "label1",
@@ -1189,7 +1188,7 @@ func TestSpecAreEqual(t *testing.T) {
 							},
 						},
 						MongoDBMajorVersion: "7.0",
-						PitEnabled:          pointer.MakePtr(true),
+						PitEnabled:          new(true),
 						RootCertType:        "ISRGROOTX1",
 						Tags: []*akov2.TagSpec{
 							{
@@ -1206,14 +1205,14 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 									},
 								},
@@ -1223,45 +1222,45 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Name:                     pointer.MakePtr("cluster0"),
-				ClusterType:              pointer.MakePtr("REPLICASET"),
-				BackupEnabled:            pointer.MakePtr(true),
-				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
-				Paused:                   pointer.MakePtr(false),
+				Name:                     new("cluster0"),
+				ClusterType:              new("REPLICASET"),
+				BackupEnabled:            new(true),
+				EncryptionAtRestProvider: new("NONE"),
+				Paused:                   new(false),
 				Labels: &[]admin.ComponentLabel{
 					{
-						Key:   pointer.MakePtr("label1"),
-						Value: pointer.MakePtr("label1"),
+						Key:   new("label1"),
+						Value: new("label1"),
 					},
 				},
-				MongoDBMajorVersion: pointer.MakePtr("7.0"),
-				MongoDBVersion:      pointer.MakePtr("7.1.5"),
-				PitEnabled:          pointer.MakePtr(true),
-				RootCertType:        pointer.MakePtr("ISRGROOTX1"),
+				MongoDBMajorVersion: new("7.0"),
+				MongoDBVersion:      new("7.1.5"),
+				PitEnabled:          new(true),
+				RootCertType:        new("ISRGROOTX1"),
 				Tags: &[]admin.ResourceTag{
 					{
 						Key:   "tag1",
 						Value: "tag1",
 					},
 				},
-				VersionReleaseSystem:         pointer.MakePtr("LTS"),
-				TerminationProtectionEnabled: pointer.MakePtr(false),
+				VersionReleaseSystem:         new("LTS"),
+				TerminationProtectionEnabled: new(false),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(3),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(3),
+									DiskSizeGB:   new(20.0),
 								},
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(20.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(20.0),
 								},
 							},
 						},
@@ -1276,7 +1275,7 @@ func TestSpecAreEqual(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "cluster0",
 						ClusterType:   "REPLICASET",
-						BackupEnabled: pointer.MakePtr(true),
+						BackupEnabled: new(true),
 						Labels: []common.LabelSpec{
 							{
 								Key:   "label1",
@@ -1284,7 +1283,7 @@ func TestSpecAreEqual(t *testing.T) {
 							},
 						},
 						MongoDBMajorVersion: "7.0",
-						PitEnabled:          pointer.MakePtr(true),
+						PitEnabled:          new(true),
 						RootCertType:        "ISRGROOTX1",
 						Tags: []*akov2.TagSpec{
 							{
@@ -1301,19 +1300,19 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
 											Compute: &akov2.ComputeSpec{
-												Enabled:          pointer.MakePtr(true),
-												ScaleDownEnabled: pointer.MakePtr(true),
+												Enabled:          new(true),
+												ScaleDownEnabled: new(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M40",
 											},
@@ -1326,52 +1325,52 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Name:                     pointer.MakePtr("cluster0"),
-				ClusterType:              pointer.MakePtr("REPLICASET"),
-				BackupEnabled:            pointer.MakePtr(true),
-				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
-				Paused:                   pointer.MakePtr(false),
+				Name:                     new("cluster0"),
+				ClusterType:              new("REPLICASET"),
+				BackupEnabled:            new(true),
+				EncryptionAtRestProvider: new("NONE"),
+				Paused:                   new(false),
 				Labels: &[]admin.ComponentLabel{
 					{
-						Key:   pointer.MakePtr("label1"),
-						Value: pointer.MakePtr("label1"),
+						Key:   new("label1"),
+						Value: new("label1"),
 					},
 				},
-				MongoDBMajorVersion: pointer.MakePtr("7.0"),
-				MongoDBVersion:      pointer.MakePtr("7.1.5"),
-				PitEnabled:          pointer.MakePtr(true),
-				RootCertType:        pointer.MakePtr("ISRGROOTX1"),
+				MongoDBMajorVersion: new("7.0"),
+				MongoDBVersion:      new("7.1.5"),
+				PitEnabled:          new(true),
+				RootCertType:        new("ISRGROOTX1"),
 				Tags: &[]admin.ResourceTag{
 					{
 						Key:   "tag1",
 						Value: "tag1",
 					},
 				},
-				VersionReleaseSystem:         pointer.MakePtr("LTS"),
-				TerminationProtectionEnabled: pointer.MakePtr(false),
+				VersionReleaseSystem:         new("LTS"),
+				TerminationProtectionEnabled: new(false),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(3),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(3),
+									DiskSizeGB:   new(10.0),
 								},
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(10.0),
 								},
 								AutoScaling: &admin.AdvancedAutoScalingSettings{
 									Compute: &admin.AdvancedComputeAutoScaling{
-										Enabled:          pointer.MakePtr(true),
-										ScaleDownEnabled: pointer.MakePtr(true),
-										MinInstanceSize:  pointer.MakePtr("M10"),
-										MaxInstanceSize:  pointer.MakePtr("M40"),
+										Enabled:          new(true),
+										ScaleDownEnabled: new(true),
+										MinInstanceSize:  new("M10"),
+										MaxInstanceSize:  new("M40"),
 									},
 								},
 							},
@@ -1387,7 +1386,7 @@ func TestSpecAreEqual(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "cluster0",
 						ClusterType:   "REPLICASET",
-						BackupEnabled: pointer.MakePtr(true),
+						BackupEnabled: new(true),
 						Labels: []common.LabelSpec{
 							{
 								Key:   "label1",
@@ -1395,7 +1394,7 @@ func TestSpecAreEqual(t *testing.T) {
 							},
 						},
 						MongoDBMajorVersion: "7.0",
-						PitEnabled:          pointer.MakePtr(true),
+						PitEnabled:          new(true),
 						RootCertType:        "ISRGROOTX1",
 						Tags: []*akov2.TagSpec{
 							{
@@ -1412,19 +1411,19 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_EAST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
 											Compute: &akov2.ComputeSpec{
-												Enabled:          pointer.MakePtr(true),
-												ScaleDownEnabled: pointer.MakePtr(true),
+												Enabled:          new(true),
+												ScaleDownEnabled: new(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M40",
 											},
@@ -1433,19 +1432,19 @@ func TestSpecAreEqual(t *testing.T) {
 									{
 										ProviderName: "AWS",
 										RegionName:   "US_WEST_1",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(3),
+											NodeCount:    new(3),
 										},
 										ReadOnlySpecs: &akov2.Specs{
 											InstanceSize: "M20",
-											NodeCount:    pointer.MakePtr(5),
+											NodeCount:    new(5),
 										},
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
 											Compute: &akov2.ComputeSpec{
-												Enabled:          pointer.MakePtr(true),
-												ScaleDownEnabled: pointer.MakePtr(true),
+												Enabled:          new(true),
+												ScaleDownEnabled: new(true),
 												MinInstanceSize:  "M10",
 												MaxInstanceSize:  "M40",
 											},
@@ -1458,76 +1457,76 @@ func TestSpecAreEqual(t *testing.T) {
 				},
 			},
 			atlas: &admin.ClusterDescription20240805{
-				Name:                     pointer.MakePtr("cluster0"),
-				ClusterType:              pointer.MakePtr("REPLICASET"),
-				BackupEnabled:            pointer.MakePtr(true),
-				EncryptionAtRestProvider: pointer.MakePtr("NONE"),
-				Paused:                   pointer.MakePtr(false),
+				Name:                     new("cluster0"),
+				ClusterType:              new("REPLICASET"),
+				BackupEnabled:            new(true),
+				EncryptionAtRestProvider: new("NONE"),
+				Paused:                   new(false),
 
 				Labels: &[]admin.ComponentLabel{
 					{
-						Key:   pointer.MakePtr("label1"),
-						Value: pointer.MakePtr("label1"),
+						Key:   new("label1"),
+						Value: new("label1"),
 					},
 				},
-				MongoDBMajorVersion: pointer.MakePtr("7.0"),
-				MongoDBVersion:      pointer.MakePtr("7.1.5"),
-				PitEnabled:          pointer.MakePtr(true),
-				RootCertType:        pointer.MakePtr("ISRGROOTX1"),
+				MongoDBMajorVersion: new("7.0"),
+				MongoDBVersion:      new("7.1.5"),
+				PitEnabled:          new(true),
+				RootCertType:        new("ISRGROOTX1"),
 				Tags: &[]admin.ResourceTag{
 					{
 						Key:   "tag1",
 						Value: "tag1",
 					},
 				},
-				VersionReleaseSystem:         pointer.MakePtr("LTS"),
-				TerminationProtectionEnabled: pointer.MakePtr(false),
+				VersionReleaseSystem:         new("LTS"),
+				TerminationProtectionEnabled: new(false),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_WEST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_WEST_1"),
+								Priority:     new(7),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(3),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(3),
+									DiskSizeGB:   new(10.0),
 								},
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(10.0),
 								},
 								AutoScaling: &admin.AdvancedAutoScalingSettings{
 									Compute: &admin.AdvancedComputeAutoScaling{
-										Enabled:          pointer.MakePtr(true),
-										ScaleDownEnabled: pointer.MakePtr(true),
-										MinInstanceSize:  pointer.MakePtr("M10"),
-										MaxInstanceSize:  pointer.MakePtr("M40"),
+										Enabled:          new(true),
+										ScaleDownEnabled: new(true),
+										MinInstanceSize:  new("M10"),
+										MaxInstanceSize:  new("M40"),
 									},
 								},
 							},
 							{
-								ProviderName: pointer.MakePtr("AWS"),
-								RegionName:   pointer.MakePtr("US_EAST_1"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(3),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(3),
+									DiskSizeGB:   new(10.0),
 								},
 								ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-									InstanceSize: pointer.MakePtr("M10"),
-									NodeCount:    pointer.MakePtr(5),
-									DiskSizeGB:   pointer.MakePtr(10.0),
+									InstanceSize: new("M10"),
+									NodeCount:    new(5),
+									DiskSizeGB:   new(10.0),
 								},
 								AutoScaling: &admin.AdvancedAutoScalingSettings{
 									Compute: &admin.AdvancedComputeAutoScaling{
-										Enabled:          pointer.MakePtr(true),
-										ScaleDownEnabled: pointer.MakePtr(true),
-										MinInstanceSize:  pointer.MakePtr("M10"),
-										MaxInstanceSize:  pointer.MakePtr("M40"),
+										Enabled:          new(true),
+										ScaleDownEnabled: new(true),
+										MinInstanceSize:  new("M10"),
+										MaxInstanceSize:  new("M40"),
 									},
 								},
 							},
@@ -1568,7 +1567,7 @@ func TestComputeChangesEbsVolumeTypeBugGCP(t *testing.T) {
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:          "credit-service-uat",
 						ClusterType:   "REPLICASET",
-						BackupEnabled: pointer.MakePtr(true),
+						BackupEnabled: new(true),
 						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 							{
 								ZoneName:  "Zone 1",
@@ -1577,21 +1576,21 @@ func TestComputeChangesEbsVolumeTypeBugGCP(t *testing.T) {
 									{
 										ProviderName: "GCP",
 										RegionName:   "EASTERN_US",
-										Priority:     pointer.MakePtr(7),
+										Priority:     new(7),
 										ElectableSpecs: &akov2.Specs{
 											InstanceSize: "M10",
-											NodeCount:    pointer.MakePtr(3), // Different from Atlas to force changes
+											NodeCount:    new(3), // Different from Atlas to force changes
 											// EbsVolumeType is NOT specified (correct for GCP)
 										},
 										AutoScaling: &akov2.AdvancedAutoScalingSpec{
 											Compute: &akov2.ComputeSpec{
-												Enabled:          pointer.MakePtr(true),
+												Enabled:          new(true),
 												MaxInstanceSize:  "M30",
 												MinInstanceSize:  "M10",
-												ScaleDownEnabled: pointer.MakePtr(true),
+												ScaleDownEnabled: new(true),
 											},
 											DiskGB: &akov2.DiskGB{
-												Enabled: pointer.MakePtr(false),
+												Enabled: new(false),
 											},
 										},
 									},
@@ -1602,31 +1601,31 @@ func TestComputeChangesEbsVolumeTypeBugGCP(t *testing.T) {
 				},
 			},
 			atlasResponse: &admin.ClusterDescription20240805{
-				Name:          pointer.MakePtr("credit-service-uat"),
-				ClusterType:   pointer.MakePtr("REPLICASET"),
-				BackupEnabled: pointer.MakePtr(true),
+				Name:          new("credit-service-uat"),
+				ClusterType:   new("REPLICASET"),
+				BackupEnabled: new(true),
 				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
 					{
-						ZoneName: pointer.MakePtr("Zone 1"),
+						ZoneName: new("Zone 1"),
 						RegionConfigs: &[]admin.CloudRegionConfig20240805{
 							{
-								ProviderName: pointer.MakePtr("GCP"),
-								RegionName:   pointer.MakePtr("EASTERN_US"),
-								Priority:     pointer.MakePtr(7),
+								ProviderName: new("GCP"),
+								RegionName:   new("EASTERN_US"),
+								Priority:     new(7),
 								ElectableSpecs: &admin.HardwareSpec20240805{
-									InstanceSize:  pointer.MakePtr("M10"),
-									NodeCount:     pointer.MakePtr(2), // Different from desired
-									EbsVolumeType: nil,                // Atlas doesn't return EbsVolumeType for GCP
+									InstanceSize:  new("M10"),
+									NodeCount:     new(2), // Different from desired
+									EbsVolumeType: nil,    // Atlas doesn't return EbsVolumeType for GCP
 								},
 								AutoScaling: &admin.AdvancedAutoScalingSettings{
 									Compute: &admin.AdvancedComputeAutoScaling{
-										Enabled:          pointer.MakePtr(true),
-										MaxInstanceSize:  pointer.MakePtr("M30"),
-										MinInstanceSize:  pointer.MakePtr("M10"),
-										ScaleDownEnabled: pointer.MakePtr(true),
+										Enabled:          new(true),
+										MaxInstanceSize:  new("M30"),
+										MinInstanceSize:  new("M10"),
+										ScaleDownEnabled: new(true),
 									},
 									DiskGB: &admin.DiskGBAutoScaling{
-										Enabled: pointer.MakePtr(false),
+										Enabled: new(false),
 									},
 								},
 							},
@@ -1735,10 +1734,10 @@ func TestReplicationSpecAreEqual(t *testing.T) {
 					{
 						ProviderName: "AWS",
 						RegionName:   "EU_CENTRAL_1",
-						Priority:     pointer.MakePtr(7),
+						Priority:     new(7),
 						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
-							NodeCount:    pointer.MakePtr(3),
+							NodeCount:    new(3),
 						},
 					},
 				},
@@ -1750,10 +1749,10 @@ func TestReplicationSpecAreEqual(t *testing.T) {
 					{
 						ProviderName: "AWS",
 						RegionName:   "EU_CENTRAL_1",
-						Priority:     pointer.MakePtr(7),
+						Priority:     new(7),
 						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
-							NodeCount:    pointer.MakePtr(3),
+							NodeCount:    new(3),
 						},
 					},
 				},
@@ -1803,12 +1802,12 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(6),
+				Priority:     new(6),
 			},
 			autoscalingEnabled: false,
 			expected:           false,
@@ -1817,16 +1816,16 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 			},
 			autoscalingEnabled: false,
 			expected:           false,
@@ -1835,16 +1834,16 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ReadOnlySpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 			},
 			autoscalingEnabled: false,
 			expected:           false,
@@ -1853,16 +1852,16 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				AnalyticsSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 			},
 			autoscalingEnabled: false,
 			expected:           false,
@@ -1871,24 +1870,24 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					DiskGB: &akov2.DiskGB{
-						Enabled: pointer.MakePtr(true),
+						Enabled: new(true),
 					},
 				},
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 			},
 			autoscalingEnabled: false,
@@ -1912,28 +1911,28 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					DiskGB: &akov2.DiskGB{
-						Enabled: pointer.MakePtr(true),
+						Enabled: new(true),
 					},
 				},
 			},
 			atlasRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName: "AWS",
 				RegionName:   "EU_CENTRAL_1",
-				Priority:     pointer.MakePtr(7),
+				Priority:     new(7),
 				ElectableSpecs: &akov2.Specs{
 					InstanceSize: "M10",
-					NodeCount:    pointer.MakePtr(3),
+					NodeCount:    new(3),
 				},
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					DiskGB: &akov2.DiskGB{
-						Enabled: pointer.MakePtr(true),
+						Enabled: new(true),
 					},
 				},
 			},
@@ -1976,34 +1975,34 @@ func TestNodeSpecAreEqual(t *testing.T) {
 		"should return false when node count has changed": {
 			akoNodeSpec: &akov2.Specs{
 				InstanceSize: "M20",
-				NodeCount:    pointer.MakePtr(3),
+				NodeCount:    new(3),
 			},
 			atlasNodeSpec: &akov2.Specs{
 				InstanceSize: "M20",
-				NodeCount:    pointer.MakePtr(1),
+				NodeCount:    new(1),
 			},
 		},
 		"should return false when ebs volume has changed": {
 			akoNodeSpec: &akov2.Specs{
 				InstanceSize:  "M20",
-				NodeCount:     pointer.MakePtr(3),
+				NodeCount:     new(3),
 				EbsVolumeType: "STANDARD",
 			},
 			atlasNodeSpec: &akov2.Specs{
 				InstanceSize: "M20",
-				NodeCount:    pointer.MakePtr(3),
+				NodeCount:    new(3),
 			},
 		},
 		"should return false when disk iop has changed": {
 			akoNodeSpec: &akov2.Specs{
 				InstanceSize:  "M20",
-				NodeCount:     pointer.MakePtr(3),
+				NodeCount:     new(3),
 				EbsVolumeType: "STANDARD",
-				DiskIOPS:      pointer.MakePtr(int64(3000)),
+				DiskIOPS:      new(int64(3000)),
 			},
 			atlasNodeSpec: &akov2.Specs{
 				InstanceSize:  "M20",
-				NodeCount:     pointer.MakePtr(3),
+				NodeCount:     new(3),
 				EbsVolumeType: "STANDARD",
 			},
 		},
@@ -2020,15 +2019,15 @@ func TestNodeSpecAreEqual(t *testing.T) {
 		"should return true when specs are equal": {
 			akoNodeSpec: &akov2.Specs{
 				InstanceSize:  "M10",
-				NodeCount:     pointer.MakePtr(3),
+				NodeCount:     new(3),
 				EbsVolumeType: "STANDARD",
-				DiskIOPS:      pointer.MakePtr(int64(5000)),
+				DiskIOPS:      new(int64(5000)),
 			},
 			atlasNodeSpec: &akov2.Specs{
 				InstanceSize:  "M10",
-				NodeCount:     pointer.MakePtr(3),
+				NodeCount:     new(3),
 				EbsVolumeType: "STANDARD",
-				DiskIOPS:      pointer.MakePtr(int64(5000)),
+				DiskIOPS:      new(int64(5000)),
 			},
 			expected: true,
 		},
@@ -2059,46 +2058,46 @@ func TestAutoscalingConfigAreEqual(t *testing.T) {
 		"should return false when disk autoscaling has changed": {
 			akoAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 			},
 			atlasAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 			},
 		},
 		"should return false when compute autoscaling has changed": {
 			akoAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 			},
 			atlasAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				Compute: &akov2.ComputeSpec{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 			},
 		},
 		"should return true when autoscaling are equal": {
 			akoAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
+					Enabled:          new(true),
+					ScaleDownEnabled: new(true),
 					MinInstanceSize:  "M10",
 					MaxInstanceSize:  "M40",
 				},
 			},
 			atlasAutoscaling: &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 				Compute: &akov2.ComputeSpec{
-					Enabled:          pointer.MakePtr(true),
-					ScaleDownEnabled: pointer.MakePtr(true),
+					Enabled:          new(true),
+					ScaleDownEnabled: new(true),
 					MinInstanceSize:  "M10",
 					MaxInstanceSize:  "M40",
 				},
@@ -2131,25 +2130,25 @@ func TestDiskAutoscalingConfigAreEqual(t *testing.T) {
 		},
 		"should return false when autoscaling has changed": {
 			akoAutoscaling: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 			},
 			atlasAutoscaling: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 		},
 		"should return true when autoscaling enabled flag is unset": {
 			akoAutoscaling: &akov2.DiskGB{},
 			atlasAutoscaling: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 			},
 			expected: true,
 		},
 		"should return true when autoscaling are equal": {
 			akoAutoscaling: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 			},
 			atlasAutoscaling: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 			},
 			expected: true,
 		},
@@ -2179,37 +2178,37 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 		},
 		"should return false when enabled flag has changed": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 		},
 		"should return false when scale down enabled flag has changed": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(true),
+				ScaleDownEnabled: new(true),
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(false),
+				ScaleDownEnabled: new(false),
 			},
 		},
 		"should return false when min instance has changed and scale down is enabled": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(true),
+				ScaleDownEnabled: new(true),
 				MinInstanceSize:  "M20",
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(true),
+				ScaleDownEnabled: new(true),
 				MinInstanceSize:  "M10",
 			},
 		},
 		"should return true when min instance has changed and scale down is disabled": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(false),
+				ScaleDownEnabled: new(false),
 				MinInstanceSize:  "M20",
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				ScaleDownEnabled: pointer.MakePtr(false),
+				ScaleDownEnabled: new(false),
 				MinInstanceSize:  "M10",
 			},
 			expected: true,
@@ -2228,8 +2227,8 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 				MaxInstanceSize: "M40",
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
+				Enabled:          new(true),
+				ScaleDownEnabled: new(true),
 				MinInstanceSize:  "M10",
 				MaxInstanceSize:  "M40",
 			},
@@ -2237,14 +2236,14 @@ func TestComputeAutoscalingConfigAreEqual(t *testing.T) {
 		},
 		"should return true when autoscaling are equal": {
 			akoAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
+				Enabled:          new(true),
+				ScaleDownEnabled: new(true),
 				MinInstanceSize:  "M10",
 				MaxInstanceSize:  "M40",
 			},
 			atlasAutoscaling: &akov2.ComputeSpec{
-				Enabled:          pointer.MakePtr(true),
-				ScaleDownEnabled: pointer.MakePtr(true),
+				Enabled:          new(true),
+				ScaleDownEnabled: new(true),
 				MinInstanceSize:  "M10",
 				MaxInstanceSize:  "M40",
 			},
@@ -2270,39 +2269,39 @@ func TestAreEqual(t *testing.T) {
 				expected: true,
 			},
 			"desired is nil and current is pointer to zero value": {
-				current:  pointer.MakePtr(false),
+				current:  new(false),
 				expected: true,
 			},
 			"desired and current are pointer to zero value": {
-				desired:  pointer.MakePtr(false),
-				current:  pointer.MakePtr(false),
+				desired:  new(false),
+				current:  new(false),
 				expected: true,
 			},
 			"desired is pointer to zero value and current is nil": {
-				desired:  pointer.MakePtr(false),
+				desired:  new(false),
 				expected: true,
 			},
 			"desired and current are true": {
-				desired:  pointer.MakePtr(true),
-				current:  pointer.MakePtr(true),
+				desired:  new(true),
+				current:  new(true),
 				expected: true,
 			},
 			"desired is nil and current is true": {
-				current:  pointer.MakePtr(true),
+				current:  new(true),
 				expected: false,
 			},
 			"desired is true and current is nil": {
-				desired:  pointer.MakePtr(true),
+				desired:  new(true),
 				expected: false,
 			},
 			"desired is false and current is true": {
-				desired:  pointer.MakePtr(false),
-				current:  pointer.MakePtr(true),
+				desired:  new(false),
+				current:  new(true),
 				expected: false,
 			},
 			"desired is true and current is false": {
-				desired:  pointer.MakePtr(true),
-				current:  pointer.MakePtr(false),
+				desired:  new(true),
+				current:  new(false),
 				expected: false,
 			},
 		}
@@ -2325,34 +2324,34 @@ func TestAreEqual(t *testing.T) {
 				expected: true,
 			},
 			"desired is nil and current is pointer to zero value": {
-				current:  pointer.MakePtr(""),
+				current:  new(""),
 				expected: true,
 			},
 			"desired and current are pointer to zero value": {
-				desired:  pointer.MakePtr(""),
-				current:  pointer.MakePtr(""),
+				desired:  new(""),
+				current:  new(""),
 				expected: true,
 			},
 			"desired is pointer to zero value and current is nil": {
-				desired:  pointer.MakePtr(""),
+				desired:  new(""),
 				expected: true,
 			},
 			"desired and current have value": {
-				desired:  pointer.MakePtr("value"),
-				current:  pointer.MakePtr("value"),
+				desired:  new("value"),
+				current:  new("value"),
 				expected: true,
 			},
 			"desired is nil and current has value": {
-				current:  pointer.MakePtr("value"),
+				current:  new("value"),
 				expected: false,
 			},
 			"desired has value and current is nil": {
-				desired:  pointer.MakePtr("value"),
+				desired:  new("value"),
 				expected: false,
 			},
 			"desired has different value from current": {
-				desired:  pointer.MakePtr("value"),
-				current:  pointer.MakePtr("other-value"),
+				desired:  new("value"),
+				current:  new("other-value"),
 				expected: false,
 			},
 		}
@@ -2375,34 +2374,34 @@ func TestAreEqual(t *testing.T) {
 				expected: true,
 			},
 			"desired is nil and current is pointer to zero value": {
-				current:  pointer.MakePtr(0),
+				current:  new(0),
 				expected: true,
 			},
 			"desired and current are pointer to zero value": {
-				desired:  pointer.MakePtr(0),
-				current:  pointer.MakePtr(0),
+				desired:  new(0),
+				current:  new(0),
 				expected: true,
 			},
 			"desired is pointer to zero value and current is nil": {
-				desired:  pointer.MakePtr(0),
+				desired:  new(0),
 				expected: true,
 			},
 			"desired and current have value": {
-				desired:  pointer.MakePtr(10),
-				current:  pointer.MakePtr(10),
+				desired:  new(10),
+				current:  new(10),
 				expected: true,
 			},
 			"desired is nil and current has value": {
-				current:  pointer.MakePtr(10),
+				current:  new(10),
 				expected: false,
 			},
 			"desired has value and current is nil": {
-				desired:  pointer.MakePtr(10),
+				desired:  new(10),
 				expected: false,
 			},
 			"desired has different value from current": {
-				desired:  pointer.MakePtr(10),
-				current:  pointer.MakePtr(11),
+				desired:  new(10),
+				current:  new(11),
 				expected: false,
 			},
 		}

@@ -30,7 +30,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
@@ -157,8 +156,8 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 						Namespace: connectionSecret.Namespace,
 					},
 					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com", "mongodb.com"),
-					DomainRestrictionEnabled: pointer.MakePtr(true),
-					SSODebugEnabled:          pointer.MakePtr(false),
+					DomainRestrictionEnabled: new(true),
+					SSODebugEnabled:          new(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
 					RoleMappings:             roles,
 				},

@@ -26,7 +26,7 @@ import (
 type AtlasDeployment struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec            DeploymentSpec     `json:"spec,omitempty"`
+	Spec            DeploymentSpec     `json:"spec"`
 }
 
 type DeploymentSpec akov2.AtlasDeploymentSpec

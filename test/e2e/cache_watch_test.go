@@ -248,7 +248,7 @@ var _ = Describe("Reconciles test:", func() {
 func setupNamespaces(ctx context.Context, testData *model.TestDataProvider, generateNames ...string) []*corev1.Namespace {
 	result := make([]*corev1.Namespace, 0, len(generateNames))
 	By("Setting up test namespaces (and wait for them to be created)", func() {
-		for i := 0; i < len(generateNames); i++ {
+		for i := range generateNames {
 			namespace, err := k8s.CreateRandomNamespace(ctx, testData.K8SClient, generateNames[i])
 			Expect(err).To(BeNil())
 			result = append(result, namespace)

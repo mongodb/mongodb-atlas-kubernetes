@@ -28,7 +28,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compat"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 // Important:
@@ -240,7 +239,7 @@ func (p AtlasDatabaseUser) ToAtlasSDK(ctx context.Context, kubeClient client.Cli
 
 	result.Password = &password
 	if result.Description == nil {
-		result.Description = pointer.MakePtr("")
+		result.Description = new("")
 	}
 
 	return result, nil

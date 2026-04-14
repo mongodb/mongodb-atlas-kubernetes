@@ -34,7 +34,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestEnsureBackupCompliance(t *testing.T) {
@@ -116,7 +115,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 				backupAPI.EXPECT().UpdateCompliancePolicy(context.Background(), "", mock.AnythingOfType("*admin.DataProtectionSettings20231001")).
 					Return(admin.UpdateCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().UpdateCompliancePolicyExecute(mock.Anything).
-					Return(&admin.DataProtectionSettings20231001{State: pointer.MakePtr("ACTIVE")}, &http.Response{}, nil)
+					Return(&admin.DataProtectionSettings20231001{State: new("ACTIVE")}, &http.Response{}, nil)
 				return backupAPI
 			}(),
 			isOK:          true,
@@ -158,10 +157,10 @@ func TestEnsureBackupCompliance(t *testing.T) {
 							AuthorizedEmail:         "test@example.com",
 							AuthorizedUserFirstName: "John",
 							AuthorizedUserLastName:  "Doe",
-							CopyProtectionEnabled:   pointer.MakePtr(false),
-							EncryptionAtRestEnabled: pointer.MakePtr(false),
-							PitEnabled:              pointer.MakePtr(false),
-							RestoreWindowDays:       pointer.MakePtr(42),
+							CopyProtectionEnabled:   new(false),
+							EncryptionAtRestEnabled: new(false),
+							PitEnabled:              new(false),
+							RestoreWindowDays:       new(42),
 							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 								{
 									FrequencyType:     "monthly",
@@ -174,7 +173,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 								RetentionUnit:  "weeks",
 								RetentionValue: 3,
 							},
-							State: pointer.MakePtr("UPDATING"),
+							State: new("UPDATING"),
 						},
 						&http.Response{},
 						nil,
@@ -202,10 +201,10 @@ func TestEnsureBackupCompliance(t *testing.T) {
 							AuthorizedEmail:         "test@example.com",
 							AuthorizedUserFirstName: "John",
 							AuthorizedUserLastName:  "Doe",
-							CopyProtectionEnabled:   pointer.MakePtr(false),
-							EncryptionAtRestEnabled: pointer.MakePtr(false),
-							PitEnabled:              pointer.MakePtr(false),
-							RestoreWindowDays:       pointer.MakePtr(42),
+							CopyProtectionEnabled:   new(false),
+							EncryptionAtRestEnabled: new(false),
+							PitEnabled:              new(false),
+							RestoreWindowDays:       new(42),
 							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 								{
 									FrequencyType:     "monthly",
@@ -218,7 +217,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 								RetentionUnit:  "weeks",
 								RetentionValue: 3,
 							},
-							State: pointer.MakePtr("UPDATING"),
+							State: new("UPDATING"),
 						},
 						&http.Response{},
 						nil,
@@ -242,7 +241,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
 					Return(
-						&admin.DataProtectionSettings20231001{State: pointer.MakePtr("UPDATING")},
+						&admin.DataProtectionSettings20231001{State: new("UPDATING")},
 						&http.Response{},
 						nil,
 					)
@@ -269,10 +268,10 @@ func TestEnsureBackupCompliance(t *testing.T) {
 							AuthorizedEmail:         "test@example.com",
 							AuthorizedUserFirstName: "John",
 							AuthorizedUserLastName:  "Doe",
-							CopyProtectionEnabled:   pointer.MakePtr(false),
-							EncryptionAtRestEnabled: pointer.MakePtr(false),
-							PitEnabled:              pointer.MakePtr(false),
-							RestoreWindowDays:       pointer.MakePtr(42),
+							CopyProtectionEnabled:   new(false),
+							EncryptionAtRestEnabled: new(false),
+							PitEnabled:              new(false),
+							RestoreWindowDays:       new(42),
 							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 								{
 									FrequencyType:     "monthly",
@@ -285,7 +284,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 								RetentionUnit:  "weeks",
 								RetentionValue: 3,
 							},
-							State: pointer.MakePtr("ACTIVE"),
+							State: new("ACTIVE"),
 						},
 						&http.Response{},
 						nil,
@@ -339,10 +338,10 @@ func TestEnsureBackupCompliance(t *testing.T) {
 							AuthorizedEmail:         "test@example.com",
 							AuthorizedUserFirstName: "John",
 							AuthorizedUserLastName:  "Doe",
-							CopyProtectionEnabled:   pointer.MakePtr(false),
-							EncryptionAtRestEnabled: pointer.MakePtr(false),
-							PitEnabled:              pointer.MakePtr(false),
-							RestoreWindowDays:       pointer.MakePtr(42),
+							CopyProtectionEnabled:   new(false),
+							EncryptionAtRestEnabled: new(false),
+							PitEnabled:              new(false),
+							RestoreWindowDays:       new(42),
 							ScheduledPolicyItems: &[]admin.BackupComplianceScheduledPolicyItem{
 								{
 									FrequencyType:     "monthly",
@@ -355,7 +354,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 								RetentionUnit:  "weeks",
 								RetentionValue: 3,
 							},
-							State: pointer.MakePtr("ACTIVE"),
+							State: new("ACTIVE"),
 						},
 						&http.Response{},
 						nil,

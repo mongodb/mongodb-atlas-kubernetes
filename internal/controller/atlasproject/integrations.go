@@ -22,7 +22,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
@@ -47,8 +46,8 @@ func (r *AtlasProjectReconciler) fromAKO(ctx context.Context, project *akov2.Atl
 			}
 			tpi.Datadog = &akov2.DatadogIntegration{
 				Region:                       i.Region,
-				SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
-				SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+				SendCollectionLatencyMetrics: new("disabled"),
+				SendDatabaseMetrics:          new("disabled"),
 			}
 		case "MICROSOFT_TEAMS":
 			tpi.MicrosoftTeamsSecrets = &integration.MicrosoftTeamsSecrets{
@@ -113,7 +112,7 @@ func (r *AtlasProjectReconciler) fromAKO(ctx context.Context, project *akov2.Atl
 			}
 
 			tpi.Prometheus = &akov2.PrometheusIntegration{
-				Enabled:          pointer.MakePtr(enabled),
+				Enabled:          new(enabled),
 				ServiceDiscovery: i.ServiceDiscovery,
 			}
 			tpi.PrometheusSecrets = &integration.PrometheusSecrets{

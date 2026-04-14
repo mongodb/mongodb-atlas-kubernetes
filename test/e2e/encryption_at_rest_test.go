@@ -32,7 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloud"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/cloudaccess"
@@ -95,7 +94,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			},
 			akov2.EncryptionAtRest{
 				AwsKms: akov2.AwsKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					Region:  "US_EAST_1",
 				},
 			},
@@ -116,7 +115,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 				AzureKeyVault: akov2.AzureKeyVault{
 					AzureEnvironment:  AzureEnvironment,
 					ClientID:          os.Getenv(AzureClientID),
-					Enabled:           pointer.MakePtr(true),
+					Enabled:           new(true),
 					ResourceGroupName: cloud.ResourceGroupName,
 					TenantID:          os.Getenv(DirectoryID),
 				},
@@ -129,7 +128,7 @@ var _ = Describe("Encryption at REST test", Label("encryption-at-rest"), func() 
 			},
 			akov2.EncryptionAtRest{
 				GoogleCloudKms: akov2.GoogleCloudKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 			},
 			nil,
@@ -371,7 +370,7 @@ var _ = Describe("Encryption at rest AWS", Label("encryption-at-rest-aws"), Orde
 		userData := testData
 		encAtRest := akov2.EncryptionAtRest{
 			AwsKms: akov2.AwsKms{
-				Enabled: pointer.MakePtr(true),
+				Enabled: new(true),
 				Region:  "US_EAST_1",
 			},
 		}

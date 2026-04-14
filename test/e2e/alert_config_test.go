@@ -31,7 +31,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/compare"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -76,9 +75,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     pointer.MakePtr(5),
-							EmailEnabled: pointer.MakePtr(true),
-							SMSEnabled:   pointer.MakePtr(false),
+							DelayMin:     new(5),
+							EmailEnabled: new(true),
+							SMSEnabled:   new(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -97,9 +96,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     pointer.MakePtr(5),
-							EmailEnabled: pointer.MakePtr(true),
-							SMSEnabled:   pointer.MakePtr(false),
+							DelayMin:     new(5),
+							EmailEnabled: new(true),
+							SMSEnabled:   new(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -120,9 +119,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  60,
-							DelayMin:     pointer.MakePtr(0),
-							EmailEnabled: pointer.MakePtr(true),
-							SMSEnabled:   pointer.MakePtr(false),
+							DelayMin:     new(0),
+							EmailEnabled: new(true),
+							SMSEnabled:   new(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -141,9 +140,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     pointer.MakePtr(5),
-							EmailEnabled: pointer.MakePtr(true),
-							SMSEnabled:   pointer.MakePtr(false),
+							DelayMin:     new(5),
+							EmailEnabled: new(true),
+							SMSEnabled:   new(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -176,9 +175,9 @@ var _ = Describe("Alert configuration tests", Label("alert-config", "alert-confi
 					Notifications: []akov2.Notification{
 						{
 							IntervalMin:  5,
-							DelayMin:     pointer.MakePtr(5),
-							EmailEnabled: pointer.MakePtr(true),
-							SMSEnabled:   pointer.MakePtr(false),
+							DelayMin:     new(5),
+							EmailEnabled: new(true),
+							SMSEnabled:   new(false),
 							Roles: []string{
 								"GROUP_OWNER",
 							},
@@ -258,12 +257,12 @@ func normalizeAtlasAlertConfig(atlasConfig admin.GroupAlertsConfig) admin.GroupA
 	notifications := atlasConfig.GetNotifications()
 	for j := range notifications {
 		notifications[j].NotifierId = nil
-		notifications[j].DatadogApiKey = pointer.MakePtr("")
-		notifications[j].OpsGenieApiKey = pointer.MakePtr("")
-		notifications[j].ServiceKey = pointer.MakePtr("")
-		notifications[j].ApiToken = pointer.MakePtr("")
-		notifications[j].VictorOpsApiKey = pointer.MakePtr("")
-		notifications[j].VictorOpsRoutingKey = pointer.MakePtr("")
+		notifications[j].DatadogApiKey = new("")
+		notifications[j].OpsGenieApiKey = new("")
+		notifications[j].ServiceKey = new("")
+		notifications[j].ApiToken = new("")
+		notifications[j].VictorOpsApiKey = new("")
+		notifications[j].VictorOpsRoutingKey = new("")
 	}
 	atlasConfig.SetNotifications(notifications)
 
@@ -289,9 +288,9 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config", 
 			Notifications: []akov2.Notification{
 				{
 					IntervalMin:  5,
-					DelayMin:     pointer.MakePtr(5),
-					EmailEnabled: pointer.MakePtr(true),
-					SMSEnabled:   pointer.MakePtr(false),
+					DelayMin:     new(5),
+					EmailEnabled: new(true),
+					SMSEnabled:   new(false),
 					Roles: []string{
 						"GROUP_OWNER",
 					},

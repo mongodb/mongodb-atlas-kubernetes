@@ -51,7 +51,6 @@ import (
 	akogenerateddatabaseuser "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/databaseuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/flexcluster"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
@@ -219,7 +218,7 @@ func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T], maxConcurrentReco
 func (nr *ctrlStateReconciler[T]) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	defaultReconcilerOptions := controller.TypedOptions[reconcile.Request]{
 		RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-		SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+		SkipNameValidation:      new(skipNameValidation),
 		MaxConcurrentReconciles: nr.maxConcurrentReconciles,
 	}
 	return nr.Reconciler.SetupWithManager(mgr, defaultReconcilerOptions)

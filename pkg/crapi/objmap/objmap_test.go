@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	admin2025 "go.mongodb.org/atlas-sdk/v20250312018/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/objmap"
 )
 
@@ -81,8 +80,8 @@ func TestParamsFill(t *testing.T) {
 	assert.Equal(t, admin2025.CreateAlertConfigApiParams{
 		GroupId: "62b6e34b3d91647abb20e7b8",
 		GroupAlertsConfig: &admin2025.GroupAlertsConfig{
-			Enabled:       pointer.MakePtr(true),
-			EventTypeName: pointer.MakePtr("some-event"),
+			Enabled:       new(true),
+			EventTypeName: new("some-event"),
 		},
 	}, result)
 }

@@ -37,7 +37,7 @@ type maintenanceWindowMatcher struct {
 	ExpectedMaintenanceWindow project.MaintenanceWindow
 }
 
-func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *maintenanceWindowMatcher) Match(actual any) (success bool, err error) {
 	var c *admin.GroupMaintenanceWindow
 	var ok bool
 	if c, ok = actual.(*admin.GroupMaintenanceWindow); !ok {
@@ -56,10 +56,10 @@ func (m *maintenanceWindowMatcher) Match(actual interface{}) (success bool, err 
 	return true, nil
 }
 
-func (m *maintenanceWindowMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *maintenanceWindowMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, "to match", m.ExpectedMaintenanceWindow)
 }
 
-func (m *maintenanceWindowMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *maintenanceWindowMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, "not to match", m.ExpectedMaintenanceWindow)
 }

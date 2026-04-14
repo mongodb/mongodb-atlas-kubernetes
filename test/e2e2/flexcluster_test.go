@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -301,7 +300,7 @@ func prepareFlexClusterWithGroupRef(objs []client.Object, params *testparams.Tes
 // updateFlexClusterTerminationProtection mutates a FlexCluster for the update scenario.
 // This changes terminationProtectionEnabled from true to false.
 func updateFlexClusterTerminationProtection(cluster *apiv1.FlexCluster) {
-	cluster.Spec.V20250312.Entry.TerminationProtectionEnabled = pointer.MakePtr(false)
+	cluster.Spec.V20250312.Entry.TerminationProtectionEnabled = new(false)
 }
 
 func freshFlexCluster(cluster *apiv1.FlexCluster) *apiv1.FlexCluster {

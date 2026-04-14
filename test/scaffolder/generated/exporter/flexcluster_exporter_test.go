@@ -101,14 +101,6 @@ func (m *mockClientObject) GetName() string {
 	return m.name
 }
 
-func intPtr(i int) *int {
-	return &i
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestExport(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -125,9 +117,9 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -144,11 +136,11 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
-						{Name: stringPtr("cluster-2")},
-						{Name: stringPtr("cluster-3")},
+						{Name: new("cluster-1")},
+						{Name: new("cluster-2")},
+						{Name: new("cluster-3")},
 					},
-					TotalCount: intPtr(3),
+					TotalCount: new(3),
 				},
 			},
 			translator: &mockTranslator{
@@ -165,7 +157,7 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results:    []admin.FlexClusterDescription20241113{},
-					TotalCount: intPtr(0),
+					TotalCount: new(0),
 				},
 			},
 			translator:       &mockTranslator{},
@@ -198,9 +190,9 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -215,9 +207,9 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -238,9 +230,9 @@ func TestExport(t *testing.T) {
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{

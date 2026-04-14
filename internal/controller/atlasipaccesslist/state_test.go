@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 )
 
@@ -292,7 +291,7 @@ func TestHandleCustomResource(t *testing.T) {
 							&admin.PaginatedNetworkAccess{
 								Results: []admin.NetworkPermissionEntry{
 									{
-										CidrBlock: pointer.MakePtr("192.168.0.0/24"),
+										CidrBlock: new("192.168.0.0/24"),
 									},
 								},
 							},
@@ -312,7 +311,7 @@ func TestHandleCustomResource(t *testing.T) {
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("123")}, nil, nil)
+						Return(&admin.Group{Id: new("123")}, nil, nil)
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
@@ -536,7 +535,7 @@ func TestHandleIPAccessList(t *testing.T) {
 						},
 						{
 							IPAddress:       "192.168.10.100",
-							DeleteAfterDate: pointer.MakePtr(deleteAfterDate),
+							DeleteAfterDate: new(deleteAfterDate),
 						},
 					},
 				},
@@ -545,7 +544,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				s := translation.NewIPAccessListServiceMock(t)
 				s.EXPECT().List(context.Background(), "").
 					Return(ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}}, nil)
-				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{"192.168.10.100/32": {CIDR: "192.168.10.100/32", DeleteAfterDate: pointer.MakePtr(deleteAfterDate.Time)}}).
+				s.EXPECT().Add(context.Background(), "", ipaccesslist.IPAccessEntries{"192.168.10.100/32": {CIDR: "192.168.10.100/32", DeleteAfterDate: new(deleteAfterDate.Time)}}).
 					Return(errors.New("fail to add, expired entry"))
 
 				return s

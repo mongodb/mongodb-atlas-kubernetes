@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
 )
@@ -267,7 +266,7 @@ func TestHandleCustomResource(t *testing.T) {
 					)
 					pAPI.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).Return(
 						&admin.Group{
-							Id: pointer.MakePtr(testProjectID),
+							Id: new(testProjectID),
 						}, nil, nil,
 					)
 					npAPI := mockadmin.NewNetworkPeeringApi(t)

@@ -129,15 +129,15 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 		a.resourceGroupName,
 		endpointName,
 		armnetwork.PrivateEndpoint{
-			Name:     pointer.MakePtr(endpointName),
-			Location: pointer.MakePtr(region),
+			Name:     new(endpointName),
+			Location: new(region),
 			Properties: &armnetwork.PrivateEndpointProperties{
 				Subnet: updatedSubnet,
 				ManualPrivateLinkServiceConnections: []*armnetwork.PrivateLinkServiceConnection{
 					{
-						Name: pointer.MakePtr(endpointName),
+						Name: new(endpointName),
 						Properties: &armnetwork.PrivateLinkServiceConnectionProperties{
-							PrivateLinkServiceID: pointer.MakePtr(serviceID),
+							PrivateLinkServiceID: new(serviceID),
 						},
 					},
 				},
@@ -229,9 +229,9 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 		subnetsSpec = append(
 			subnetsSpec,
 			&armnetwork.Subnet{
-				Name: pointer.MakePtr(name),
+				Name: new(name),
 				Properties: &armnetwork.SubnetPropertiesFormat{
-					AddressPrefix: pointer.MakePtr(ipRange),
+					AddressPrefix: new(ipRange),
 				},
 			},
 		)
@@ -242,17 +242,17 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 		a.resourceGroupName,
 		vpcName,
 		armnetwork.VirtualNetwork{
-			Location: pointer.MakePtr(region),
+			Location: new(region),
 			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 				AddressSpace: &armnetwork.AddressSpace{
 					AddressPrefixes: []*string{
-						pointer.MakePtr(cidr),
+						new(cidr),
 					},
 				},
 				Subnets: subnetsSpec,
 			},
 			Tags: map[string]*string{
-				"Name":              pointer.MakePtr(vpcName),
+				"Name":              new(vpcName),
 				tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
 				tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
 				tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),
@@ -301,9 +301,9 @@ func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipR
 		vpcName,
 		subnetName,
 		armnetwork.Subnet{
-			Name: pointer.MakePtr(subnetName),
+			Name: new(subnetName),
 			Properties: &armnetwork.SubnetPropertiesFormat{
-				AddressPrefix: pointer.MakePtr(ipRange),
+				AddressPrefix: new(ipRange),
 			},
 		},
 		nil,

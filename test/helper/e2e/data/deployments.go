@@ -21,7 +21,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -61,10 +60,10 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 							{
 								ProviderName: "AWS",
 								RegionName:   "US_EAST_1",
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
 							},
 						},
@@ -76,10 +75,10 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 							{
 								ProviderName: "AZURE",
 								RegionName:   "EUROPE_NORTH",
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
 							},
 						},
@@ -126,7 +125,7 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				ClusterType:   "REPLICASET",
 				Name:          "deployment-backup",
-				BackupEnabled: pointer.MakePtr(true),
+				BackupEnabled: new(true),
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName: "Zone 1",
@@ -134,9 +133,9 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 							{
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
-								Priority:            pointer.MakePtr(7),
+								Priority:            new(7),
 								ProviderName:        "AWS",
 								BackingProviderName: "AWS",
 								RegionName:          "US_EAST_1",
@@ -159,7 +158,7 @@ func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
 		},
 		DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:          "deployment-backup",
-			BackupEnabled: pointer.MakePtr(false),
+			BackupEnabled: new(false),
 			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 				{
 					ZoneName: "Zone 1",
@@ -167,9 +166,9 @@ func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
 						{
 							ElectableSpecs: &akov2.Specs{
 								InstanceSize: InstanceSizeM20,
-								NodeCount:    pointer.MakePtr(3),
+								NodeCount:    new(3),
 							},
-							Priority:            pointer.MakePtr(7),
+							Priority:            new(7),
 							ProviderName:        "AWS",
 							BackingProviderName: "AWS",
 							RegionName:          "US_EAST_1",
@@ -220,7 +219,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          "deployment-multiregion",
-				BackupEnabled: pointer.MakePtr(true),
+				BackupEnabled: new(true),
 				ClusterType:   "REPLICASET",
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
@@ -230,20 +229,20 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 							{
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(2),
+									NodeCount:    new(2),
 								},
 								AutoScaling:  &akov2.AdvancedAutoScalingSpec{},
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ProviderName: string(providerName),
 								RegionName:   regions[0],
 							},
 							{
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(1),
+									NodeCount:    new(1),
 								},
 								AutoScaling:  &akov2.AdvancedAutoScalingSpec{},
-								Priority:     pointer.MakePtr(6),
+								Priority:     new(6),
 								ProviderName: string(providerName),
 								RegionName:   regions[1],
 							},
@@ -280,7 +279,7 @@ func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM0,
 								},
-								Priority:            pointer.MakePtr(7),
+								Priority:            new(7),
 								ProviderName:        string(provider.ProviderTenant),
 								BackingProviderName: string(provider.ProviderAWS),
 								RegionName:          AWSRegion,
@@ -290,9 +289,9 @@ func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 				},
 			},
 			ProcessArgs: &akov2.ProcessArgs{
-				JavascriptEnabled:         pointer.MakePtr(true),
+				JavascriptEnabled:         new(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				NoTableScan:               pointer.MakePtr(false),
+				NoTableScan:               new(false),
 			},
 		},
 	}
@@ -311,15 +310,15 @@ func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 			},
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:          name,
-				BackupEnabled: pointer.MakePtr(false),
+				BackupEnabled: new(false),
 				BiConnector: &akov2.BiConnectorSpec{
-					Enabled:        pointer.MakePtr(false),
+					Enabled:        new(false),
 					ReadPreference: "secondary",
 				},
 				ClusterType:              string(akov2.TypeReplicaSet),
 				EncryptionAtRestProvider: "NONE",
-				PitEnabled:               pointer.MakePtr(false),
-				Paused:                   pointer.MakePtr(false),
+				PitEnabled:               new(false),
+				Paused:                   new(false),
 				RootCertType:             "ISRGROOTX1",
 				VersionReleaseSystem:     "LTS",
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
@@ -330,9 +329,9 @@ func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 							{
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: InstanceSizeM10,
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ProviderName: string(provider.ProviderAWS),
 								RegionName:   AWSRegion,
 							},
@@ -341,9 +340,9 @@ func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 				},
 			},
 			ProcessArgs: &akov2.ProcessArgs{
-				JavascriptEnabled:         pointer.MakePtr(true),
+				JavascriptEnabled:         new(true),
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				NoTableScan:               pointer.MakePtr(false),
+				NoTableScan:               new(false),
 			},
 		},
 	}

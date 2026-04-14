@@ -14,6 +14,8 @@
 
 package authmode
 
+import "slices"
+
 type AuthMode string
 
 const (
@@ -24,23 +26,11 @@ const (
 type AuthModes []AuthMode
 
 func (authModes AuthModes) CheckAuthMode(modeToCheck AuthMode) bool {
-	for _, mode := range authModes {
-		if mode == modeToCheck {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(authModes, modeToCheck)
 }
 
 func (authModes *AuthModes) AddAuthMode(modeToAdd AuthMode) {
-	found := false
-	for _, mode := range *authModes {
-		if mode == modeToAdd {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(*authModes, modeToAdd)
 
 	if !found {
 		*authModes = append(*authModes, modeToAdd)

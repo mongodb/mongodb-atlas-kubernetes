@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
@@ -120,7 +119,7 @@ func TestToAtlas(t *testing.T) {
 			}(),
 			atlasUser: func() *admin.CloudDatabaseUser {
 				inAtlas := defaultTestAtlasUser()
-				inAtlas.Description = pointer.MakePtr("")
+				inAtlas.Description = new("")
 				return inAtlas
 			}(),
 		},
@@ -169,9 +168,9 @@ func defaultTestAtlasUser() *admin.CloudDatabaseUser {
 	return &admin.CloudDatabaseUser{
 		DatabaseName: testDB,
 		GroupId:      testProjectID,
-		Password:     pointer.MakePtr(testPassword),
+		Password:     new(testPassword),
 		Username:     testUsername,
-		Scopes:       pointer.MakePtr([]admin.UserScope{}),
-		Description:  pointer.MakePtr(""),
+		Scopes:       new([]admin.UserScope{}),
+		Description:  new(""),
 	}
 }

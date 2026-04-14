@@ -18,7 +18,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 type CustomRole struct {
@@ -104,9 +103,9 @@ func fromAtlas(role *admin.UserCustomDBRole) CustomRole {
 				resources = make([]akov2.Resource, 0, len(atlasAction.Resources))
 				for _, atlasResource := range atlasAction.Resources {
 					resources = append(resources, akov2.Resource{
-						Cluster:    pointer.MakePtr(atlasResource.Cluster),
-						Database:   pointer.MakePtr(atlasResource.Db),
-						Collection: pointer.MakePtr(atlasResource.Collection),
+						Cluster:    new(atlasResource.Cluster),
+						Database:   new(atlasResource.Db),
+						Collection: new(atlasResource.Collection),
 					})
 				}
 			}
