@@ -31,23 +31,20 @@ import (
 )
 
 type Generator struct {
-	definitions   map[string]v1alpha1.OpenAPIDefinition
-	pluginSet     *plugins.Set
-	openapiLoader config.Loader
-	atlasLoader   config.PackageLoader
+	definitions map[string]v1alpha1.OpenAPIDefinition
+	pluginSet   *plugins.Set
+	loader      config.Loader
 }
 
 func NewGenerator(
 	openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition,
 	pluginSet *plugins.Set,
-	openapiLoader config.Loader,
-	atlasLoader config.PackageLoader,
+	loader config.Loader,
 ) *Generator {
 	return &Generator{
-		definitions:   openAPIDefinitions,
-		pluginSet:     pluginSet,
-		openapiLoader: openapiLoader,
-		atlasLoader:   atlasLoader,
+		definitions: openAPIDefinitions,
+		pluginSet:   pluginSet,
+		loader:      loader,
 	}
 }
 
@@ -80,12 +77,9 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)
 		}
 
-		var openApiSpec *openapi3.T
-		var err error
-
-		openApiSpec, err = loadOpenAPISpec(ctx, def, g.openapiLoader, g.atlasLoader)
+		openApiSpec, err := g.loader.Load(ctx, def)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading OpenAPI spec %q: %w", def.Name, err)
 		}
 
 		for _, p := range g.pluginSet.Mapping {
@@ -184,38 +178,3 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 	return hasExtensions
 }
 
-func loadOpenAPISpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader config.Loader, atlasLoader config.PackageLoader) (*openapi3.T, error) {
-	if def.Flatten {
-		return loadFlattenedSpec(ctx, def, openapiLoader, atlasLoader)
-	}
-
-	if def.Package != "" {
-		spec, err := atlasLoader.LoadFromPackage(ctx, def.Package, def.Path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading Atlas OpenAPI package %q: %w", def.Package, err)
-		}
-		return spec, nil
-	}
-
-	spec, err := openapiLoader.Load(ctx, def.Path)
-	if err != nil {
-		return nil, fmt.Errorf("error loading spec: %w", err)
-	}
-	return spec, nil
-}
-
-func loadFlattenedSpec(ctx context.Context, def v1alpha1.OpenAPIDefinition, openapiLoader config.Loader, atlasLoader config.PackageLoader) (*openapi3.T, error) {
-	if def.Package != "" {
-		spec, err := atlasLoader.LoadFlattenedFromPackage(ctx, def.Package, def.Path)
-		if err != nil {
-			return nil, fmt.Errorf("error loading and flattening Atlas OpenAPI package %q: %w", def.Package, err)
-		}
-		return spec, nil
-	}
-
-	spec, err := openapiLoader.LoadFlattened(ctx, def.Path)
-	if err != nil {
-		return nil, fmt.Errorf("error loading and flattening spec %q: %w", def.Path, err)
-	}
-	return spec, nil
-}

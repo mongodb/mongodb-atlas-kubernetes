@@ -148,8 +148,9 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 		return fmt.Errorf("error creating plugin set: %w", err)
 	}
 
-	openapiLoader := config.NewKinOpenAPI(fs)
-	atlasLoader := config.NewAtlas(openapiLoader)
+	kinLoader := config.NewKinOpenAPI(fs)
+	atlasResolver := config.NewAtlas(kinLoader)
+	loader := config.NewLoader(kinLoader, atlasResolver)
 
 	// Collect the CRD configs to process, respecting the kind filter.
 	var activeCRDs []configv1alpha1.CRDConfig
@@ -172,7 +173,7 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 		}
 
 		g.Go(func() error {
-			gen := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader, atlasLoader)
+			gen := generator.NewGenerator(definitionsMap, pluginSet, loader)
 			crd, genErr := gen.Generate(gctx, &crdConfig)
 			if genErr != nil {
 				return genErr

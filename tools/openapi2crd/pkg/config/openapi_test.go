@@ -43,10 +43,10 @@ func TestKinOpenAPILoadCachesResult(t *testing.T) {
 
 	loader := NewKinOpenAPI(fs)
 
-	first, err := loader.Load(context.Background(), "spec.yaml")
+	first, err := loader.load(context.Background(), "spec.yaml")
 	require.NoError(t, err)
 
-	second, err := loader.Load(context.Background(), "spec.yaml")
+	second, err := loader.load(context.Background(), "spec.yaml")
 	require.NoError(t, err)
 
 	// Same pointer — the second call returned the cached result.
@@ -67,7 +67,7 @@ func TestKinOpenAPILoadConcurrent(t *testing.T) {
 	for i := range goroutines {
 		go func() {
 			defer wg.Done()
-			spec, err := loader.Load(context.Background(), "spec.yaml")
+			spec, err := loader.load(context.Background(), "spec.yaml")
 			require.NoError(t, err)
 			results[i] = spec
 		}()
@@ -120,7 +120,7 @@ components:
 	require.NoError(t, afero.WriteFile(fs, "test.yaml", []byte(input), 0644))
 
 	loader := NewKinOpenAPI(fs)
-	spec, err := loader.LoadFlattened(nil, "test.yaml")
+	spec, err := loader.loadFlattened(nil, "test.yaml")
 	require.NoError(t, err)
 	require.NotNil(t, spec)
 
@@ -183,7 +183,7 @@ paths:
 			tt.expectedOpenAPI.Paths.Extensions = map[string]any{}
 
 			loader := NewKinOpenAPI(fs)
-			openapi, err := loader.Load(context.Background(), tt.filePath)
+			openapi, err := loader.load(context.Background(), tt.filePath)
 			assert.Equal(t, tt.expectError, err)
 			assert.Equal(t, tt.expectedOpenAPI, openapi)
 		})
