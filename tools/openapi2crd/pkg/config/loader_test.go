@@ -26,7 +26,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
-func TestCompositeLoader_Load(t *testing.T) {
+func TestLoader_Load(t *testing.T) {
 	const testSpec = `openapi: 3.0.0
 info:
   title: Test
@@ -39,7 +39,7 @@ paths: {}
 		require.NoError(t, afero.WriteFile(fs, "spec.yaml", []byte(testSpec), 0644))
 
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		loader := NewLoader(kinLoader, atlas)
 
 		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml"}
@@ -54,7 +54,7 @@ paths: {}
 		require.NoError(t, afero.WriteFile(fs, "spec.yaml", []byte(testSpec), 0644))
 
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		loader := NewLoader(kinLoader, atlas)
 
 		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml", Flatten: true}
@@ -67,7 +67,7 @@ paths: {}
 	t.Run("package calls atlas loadFromPackage", func(t *testing.T) {
 		fs := afero.NewOsFs()
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		loader := NewLoader(kinLoader, atlas)
 
 		def := v1alpha1.OpenAPIDefinition{
@@ -83,7 +83,7 @@ paths: {}
 	t.Run("invalid package returns error", func(t *testing.T) {
 		fs := afero.NewOsFs()
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		loader := NewLoader(kinLoader, atlas)
 
 		def := v1alpha1.OpenAPIDefinition{
@@ -98,7 +98,7 @@ paths: {}
 	t.Run("missing path returns error", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		loader := NewLoader(kinLoader, atlas)
 
 		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "nonexistent.yaml"}
@@ -109,12 +109,12 @@ paths: {}
 	t.Run("composite loader satisfies Loader interface", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		kinLoader := NewKinOpenAPI(fs)
-		atlas := NewAtlas(kinLoader)
+		atlas := NewPackageResolver(kinLoader)
 		var _ Loader = NewLoader(kinLoader, atlas)
 	})
 }
 
-func TestCompositeLoader_LoadFlattened(t *testing.T) {
+func TestLoader_LoadFlattened(t *testing.T) {
 	const specWithOneOf = `openapi: 3.0.0
 info:
   title: Test
@@ -155,7 +155,7 @@ components:
 	require.NoError(t, afero.WriteFile(fs, "spec.yaml", []byte(specWithOneOf), 0644))
 
 	kinLoader := NewKinOpenAPI(fs)
-	atlas := NewAtlas(kinLoader)
+	atlas := NewPackageResolver(kinLoader)
 	loader := NewLoader(kinLoader, atlas)
 
 	def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml", Flatten: true}
@@ -172,7 +172,7 @@ components:
 	assert.Contains(t, petSchema.Value.Properties, "breed")
 }
 
-func TestCompositeLoader_LoadCachesResult(t *testing.T) {
+func TestLoader_LoadCachesResult(t *testing.T) {
 	const testSpec = `openapi: 3.0.0
 info:
   title: Test
@@ -183,7 +183,7 @@ paths: {}
 	require.NoError(t, afero.WriteFile(fs, "spec.yaml", []byte(testSpec), 0644))
 
 	kinLoader := NewKinOpenAPI(fs)
-	atlas := NewAtlas(kinLoader)
+	atlas := NewPackageResolver(kinLoader)
 	loader := NewLoader(kinLoader, atlas)
 
 	def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml"}

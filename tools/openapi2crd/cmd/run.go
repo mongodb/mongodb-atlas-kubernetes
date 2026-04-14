@@ -149,8 +149,8 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 	}
 
 	kinLoader := config.NewKinOpenAPI(fs)
-	atlasResolver := config.NewAtlas(kinLoader)
-	loader := config.NewLoader(kinLoader, atlasResolver)
+	pkgResolver := config.NewPackageResolver(kinLoader)
+	loader := config.NewLoader(kinLoader, pkgResolver)
 
 	// Collect the CRD configs to process, respecting the kind filter.
 	var activeCRDs []configv1alpha1.CRDConfig

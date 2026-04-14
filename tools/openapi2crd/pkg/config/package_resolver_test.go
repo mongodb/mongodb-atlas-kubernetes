@@ -30,7 +30,7 @@ func TestAtlas_LoadCachesPath(t *testing.T) {
 	// and call the file loader twice (once per call), but with the same resolved path.
 	fs := afero.NewOsFs()
 	kinLoader := NewKinOpenAPI(fs)
-	a := NewAtlas(kinLoader)
+	a := NewPackageResolver(kinLoader)
 	relPath := "../openapi/atlas-api-transformed.yaml"
 
 	_, err := a.loadFromPackage(context.Background(), "go.mongodb.org/atlas-sdk/v20250312008/admin", relPath)
@@ -65,7 +65,7 @@ func TestAtlas_loadFromPackage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fs := afero.NewOsFs()
 			kinLoader := NewKinOpenAPI(fs)
-			a := NewAtlas(kinLoader)
+			a := NewPackageResolver(kinLoader)
 			schema, err := a.loadFromPackage(context.Background(), tt.pkg, tt.relPath)
 			if tt.expectedErrMsg != "" {
 				assert.ErrorContains(t, err, tt.expectedErrMsg)

@@ -28,7 +28,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type Atlas struct {
+type PackageResolver struct {
 	fileLoader *KinOpenAPI
 	mu         sync.Mutex
 	pathCache  map[string]string
@@ -37,7 +37,7 @@ type Atlas struct {
 
 // loadFromPackage resolves a Go package to a directory via `go list`, joins
 // relPath relative to that directory, and loads the resulting file.
-func (a *Atlas) loadFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+func (a *PackageResolver) loadFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
 	filename, err := a.resolvePackagePath(ctx, pkg, relPath)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (a *Atlas) loadFromPackage(ctx context.Context, pkg, relPath string) (*open
 
 // loadFlattenedFromPackage is like loadFromPackage but applies schema
 // flattening before parsing.
-func (a *Atlas) loadFlattenedFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+func (a *PackageResolver) loadFlattenedFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
 	filename, err := a.resolvePackagePath(ctx, pkg, relPath)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (a *Atlas) loadFlattenedFromPackage(ctx context.Context, pkg, relPath strin
 	return a.fileLoader.loadFlattened(ctx, filename)
 }
 
-func (a *Atlas) resolvePackagePath(ctx context.Context, pkg, relPath string) (string, error) {
+func (a *PackageResolver) resolvePackagePath(ctx context.Context, pkg, relPath string) (string, error) {
 	cacheKey := pkg + "\x00" + relPath
 
 	// Fast path: return the cached resolved path without entering singleflight.
@@ -93,8 +93,8 @@ func (a *Atlas) resolvePackagePath(ctx context.Context, pkg, relPath string) (st
 	return v.(string), nil //nolint:forcetypeassert // singleflight returns interface{}; type is guaranteed by the closure above.
 }
 
-func NewAtlas(loader *KinOpenAPI) *Atlas {
-	return &Atlas{
+func NewPackageResolver(loader *KinOpenAPI) *PackageResolver {
+	return &PackageResolver{
 		fileLoader: loader,
 		pathCache:  make(map[string]string),
 	}
