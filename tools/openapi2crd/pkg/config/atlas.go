@@ -35,8 +35,10 @@ type Atlas struct {
 	group      singleflight.Group
 }
 
-func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
-	filename, err := a.resolvePackagePath(ctx, pkg)
+// LoadFromPackage resolves a Go package to a directory via `go list`, joins
+// relPath relative to that directory, and loads the resulting file.
+func (a *Atlas) LoadFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+	filename, err := a.resolvePackagePath(ctx, pkg, relPath)
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +46,10 @@ func (a *Atlas) Load(ctx context.Context, pkg string) (*openapi3.T, error) {
 	return a.fileLoader.Load(ctx, filename)
 }
 
-// LoadFlattened resolves the Go module package to a file path, then delegates
-// to the underlying file loader's LoadFlattened method.
-func (a *Atlas) LoadFlattened(ctx context.Context, pkg string) (*openapi3.T, error) {
-	filename, err := a.resolvePackagePath(ctx, pkg)
+// LoadFlattenedFromPackage is like LoadFromPackage but applies schema
+// flattening before parsing.
+func (a *Atlas) LoadFlattenedFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+	filename, err := a.resolvePackagePath(ctx, pkg, relPath)
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +57,14 @@ func (a *Atlas) LoadFlattened(ctx context.Context, pkg string) (*openapi3.T, err
 	return a.fileLoader.LoadFlattened(ctx, filename)
 }
 
-func (a *Atlas) resolvePackagePath(ctx context.Context, pkg string) (string, error) {
+func (a *Atlas) resolvePackagePath(ctx context.Context, pkg, relPath string) (string, error) {
+	cacheKey := pkg + "\x00" + relPath
+
 	// Fast path: return the cached resolved path without entering singleflight.
 	// The mutex-guarded cache avoids the overhead of singleflight.Do and
 	// repeated `go list` calls after the path has already been resolved.
 	a.mu.Lock()
-	cachedPath, ok := a.pathCache[pkg]
+	cachedPath, ok := a.pathCache[cacheKey]
 	a.mu.Unlock()
 
 	if ok {
@@ -69,16 +73,16 @@ func (a *Atlas) resolvePackagePath(ctx context.Context, pkg string) (string, err
 
 	// Slow path: singleflight deduplicates concurrent `go list` calls for the same package.
 	// Returns interface{} because singleflight has no generic API.
-	v, err, _ := a.group.Do(pkg, func() (interface{}, error) {
-		path, err := getGoModulePath(ctx, pkg)
+	v, err, _ := a.group.Do(cacheKey, func() (interface{}, error) {
+		pkgDir, err := getGoModulePath(ctx, pkg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load module path: %w", err)
 		}
 
-		resolved := filepath.Clean(filepath.Join(path, "..", "openapi", "atlas-api-transformed.yaml"))
+		resolved := filepath.Clean(filepath.Join(pkgDir, relPath))
 
 		a.mu.Lock()
-		a.pathCache[pkg] = resolved
+		a.pathCache[cacheKey] = resolved
 		a.mu.Unlock()
 
 		return resolved, nil

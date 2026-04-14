@@ -226,7 +226,7 @@ func TestGeneratorGenerate(t *testing.T) {
 			openapiLoader := config.NewLoaderMock(t)
 			openapiLoader.EXPECT().Load(context.Background(), "testdata/openapi.yaml").Return(&openapi3.T{}, nil)
 
-			atlasLoader := config.NewLoaderMock(t)
+			atlasLoader := &packageLoaderMock{}
 
 			crdPlugin := plugins.NewCRDPluginMock(t)
 			crdPlugin.EXPECT().Process(mock.AnythingOfType("*plugins.CRDProcessorRequest")).
@@ -268,13 +268,33 @@ func TestGeneratorGenerate(t *testing.T) {
 	}
 }
 
+type packageLoaderMock struct {
+	mock.Mock
+}
+
+func (m *packageLoaderMock) LoadFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+	args := m.Called(ctx, pkg, relPath)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*openapi3.T), args.Error(1)
+}
+
+func (m *packageLoaderMock) LoadFlattenedFromPackage(ctx context.Context, pkg, relPath string) (*openapi3.T, error) {
+	args := m.Called(ctx, pkg, relPath)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*openapi3.T), args.Error(1)
+}
+
 func TestLoadOpenAPISpec(t *testing.T) {
 	expected := &openapi3.T{OpenAPI: "3.0.0"}
 
 	t.Run("path without flatten calls Load", func(t *testing.T) {
 		loader := config.NewLoaderMock(t)
 		loader.EXPECT().Load(context.Background(), "spec.yaml").Return(expected, nil)
-		atlas := config.NewLoaderMock(t)
+		atlas := &packageLoaderMock{}
 
 		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml"}
 		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
@@ -282,21 +302,22 @@ func TestLoadOpenAPISpec(t *testing.T) {
 		assert.Equal(t, expected, got)
 	})
 
-	t.Run("package without flatten calls atlas Load", func(t *testing.T) {
+	t.Run("package calls atlas LoadFromPackage", func(t *testing.T) {
 		loader := config.NewLoaderMock(t)
-		atlas := config.NewLoaderMock(t)
-		atlas.EXPECT().Load(context.Background(), "go.example.com/pkg").Return(expected, nil)
+		atlas := &packageLoaderMock{}
+		atlas.On("LoadFromPackage", context.Background(), "go.example.com/pkg", "../openapi/spec.yaml").Return(expected, nil)
 
-		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg"}
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg", Path: "../openapi/spec.yaml"}
 		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, got)
+		atlas.AssertExpectations(t)
 	})
 
 	t.Run("path with flatten calls LoadFlattened", func(t *testing.T) {
 		loader := config.NewLoaderMock(t)
 		loader.EXPECT().LoadFlattened(context.Background(), "spec.yaml").Return(expected, nil)
-		atlas := config.NewLoaderMock(t)
+		atlas := &packageLoaderMock{}
 
 		def := v1alpha1.OpenAPIDefinition{Name: "v1", Path: "spec.yaml", Flatten: true}
 		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
@@ -304,15 +325,16 @@ func TestLoadOpenAPISpec(t *testing.T) {
 		assert.Equal(t, expected, got)
 	})
 
-	t.Run("package with flatten calls atlas LoadFlattened", func(t *testing.T) {
+	t.Run("package with flatten calls atlas LoadFlattenedFromPackage", func(t *testing.T) {
 		loader := config.NewLoaderMock(t)
-		atlas := config.NewLoaderMock(t)
-		atlas.EXPECT().LoadFlattened(context.Background(), "go.example.com/pkg").Return(expected, nil)
+		atlas := &packageLoaderMock{}
+		atlas.On("LoadFlattenedFromPackage", context.Background(), "go.example.com/pkg", "../openapi/spec.yaml").Return(expected, nil)
 
-		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg", Flatten: true}
+		def := v1alpha1.OpenAPIDefinition{Name: "v1", Package: "go.example.com/pkg", Path: "../openapi/spec.yaml", Flatten: true}
 		got, err := loadOpenAPISpec(context.Background(), def, loader, atlas)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, got)
+		atlas.AssertExpectations(t)
 	})
 }
 
