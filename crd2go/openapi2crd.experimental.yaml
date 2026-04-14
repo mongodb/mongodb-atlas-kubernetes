@@ -55,6 +55,7 @@ spec:
   openapi:
     - name: v20250312
       package: go.mongodb.org/atlas-sdk/v20250312018/admin
+      path: ../openapi/atlas-api-transformed.yaml
 
   crd:
     - gvk:

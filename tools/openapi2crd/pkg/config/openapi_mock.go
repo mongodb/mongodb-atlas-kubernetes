@@ -9,6 +9,8 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	mock "github.com/stretchr/testify/mock"
+
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 )
 
 // NewLoaderMock creates a new instance of LoaderMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,8 +41,8 @@ func (_m *LoaderMock) EXPECT() *LoaderMock_Expecter {
 }
 
 // Load provides a mock function for the type LoaderMock
-func (_mock *LoaderMock) Load(ctx context.Context, path string) (*openapi3.T, error) {
-	ret := _mock.Called(ctx, path)
+func (_mock *LoaderMock) Load(ctx context.Context, def v1alpha1.OpenAPIDefinition) (*openapi3.T, error) {
+	ret := _mock.Called(ctx, def)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Load")
@@ -48,18 +50,18 @@ func (_mock *LoaderMock) Load(ctx context.Context, path string) (*openapi3.T, er
 
 	var r0 *openapi3.T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openapi3.T, error)); ok {
-		return returnFunc(ctx, path)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, v1alpha1.OpenAPIDefinition) (*openapi3.T, error)); ok {
+		return returnFunc(ctx, def)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *openapi3.T); ok {
-		r0 = returnFunc(ctx, path)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, v1alpha1.OpenAPIDefinition) *openapi3.T); ok {
+		r0 = returnFunc(ctx, def)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*openapi3.T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, path)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, v1alpha1.OpenAPIDefinition) error); ok {
+		r1 = returnFunc(ctx, def)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -73,24 +75,20 @@ type LoaderMock_Load_Call struct {
 
 // Load is a helper method to define mock.On call
 //   - ctx context.Context
-//   - path string
-func (_e *LoaderMock_Expecter) Load(ctx interface{}, path interface{}) *LoaderMock_Load_Call {
-	return &LoaderMock_Load_Call{Call: _e.mock.On("Load", ctx, path)}
+//   - def v1alpha1.OpenAPIDefinition
+func (_e *LoaderMock_Expecter) Load(ctx interface{}, def interface{}) *LoaderMock_Load_Call {
+	return &LoaderMock_Load_Call{Call: _e.mock.On("Load", ctx, def)}
 }
 
-func (_c *LoaderMock_Load_Call) Run(run func(ctx context.Context, path string)) *LoaderMock_Load_Call {
+func (_c *LoaderMock_Load_Call) Run(run func(ctx context.Context, def v1alpha1.OpenAPIDefinition)) *LoaderMock_Load_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
 		run(
 			arg0,
-			arg1,
+			args[1].(v1alpha1.OpenAPIDefinition),
 		)
 	})
 	return _c
@@ -101,75 +99,7 @@ func (_c *LoaderMock_Load_Call) Return(t *openapi3.T, err error) *LoaderMock_Loa
 	return _c
 }
 
-func (_c *LoaderMock_Load_Call) RunAndReturn(run func(ctx context.Context, path string) (*openapi3.T, error)) *LoaderMock_Load_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// LoadFlattened provides a mock function for the type LoaderMock
-func (_mock *LoaderMock) LoadFlattened(ctx context.Context, path string) (*openapi3.T, error) {
-	ret := _mock.Called(ctx, path)
-
-	if len(ret) == 0 {
-		panic("no return value specified for LoadFlattened")
-	}
-
-	var r0 *openapi3.T
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*openapi3.T, error)); ok {
-		return returnFunc(ctx, path)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *openapi3.T); ok {
-		r0 = returnFunc(ctx, path)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*openapi3.T)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, path)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// LoaderMock_LoadFlattened_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadFlattened'
-type LoaderMock_LoadFlattened_Call struct {
-	*mock.Call
-}
-
-// LoadFlattened is a helper method to define mock.On call
-//   - ctx context.Context
-//   - path string
-func (_e *LoaderMock_Expecter) LoadFlattened(ctx interface{}, path interface{}) *LoaderMock_LoadFlattened_Call {
-	return &LoaderMock_LoadFlattened_Call{Call: _e.mock.On("LoadFlattened", ctx, path)}
-}
-
-func (_c *LoaderMock_LoadFlattened_Call) Run(run func(ctx context.Context, path string)) *LoaderMock_LoadFlattened_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *LoaderMock_LoadFlattened_Call) Return(t *openapi3.T, err error) *LoaderMock_LoadFlattened_Call {
-	_c.Call.Return(t, err)
-	return _c
-}
-
-func (_c *LoaderMock_LoadFlattened_Call) RunAndReturn(run func(ctx context.Context, path string) (*openapi3.T, error)) *LoaderMock_LoadFlattened_Call {
+func (_c *LoaderMock_Load_Call) RunAndReturn(run func(ctx context.Context, def v1alpha1.OpenAPIDefinition) (*openapi3.T, error)) *LoaderMock_Load_Call {
 	_c.Call.Return(run)
 	return _c
 }

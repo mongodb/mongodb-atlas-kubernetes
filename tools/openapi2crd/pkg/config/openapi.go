@@ -27,12 +27,13 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/flatten"
 )
 
+// Loader loads an OpenAPI spec based on the provided definition.
 type Loader interface {
-	Load(ctx context.Context, path string) (*openapi3.T, error)
-	LoadFlattened(ctx context.Context, path string) (*openapi3.T, error)
+	Load(ctx context.Context, def v1alpha1.OpenAPIDefinition) (*openapi3.T, error)
 }
 
 type KinOpenAPI struct {
@@ -49,7 +50,7 @@ func NewKinOpenAPI(fs afero.Fs) *KinOpenAPI {
 	}
 }
 
-func (a *KinOpenAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
+func (a *KinOpenAPI) load(_ context.Context, path string) (*openapi3.T, error) {
 	// Fast path: return the cached spec without entering singleflight.
 	// The mutex-guarded cache avoids the overhead of singleflight.Do on
 	// every call after the spec has already been parsed.
@@ -103,7 +104,7 @@ func (a *KinOpenAPI) Load(_ context.Context, path string) (*openapi3.T, error) {
 // LoadFlattened reads an OpenAPI spec from path, applies the same transform
 // as Load (strip x-xgen-changelog), then flattens schema compositions
 // (oneOf/anyOf/allOf/discriminator) before parsing with kin-openapi.
-func (a *KinOpenAPI) LoadFlattened(_ context.Context, path string) (*openapi3.T, error) {
+func (a *KinOpenAPI) loadFlattened(_ context.Context, path string) (*openapi3.T, error) {
 	cacheKey := "flatten:" + path
 
 	a.mu.Lock()
