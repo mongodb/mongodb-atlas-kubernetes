@@ -802,8 +802,12 @@ all-lints: helm-crds fmt lint validate-manifests validate-api-docs check-license
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci
-ci: clean unit-test all-lints
+ci: clean unit-test all-lints test-go-bump-policy
 	@echo "✅ CI PASSED all checks"
+
+.PHONY: test-go-bump-policy
+test-go-bump-policy:
+	scripts/test-check-go-bump-policy-examples.sh
 
 prepare-dirs:
 	@echo "Creating directories..."
