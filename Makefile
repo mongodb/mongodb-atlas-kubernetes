@@ -496,6 +496,8 @@ clean-gen-crds: ## Clean only generated CRD files
 
 clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
+	rm -rf tools/openapi2crd/bin/
+	rm -rf tools/scaffolder/bin/
 	rm -rf config/manifests/bases/
 	rm -f config/crd/bases/*.yaml
 	rm -f helm-charts/atlas-operator-crds/templates/*.yaml
@@ -798,11 +800,11 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: all-lints
-all-lints: helm-crds fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
+all-lints: helm-crds fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck test-go-bump-policy
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci
-ci: clean unit-test all-lints test-go-bump-policy
+ci: clean unit-test all-lints
 	@echo "✅ CI PASSED all checks"
 
 .PHONY: test-go-bump-policy
