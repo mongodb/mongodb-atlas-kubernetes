@@ -72,6 +72,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 			"groups.atlas.generated.mongodb.com",
 			"databaseusers.atlas.generated.mongodb.com",
 			"clusters.atlas.generated.mongodb.com",
+			"ipaccesslistentries.atlas.generated.mongodb.com",
 		)).To(Succeed())
 
 		atlasClient, orgID = newTestAtlasClient()
@@ -157,7 +158,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 
 			By("Update DatabaseUser roles", func() {
 				Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testDBUser), testDBUser)).To(Succeed())
-				testDBUser.Spec.V20250312.Entry.Roles = &[]generatedv1.Roles{
+				testDBUser.Spec.V20250312.Entry.Roles = []generatedv1.Roles{
 					{RoleName: "readWriteAnyDatabase", DatabaseName: "admin"},
 				}
 				Expect(kubeClient.Update(ctx, testDBUser)).To(Succeed())

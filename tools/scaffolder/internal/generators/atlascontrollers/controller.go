@@ -54,7 +54,7 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 		jen.Id("sdkVersions").Op("=").Op("[]").String().Values(supportedSDKVersions...),
 	)
 
-	resourcePlural := strings.ToLower(resourceName) + "s"
+	resourcePlural := parsedConfig.PluralName
 	crdGroup := parsedConfig.CRDGroup
 	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,resources=%s,verbs=get;list;watch;create;update;patch;delete", crdGroup, resourcePlural))
 	f.Comment(fmt.Sprintf("+kubebuilder:rbac:groups=%s,resources=%s/status,verbs=get;update;patch", crdGroup, resourcePlural))

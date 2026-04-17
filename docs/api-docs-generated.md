@@ -16,6 +16,8 @@ Resource Types:
 
 - [Group](#group)
 
+- [IPAccessListEntry](#ipaccesslistentry)
+
 
 
 
@@ -4339,6 +4341,427 @@ The last observed Atlas state of the group resource for version v20250312.
         <td>string</td>
         <td>
           Unique 24-hexadecimal digit string that identifies the MongoDB Cloud project.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## IPAccessListEntry
+<sup><sup>[↩ Parent](#atlasgeneratedmongodbcomv1 )</sup></sup>
+
+
+
+
+
+
+A ipaccesslistentry, managed by the MongoDB Kubernetes Atlas Operator.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>atlas.generated.mongodb.com/v1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>IPAccessListEntry</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#ipaccesslistentryspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          Specification of the ipaccesslistentry supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.v20250312.groupId) && has(self.connectionSecretRef)) || (!has(self.v20250312.groupId)): spec.connectionSecretRef must be set if spec.v20250312.groupId is set.</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#ipaccesslistentrystatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          Most recently observed read-only status of the ipaccesslistentry for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.spec
+<sup><sup>[↩ Parent](#ipaccesslistentry)</sup></sup>
+
+
+
+Specification of the ipaccesslistentry supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#ipaccesslistentryspecconnectionsecretref">connectionSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#ipaccesslistentryspecv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The spec of the ipaccesslistentry resource for version v20250312.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId) && has(self.groupRef)): groupId and groupRef are mutually exclusive; only one of them can be set</li>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.spec.connectionSecretRef
+<sup><sup>[↩ Parent](#ipaccesslistentryspec)</sup></sup>
+
+
+
+SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the secret containing the Atlas credentials.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.spec.v20250312
+<sup><sup>[↩ Parent](#ipaccesslistentryspec)</sup></sup>
+
+
+
+The spec of the ipaccesslistentry resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#ipaccesslistentryspecv20250312entry">entry</a></b></td>
+        <td>object</td>
+        <td>
+          The entry fields of the ipaccesslistentry resource spec. These fields can be set for creating and updating ipaccesslistentries.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+**NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: groupId cannot be modified after creation</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#ipaccesslistentryspecv20250312groupref">groupRef</a></b></td>
+        <td>object</td>
+        <td>
+          A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.spec.v20250312.entry
+<sup><sup>[↩ Parent](#ipaccesslistentryspecv20250312)</sup></sup>
+
+
+
+The entry fields of the ipaccesslistentry resource spec. These fields can be set for creating and updating ipaccesslistentries.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>awsSecurityGroup</b></td>
+        <td>string</td>
+        <td>
+          Unique string of the Amazon Web Services (AWS) security group that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. You must configure Virtual Private Connection (VPC) peering for your project before you can add an AWS security group to an IP access list. You cannot set AWS security groups as temporary access list entries. Don't set this parameter if you set `cidrBlock` or `ipAddress`.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>cidrBlock</b></td>
+        <td>string</td>
+        <td>
+          Range of IP addresses in Classless Inter-Domain Routing (CIDR) notation that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. Don't set this parameter if you set `awsSecurityGroup` or `ipAddress`.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>comment</b></td>
+        <td>string</td>
+        <td>
+          Remark that explains the purpose or scope of this IP access list entry.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>deleteAfterDate</b></td>
+        <td>string</td>
+        <td>
+          Date and time after which MongoDB Cloud deletes the temporary access list entry. This parameter expresses its value in the ISO 8601 timestamp format in UTC and can include the time zone designation. The date must be later than the current date but no later than one week after you submit this request. The resource returns this parameter if you specified an expiration date when creating this IP access list entry.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ipAddress</b></td>
+        <td>string</td>
+        <td>
+          IP address that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. Don't set this parameter if you set `awsSecurityGroup` or `cidrBlock`.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.spec.v20250312.groupRef
+<sup><sup>[↩ Parent](#ipaccesslistentryspecv20250312)</sup></sup>
+
+
+
+A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the "Group" resource.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.status
+<sup><sup>[↩ Parent](#ipaccesslistentry)</sup></sup>
+
+
+
+Most recently observed read-only status of the ipaccesslistentry for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#ipaccesslistentrystatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Represents the latest available observations of a resource's current state.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#ipaccesslistentrystatusv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The last observed Atlas state of the ipaccesslistentry resource for version v20250312.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.status.conditions[index]
+<sup><sup>[↩ Parent](#ipaccesslistentrystatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### IPAccessListEntry.status.v20250312
+<sup><sup>[↩ Parent](#ipaccesslistentrystatus)</sup></sup>
+
+
+
+The last observed Atlas state of the ipaccesslistentry resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>awsSecurityGroup</b></td>
+        <td>string</td>
+        <td>
+          Unique string of the Amazon Web Services (AWS) security group that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. You must configure Virtual Private Connection (VPC) peering for your project before you can add an AWS security group to an IP access list. You cannot set AWS security groups as temporary access list entries. Don't set this parameter if you set `cidrBlock` or `ipAddress`.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>cidrBlock</b></td>
+        <td>string</td>
+        <td>
+          Range of IP addresses in Classless Inter-Domain Routing (CIDR) notation that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. Don't set this parameter if you set `awsSecurityGroup` or `ipAddress`.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>comment</b></td>
+        <td>string</td>
+        <td>
+          Remark that explains the purpose or scope of this IP access list entry.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>deleteAfterDate</b></td>
+        <td>string</td>
+        <td>
+          Date and time after which MongoDB Cloud deletes the temporary access list entry. This parameter expresses its value in the ISO 8601 timestamp format in UTC and can include the time zone designation. The date must be later than the current date but no later than one week after you submit this request. The resource returns this parameter if you specified an expiration date when creating this IP access list entry.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies the project that contains the IP access list to which you want to add one or more entries.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>ipAddress</b></td>
+        <td>string</td>
+        <td>
+          IP address that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. Don't set this parameter if you set `awsSecurityGroup` or `cidrBlock`.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

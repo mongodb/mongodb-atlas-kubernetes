@@ -237,7 +237,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				for _, obj := range createdObjects {
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, obj)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 				}
 			})
 		},
