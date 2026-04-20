@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,11 +30,10 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federated-auth"), func() {
+var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-federated-auth"), func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
@@ -157,8 +156,8 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "federat
 						Namespace: connectionSecret.Namespace,
 					},
 					DomainAllowList:          append(originalConnectedOrgConfig.GetDomainAllowList(), "cloud-qa.mongodb.com", "mongodb.com"),
-					DomainRestrictionEnabled: pointer.MakePtr(true),
-					SSODebugEnabled:          pointer.MakePtr(false),
+					DomainRestrictionEnabled: new(true),
+					SSODebugEnabled:          new(false),
 					PostAuthRoleGrants:       []string{"ORG_MEMBER"},
 					RoleMappings:             roles,
 				},

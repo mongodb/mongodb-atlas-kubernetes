@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
 
@@ -69,7 +68,7 @@ func (r *AtlasStreamsInstanceReconciler) handleConnectionRegistry(
 	atlasStreamInstance *admin.StreamsTenant,
 ) (ctrl.Result, error) {
 	streamConnections, err := paging.ListAll(ctx.Context, func(c context.Context, pageNum int) (paging.Response[admin.StreamsConnection], *http.Response, error) {
-		return ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+		return ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 			ListStreamConnections(c, project.ID(), akoStreamInstance.Spec.Name).
 			PageNum(pageNum).
 			Execute()
@@ -224,11 +223,11 @@ func streamConnectionToAtlas(ctx context.Context, k8sClient client.Client) strea
 			connection.BootstrapServers = &streamConnection.Spec.KafkaConfig.BootstrapServers
 			connection.Authentication = &admin.StreamsKafkaAuthentication{
 				Mechanism: &streamConnection.Spec.KafkaConfig.Authentication.Mechanism,
-				Username:  pointer.MakePtr(authData[kafkaConnectionAuthUsername]),
-				Password:  pointer.MakePtr(authData[kafkaConnectionAuthPassword]),
+				Username:  new(authData[kafkaConnectionAuthUsername]),
+				Password:  new(authData[kafkaConnectionAuthPassword]),
 			}
 			connection.Security = &admin.StreamsKafkaSecurity{
-				BrokerPublicCertificate: pointer.MakePtr(secData[kafkaConnectionSecCertificate]),
+				BrokerPublicCertificate: new(secData[kafkaConnectionSecCertificate]),
 				Protocol:                &streamConnection.Spec.KafkaConfig.Security.Protocol,
 			}
 			connection.Config = &streamConnection.Spec.KafkaConfig.Config

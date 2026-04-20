@@ -23,15 +23,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
@@ -49,7 +48,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &atlasClient,
+				SdkClient20250312: &atlasClient,
 			},
 			Context: context.Background(),
 		}
@@ -74,29 +73,29 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(time.Now().Add(5 * time.Minute)),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(time.Now().Add(5 * time.Minute)),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-4"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-4"),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my-role-4"),
-				CreatedDate:                pointer.MakePtr(time.Now()),
+				AtlasAWSAccountArn:         new("atlas-account-arn-4"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-4"),
+				IamAssumedRoleArn:          new("aws:arn/my-role-4"),
+				CreatedDate:                new(time.Now()),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-4"),
+				RoleId:                     new("role-4"),
 			},
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
@@ -113,11 +112,11 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			CreateCloudProviderAccessExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
-					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-3"),
-					AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-3"),
-					CreatedDate:                pointer.MakePtr(time.Now()),
+					AtlasAWSAccountArn:         new("atlas-account-arn-3"),
+					AtlasAssumedRoleExternalId: new("atlas-external-role-id-3"),
+					CreatedDate:                new(time.Now()),
 					ProviderName:               "AWS",
-					RoleId:                     pointer.MakePtr("role-3"),
+					RoleId:                     new("role-3"),
 				},
 				&http.Response{},
 				nil,
@@ -130,13 +129,13 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			RunAndReturn(
 				func(request admin.AuthorizeProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
 					atlasCPA := admin.CloudProviderAccessRole{
-						AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-						AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-						CreatedDate:                pointer.MakePtr(time.Now()),
-						AuthorizedDate:             pointer.MakePtr(time.Now().Add(5 * time.Minute)),
-						IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+						AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+						AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+						CreatedDate:                new(time.Now()),
+						AuthorizedDate:             new(time.Now().Add(5 * time.Minute)),
+						IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 						ProviderName:               "AWS",
-						RoleId:                     pointer.MakePtr("role-2"),
+						RoleId:                     new("role-2"),
 					}
 
 					return &atlasCPA, &http.Response{}, nil
@@ -150,7 +149,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -175,21 +174,21 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(time.Now().Add(5 * time.Minute)),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(time.Now().Add(5 * time.Minute)),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
@@ -207,13 +206,13 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			RunAndReturn(
 				func(request admin.AuthorizeProviderAccessRoleApiRequest) (*admin.CloudProviderAccessRole, *http.Response, error) {
 					atlasCPA := admin.CloudProviderAccessRole{
-						AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-						AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-						CreatedDate:                pointer.MakePtr(time.Now()),
-						AuthorizedDate:             pointer.MakePtr(time.Now().Add(5 * time.Minute)),
-						IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+						AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+						AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+						CreatedDate:                new(time.Now()),
+						AuthorizedDate:             new(time.Now().Add(5 * time.Minute)),
+						IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 						ProviderName:               "AWS",
-						RoleId:                     pointer.MakePtr("role-2"),
+						RoleId:                     new("role-2"),
 					}
 
 					return &atlasCPA, &http.Response{}, nil
@@ -221,7 +220,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -246,21 +245,21 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(time.Now().Add(5 * time.Minute)),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(time.Now().Add(5 * time.Minute)),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(time.Now()),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(time.Now()),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 		cpa := mockadmin.NewCloudProviderAccessApi(t)
@@ -278,7 +277,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -379,13 +378,13 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role"),
+				AtlasAWSAccountArn:         new("atlas-account-arn"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id"),
+				CreatedDate:                new(createdAt),
+				AuthorizedDate:             new(authorizedAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -439,21 +438,21 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				CreatedDate:                new(createdAt),
+				AuthorizedDate:             new(authorizedAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -518,30 +517,30 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(authorizedAt),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-3"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-3"),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-3"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-3"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-3"),
+				AuthorizedDate:             new(authorizedAt),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-3"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-3"),
+				RoleId:                     new("role-3"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -600,28 +599,28 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(authorizedAt),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-3"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-3"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-3"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-3"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-3"),
+				RoleId:                     new("role-3"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -689,35 +688,35 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				AuthorizedDate:             pointer.MakePtr(authorizedAt),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-1"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				AuthorizedDate:             new(authorizedAt),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-1"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-3"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-3"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-3"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-3"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-3"),
+				RoleId:                     new("role-3"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
-				IamAssumedRoleArn:          pointer.MakePtr("aws:arn/my_role-2"),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
+				IamAssumedRoleArn:          new("aws:arn/my_role-2"),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-4"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-4"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-4"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-4"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-4"),
+				RoleId:                     new("role-4"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -755,18 +754,18 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 		assert.Equal(t, expected, enrichStatuses(statuses, atlasCPAs))
@@ -808,18 +807,18 @@ func TestEnrichStatuses(t *testing.T) {
 		}
 		atlasCPAs := []admin.CloudProviderAccessAWSIAMRole{
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-1"),
+				RoleId:                     new("role-1"),
 			},
 			{
-				AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-2"),
-				AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-2"),
-				CreatedDate:                pointer.MakePtr(createdAt),
+				AtlasAWSAccountArn:         new("atlas-account-arn-2"),
+				AtlasAssumedRoleExternalId: new("atlas-external-role-id-2"),
+				CreatedDate:                new(createdAt),
 				ProviderName:               "AWS",
-				RoleId:                     pointer.MakePtr("role-2"),
+				RoleId:                     new("role-2"),
 			},
 		}
 
@@ -853,18 +852,18 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			CreateCloudProviderAccessExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
-					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-					AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-					CreatedDate:                pointer.MakePtr(createdAt),
+					AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+					AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+					CreatedDate:                new(createdAt),
 					ProviderName:               "AWS",
-					RoleId:                     pointer.MakePtr("role-1"),
+					RoleId:                     new("role-1"),
 				},
 				&http.Response{},
 				nil,
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -895,7 +894,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -939,19 +938,19 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			AuthorizeProviderAccessRoleExecute(mock.Anything).
 			Return(
 				&admin.CloudProviderAccessRole{
-					AtlasAWSAccountArn:         pointer.MakePtr("atlas-account-arn-1"),
-					AtlasAssumedRoleExternalId: pointer.MakePtr("atlas-external-role-id-1"),
-					CreatedDate:                pointer.MakePtr(createdAt),
-					AuthorizedDate:             pointer.MakePtr(authorizedAt),
+					AtlasAWSAccountArn:         new("atlas-account-arn-1"),
+					AtlasAssumedRoleExternalId: new("atlas-external-role-id-1"),
+					CreatedDate:                new(createdAt),
+					AuthorizedDate:             new(authorizedAt),
 					ProviderName:               "AWS",
-					RoleId:                     pointer.MakePtr("role-1"),
+					RoleId:                     new("role-1"),
 				},
 				&http.Response{},
 				nil,
 			)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -990,7 +989,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			Return(nil, &http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -1024,7 +1023,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, nil)
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},
@@ -1054,7 +1053,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Return(&http.Response{}, errors.New("service unavailable"))
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					CloudProviderAccessApi: cpa,
 				},
 			},

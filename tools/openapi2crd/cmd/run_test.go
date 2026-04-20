@@ -29,12 +29,19 @@ func TestRunOpenapi2crd(t *testing.T) {
 		input       string
 		output      string
 		overwrite   bool
+		split       bool
 		expectedErr error
 	}{
 		"generates CRD successfully": {
 			input:     "./testdata/config.yaml",
 			output:    "./testdata/output.yaml",
 			overwrite: true,
+		},
+		"generates CRD split into individual files": {
+			input:     "./testdata/config.yaml",
+			output:    "./testdata/split_output",
+			overwrite: true,
+			split:     true,
 		},
 	}
 	for name, tt := range tests {
@@ -51,10 +58,18 @@ func TestRunOpenapi2crd(t *testing.T) {
 				Input:     tt.input,
 				Output:    tt.output,
 				Overwrite: tt.overwrite,
+				MultiFile: tt.split,
 			}
 
 			err = runOpenapi2crd(context.Background(), fs, c)
 			assert.Equal(t, tt.expectedErr, err)
+
+			if tt.split && tt.expectedErr == nil {
+				expectedFile := tt.output + "/examples.example.generated.mongodb.com.yaml"
+				data, readErr := afero.ReadFile(fs, expectedFile)
+				require.NoError(t, readErr)
+				require.NotEmpty(t, data)
+			}
 		})
 	}
 }
@@ -77,9 +92,9 @@ spec:
       path: ./testdata/openapi.yaml
   crd:
     - gvk:
-      version: v1
-      kind: Example
-      group: example.generated.mongodb.com
+        version: v1
+        kind: Example
+        group: example.generated.mongodb.com
       categories:
         - example
       shortNames:

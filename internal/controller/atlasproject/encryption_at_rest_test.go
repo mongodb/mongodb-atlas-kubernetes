@@ -26,7 +26,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 )
 
@@ -58,7 +57,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			AWS: encryptionatrest.AwsKms{
 				AwsKms: akov2.AwsKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name:      "aws-secret",
 						Namespace: "test",
@@ -102,7 +101,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			AWS: encryptionatrest.AwsKms{
 				AwsKms: akov2.AwsKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name: "aws-secret",
 					},
@@ -143,7 +142,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			AWS: encryptionatrest.AwsKms{
 				AwsKms: akov2.AwsKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name:      "aws-secret",
 						Namespace: "test",
@@ -181,7 +180,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			GCP: encryptionatrest.GoogleCloudKms{
 				GoogleCloudKms: akov2.GoogleCloudKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name: "gcp-secret",
 					},
@@ -220,7 +219,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			GCP: encryptionatrest.GoogleCloudKms{
 				GoogleCloudKms: akov2.GoogleCloudKms{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name: "gcp-secret",
 					},
@@ -259,7 +258,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			Azure: encryptionatrest.AzureKeyVault{
 				AzureKeyVault: akov2.AzureKeyVault{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name: "azure-secret",
 					},
@@ -303,7 +302,7 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 		encRest := &encryptionatrest.EncryptionAtRest{
 			Azure: encryptionatrest.AzureKeyVault{
 				AzureKeyVault: akov2.AzureKeyVault{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 					SecretRef: common.ResourceRefNamespaced{
 						Name: "gcp-secret",
 					},
@@ -321,11 +320,11 @@ func TestIsEncryptionAtlasEmpty(t *testing.T) {
 	isEmpty := IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Empty spec should be empty")
 
-	spec.AwsKms.Enabled = pointer.MakePtr(true)
+	spec.AwsKms.Enabled = new(true)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.False(t, isEmpty, "Non-empty spec")
 
-	spec.AwsKms.Enabled = pointer.MakePtr(false)
+	spec.AwsKms.Enabled = new(false)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Enabled flag set to false is same as empty")
 }

@@ -1,0 +1,27 @@
+paths:
+  /lists:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListContainer"
+components:
+  schemas:
+    ListContainer:
+      type: object
+      properties:
+        tags:
+          type: array
+          items: {}
+        names:
+          type: array
+          items:
+            type: string
+        nested:
+          type: object
+          properties:
+            values:
+              type: array
+              items: {}

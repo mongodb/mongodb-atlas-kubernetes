@@ -23,7 +23,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -207,7 +207,7 @@ func StartDryRunUntil(ctx context.Context, kubeClient client.Client, namespace s
 		`--atlas-domain=https://cloud-qa.mongodb.com`,
 	)
 	t := GinkgoT()
-	o.Start(t)
+	o.Start(ctx, t)
 	DeferCleanup(func() {
 		o.Wait(t)
 	})
@@ -279,9 +279,7 @@ func dryRunEventsFunc(ctx context.Context, kubeClient client.Client, timeout tim
 	})
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		eventCh := watch.ResultChan()
@@ -315,7 +313,7 @@ func dryRunEventsFunc(ctx context.Context, kubeClient client.Client, timeout tim
 				return
 			}
 		}
-	}()
+	})
 
 	return func() ([]*corev1.Event, bool) {
 		wg.Wait()

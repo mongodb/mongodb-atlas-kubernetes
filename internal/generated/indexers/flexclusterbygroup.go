@@ -25,7 +25,7 @@ import (
 	log "sigs.k8s.io/controller-runtime/pkg/log"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 )
 
 // nolint:dupl

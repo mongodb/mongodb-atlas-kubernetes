@@ -65,7 +65,7 @@ func SessionAzure(subscriptionID string, tagNameValue string) (sessionAzure, err
 		SubscriptionID: subscriptionID,
 		Authorizer:     authorizer,
 		Tags: map[string]*string{
-			"name":               to.StringPtr(tagNameValue),
+			"name":               new(tagNameValue),
 			config.TagForTestKey: to.StringPtr(config.TagForTestValue),
 			tags.OwnerEmailTag:   pointer.MakePtr(tags.AKOEmail),
 			tags.CostCenterTag:   pointer.MakePtr(tags.AKOCostCenter),
@@ -79,14 +79,14 @@ func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpoint
 	networkClient.Authorizer = s.Authorizer
 	_, err := networkClient.CreateOrUpdate(context.Background(), resourceGroupName, endpointName,
 		network.PrivateEndpoint{
-			Location: to.StringPtr(region),
+			Location: new(region),
 			PrivateEndpointProperties: &network.PrivateEndpointProperties{
 				Subnet:                        &s.Subnet,
 				PrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{},
 				ManualPrivateLinkServiceConnections: &[]network.PrivateLinkServiceConnection{{
-					Name: to.StringPtr(endpointName),
+					Name: new(endpointName),
 					PrivateLinkServiceConnectionProperties: &network.PrivateLinkServiceConnectionProperties{
-						PrivateLinkServiceID: to.StringPtr(privateLinkServiceResourceID),
+						PrivateLinkServiceID: new(privateLinkServiceResourceID),
 					},
 				}},
 			},
@@ -115,7 +115,7 @@ func (s *sessionAzure) CreatePrivateEndpoint(region, resourceGroupName, endpoint
 
 func retryFunction(attempt int, sleep time.Duration, function func() error) error {
 	var err error
-	for i := 0; i < attempt; i++ {
+	for range attempt {
 		err = function()
 		if err != nil {
 			fmt.Print("waiting PE...")

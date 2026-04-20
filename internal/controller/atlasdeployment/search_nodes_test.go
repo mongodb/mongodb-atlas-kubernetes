@@ -22,15 +22,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestHandleSearchNodes(t *testing.T) {
@@ -52,7 +51,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -75,8 +74,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -93,8 +92,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().UpdateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S100_LOWCPU_NVME",
@@ -108,7 +107,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -131,8 +130,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -146,7 +145,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -169,8 +168,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -193,7 +192,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -229,8 +228,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().CreateClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S100_LOWCPU_NVME",
@@ -244,7 +243,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -286,7 +285,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -309,8 +308,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -331,7 +330,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -354,8 +353,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -376,7 +375,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -410,7 +409,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -433,8 +432,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -448,7 +447,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -472,8 +471,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("IDLE"),
+					GroupId:   new(projectID),
+					StateName: new("IDLE"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -487,7 +486,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -511,8 +510,8 @@ func TestHandleSearchNodes(t *testing.T) {
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
 			Return(
 				&admin.ApiSearchDeploymentResponse{
-					GroupId:   pointer.MakePtr(projectID),
-					StateName: pointer.MakePtr("UPDATING"),
+					GroupId:   new(projectID),
+					StateName: new("UPDATING"),
 					Specs: &[]admin.ApiSearchDeploymentSpec{
 						{
 							InstanceSize: "S80_LOWCPU_NVME",
@@ -526,7 +525,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},
@@ -561,7 +560,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					AtlasSearchApi: searchAPI,
 				},
 			},

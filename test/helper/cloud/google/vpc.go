@@ -20,8 +20,6 @@ import (
 	"os"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func CreateVPC(ctx context.Context, vpcName string) error {
@@ -33,9 +31,9 @@ func CreateVPC(ctx context.Context, vpcName string) error {
 	op, err := gce.networkClient.Insert(ctx, &computepb.InsertNetworkRequest{
 		Project: gce.projectID,
 		NetworkResource: &computepb.Network{
-			Name:                  pointer.MakePtr(vpcName),
-			Description:           pointer.MakePtr("Atlas Kubernetes Operator E2E Tests VPC"),
-			AutoCreateSubnetworks: pointer.MakePtr(false),
+			Name:                  new(vpcName),
+			Description:           new("Atlas Kubernetes Operator E2E Tests VPC"),
+			AutoCreateSubnetworks: new(false),
 		},
 	})
 	if err != nil {

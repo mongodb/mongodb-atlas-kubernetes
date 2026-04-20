@@ -31,23 +31,20 @@ import (
 )
 
 type Generator struct {
-	definitions   map[string]v1alpha1.OpenAPIDefinition
-	pluginSet     *plugins.Set
-	openapiLoader config.Loader
-	atlasLoader   config.Loader
+	definitions map[string]v1alpha1.OpenAPIDefinition
+	pluginSet   *plugins.Set
+	loader      config.Loader
 }
 
 func NewGenerator(
 	openAPIDefinitions map[string]v1alpha1.OpenAPIDefinition,
 	pluginSet *plugins.Set,
-	openapiLoader config.Loader,
-	atlasLoader config.Loader,
+	loader config.Loader,
 ) *Generator {
 	return &Generator{
-		definitions:   openAPIDefinitions,
-		pluginSet:     pluginSet,
-		openapiLoader: openapiLoader,
-		atlasLoader:   atlasLoader,
+		definitions: openAPIDefinitions,
+		pluginSet:   pluginSet,
+		loader:      loader,
 	}
 }
 
@@ -80,20 +77,9 @@ func (g *Generator) Generate(ctx context.Context, crdConfig *v1alpha1.CRDConfig)
 			return nil, fmt.Errorf("no OpenAPI definition named %q found", mapping.OpenAPIRef.Name)
 		}
 
-		var openApiSpec *openapi3.T
-		var err error
-
-		switch def.Path {
-		case "":
-			openApiSpec, err = g.atlasLoader.Load(ctx, def.Package)
-			if err != nil {
-				return nil, fmt.Errorf("error loading Atlas OpenAPI package %q: %w", def.Package, err)
-			}
-		default:
-			openApiSpec, err = g.openapiLoader.Load(ctx, def.Path)
-			if err != nil {
-				return nil, fmt.Errorf("error loading spec: %w", err)
-			}
+		openApiSpec, err := g.loader.Load(ctx, def)
+		if err != nil {
+			return nil, fmt.Errorf("error loading OpenAPI spec %q: %w", def.Name, err)
 		}
 
 		for _, p := range g.pluginSet.Mapping {
@@ -191,3 +177,4 @@ func clearPropertiesWithoutExtensions(schema *openapi3.Schema) bool {
 
 	return hasExtensions
 }
+

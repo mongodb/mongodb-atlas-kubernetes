@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -36,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/searchindex/fake"
 )
@@ -55,7 +54,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 		}
 
@@ -76,8 +75,8 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					ID:     pointer.MakePtr("testID"),
-					Status: pointer.MakePtr("NOT STARTED"),
+					ID:     new("testID"),
+					Status: new("NOT STARTED"),
 				}, nil
 			},
 		}
@@ -113,7 +112,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 		}
 
@@ -134,8 +133,8 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			CreateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					ID:     pointer.MakePtr("testID"),
-					Status: pointer.MakePtr("NOT STARTED"),
+					ID:     new("testID"),
+					Status: new("NOT STARTED"),
 				}, errors.New(http.StatusText(http.StatusInternalServerError))
 			},
 		}
@@ -170,7 +169,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 		}
 
@@ -228,7 +227,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
 				StoredSource: &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
-				Analyzer:     pointer.MakePtr("testAnalyzer"),
+				Analyzer:     new("testAnalyzer"),
 			},
 		}
 
@@ -278,9 +277,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
-			ID:     pointer.MakePtr("testID"),
+			ID:     new("testID"),
 			Status: nil,
 		}
 
@@ -336,9 +335,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
-			ID:     pointer.MakePtr("testID"),
+			ID:     new("testID"),
 			Status: nil,
 		}
 
@@ -393,7 +392,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Type:           "search",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("testAnalyzer"),
+				Analyzer: new("testAnalyzer"),
 			},
 			ID:     nil,
 			Status: nil,
@@ -434,7 +433,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312013: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -442,7 +441,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			projectID:  "",
 			indexName:  "testIndexName",
 		}
-		result := reconciler.reconcileInternal("", nil, &searchindex.SearchIndex{Status: pointer.MakePtr("NOT STARTED")})
+		result := reconciler.reconcileInternal("", nil, &searchindex.SearchIndex{Status: new("NOT STARTED")})
 		assert.True(t, result.IsInProgress())
 	})
 
@@ -451,7 +450,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			ctx: &workflow.Context{
 				Log:          zap.S(),
 				OrgID:        "testOrgID",
-				SdkClientSet: &atlas.ClientSet{SdkClient20250312013: &admin.APIClient{}},
+				SdkClientSet: &atlas.ClientSet{SdkClient20250312: &admin.APIClient{}},
 				Context:      context.Background(),
 			},
 			deployment: nil,
@@ -473,7 +472,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					Status: pointer.MakePtr("NOT STARTED"),
+					Status: new("NOT STARTED"),
 				}, nil
 			},
 		}
@@ -509,7 +508,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Name: "testIndex",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
@@ -523,7 +522,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
@@ -534,7 +533,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		fakeAtlasSearch := &fake.FakeAtlasSearch{
 			UpdateIndexFunc: func(_ context.Context, _, _ string, _ *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					Status: pointer.MakePtr("NOT STARTED"),
+					Status: new("NOT STARTED"),
 				}, errors.New(http.StatusText(http.StatusInternalServerError))
 			},
 		}
@@ -570,7 +569,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Name: "testIndex",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
@@ -584,7 +583,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
@@ -636,7 +635,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Name: "testIndex",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
@@ -650,7 +649,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)
@@ -693,7 +692,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				Name: "testIndex",
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
@@ -708,7 +707,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
-			ID:                         pointer.MakePtr("testID"),
+			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		result := reconciler.reconcileInternal("", idxInAKO, idxInAtlas)

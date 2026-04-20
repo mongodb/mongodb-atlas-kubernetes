@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -427,13 +427,13 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 
 		if computeUnsetOrDisabled {
 			regionConfig.AutoScaling.Compute = &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			}
 		}
 
 		if diskUnsetOrDisabled {
 			regionConfig.AutoScaling.DiskGB = &akov2.DiskGB{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			}
 		}
 	}
@@ -445,7 +445,7 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	}
 
 	if args.JavascriptEnabled == nil {
-		args.JavascriptEnabled = pointer.MakePtr(true)
+		args.JavascriptEnabled = new(true)
 	}
 
 	if args.MinimumEnabledTLSProtocol == "" {
@@ -453,7 +453,7 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	}
 
 	if args.NoTableScan == nil {
-		args.NoTableScan = pointer.MakePtr(false)
+		args.NoTableScan = new(false)
 	}
 
 	// those are ignored fields nowadays
@@ -638,7 +638,7 @@ func diskSizeFromAtlas(cluster *admin.ClusterDescription20240805) *int {
 	}
 
 	if value >= 1 {
-		return pointer.MakePtr(int(value))
+		return new(int(value))
 	}
 
 	return nil
@@ -766,7 +766,7 @@ func processArgsFromAtlas(config *admin.ClusterDescriptionProcessArgs20240805) *
 		DefaultWriteConcern:              config.GetDefaultWriteConcern(),
 		MinimumEnabledTLSProtocol:        config.GetMinimumEnabledTlsProtocol(),
 		JavascriptEnabled:                config.JavascriptEnabled,
-		NoTableScan:                      pointer.MakePtr(pointer.GetOrDefault(config.NoTableScan, false)),
+		NoTableScan:                      new(pointer.GetOrDefault(config.NoTableScan, false)),
 		OplogSizeMB:                      pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.OplogSizeMB, 0))),
 		SampleSizeBIConnector:            pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleSizeBIConnector, 0))),
 		SampleRefreshIntervalBIConnector: pointer.MakePtrOrNil(int64(pointer.GetOrDefault(config.SampleRefreshIntervalBIConnector, 0))),
@@ -816,44 +816,62 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 
 	var diskSizeGB *float64
 	if diskSize != nil {
-		diskSizeGB = pointer.MakePtr(float64(*diskSize))
+		diskSizeGB = new(float64(*diskSize))
 	}
 
-	hSpecOrDefault := func(spec *akov2.Specs) *admin.HardwareSpec20240805 {
+	hSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.HardwareSpec20240805 {
 		if spec == nil {
 			return nil
 		}
 
 		var diskIOPs *int
 		if spec.DiskIOPS != nil {
-			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
+			diskIOPs = new(int(*spec.DiskIOPS))
 		}
 
-		return &admin.HardwareSpec20240805{
-			InstanceSize:  &spec.InstanceSize,
-			NodeCount:     spec.NodeCount,
-			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
-			DiskIOPS:      diskIOPs,
-			DiskSizeGB:    diskSizeGB,
+		hardwareSpec := &admin.HardwareSpec20240805{
+			InstanceSize: &spec.InstanceSize,
+			NodeCount:    spec.NodeCount,
+			DiskIOPS:     diskIOPs,
+			DiskSizeGB:   diskSizeGB,
 		}
+
+		// Only include EbsVolumeType when:
+		// 1. It's explicitly set (non-empty), OR
+		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+		if spec.EbsVolumeType != "" || providerName == "AWS" {
+			hardwareSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+		}
+
+		return hardwareSpec
 	}
-	dHSpecOrDefault := func(spec *akov2.Specs) *admin.DedicatedHardwareSpec20240805 {
+	dHSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.DedicatedHardwareSpec20240805 {
 		if spec == nil || *spec.NodeCount == 0 {
 			return nil
 		}
 
 		var diskIOPs *int
 		if spec.DiskIOPS != nil {
-			diskIOPs = pointer.MakePtr(int(*spec.DiskIOPS))
+			diskIOPs = new(int(*spec.DiskIOPS))
 		}
 
-		return &admin.DedicatedHardwareSpec20240805{
-			InstanceSize:  &spec.InstanceSize,
-			NodeCount:     spec.NodeCount,
-			EbsVolumeType: pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD"),
-			DiskIOPS:      diskIOPs,
-			DiskSizeGB:    diskSizeGB,
+		dedicatedSpec := &admin.DedicatedHardwareSpec20240805{
+			InstanceSize: &spec.InstanceSize,
+			NodeCount:    spec.NodeCount,
+			DiskIOPS:     diskIOPs,
+			DiskSizeGB:   diskSizeGB,
 		}
+
+		// Only include EbsVolumeType when:
+		// 1. It's explicitly set (non-empty), OR
+		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+		if spec.EbsVolumeType != "" || providerName == "AWS" {
+			dedicatedSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+		}
+
+		return dedicatedSpec
 	}
 	autoScalingOrDefault := func(spec *akov2.AdvancedAutoScalingSpec) *admin.AdvancedAutoScalingSettings {
 		computeExist := spec != nil && spec.Compute != nil
@@ -862,10 +880,10 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 		if !computeExist && !diskGBExist {
 			return &admin.AdvancedAutoScalingSettings{
 				Compute: &admin.AdvancedComputeAutoScaling{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 				DiskGB: &admin.DiskGBAutoScaling{
-					Enabled: pointer.MakePtr(false),
+					Enabled: new(false),
 				},
 			}
 		}
@@ -907,9 +925,9 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 					BackingProviderName: pointer.MakePtrOrNil(regionConfig.BackingProviderName),
 					RegionName:          pointer.MakePtrOrNil(regionConfig.RegionName),
 					Priority:            regionConfig.Priority,
-					ElectableSpecs:      hSpecOrDefault(regionConfig.ElectableSpecs),
-					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.ReadOnlySpecs),
-					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.AnalyticsSpecs),
+					ElectableSpecs:      hSpecOrDefault(regionConfig.ElectableSpecs, regionConfig.ProviderName),
+					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.ReadOnlySpecs, regionConfig.ProviderName),
+					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.AnalyticsSpecs, regionConfig.ProviderName),
 					AutoScaling:         autoScalingOrDefault(regionConfig.AutoScaling),
 				},
 			)
@@ -1056,7 +1074,7 @@ func customZonesToAtlas(in *[]akov2.CustomZoneMapping) *admin.CustomZoneMappings
 	}
 
 	return &admin.CustomZoneMappings{
-		CustomZoneMappings: &out,
+		CustomZoneMappings: out,
 	}
 }
 
@@ -1070,7 +1088,7 @@ func managedNamespaceToAtlas(in *akov2.ManagedNamespace) *admin.ManagedNamespace
 		CustomShardKey:         in.CustomShardKey,
 		IsCustomShardKeyHashed: in.IsCustomShardKeyHashed,
 		IsShardKeyUnique:       in.IsShardKeyUnique,
-		NumInitialChunks:       pointer.MakePtr(int64(in.NumInitialChunks)),
+		NumInitialChunks:       new(int64(in.NumInitialChunks)),
 		PresplitHashedZones:    in.PresplitHashedZones,
 	}
 }

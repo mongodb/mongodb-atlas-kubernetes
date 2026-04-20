@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -101,14 +101,6 @@ func (m *mockClientObject) GetName() string {
 	return m.name
 }
 
-func intPtr(i int) *int {
-	return &i
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
 func TestExport(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -124,10 +116,10 @@ func TestExport(t *testing.T) {
 			name: "exports single cluster successfully",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results: &[]admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+					Results: []admin.FlexClusterDescription20241113{
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -143,12 +135,12 @@ func TestExport(t *testing.T) {
 			name: "exports multiple clusters successfully",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results: &[]admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
-						{Name: stringPtr("cluster-2")},
-						{Name: stringPtr("cluster-3")},
+					Results: []admin.FlexClusterDescription20241113{
+						{Name: new("cluster-1")},
+						{Name: new("cluster-2")},
+						{Name: new("cluster-3")},
 					},
-					TotalCount: intPtr(3),
+					TotalCount: new(3),
 				},
 			},
 			translator: &mockTranslator{
@@ -164,8 +156,8 @@ func TestExport(t *testing.T) {
 			name: "returns empty when no clusters exist",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results:    &[]admin.FlexClusterDescription20241113{},
-					TotalCount: intPtr(0),
+					Results:    []admin.FlexClusterDescription20241113{},
+					TotalCount: new(0),
 				},
 			},
 			translator:       &mockTranslator{},
@@ -197,10 +189,10 @@ func TestExport(t *testing.T) {
 			name: "returns error when translator fails",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results: &[]admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+					Results: []admin.FlexClusterDescription20241113{
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -214,10 +206,10 @@ func TestExport(t *testing.T) {
 			name: "translator returns multiple objects per resource",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results: &[]admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+					Results: []admin.FlexClusterDescription20241113{
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{
@@ -237,10 +229,10 @@ func TestExport(t *testing.T) {
 			name: "passes referenced objects to translator",
 			mockApi: &mockFlexClustersApi{
 				listResponse: &admin.PaginatedFlexClusters20241113{
-					Results: &[]admin.FlexClusterDescription20241113{
-						{Name: stringPtr("cluster-1")},
+					Results: []admin.FlexClusterDescription20241113{
+						{Name: new("cluster-1")},
 					},
-					TotalCount: intPtr(1),
+					TotalCount: new(1),
 				},
 			},
 			translator: &mockTranslator{

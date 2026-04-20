@@ -20,10 +20,9 @@ import (
 	"github.com/go-test/deep"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
@@ -41,9 +40,9 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			Enabled:                     true,
 			ConnectionSecretRef:         common.ResourceRefNamespaced{},
 			DomainAllowList:             []string{"test.com"},
-			DomainRestrictionEnabled:    pointer.MakePtr(true),
+			DomainRestrictionEnabled:    new(true),
 			DataAccessIdentityProviders: &[]string{"test-123", "test-456"},
-			SSODebugEnabled:             pointer.MakePtr(true),
+			SSODebugEnabled:             new(true),
 			PostAuthRoleGrants:          []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{
@@ -73,7 +72,7 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			RoleMappings: &[]admin.AuthFederationRoleMapping{
 				{
 					ExternalGroupName: spec.RoleMappings[0].ExternalGroupName,
-					RoleAssignments: &[]admin.ConnectedOrgConfigRoleAssignment{
+					RoleAssignments: []admin.ConnectedOrgConfigRoleAssignment{
 						{
 							GroupId: &projectID,
 							Role:    &spec.RoleMappings[0].RoleAssignments[0].Role,
@@ -102,8 +101,8 @@ func Test_FederatedAuthSpec_ToAtlas(t *testing.T) {
 			Enabled:                  true,
 			ConnectionSecretRef:      common.ResourceRefNamespaced{},
 			DomainAllowList:          []string{"test.com"},
-			DomainRestrictionEnabled: pointer.MakePtr(true),
-			SSODebugEnabled:          pointer.MakePtr(true),
+			DomainRestrictionEnabled: new(true),
+			SSODebugEnabled:          new(true),
 			PostAuthRoleGrants:       []string{"role-3", "role-4"},
 			RoleMappings: []RoleMapping{
 				{

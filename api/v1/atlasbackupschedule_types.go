@@ -17,7 +17,7 @@ package v1
 import (
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -122,24 +122,24 @@ func (in *AtlasBackupSchedule) ToAtlas(clusterID, clusterName, zoneID string, po
 			RetentionValue:    bpItem.RetentionValue,
 		})
 	}
-	atlasPolicy.PolicyItems = &items
+	atlasPolicy.PolicyItems = items
 
 	result := &admin.DiskBackupSnapshotSchedule20240805{
 		ClusterName:                       pointer.MakePtrOrNil(clusterName),
 		ClusterId:                         pointer.MakePtrOrNil(clusterID),
-		ReferenceHourOfDay:                pointer.MakePtr(int(in.Spec.ReferenceHourOfDay)),
-		ReferenceMinuteOfHour:             pointer.MakePtr(int(in.Spec.ReferenceMinuteOfHour)),
-		RestoreWindowDays:                 pointer.MakePtr(int(in.Spec.RestoreWindowDays)),
-		UpdateSnapshots:                   pointer.MakePtr(in.Spec.UpdateSnapshots),
-		Policies:                          &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{atlasPolicy},
-		AutoExportEnabled:                 pointer.MakePtr(in.Spec.AutoExportEnabled),
-		UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(in.Spec.UseOrgAndGroupNamesInExportPrefix),
+		ReferenceHourOfDay:                new(int(in.Spec.ReferenceHourOfDay)),
+		ReferenceMinuteOfHour:             new(int(in.Spec.ReferenceMinuteOfHour)),
+		RestoreWindowDays:                 new(int(in.Spec.RestoreWindowDays)),
+		UpdateSnapshots:                   new(in.Spec.UpdateSnapshots),
+		Policies:                          []admin.AdvancedDiskBackupSnapshotSchedulePolicy{atlasPolicy},
+		AutoExportEnabled:                 new(in.Spec.AutoExportEnabled),
+		UseOrgAndGroupNamesInExportPrefix: new(in.Spec.UseOrgAndGroupNamesInExportPrefix),
 	}
 
 	if in.Spec.Export != nil {
 		result.Export = &admin.AutoExportPolicy{
-			ExportBucketId: pointer.MakePtr(in.Spec.Export.ExportBucketID),
-			FrequencyType:  pointer.MakePtr(in.Spec.Export.FrequencyType),
+			ExportBucketId: new(in.Spec.Export.ExportBucketID),
+			FrequencyType:  new(in.Spec.Export.FrequencyType),
 		}
 	}
 

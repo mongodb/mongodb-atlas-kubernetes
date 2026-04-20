@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -50,7 +50,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestRenconcile(t *testing.T) {
@@ -81,11 +80,11 @@ func TestRenconcile(t *testing.T) {
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",
-							Id:                        pointer.MakePtr("my-project-id"),
+							Id:                        new("my-project-id"),
 							Name:                      "my-project",
 							ClusterCount:              0,
-							RegionUsageRestrictions:   pointer.MakePtr("NONE"),
-							WithDefaultAlertsSettings: pointer.MakePtr(true),
+							RegionUsageRestrictions:   new("NONE"),
+							WithDefaultAlertsSettings: new(true),
 							Tags: &[]admin.ResourceTag{
 								{
 									Key:   "test",
@@ -164,7 +163,7 @@ func TestRenconcile(t *testing.T) {
 					},
 					SdkClientSetFunc: func(ctx context.Context, creds *atlas_controllers.Credentials, log *zap.SugaredLogger) (*atlas_controllers.ClientSet, error) {
 						return &atlas_controllers.ClientSet{
-							SdkClient20250312013: tt.atlasSDKMocker(),
+							SdkClient20250312: tt.atlasSDKMocker(),
 						}, nil
 					},
 				},

@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
@@ -38,7 +37,7 @@ func TestCtrlStateReconciler_SetupWithManager_NoGomock(t *testing.T) {
 	require.NoError(t, r.SetupWithManager(fakeMgr, skipNameValidation))
 	require.Equal(t, fakeMgr, mock.ReceivedMgr)
 	wantOpts := controller.TypedOptions[reconcile.Request]{
-		SkipNameValidation: pointer.MakePtr(skipNameValidation),
+		SkipNameValidation: new(skipNameValidation),
 		RateLimiter:        ratelimit.NewRateLimiter[reconcile.Request](),
 	}
 	assert.Equal(t, wantOpts, mock.ReceivedOpts)

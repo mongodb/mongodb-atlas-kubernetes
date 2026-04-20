@@ -40,7 +40,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
@@ -136,8 +135,8 @@ func (r *AtlasCustomRoleReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
-	service := customroles.NewCustomRoles(atlasSdkClientSet.SdkClient20250312013.CustomDatabaseRolesApi)
-	project, err := r.ResolveProject(ctx, atlasSdkClientSet.SdkClient20250312013, atlasCustomRole)
+	service := customroles.NewCustomRoles(atlasSdkClientSet.SdkClient20250312.CustomDatabaseRolesApi)
+	project, err := r.ResolveProject(ctx, atlasSdkClientSet.SdkClient20250312, atlasCustomRole)
 	if err != nil {
 		return r.terminate(workflowCtx, atlasCustomRole, api.ProjectCustomRolesReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
@@ -199,7 +198,7 @@ func (r *AtlasCustomRoleReconciler) SetupWithManager(mgr ctrl.Manager, skipNameV
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			SkipNameValidation:      new(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }

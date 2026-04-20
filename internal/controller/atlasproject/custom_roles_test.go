@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -32,7 +32,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestEnsureCustomRoles(t *testing.T) {
@@ -47,16 +46,16 @@ func TestEnsureCustomRoles(t *testing.T) {
 				{
 					Name: "action1",
 					Resources: []akov2.Resource{
-						{Cluster: pointer.MakePtr(true)},
-						{Database: pointer.MakePtr("db1")},
+						{Cluster: new(true)},
+						{Database: new("db1")},
 					},
 				},
 				{
 					Name: "action2",
 					Resources: []akov2.Resource{
 						{
-							Database:   pointer.MakePtr("db2"),
-							Collection: pointer.MakePtr("test-collection"),
+							Database:   new("db2"),
+							Collection: new("test-collection"),
 						},
 					},
 				},
@@ -134,7 +133,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -170,7 +169,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 									{
 										Name: "action1",
 										Resources: []akov2.Resource{
-											{Database: pointer.MakePtr("db2")},
+											{Database: new("db2")},
 										},
 									},
 								},
@@ -196,7 +195,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -210,7 +209,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -247,9 +246,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 										Name: "action",
 										Resources: []akov2.Resource{
 											{
-												Database:   pointer.MakePtr("db"),
-												Cluster:    pointer.MakePtr(true),
-												Collection: pointer.MakePtr("test-collection"),
+												Database:   new("db"),
+												Cluster:    new(true),
+												Collection: new("test-collection"),
 											},
 										},
 									},
@@ -264,7 +263,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 									{
 										Name: "action2",
 										Resources: []akov2.Resource{
-											{Database: pointer.MakePtr("db2")},
+											{Database: new("db2")},
 										},
 									},
 								},
@@ -285,9 +284,9 @@ func TestEnsureCustomRoles(t *testing.T) {
 							Name: "action",
 							Resources: []akov2.Resource{
 								{
-									Database:   pointer.MakePtr("db"),
-									Cluster:    pointer.MakePtr(true),
-									Collection: pointer.MakePtr("test-collection"),
+									Database:   new("db"),
+									Cluster:    new(true),
+									Collection: new("test-collection"),
 								},
 							},
 						},
@@ -309,7 +308,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{
 												Db:         "db",
 												Collection: "test-collection",
@@ -327,7 +326,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db1"},
 										},
 									},
@@ -341,7 +340,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action2",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -379,7 +378,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 								Actions: &[]admin.DatabasePrivilegeAction{
 									{
 										Action: "action1",
-										Resources: &[]admin.DatabasePermittedNamespaceResource{
+										Resources: []admin.DatabasePermittedNamespaceResource{
 											{Db: "db2"},
 										},
 									},
@@ -397,7 +396,7 @@ func TestEnsureCustomRoles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						CustomDatabaseRolesApi: tc.roleAPI,
 					},
 				},
@@ -481,7 +480,7 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						CustomDatabaseRolesApi: roleAPI,
 					},
 				},

@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestCreate(t *testing.T) {
@@ -108,23 +107,23 @@ func TestCreate(t *testing.T) {
 			CreateStreamWorkspaceExecute(mock.AnythingOfType("admin.CreateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "FRANKFURT_DEU",
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
 					Connections: &[]admin.StreamsConnection{
 						{
-							Name: pointer.MakePtr("sample-connection"),
-							Type: pointer.MakePtr("Sample"),
+							Name: new("sample-connection"),
+							Type: new("Sample"),
 						},
 					},
-					GroupId: pointer.MakePtr("my-project-id"),
+					GroupId: new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -132,7 +131,7 @@ func TestCreate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -220,7 +219,7 @@ func TestCreate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -256,7 +255,7 @@ func TestDelete(t *testing.T) {
 					Name:              "my-stream-processing-instance",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+					DeletionTimestamp: new(metav1.Now()),
 				},
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
@@ -314,7 +313,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -344,7 +343,7 @@ func TestDelete(t *testing.T) {
 					Name:              "my-stream-processing-instance",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+					DeletionTimestamp: new(metav1.Now()),
 					Annotations: map[string]string{
 						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 					},
@@ -420,7 +419,7 @@ func TestDelete(t *testing.T) {
 					Name:              "my-stream-processing-instance",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+					DeletionTimestamp: new(metav1.Now()),
 				},
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
@@ -478,7 +477,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -514,7 +513,7 @@ func TestDelete(t *testing.T) {
 					Name:              "my-stream-processing-instance",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+					DeletionTimestamp: new(metav1.Now()),
 					Annotations: map[string]string{
 						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete,
 					},
@@ -576,7 +575,7 @@ func TestDelete(t *testing.T) {
 			ctx := &workflow.Context{
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						StreamsApi: streamsAPI,
 					},
 				},
@@ -606,7 +605,7 @@ func TestDelete(t *testing.T) {
 					Name:              "my-stream-processing-instance",
 					Namespace:         "default",
 					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+					DeletionTimestamp: new(metav1.Now()),
 					Annotations: map[string]string{
 						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 					},
@@ -684,7 +683,7 @@ func TestDelete(t *testing.T) {
 				Name:              "my-stream-processing-instance",
 				Namespace:         "default",
 				Finalizers:        []string{customresource.FinalizerLabel},
-				DeletionTimestamp: pointer.MakePtr(metav1.Now()),
+				DeletionTimestamp: new(metav1.Now()),
 				Annotations: map[string]string{
 					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
@@ -817,23 +816,23 @@ func TestUpdate(t *testing.T) {
 			UpdateStreamWorkspaceExecute(mock.AnythingOfType("admin.UpdateStreamWorkspaceApiRequest")).
 			Return(
 				&admin.StreamsTenant{
-					Id:   pointer.MakePtr("instance-0-id"),
-					Name: pointer.MakePtr("instance-0"),
+					Id:   new("instance-0-id"),
+					Name: new("instance-0"),
 					StreamConfig: &admin.StreamConfig{
-						Tier: pointer.MakePtr("SP30"),
+						Tier: new("SP30"),
 					},
 					DataProcessRegion: &admin.StreamsDataProcessRegion{
 						CloudProvider: "AWS",
 						Region:        "DUBLIN_IRL",
 					},
-					Hostnames: pointer.MakePtr([]string{"mdb://host1", "mdb://host2"}),
+					Hostnames: new([]string{"mdb://host1", "mdb://host2"}),
 					Connections: &[]admin.StreamsConnection{
 						{
-							Name: pointer.MakePtr("sample-connection"),
-							Type: pointer.MakePtr("Sample"),
+							Name: new("sample-connection"),
+							Type: new("Sample"),
 						},
 					},
-					GroupId: pointer.MakePtr("my-project-id"),
+					GroupId: new("my-project-id"),
 				},
 				&http.Response{},
 				nil,
@@ -841,7 +840,7 @@ func TestUpdate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -932,7 +931,7 @@ func TestUpdate(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -958,8 +957,8 @@ func TestCreateConnections(t *testing.T) {
 			CreateStreamConnectionExecute(mock.AnythingOfType("admin.CreateStreamConnectionApiRequest")).
 			Return(
 				&admin.StreamsConnection{
-					Name: pointer.MakePtr("sample-connection"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection"),
+					Type: new("Sample"),
 				},
 				&http.Response{},
 				nil,
@@ -967,7 +966,7 @@ func TestCreateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1027,8 +1026,8 @@ func TestCreateConnections(t *testing.T) {
 
 		err := createConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			}, nil
 		})
 		assert.NoError(t, err)
@@ -1045,7 +1044,7 @@ func TestCreateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1105,8 +1104,8 @@ func TestCreateConnections(t *testing.T) {
 
 		err := createConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			}, nil
 		})
 		assert.ErrorContains(t, err, "failed to create connection")
@@ -1184,8 +1183,8 @@ func TestUpdateConnections(t *testing.T) {
 			UpdateStreamConnectionExecute(mock.AnythingOfType("admin.UpdateStreamConnectionApiRequest")).
 			Return(
 				&admin.StreamsConnection{
-					Name: pointer.MakePtr("sample-connection"),
-					Type: pointer.MakePtr("Sample"),
+					Name: new("sample-connection"),
+					Type: new("Sample"),
 				},
 				&http.Response{},
 				nil,
@@ -1193,7 +1192,7 @@ func TestUpdateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1253,8 +1252,8 @@ func TestUpdateConnections(t *testing.T) {
 
 		err := updateConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			}, nil
 		})
 		assert.NoError(t, err)
@@ -1271,7 +1270,7 @@ func TestUpdateConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1331,8 +1330,8 @@ func TestUpdateConnections(t *testing.T) {
 
 		err := updateConnections(ctx, project, streamInstance, connections, func(streamConnection *akov2.AtlasStreamConnection) (*admin.StreamsConnection, error) {
 			return &admin.StreamsConnection{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			}, nil
 		})
 		assert.ErrorContains(t, err, "failed to update connection")
@@ -1415,7 +1414,7 @@ func TestDeleteConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1462,8 +1461,8 @@ func TestDeleteConnections(t *testing.T) {
 		}
 		connections := []*admin.StreamsConnection{
 			{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			},
 		}
 
@@ -1482,7 +1481,7 @@ func TestDeleteConnections(t *testing.T) {
 		ctx := &workflow.Context{
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					StreamsApi: streamsAPI,
 				},
 			},
@@ -1529,8 +1528,8 @@ func TestDeleteConnections(t *testing.T) {
 		}
 		connections := []*admin.StreamsConnection{
 			{
-				Name: pointer.MakePtr("sample-connection"),
-				Type: pointer.MakePtr("Sample"),
+				Name: new("sample-connection"),
+				Type: new("Sample"),
 			},
 		}
 

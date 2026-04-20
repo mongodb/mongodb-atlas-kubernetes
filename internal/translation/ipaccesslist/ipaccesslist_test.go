@@ -23,10 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 )
 
 func TestIPAccessList_List(t *testing.T) {
@@ -57,21 +55,21 @@ func TestIPAccessList_List(t *testing.T) {
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
-									IpAddress:       pointer.MakePtr("192.168.100.150"),
-									CidrBlock:       pointer.MakePtr("192.168.100.150/32"),
+									IpAddress:       new("192.168.100.150"),
+									CidrBlock:       new("192.168.100.150/32"),
 									DeleteAfterDate: &active,
 								},
 								{
-									CidrBlock: pointer.MakePtr("192.168.1.0/24"),
-									Comment:   pointer.MakePtr("My Network"),
+									CidrBlock: new("192.168.1.0/24"),
+									Comment:   new("My Network"),
 								},
 								{
-									AwsSecurityGroup: pointer.MakePtr("sg-12345"),
+									AwsSecurityGroup: new("sg-12345"),
 								},
 							},
-							TotalCount: pointer.MakePtr(3),
+							TotalCount: new(3),
 						},
 						&http.Response{},
 						nil,
@@ -136,21 +134,21 @@ func TestIPAccessList_Add(t *testing.T) {
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
-									IpAddress:       pointer.MakePtr("192.168.100.150"),
-									CidrBlock:       pointer.MakePtr("192.168.100.150/32"),
+									IpAddress:       new("192.168.100.150"),
+									CidrBlock:       new("192.168.100.150/32"),
 									DeleteAfterDate: &active,
 								},
 								{
-									CidrBlock: pointer.MakePtr("192.168.1.0/24"),
-									Comment:   pointer.MakePtr("My Network"),
+									CidrBlock: new("192.168.1.0/24"),
+									Comment:   new("My Network"),
 								},
 								{
-									AwsSecurityGroup: pointer.MakePtr("sg-12345"),
+									AwsSecurityGroup: new("sg-12345"),
 								},
 							},
-							TotalCount: pointer.MakePtr(3),
+							TotalCount: new(3),
 						},
 						&http.Response{},
 						nil,

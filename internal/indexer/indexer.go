@@ -23,7 +23,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 
 	connectionsecretindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/indexer"
-	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
+	indexerexp "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/indexers"
+	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -70,18 +71,22 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		NewAtlasThirdPartyIntegrationByCredentialIndexer(logger),
 		NewAtlasThirdPartyIntegrationBySecretsIndexer(logger),
 		NewAtlasOrgSettingsByConnectionSecretIndexer(logger),
+		generatedindexer.NewDatabaseUserByGroupIndexer(logger),
+		generatedindexer.NewDatabaseUserBySecretIndexer(logger),
+		generatedindexer.NewClusterByGroupIndexer(logger),
+		generatedindexer.NewFlexClusterByGroupIndexer(logger),
+		generatedindexer.NewIPAccessListEntryByGroupIndexer(logger),
+		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
+		connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
 	)
 	if version.IsExperimental() {
 		// add experimental indexers here
 		indexers = append(indexers,
-			connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
-			connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),
-
-			indexer.NewFlexClusterByGroupIndexer(logger),
-			indexer.NewClusterByGroupIndexer(logger),
-			indexer.NewDatabaseUserBySecretIndexer(logger),
-			indexer.NewDatabaseUserByGroupIndexer(logger),
+			indexerexp.NewFlexClusterByGroupIndexer(logger),
+			indexerexp.NewClusterByGroupIndexer(logger),
+			indexerexp.NewDatabaseUserBySecretIndexer(logger),
+			indexerexp.NewDatabaseUserByGroupIndexer(logger),
 		)
 	}
 	return Register(ctx, c, indexers...)

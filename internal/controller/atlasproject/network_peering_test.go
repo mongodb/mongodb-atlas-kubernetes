@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -30,7 +30,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
@@ -111,7 +110,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						NetworkPeeringApi: peeringAPI,
 					},
 				},
@@ -152,13 +151,13 @@ func synthesizeAtlasNetworkPeerings(peeringIDs []string) *admin.PaginatedContain
 	for _, id := range peeringIDs {
 		atlasPeers = append(atlasPeers, admin.BaseNetworkPeeringConnectionSettings{
 			ContainerId:  fmt.Sprintf("container-%s", id),
-			Id:           pointer.MakePtr(fmt.Sprintf("np-%s", id)),
-			ProviderName: pointer.MakePtr("AWS"),
-			VpcId:        pointer.MakePtr(id),
-			StatusName:   pointer.MakePtr(StatusReady),
+			Id:           new(fmt.Sprintf("np-%s", id)),
+			ProviderName: new("AWS"),
+			VpcId:        new(id),
+			StatusName:   new(StatusReady),
 		})
 	}
 	return &admin.PaginatedContainerPeer{
-		Results: &atlasPeers,
+		Results: atlasPeers,
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -65,9 +66,9 @@ func (r *AtlasDatabaseUserReconciler) handleDatabaseUser(ctx *workflow.Context, 
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
-	dbUserService := dbuser.NewAtlasUsers(sdkClientSet.SdkClient20250312013.DatabaseUsersApi)
-	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClient20250312013.ClustersApi, sdkClientSet.SdkClient20250312013.GlobalClustersApi, sdkClientSet.SdkClient20250312013.FlexClustersApi, r.AtlasProvider.IsCloudGov())
-	atlasProject, err := r.ResolveProject(ctx.Context, sdkClientSet.SdkClient20250312013, atlasDatabaseUser)
+	dbUserService := dbuser.NewAtlasUsers(sdkClientSet.SdkClient20250312.DatabaseUsersApi)
+	deploymentService := deployment.NewAtlasDeployments(sdkClientSet.SdkClient20250312.ClustersApi, sdkClientSet.SdkClient20250312.GlobalClustersApi, sdkClientSet.SdkClient20250312.FlexClustersApi, r.AtlasProvider.IsCloudGov())
+	atlasProject, err := r.ResolveProject(ctx.Context, sdkClientSet.SdkClient20250312, atlasDatabaseUser)
 	if err != nil {
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.AtlasAPIAccessNotConfigured, true, err)
 	}
@@ -334,11 +335,8 @@ func filterScopeDeployments(user *akov2.AtlasDatabaseUser, allDeploymentsInProje
 	if len(scopeDeployments) > 0 {
 		// filtering the scope deployments by the ones existing in Atlas
 		for _, scopeDep := range scopeDeployments {
-			for _, projectDep := range allDeploymentsInProject {
-				if projectDep == scopeDep {
-					deploymentsToCheck = append(deploymentsToCheck, scopeDep)
-					break
-				}
+			if slices.Contains(allDeploymentsInProject, scopeDep) {
+				deploymentsToCheck = append(deploymentsToCheck, scopeDep)
 			}
 		}
 	}

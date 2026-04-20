@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -40,6 +41,9 @@ const (
 	privateShardKey string = "connectionStringPrivateShard"
 	userNameKey     string = "username"
 	passwordKey     string = "password"
+
+	schemeMongoDBSRV string = "mongodb+srv://"
+	schemeMongoDB    string = "mongodb://"
 )
 
 type ConnectionData struct {
@@ -140,10 +144,32 @@ func formatSecretName(projectName, clusterName, dbUserName string) string {
 }
 
 func AddCredentialsToConnectionURL(connURL, userName, password string) (string, error) {
-	cs, err := url.Parse(connURL)
-	if err != nil {
-		return "", err
+	if connURL == "" {
+		return "", nil
 	}
-	cs.User = url.UserPassword(userName, password)
-	return cs.String(), nil
+
+	var prefix string
+	switch {
+	case strings.HasPrefix(connURL, schemeMongoDBSRV):
+		prefix = schemeMongoDBSRV
+	case strings.HasPrefix(connURL, schemeMongoDB):
+		prefix = schemeMongoDB
+	default:
+		return "", fmt.Errorf("unsupported MongoDB connection string scheme: %q", connURL)
+	}
+
+	rest := connURL[len(prefix):]
+	end := len(rest)
+	if i := strings.IndexAny(rest, "/?"); i >= 0 {
+		end = i
+	}
+	hosts := rest[:end]
+	tail := rest[end:]
+
+	if i := strings.LastIndex(hosts, "@"); i >= 0 {
+		hosts = hosts[i+1:]
+	}
+
+	userinfo := url.UserPassword(userName, password).String()
+	return prefix + userinfo + "@" + hosts + tail, nil
 }

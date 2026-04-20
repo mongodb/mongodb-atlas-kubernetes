@@ -98,6 +98,6 @@ type Integration struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-func (i Integration) Identifier() interface{} {
+func (i Integration) Identifier() any {
 	return i.Type
 }

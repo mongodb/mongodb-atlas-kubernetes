@@ -27,7 +27,7 @@ import (
 
 func ComputeStateTracker(obj metav1.Object, dependencies ...client.Object) string {
 	stateMap := make(map[string][]byte)
-	stateMap["generation"] = []byte(fmt.Sprint(obj.GetGeneration()))
+	stateMap["generation"] = fmt.Append(nil, obj.GetGeneration())
 
 	for _, dep := range dependencies {
 		stateData := []byte(string(dep.GetUID()) + "." + dep.GetResourceVersion())

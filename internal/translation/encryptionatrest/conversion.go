@@ -17,7 +17,7 @@ package encryptionatrest
 import (
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -63,7 +63,7 @@ func (a *AwsKms) ToAtlas() *admin.AWSKMSConfiguration {
 	}
 
 	if result.Enabled == nil {
-		result.Enabled = pointer.MakePtr(false)
+		result.Enabled = new(false)
 	}
 
 	return result
@@ -103,7 +103,7 @@ func (az *AzureKeyVault) ToAtlas() *admin.AzureKeyVault {
 	}
 
 	if result.Enabled == nil {
-		result.Enabled = pointer.MakePtr(false)
+		result.Enabled = new(false)
 	}
 
 	return result
@@ -132,7 +132,7 @@ func (g *GoogleCloudKms) ToAtlas() *admin.GoogleCloudKMS {
 	}
 
 	if result.Enabled == nil {
-		result.Enabled = pointer.MakePtr(false)
+		result.Enabled = new(false)
 	}
 
 	return result
@@ -173,7 +173,7 @@ func toAtlas(spec *EncryptionAtRest) *admin.EncryptionAtRest {
 
 func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 	out := &EncryptionAtRest{}
-	out.AWS.AwsKms.Enabled = pointer.MakePtr(false)
+	out.AWS.AwsKms.Enabled = new(false)
 	if ear.HasAwsKms() {
 		out.AWS.AwsKms = akov2.AwsKms{
 			Enabled: ear.AwsKms.Enabled,
@@ -182,7 +182,7 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 		}
 	}
 
-	out.Azure.AzureKeyVault.Enabled = pointer.MakePtr(false)
+	out.Azure.AzureKeyVault.Enabled = new(false)
 	if ear.HasAzureKeyVault() {
 		out.Azure.AzureKeyVault = akov2.AzureKeyVault{
 			Enabled:           ear.AzureKeyVault.Enabled,
@@ -193,7 +193,7 @@ func fromAtlas(ear *admin.EncryptionAtRest) *EncryptionAtRest {
 		}
 	}
 
-	out.GCP.GoogleCloudKms.Enabled = pointer.MakePtr(false)
+	out.GCP.GoogleCloudKms.Enabled = new(false)
 	if ear.HasGoogleCloudKms() {
 		out.GCP.GoogleCloudKms = akov2.GoogleCloudKms{
 			Enabled: ear.GoogleCloudKms.Enabled,
@@ -227,7 +227,7 @@ func prunedAWSSpecCopy(source *EncryptionAtRest) AwsKms {
 	result.AwsKms = *source.AWS.AwsKms.DeepCopy()
 	result.AwsKms.SecretRef = common.ResourceRefNamespaced{}
 	if result.AwsKms.Enabled == nil {
-		result.AwsKms.Enabled = pointer.MakePtr(false)
+		result.AwsKms.Enabled = new(false)
 	}
 	return result
 }
@@ -242,7 +242,7 @@ func prunedGCPSpecCopy(source *EncryptionAtRest) GoogleCloudKms {
 	result.GoogleCloudKms = *source.GCP.GoogleCloudKms.DeepCopy()
 	result.GoogleCloudKms.SecretRef = common.ResourceRefNamespaced{}
 	if result.GoogleCloudKms.Enabled == nil {
-		result.GoogleCloudKms.Enabled = pointer.MakePtr(false)
+		result.GoogleCloudKms.Enabled = new(false)
 	}
 	return result
 }
@@ -257,7 +257,7 @@ func prunedAzureSpecCopy(source *EncryptionAtRest) AzureKeyVault {
 	result.AzureKeyVault = *source.Azure.AzureKeyVault.DeepCopy()
 	result.AzureKeyVault.SecretRef = common.ResourceRefNamespaced{}
 	if result.AzureKeyVault.Enabled == nil {
-		result.AzureKeyVault.Enabled = pointer.MakePtr(false)
+		result.AzureKeyVault.Enabled = new(false)
 	}
 	return result
 }

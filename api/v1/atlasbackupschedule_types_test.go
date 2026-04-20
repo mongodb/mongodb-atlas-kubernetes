@@ -18,9 +18,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 )
 
 func Test_BackupScheduleToAtlas(t *testing.T) {
@@ -50,17 +48,17 @@ func Test_BackupScheduleToAtlas(t *testing.T) {
 		clusterName := "testCluster"
 		replicaSetID := "test-cluster-replica-set-id"
 		output := &admin.DiskBackupSnapshotSchedule20240805{
-			ClusterId:                         pointer.MakePtr("test-id"),
-			ClusterName:                       pointer.MakePtr("testCluster"),
-			AutoExportEnabled:                 pointer.MakePtr(true),
-			ReferenceHourOfDay:                pointer.MakePtr(10),
-			ReferenceMinuteOfHour:             pointer.MakePtr(10),
-			RestoreWindowDays:                 pointer.MakePtr(7),
-			UpdateSnapshots:                   pointer.MakePtr(false),
-			UseOrgAndGroupNamesInExportPrefix: pointer.MakePtr(false),
-			Policies: &[]admin.AdvancedDiskBackupSnapshotSchedulePolicy{
+			ClusterId:                         new("test-id"),
+			ClusterName:                       new("testCluster"),
+			AutoExportEnabled:                 new(true),
+			ReferenceHourOfDay:                new(10),
+			ReferenceMinuteOfHour:             new(10),
+			RestoreWindowDays:                 new(7),
+			UpdateSnapshots:                   new(false),
+			UseOrgAndGroupNamesInExportPrefix: new(false),
+			Policies: []admin.AdvancedDiskBackupSnapshotSchedulePolicy{
 				{
-					PolicyItems: &[]admin.DiskBackupApiPolicyItem{
+					PolicyItems: []admin.DiskBackupApiPolicyItem{
 						{
 							FrequencyType:     "hourly",
 							FrequencyInterval: 10,

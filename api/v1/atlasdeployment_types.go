@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,7 +24,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func init() {
@@ -651,10 +650,10 @@ func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
 						ZoneName: "Zone 1",
 						RegionConfigs: []*AdvancedRegionConfig{
 							{
-								Priority: pointer.MakePtr(7),
+								Priority: new(7),
 								ElectableSpecs: &Specs{
 									InstanceSize: "M10",
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
 								ProviderName:        "AWS",
 								BackingProviderName: "AWS",
@@ -722,7 +721,7 @@ func addReplicaIfNotAdded(deployment *AtlasDeployment) {
 				{
 					ElectableSpecs:      &Specs{},
 					BackingProviderName: "",
-					Priority:            pointer.MakePtr(7),
+					Priority:            new(7),
 					ProviderName:        "",
 				},
 			},
@@ -733,7 +732,7 @@ func addReplicaIfNotAdded(deployment *AtlasDeployment) {
 		deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = append(deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs, &AdvancedRegionConfig{
 			ElectableSpecs:      &Specs{},
 			BackingProviderName: "",
-			Priority:            pointer.MakePtr(7),
+			Priority:            new(7),
 			ProviderName:        "",
 			RegionName:          "",
 		})
@@ -774,7 +773,7 @@ func (c *AtlasDeployment) WithRegionName(name string) *AtlasDeployment {
 }
 
 func (c *AtlasDeployment) WithBackupScheduleRef(ref common.ResourceRefNamespaced) *AtlasDeployment {
-	c.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+	c.Spec.DeploymentSpec.BackupEnabled = new(true)
 	c.Spec.BackupScheduleRef = ref
 	return c
 }

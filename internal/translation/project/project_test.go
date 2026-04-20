@@ -23,11 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestGetProjectByName(t *testing.T) {
@@ -74,11 +73,11 @@ func TestGetProjectByName(t *testing.T) {
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",
-							Id:                        pointer.MakePtr("my-project-id"),
+							Id:                        new("my-project-id"),
 							Name:                      "my-project",
 							ClusterCount:              0,
-							RegionUsageRestrictions:   pointer.MakePtr("NONE"),
-							WithDefaultAlertsSettings: pointer.MakePtr(true),
+							RegionUsageRestrictions:   new("NONE"),
+							WithDefaultAlertsSettings: new(true),
 							Tags: &[]admin.ResourceTag{
 								{
 									Key:   "test",
@@ -155,11 +154,11 @@ func TestCreateProject(t *testing.T) {
 					Return(
 						&admin.Group{
 							OrgId:                     "my-org-id",
-							Id:                        pointer.MakePtr("my-project-id"),
+							Id:                        new("my-project-id"),
 							Name:                      "my-project",
 							ClusterCount:              0,
-							RegionUsageRestrictions:   pointer.MakePtr("NONE"),
-							WithDefaultAlertsSettings: pointer.MakePtr(true),
+							RegionUsageRestrictions:   new("NONE"),
+							WithDefaultAlertsSettings: new(true),
 							Tags: &[]admin.ResourceTag{
 								{
 									Key:   "test",

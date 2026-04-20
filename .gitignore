@@ -60,7 +60,8 @@ config/manifests/bases/mongodb-atlas-kubernetes.clusterserviceversion.yaml
 config/manifests/kustomization.yaml
 config/manager/kustomization.yaml
 config/generated/crd/bases/*.yaml
-config/generated/rbac/role.yaml
+config/generated/rbac/clusterwide/role.yaml
+config/generated/rbac/namespaced/role.yaml
 helm-charts/atlas-operator-crds/templates/*.yaml
 
 # ignore helm test artifacts

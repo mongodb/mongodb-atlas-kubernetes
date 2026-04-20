@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/customroles"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -96,9 +95,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -132,9 +131,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 										Name: "VIEW_ALL_HISTORY",
 										Resources: []akov2.Resource{
 											{
-												Cluster:    pointer.MakePtr(true),
-												Database:   pointer.MakePtr("main"),
-												Collection: pointer.MakePtr("collection"),
+												Cluster:    new(true),
+												Database:   new("main"),
+												Collection: new("collection"),
 											},
 										},
 									},
@@ -177,9 +176,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -225,9 +224,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -286,9 +285,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -322,9 +321,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 										Name: "VIEW_ALL_HISTORY",
 										Resources: []akov2.Resource{
 											{
-												Cluster:    pointer.MakePtr(true),
-												Database:   pointer.MakePtr("main"),
-												Collection: pointer.MakePtr("collection"),
+												Cluster:    new(true),
+												Database:   new("main"),
+												Collection: new("collection"),
 											},
 										},
 									},
@@ -374,9 +373,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -418,9 +417,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 										Name: "VIEW_ALL_HISTORY",
 										Resources: []akov2.Resource{
 											{
-												Cluster:    pointer.MakePtr(true),
-												Database:   pointer.MakePtr("main"),
-												Collection: pointer.MakePtr("collection"),
+												Cluster:    new(true),
+												Database:   new("main"),
+												Collection: new("collection"),
 											},
 										},
 									},
@@ -444,9 +443,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -488,7 +487,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "testRole",
 						Namespace:         "testRoleNamespace",
-						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+						DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
@@ -504,9 +503,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -540,9 +539,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 										Name: "VIEW_ALL_HISTORY",
 										Resources: []akov2.Resource{
 											{
-												Cluster:    pointer.MakePtr(true),
-												Database:   pointer.MakePtr("main"),
-												Collection: pointer.MakePtr("collection"),
+												Cluster:    new(true),
+												Database:   new("main"),
+												Collection: new("collection"),
 											},
 										},
 									},
@@ -579,7 +578,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "testRole",
 						Namespace:         "testNamespace",
-						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+						DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
@@ -595,9 +594,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -616,7 +615,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:              "testRole",
 							Namespace:         "testNamespace",
-							DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+							DeletionTimestamp: new(metav1.NewTime(time.Now())),
 							Finalizers:        []string{customresource.FinalizerLabel},
 						},
 						Spec: akov2.AtlasCustomRoleSpec{
@@ -633,9 +632,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 										Name: "VIEW_ALL_HISTORY",
 										Resources: []akov2.Resource{
 											{
-												Cluster:    pointer.MakePtr(true),
-												Database:   pointer.MakePtr("main"),
-												Collection: pointer.MakePtr("collection"),
+												Cluster:    new(true),
+												Database:   new("main"),
+												Collection: new("collection"),
 											},
 										},
 									},
@@ -677,7 +676,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				role: &akov2.AtlasCustomRole{
 					ObjectMeta: metav1.ObjectMeta{
-						DeletionTimestamp: pointer.MakePtr(metav1.NewTime(time.Now())),
+						DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					},
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
@@ -693,9 +692,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 									Name: "VIEW_ALL_HISTORY",
 									Resources: []akov2.Resource{
 										{
-											Cluster:    pointer.MakePtr(true),
-											Database:   pointer.MakePtr("main"),
-											Collection: pointer.MakePtr("collection"),
+											Cluster:    new(true),
+											Database:   new("main"),
+											Collection: new("collection"),
 										},
 									},
 								},
@@ -757,7 +756,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
@@ -826,7 +825,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
@@ -845,7 +844,7 @@ func Test_handleCustomRole(t *testing.T) {
 								projectAPI.EXPECT().GetGroupByName(mock.Anything, "testProject").
 									Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 								projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-									Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
+									Return(&admin.Group{Id: new("testProjectID")}, nil, nil)
 								return projectAPI
 							}(),
 						},
@@ -916,7 +915,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
@@ -976,7 +975,7 @@ func Test_handleCustomRole(t *testing.T) {
 					Log:   zap.S(),
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
 								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
 								return cdrAPI
@@ -1014,7 +1013,7 @@ func Test_handleCustomRole(t *testing.T) {
 				WithScheme(testScheme).
 				WithObjects(tt.args.k8sObjects...).
 				Build()
-			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312013.CustomDatabaseRolesApi)
+			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312.CustomDatabaseRolesApi)
 			r := AtlasCustomRoleReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
 			}
@@ -1036,5 +1035,5 @@ func solveProjectID(t *testing.T, r *AtlasCustomRoleReconciler, args args) (*pro
 	if args.akoCustomRole.Spec.ProjectDualReference.ExternalProjectRef != nil {
 		return &project.Project{ID: args.akoCustomRole.Spec.ExternalProjectRef.ID}, nil
 	}
-	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClientSet.SdkClient20250312013, args.akoCustomRole)
+	return r.ResolveProject(args.ctx.Context, args.ctx.SdkClientSet.SdkClient20250312, args.akoCustomRole)
 }

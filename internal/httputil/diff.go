@@ -56,13 +56,13 @@ func (t *TransportWithDiff) RoundTrip(req *http.Request) (*http.Response, error)
 	return t.transport.RoundTrip(req)
 }
 
-type cleanupFunc func(map[string]interface{})
+type cleanupFunc func(map[string]any)
 
-func cleanLinksField(data map[string]interface{}) {
+func cleanLinksField(data map[string]any) {
 	delete(data, "links")
 }
 
-func cleanCreatedField(data map[string]interface{}) {
+func cleanCreatedField(data map[string]any) {
 	delete(data, "created")
 }
 
@@ -77,8 +77,11 @@ func (t *TransportWithDiff) tryCalculateDiff(req *http.Request, cleanupFuncs ...
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyCopy))
 	}()
 
-	getReq, _ := http.NewRequestWithContext(req.Context(), http.MethodGet, req.URL.String(), nil)
-	getReq.Header = req.Header
+	getReq := req.Clone(req.Context())
+	getReq.Method = http.MethodGet
+	getReq.Body = nil
+	getReq.GetBody = nil
+	getReq.ContentLength = 0
 
 	getResp, err := t.transport.RoundTrip(getReq)
 	if err != nil {
@@ -88,7 +91,7 @@ func (t *TransportWithDiff) tryCalculateDiff(req *http.Request, cleanupFuncs ...
 
 	payloadFromGet, _ := io.ReadAll(getResp.Body)
 
-	var payloadFromGetParsed map[string]interface{}
+	var payloadFromGetParsed map[string]any
 	err = json.Unmarshal(payloadFromGet, &payloadFromGetParsed)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal payloadFromGetParsed JSON: %w", err)

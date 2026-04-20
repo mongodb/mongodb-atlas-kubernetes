@@ -44,7 +44,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/datafederation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
@@ -127,8 +126,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult()
 	}
-	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20250312013.DataFederationApi)
-	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312013.DataFederationApi)
+	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20250312.DataFederationApi)
+	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312.DataFederationApi)
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)
@@ -246,7 +245,7 @@ func (r *AtlasDataFederationReconciler) SetupWithManager(mgr ctrl.Manager, skipN
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			SkipNameValidation:      new(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }

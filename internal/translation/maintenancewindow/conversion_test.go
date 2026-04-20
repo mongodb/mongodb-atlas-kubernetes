@@ -27,7 +27,7 @@ func TestRoundtrip_MaintenanceWindow(t *testing.T) {
 	// Atlas has no 'Defer' field so we don't receive this back via fromAtlas
 	f := fuzz.New().SkipFieldsWithPattern(regexp.MustCompile("Defer"))
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		fuzzed := &MaintenanceWindow{}
 		f.Fuzz(fuzzed)
 		fuzzed = NewMaintenanceWindow(fuzzed.MaintenanceWindow)

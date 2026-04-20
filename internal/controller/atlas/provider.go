@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/mongodb-forks/digest"
-	v20250312013 "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	v20250312 "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -46,7 +46,7 @@ type Provider interface {
 }
 
 type ClientSet struct {
-	SdkClient20250312013 *v20250312013.APIClient
+	SdkClient20250312 *v20250312.APIClient
 }
 
 type ProductionProvider struct {
@@ -149,17 +149,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 
 	httpClient := &http.Client{Transport: transport}
 
-	clientv20250312013, err := v20250312013.NewClient(
-		v20250312013.UseBaseURL(p.domain),
-		v20250312013.UseHTTPClient(httpClient),
-		v20250312013.UseUserAgent(operatorUserAgent()))
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClientSet{
-		SdkClient20250312013: clientv20250312013,
-	}, nil
+	return NewSDKClientSet(p.domain, creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey, httpClient)
 }
 
 type bearerTokenTransport struct {
@@ -186,4 +176,18 @@ func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.S
 
 func operatorUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s;%s)", "MongoDBAtlasKubernetesOperator", version.Version, runtime.GOOS, runtime.GOARCH)
+}
+
+func NewSDKClientSet(domain, publicKey, privateKey string, httpClient *http.Client) (*ClientSet, error) {
+	clientv20250312, err := v20250312.NewClient(
+		v20250312.UseBaseURL(domain),
+		v20250312.UseHTTPClient(httpClient),
+		v20250312.UseUserAgent(operatorUserAgent()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClientSet{
+		SdkClient20250312: clientv20250312,
+	}, nil
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,13 +31,7 @@ const FinalizerLabel = "mongodbatlas/finalizer"
 type FinalizerOperator func(resource api.AtlasCustomResource, finalizer string)
 
 func HaveFinalizer(resource api.AtlasCustomResource, finalizer string) bool {
-	for _, f := range resource.GetFinalizers() {
-		if f == finalizer {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(resource.GetFinalizers(), finalizer)
 }
 
 // SetFinalizer Add the given finalizer to the list of resource finalizer
@@ -73,7 +68,7 @@ func ManageFinalizer(
 		return nil
 	}
 
-	data, err := json.Marshal([]map[string]interface{}{{
+	data, err := json.Marshal([]map[string]any{{
 		"op":    "replace",
 		"path":  "/metadata/finalizers",
 		"value": resourceCopy.GetFinalizers(),

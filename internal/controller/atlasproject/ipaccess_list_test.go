@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -39,7 +39,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
 )
 
@@ -402,8 +401,8 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results:    &[]admin.NetworkPermissionEntry{},
-							TotalCount: pointer.MakePtr(0),
+							Results:    []admin.NetworkPermissionEntry{},
+							TotalCount: new(0),
 						},
 						&http.Response{},
 						nil,
@@ -413,13 +412,13 @@ func TestHandleIPAccessList(t *testing.T) {
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
 					Return(
 						&admin.PaginatedNetworkAccess{
-							Results: &[]admin.NetworkPermissionEntry{
+							Results: []admin.NetworkPermissionEntry{
 								{
-									IpAddress: pointer.MakePtr("192.168.100.150"),
-									CidrBlock: pointer.MakePtr("192.168.100.150/32"),
+									IpAddress: new("192.168.100.150"),
+									CidrBlock: new("192.168.100.150/32"),
 								},
 							},
-							TotalCount: pointer.MakePtr(1),
+							TotalCount: new(1),
 						},
 						&http.Response{},
 						nil,
@@ -480,7 +479,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t)),
 					},
 				},
@@ -629,7 +628,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectIPAccessListApi: ipAccessAPI,
 					},
 				},
@@ -668,11 +667,11 @@ func synthesizeAtlasIPAccessList(peeringIDs []string) *admin.PaginatedNetworkAcc
 	atlasIPAccessList := make([]admin.NetworkPermissionEntry, 0, len(peeringIDs))
 	for _, cidr := range peeringIDs {
 		atlasIPAccessList = append(atlasIPAccessList, admin.NetworkPermissionEntry{
-			CidrBlock: pointer.MakePtr(cidr),
-			Comment:   pointer.MakePtr(fmt.Sprintf("fake CIDR block %s", cidr)),
+			CidrBlock: new(cidr),
+			Comment:   new(fmt.Sprintf("fake CIDR block %s", cidr)),
 		})
 	}
 	return &admin.PaginatedNetworkAccess{
-		Results: &atlasIPAccessList,
+		Results: atlasIPAccessList,
 	}
 }

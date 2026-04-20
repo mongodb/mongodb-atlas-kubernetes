@@ -37,7 +37,7 @@ type Statement struct {
 	Effect    string    `json:"Effect"`
 	Principal Principal `json:"Principal"`
 	Action    string    `json:"Action"`
-	Condition Condition `json:"Condition,omitempty"`
+	Condition Condition `json:"Condition"`
 }
 
 type Principal struct {
@@ -46,7 +46,7 @@ type Principal struct {
 }
 
 type Condition struct {
-	StringEquals StringEquals `json:"StringEquals,omitempty"`
+	StringEquals StringEquals `json:"StringEquals"`
 }
 
 type StringEquals struct {

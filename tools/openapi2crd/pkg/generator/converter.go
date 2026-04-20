@@ -45,6 +45,17 @@ func (g *Generator) Convert(input converter.PropertyConvertInput) *apiextensions
 		return nil
 	}
 
+	if _, seen := input.Visited[propertySchema]; seen {
+		return &apiextensions.JSONSchemaProps{
+			XPreserveUnknownFields: ptr.To(true),
+		}
+	}
+	// Mark this schema as visited for the duration of this call (DFS backtracking).
+	// All child recursions see it as an ancestor; defer removes it on return so
+	// sibling branches at the caller's level do not falsely detect a cycle.
+	input.Visited[propertySchema] = struct{}{}
+	defer delete(input.Visited, propertySchema)
+
 	typ := ""
 	if propertySchema.Type != nil && len(propertySchema.Type.Slice()) > 0 {
 		typ = (*propertySchema.Type)[0]
@@ -76,35 +87,17 @@ func (g *Generator) Convert(input converter.PropertyConvertInput) *apiextensions
 		//MinProperties:        castUInt64(schemaProps.MinProps),
 		Required: propertySchema.Required,
 		Items: g.convertPropertyOrArray(
-			converter.PropertyConvertInput{
-				Schema:              propertySchema.Items,
-				ExtensionsSchemaRef: extensionSchemaRef,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth,
-				Path:                append(input.Path, "[*]"),
-			},
+			input.Child(propertySchema.Items, extensionSchemaRef, input.Depth, append(input.Path, "[*]")),
 		),
 		AllOf: g.convertPropertySlice(propertySchema.AllOf, input),
 		OneOf: g.convertPropertySlice(propertySchema.OneOf, input),
 		AnyOf: g.convertPropertySlice(propertySchema.AnyOf, input),
 		Not: g.Convert(
-			converter.PropertyConvertInput{
-				Schema:              propertySchema.Not,
-				ExtensionsSchemaRef: extensionSchemaRef,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth + 1,
-				Path:                input.Path,
-			},
+			input.Child(propertySchema.Not, extensionSchemaRef, input.Depth+1, input.Path),
 		),
 		Properties: g.convertPropertyMap(propertySchema.Properties, input),
 		AdditionalProperties: g.convertPropertyOrBool(
-			converter.PropertyConvertInput{
-				Schema:              propertySchema.AdditionalProperties.Schema,
-				ExtensionsSchemaRef: extensionSchemaRef,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth,
-				Path:                input.Path,
-			},
+			input.Child(propertySchema.AdditionalProperties.Schema, extensionSchemaRef, input.Depth, input.Path),
 		),
 		Example: &example,
 	}
@@ -140,13 +133,7 @@ func (g *Generator) Convert(input converter.PropertyConvertInput) *apiextensions
 	// Apply custom transformations
 	props = g.transformations(
 		props,
-		converter.PropertyConvertInput{
-			Schema:              input.Schema,
-			ExtensionsSchemaRef: extensionSchemaRef,
-			PropertyConfig:      input.PropertyConfig,
-			Depth:               input.Depth,
-			Path:                input.Path,
-		},
+		input.Child(input.Schema, extensionSchemaRef, input.Depth, input.Path),
 	)
 
 	return props
@@ -158,15 +145,7 @@ func (g *Generator) convertPropertyOrBool(input converter.PropertyConvertInput) 
 	}
 
 	return &apiextensions.JSONSchemaPropsOrBool{
-		Schema: g.Convert(
-			converter.PropertyConvertInput{
-				Schema:              input.Schema,
-				ExtensionsSchemaRef: input.ExtensionsSchemaRef,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth + 1,
-				Path:                input.Path,
-			},
-		),
+		Schema:  g.Convert(input.Child(input.Schema, input.ExtensionsSchemaRef, input.Depth+1, input.Path)),
 		Allows: true,
 	}
 }
@@ -179,15 +158,7 @@ func (g *Generator) convertPropertyOrArray(input converter.PropertyConvertInput)
 	input.ExtensionsSchemaRef.Value.Items = openapi3.NewSchemaRef("", openapi3.NewSchema())
 
 	return &apiextensions.JSONSchemaPropsOrArray{
-		Schema: g.Convert(
-			converter.PropertyConvertInput{
-				Schema:              input.Schema,
-				ExtensionsSchemaRef: input.ExtensionsSchemaRef.Value.Items,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth + 1,
-				Path:                input.Path,
-			},
-		),
+		Schema: g.Convert(input.Child(input.Schema, input.ExtensionsSchemaRef.Value.Items, input.Depth+1, input.Path)),
 	}
 }
 
@@ -201,13 +172,7 @@ func (g *Generator) convertPropertySlice(schemas openapi3.SchemaRefs, input conv
 	for _, schema := range schemas {
 		input.Depth++
 		result := g.Convert(
-			converter.PropertyConvertInput{
-				Schema:              schema,
-				ExtensionsSchemaRef: input.ExtensionsSchemaRef,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth + 1,
-				Path:                input.Path,
-			},
+			input.Child(schema, input.ExtensionsSchemaRef, input.Depth+1, input.Path),
 		)
 		if result == nil {
 			continue
@@ -223,13 +188,7 @@ func (g *Generator) convertPropertyMap(schemaMap openapi3.Schemas, input convert
 	for key, schema := range schemaMap {
 		childExtensionsSchema := openapi3.NewSchemaRef("", openapi3.NewSchema())
 		result := g.Convert(
-			converter.PropertyConvertInput{
-				Schema:              schema,
-				ExtensionsSchemaRef: childExtensionsSchema,
-				PropertyConfig:      input.PropertyConfig,
-				Depth:               input.Depth + 1,
-				Path:                append(input.Path, key),
-			},
+			input.Child(schema, childExtensionsSchema, input.Depth+1, append(input.Path, key)),
 		)
 		if result == nil {
 			continue
@@ -266,6 +225,9 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 		result := props.DeepCopy()
 		result.Type = "object"
 		result.OneOf = nil
+		if result.Properties == nil {
+			result.Properties = map[string]apiextensions.JSONSchemaProps{}
+		}
 
 		options := make([]apiextensions.JSON, 0, len(oneOf))
 		for _, v := range oneOf {
@@ -278,19 +240,13 @@ func (g *Generator) oneOfRefsTransform(props *apiextensions.JSONSchemaProps, one
 			name = name[strings.LastIndex(name, "/")+1:]
 			name = strcase.LowerCamelCase(name)
 			options = append(options, name)
-			result = g.Convert(
-				converter.PropertyConvertInput{
-					Schema:              v,
-					ExtensionsSchemaRef: input.ExtensionsSchemaRef,
-					PropertyConfig:      input.PropertyConfig,
-					Depth:               input.Depth + 1,
-					Path:                append(input.Path, name),
-				},
+			optionSchema := g.Convert(
+				input.Child(v, input.ExtensionsSchemaRef, input.Depth+1, append(input.Path, name)),
 			)
-			if result == nil {
+			if optionSchema == nil {
 				continue
 			}
-			result.Properties[name] = *result
+			result.Properties[name] = *optionSchema
 		}
 
 		result.Properties["type"] = apiextensions.JSONSchemaProps{

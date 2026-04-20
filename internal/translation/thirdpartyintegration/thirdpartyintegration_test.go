@@ -21,11 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 )
@@ -72,8 +71,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -83,11 +82,11 @@ func TestIntegrationsCreate(t *testing.T) {
 			api: testCreateIntegrationAPI(
 				[]admin.ThirdPartyIntegration{
 					{
-						Id:                           pointer.MakePtr(string(testID)),
-						Type:                         pointer.MakePtr("DATADOG"),
-						ApiKey:                       pointer.MakePtr(testAPIKey),
-						Region:                       pointer.MakePtr(string(testRegion)),
-						SendCollectionLatencyMetrics: pointer.MakePtr(true),
+						Id:                           new(string(testID)),
+						Type:                         new("DATADOG"),
+						ApiKey:                       new(testAPIKey),
+						Region:                       new(string(testRegion)),
+						SendCollectionLatencyMetrics: new(true),
 					},
 				},
 				nil,
@@ -98,8 +97,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -116,8 +115,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -139,8 +138,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "BLAH",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -158,8 +157,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -169,11 +168,11 @@ func TestIntegrationsCreate(t *testing.T) {
 			api: testCreateIntegrationAPI(
 				[]admin.ThirdPartyIntegration{
 					{
-						Id:                           pointer.MakePtr(string(testID)),
-						Type:                         pointer.MakePtr("BLAH"),
-						ApiKey:                       pointer.MakePtr(testAPIKey),
-						Region:                       pointer.MakePtr(string(testRegion)),
-						SendCollectionLatencyMetrics: pointer.MakePtr(true),
+						Id:                           new(string(testID)),
+						Type:                         new("BLAH"),
+						ApiKey:                       new(testAPIKey),
+						Region:                       new(string(testRegion)),
+						SendCollectionLatencyMetrics: new(true),
 					},
 				},
 				nil,
@@ -189,8 +188,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -200,16 +199,16 @@ func TestIntegrationsCreate(t *testing.T) {
 			api: testCreateIntegrationAPI(
 				[]admin.ThirdPartyIntegration{
 					{
-						Id:          pointer.MakePtr(string(testID)),
-						Type:        pointer.MakePtr("SLACK"),
-						ApiToken:    pointer.MakePtr("fake-token"),
-						ChannelName: pointer.MakePtr("channel"),
-						TeamName:    pointer.MakePtr("team"),
+						Id:          new(string(testID)),
+						Type:        new("SLACK"),
+						ApiToken:    new("fake-token"),
+						ChannelName: new("channel"),
+						TeamName:    new("team"),
 					},
 					{
-						Id:   pointer.MakePtr(string(testID2)),
-						Type: pointer.MakePtr("WEBHOOK"),
-						Url:  pointer.MakePtr("http://example.com/fake"),
+						Id:   new(string(testID2)),
+						Type: new("WEBHOOK"),
+						Url:  new("http://example.com/fake"),
 					},
 				},
 				nil,
@@ -225,8 +224,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("enabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+						SendCollectionLatencyMetrics: new("enabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -236,18 +235,18 @@ func TestIntegrationsCreate(t *testing.T) {
 			api: testCreateIntegrationAPI(
 				[]admin.ThirdPartyIntegration{
 					{
-						Id:          pointer.MakePtr(string(testID)),
-						Type:        pointer.MakePtr("SLACK"),
-						ApiToken:    pointer.MakePtr("fake-token"),
-						ChannelName: pointer.MakePtr("channel"),
-						TeamName:    pointer.MakePtr("team"),
+						Id:          new(string(testID)),
+						Type:        new("SLACK"),
+						ApiToken:    new("fake-token"),
+						ChannelName: new("channel"),
+						TeamName:    new("team"),
 					},
 					{
-						Id:                           pointer.MakePtr(string(testID2)),
-						Type:                         pointer.MakePtr("DATADOG"),
-						SendCollectionLatencyMetrics: pointer.MakePtr(false),
-						SendDatabaseMetrics:          pointer.MakePtr(true),
-						ApiKey:                       pointer.MakePtr(testAPIKey),
+						Id:                           new(string(testID2)),
+						Type:                         new("DATADOG"),
+						SendCollectionLatencyMetrics: new(false),
+						SendDatabaseMetrics:          new(true),
+						ApiKey:                       new(testAPIKey),
 					},
 				},
 				nil,
@@ -257,8 +256,8 @@ func TestIntegrationsCreate(t *testing.T) {
 				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
-						SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
-						SendDatabaseMetrics:          pointer.MakePtr("enabled"),
+						SendCollectionLatencyMetrics: new("disabled"),
+						SendDatabaseMetrics:          new("enabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -289,11 +288,11 @@ func TestIntegrationsgGet(t *testing.T) {
 			title: "successful api get returns success",
 			api: testGetIntegrationAPI(
 				&admin.ThirdPartyIntegration{
-					Id:                           pointer.MakePtr(string(testID)),
-					Type:                         pointer.MakePtr(string(testIntegrationType)),
-					ServiceKey:                   pointer.MakePtr(testServiceKey),
-					Region:                       pointer.MakePtr(string(testRegion)),
-					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					Id:                           new(string(testID)),
+					Type:                         new(string(testIntegrationType)),
+					ServiceKey:                   new(testServiceKey),
+					Region:                       new(string(testRegion)),
+					SendCollectionLatencyMetrics: new(true),
 				},
 				nil,
 			),
@@ -326,11 +325,11 @@ func TestIntegrationsgGet(t *testing.T) {
 			title: "failure to parse API reply",
 			api: testGetIntegrationAPI(
 				&admin.ThirdPartyIntegration{
-					Id:                           pointer.MakePtr(string(testID)),
-					Type:                         pointer.MakePtr("BLAH"),
-					ServiceKey:                   pointer.MakePtr(testServiceKey),
-					Region:                       pointer.MakePtr(string(testRegion)),
-					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					Id:                           new(string(testID)),
+					Type:                         new("BLAH"),
+					ServiceKey:                   new(testServiceKey),
+					Region:                       new(string(testRegion)),
+					SendCollectionLatencyMetrics: new(true),
 				},
 				nil,
 			),
@@ -372,12 +371,12 @@ func TestIntegrationsUpdate(t *testing.T) {
 			},
 			api: testUpdateIntegrationAPI(
 				&admin.ThirdPartyIntegration{
-					Id:         pointer.MakePtr(string(testID)),
-					Type:       pointer.MakePtr("NEW_RELIC"),
-					AccountId:  pointer.MakePtr(string(testAccount)),
-					LicenseKey: pointer.MakePtr(string(testLicenseKey)),
-					ReadToken:  pointer.MakePtr(string(testReadToken)),
-					WriteToken: pointer.MakePtr(string(testWriteToken)),
+					Id:         new(string(testID)),
+					Type:       new("NEW_RELIC"),
+					AccountId:  new(string(testAccount)),
+					LicenseKey: new(string(testLicenseKey)),
+					ReadToken:  new(string(testReadToken)),
+					WriteToken: new(string(testWriteToken)),
 				},
 				nil,
 			),
@@ -426,7 +425,7 @@ func TestIntegrationsUpdate(t *testing.T) {
 					Type: "BLAH",
 					Datadog: &akov2.DatadogIntegration{
 						Region:                       testRegion,
-						SendCollectionLatencyMetrics: pointer.MakePtr("true"),
+						SendCollectionLatencyMetrics: new("true"),
 						SendDatabaseMetrics:          nil,
 					},
 				},
@@ -454,10 +453,10 @@ func TestIntegrationsUpdate(t *testing.T) {
 			},
 			api: testUpdateIntegrationAPI(
 				&admin.ThirdPartyIntegration{
-					Id:                           pointer.MakePtr(string(testID)),
-					Type:                         pointer.MakePtr("BLAH"),
-					Region:                       pointer.MakePtr(string(testRegion)),
-					SendCollectionLatencyMetrics: pointer.MakePtr(true),
+					Id:                           new(string(testID)),
+					Type:                         new("BLAH"),
+					Region:                       new(string(testRegion)),
+					SendCollectionLatencyMetrics: new(true),
 				},
 				nil,
 			),
@@ -510,7 +509,7 @@ func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err er
 	).Return(admin.CreateGroupIntegrationApiRequest{ApiService: &apiMock})
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
-	paginatedIntegration.Results = &integrations
+	paginatedIntegration.Results = integrations
 	apiMock.EXPECT().CreateGroupIntegrationExecute(
 		mock.AnythingOfType("admin.CreateGroupIntegrationApiRequest"),
 	).Return(paginatedIntegration, nil, err)
@@ -539,7 +538,7 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 
 	paginatedIntegration := &admin.PaginatedIntegration{}
 	if integration != nil {
-		paginatedIntegration.Results = &[]admin.ThirdPartyIntegration{
+		paginatedIntegration.Results = []admin.ThirdPartyIntegration{
 			*integration,
 		}
 	}

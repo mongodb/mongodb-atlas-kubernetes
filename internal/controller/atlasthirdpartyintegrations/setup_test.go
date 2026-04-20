@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
@@ -152,7 +151,7 @@ func TestNewReconcileRequest(t *testing.T) {
 					projectAPI := mockFindFakeParentProject(t)
 					integrationsAPI := mockadmin.NewThirdPartyIntegrationsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							ProjectsApi:               projectAPI,
 							ThirdPartyIntegrationsApi: integrationsAPI,
 						},
@@ -280,7 +279,7 @@ func mockFindFakeParentProject(t *testing.T) *mockadmin.ProjectsApi {
 	projectAPI.EXPECT().GetGroupByName(mock.Anything, "fake-project").
 		Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 	projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-		Return(&admin.Group{Id: pointer.MakePtr("testProjectID")}, nil, nil)
+		Return(&admin.Group{Id: new("testProjectID")}, nil, nil)
 	return projectAPI
 }
 

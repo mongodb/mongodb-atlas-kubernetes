@@ -13,6 +13,7 @@ labels:
 resources:
 - ../../../manager
 - ../../../rbac/namespaced
+- ../../../generated/rbac/namespaced
 
 patches:
   - path: ./manager_watch_namespace_patch.json

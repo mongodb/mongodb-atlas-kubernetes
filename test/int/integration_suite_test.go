@@ -27,7 +27,7 @@ import (
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +40,7 @@ import (
 	ctrzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
@@ -78,6 +79,7 @@ func TestAPIs(t *testing.T) {
 
 	utilruntime.Must(scheme.AddToScheme(scheme.Scheme))
 	utilruntime.Must(akov2.AddToScheme(scheme.Scheme))
+	utilruntime.Must(generatedv1.AddToScheme(scheme.Scheme))
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Atlas Operator Namespaced Integration Test Suite")
@@ -103,7 +105,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	By("Bootstrapping test environment", func() {
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths: []string{
+				filepath.Join("..", "..", "config", "crd", "bases"),
+				filepath.Join("..", "..", "config", "generated", "crd", "bases"),
+			},
 		}
 
 		cfg, err := testEnv.Start()
@@ -173,8 +178,8 @@ func defaultTimeouts() {
 // prepareControllers is a common function used by all the tests that creates the namespace and registers all the
 // reconcilers there. Each of them listens only this specific namespace only, otherwise it's not possible to run in parallel
 func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.CancelFunc) {
-	var ctx context.Context
-	ctx, managerCancelFunc = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -210,12 +215,12 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	return &namespace, managerCancelFunc
+	return &namespace, cancel
 }
 
 func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.Duration) (*corev1.Namespace, context.CancelFunc) {
-	var ctx context.Context
-	ctx, managerCancelFunc = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "test",
@@ -250,7 +255,7 @@ func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.D
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	return &namespace, managerCancelFunc
+	return &namespace, cancel
 }
 
 func removeControllersAndNamespace() {

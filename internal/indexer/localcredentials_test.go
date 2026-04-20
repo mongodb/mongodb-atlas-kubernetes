@@ -493,7 +493,7 @@ func TestCredentialsIndexMapperFuncRace(t *testing.T) {
 	fn := dbUserMapperFunc(fakeClient, zaptest.NewLogger(t).Sugar())
 	ctx := context.Background()
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()

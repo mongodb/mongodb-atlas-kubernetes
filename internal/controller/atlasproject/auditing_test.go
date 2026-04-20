@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -34,7 +34,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/audit"
 )
 
@@ -203,9 +202,9 @@ func TestHandleAudit(t *testing.T) {
 				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
-							AuditAuthorizationSuccess: pointer.MakePtr(false),
-							ConfigurationType:         pointer.MakePtr("NONE"),
-							Enabled:                   pointer.MakePtr(false),
+							AuditAuthorizationSuccess: new(false),
+							ConfigurationType:         new("NONE"),
+							Enabled:                   new(false),
 						},
 						&http.Response{},
 						nil,
@@ -215,9 +214,9 @@ func TestHandleAudit(t *testing.T) {
 				api.EXPECT().UpdateAuditLogExecute(mock.AnythingOfType("admin.UpdateAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
-							AuditAuthorizationSuccess: pointer.MakePtr(true),
-							ConfigurationType:         pointer.MakePtr("FILTER_JSON"),
-							Enabled:                   pointer.MakePtr(true),
+							AuditAuthorizationSuccess: new(true),
+							ConfigurationType:         new("FILTER_JSON"),
+							Enabled:                   new(true),
 						},
 						&http.Response{},
 						nil,
@@ -241,9 +240,9 @@ func TestHandleAudit(t *testing.T) {
 				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(
 						&admin.AuditLog{
-							AuditAuthorizationSuccess: pointer.MakePtr(false),
-							ConfigurationType:         pointer.MakePtr("NONE"),
-							Enabled:                   pointer.MakePtr(false),
+							AuditAuthorizationSuccess: new(false),
+							ConfigurationType:         new("NONE"),
+							Enabled:                   new(false),
 						},
 						&http.Response{},
 						nil,
@@ -274,7 +273,7 @@ func TestHandleAudit(t *testing.T) {
 				Context: context.Background(),
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t)),
 					},
 				},

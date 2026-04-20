@@ -44,7 +44,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/validate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -165,10 +164,10 @@ func (r *AtlasProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	workflowCtx.SdkClientSet = atlasSdkClient
 	workflowCtx.OrgID = connectionConfig.OrgID
 	services := AtlasProjectServices{}
-	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20250312013.ProjectsApi)
-	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20250312013.TeamsApi, atlasSdkClient.SdkClient20250312013.MongoDBCloudUsersApi)
-	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20250312013.MaintenanceWindowsApi)
-	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20250312013.EncryptionAtRestUsingCustomerKeyManagementApi)
+	services.projectService = project.NewProjectAPIService(atlasSdkClient.SdkClient20250312.ProjectsApi)
+	services.teamsService = teams.NewTeamsAPIService(atlasSdkClient.SdkClient20250312.TeamsApi, atlasSdkClient.SdkClient20250312.MongoDBCloudUsersApi)
+	services.maintenanceService = maintenancewindow.NewMaintenanceWindowAPIService(atlasSdkClient.SdkClient20250312.MaintenanceWindowsApi)
+	services.encryptionAtRestService = encryptionatrest.NewEncryptionAtRestAPI(atlasSdkClient.SdkClient20250312.EncryptionAtRestUsingCustomerKeyManagementApi)
 
 	return r.handleProject(workflowCtx, connectionConfig.OrgID, atlasProject, &services)
 }
@@ -279,7 +278,7 @@ func (r *AtlasProjectReconciler) SetupWithManager(mgr ctrl.Manager, skipNameVali
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			SkipNameValidation:      new(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }

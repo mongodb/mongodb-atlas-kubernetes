@@ -17,12 +17,11 @@ package privateendpoint
 import (
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -443,12 +442,12 @@ func interfaceCreateToAtlas(peInterface EndpointInterface, gcpProjectID string) 
 	switch i := peInterface.(type) {
 	case *AWSInterface:
 		return &admin.CreateEndpointRequest{
-			Id: pointer.MakePtr(i.InterfaceID()),
+			Id: new(i.InterfaceID()),
 		}
 	case *AzureInterface:
 		return &admin.CreateEndpointRequest{
-			Id:                       pointer.MakePtr(i.InterfaceID()),
-			PrivateEndpointIPAddress: pointer.MakePtr(i.IP),
+			Id:                       new(i.InterfaceID()),
+			PrivateEndpointIPAddress: new(i.IP),
 		}
 	case *GCPInterface:
 		gcpEPs := make([]admin.CreateGCPForwardingRuleRequest, 0, len(i.Endpoints))
@@ -456,15 +455,15 @@ func interfaceCreateToAtlas(peInterface EndpointInterface, gcpProjectID string) 
 			gcpEPs = append(
 				gcpEPs,
 				admin.CreateGCPForwardingRuleRequest{
-					EndpointName: pointer.MakePtr(ep.Name),
-					IpAddress:    pointer.MakePtr(ep.IP),
+					EndpointName: new(ep.Name),
+					IpAddress:    new(ep.IP),
 				},
 			)
 		}
 
 		return &admin.CreateEndpointRequest{
-			GcpProjectId:      pointer.MakePtr(gcpProjectID),
-			EndpointGroupName: pointer.MakePtr(i.InterfaceID()),
+			GcpProjectId:      new(gcpProjectID),
+			EndpointGroupName: new(i.InterfaceID()),
 			Endpoints:         &gcpEPs,
 		}
 	}

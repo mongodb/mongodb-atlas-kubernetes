@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
-	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
@@ -92,7 +92,7 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 			return ctrl.Result{}, fmt.Errorf("unable to create atlas client: %w", err)
 		}
 
-		group, _, err := atlasClient.SdkClient20250312013.ProjectsApi.GetGroup(ctx, projectID).Execute()
+		group, _, err := atlasClient.SdkClient20250312.ProjectsApi.GetGroup(ctx, projectID).Execute()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to get group: %w", err)
 		}

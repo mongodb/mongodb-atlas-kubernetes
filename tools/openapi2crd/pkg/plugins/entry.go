@@ -58,13 +58,12 @@ func (p *Entry) Process(req *MappingProcessorRequest) error {
 
 	if entrySchema != nil {
 		entryProps := req.Converter.Convert(
-			converter.PropertyConvertInput{
-				Schema:              entrySchema,
-				ExtensionsSchemaRef: req.ExtensionsSchema.Properties["spec"].Value.Properties[req.MappingConfig.MajorVersion].Value.Properties["entry"],
-				PropertyConfig:      &req.MappingConfig.EntryMapping,
-				Depth:               0,
-				Path:                nil,
-			},
+			converter.NewPropertyConvertInput(
+				entrySchema,
+				req.ExtensionsSchema.Properties["spec"].Value.Properties[req.MappingConfig.MajorVersion].Value.Properties["entry"],
+				&req.MappingConfig.EntryMapping,
+				nil,
+			),
 		)
 
 		entryProps.Description = fmt.Sprintf(

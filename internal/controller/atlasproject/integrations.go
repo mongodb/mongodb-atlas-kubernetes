@@ -22,7 +22,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
@@ -47,8 +46,8 @@ func (r *AtlasProjectReconciler) fromAKO(ctx context.Context, project *akov2.Atl
 			}
 			tpi.Datadog = &akov2.DatadogIntegration{
 				Region:                       i.Region,
-				SendCollectionLatencyMetrics: pointer.MakePtr("disabled"),
-				SendDatabaseMetrics:          pointer.MakePtr("disabled"),
+				SendCollectionLatencyMetrics: new("disabled"),
+				SendDatabaseMetrics:          new("disabled"),
 			}
 		case "MICROSOFT_TEAMS":
 			tpi.MicrosoftTeamsSecrets = &integration.MicrosoftTeamsSecrets{
@@ -113,7 +112,7 @@ func (r *AtlasProjectReconciler) fromAKO(ctx context.Context, project *akov2.Atl
 			}
 
 			tpi.Prometheus = &akov2.PrometheusIntegration{
-				Enabled:          pointer.MakePtr(enabled),
+				Enabled:          new(enabled),
 				ServiceDiscovery: i.ServiceDiscovery,
 			}
 			tpi.PrometheusSecrets = &integration.PrometheusSecrets{
@@ -252,7 +251,7 @@ func (ir IntegrationReconciler) reconcile(ctx *workflow.Context) workflow.Deprec
 	if _, found := ir.integrationsInAKO["PROMETHEUS"]; found {
 		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(&status.Prometheus{
 			Scheme:       "https",
-			DiscoveryURL: fmt.Sprintf("https://%s/prometheus/v1.0/groups/%s/discovery", ctx.SdkClientSet.SdkClient20250312013.GetConfig().Host, ir.project.ID()),
+			DiscoveryURL: fmt.Sprintf("https://%s/prometheus/v1.0/groups/%s/discovery", ctx.SdkClientSet.SdkClient20250312.GetConfig().Host, ir.project.ID()),
 		}))
 	} else {
 		ctx.EnsureStatusOption(status.AtlasProjectPrometheusOption(nil))
@@ -271,7 +270,7 @@ func NewIntegrationReconciler(
 		project:                     project,
 		integrationsInAKO:           mapIntegrationsPerType(integrations),
 		lasAppliedIntegrationsTypes: lastAppliedIntegrationsTypes,
-		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312013.ThirdPartyIntegrationsApi),
+		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312.ThirdPartyIntegrationsApi),
 	}
 }
 

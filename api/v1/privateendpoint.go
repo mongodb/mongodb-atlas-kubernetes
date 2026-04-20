@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
@@ -58,7 +58,7 @@ type GCPEndpoint struct {
 }
 
 // Identifier is required to satisfy "Identifiable" iterface
-func (i PrivateEndpoint) Identifier() interface{} {
+func (i PrivateEndpoint) Identifier() any {
 	return string(i.Provider) + status.TransformRegionToID(i.Region)
 }
 

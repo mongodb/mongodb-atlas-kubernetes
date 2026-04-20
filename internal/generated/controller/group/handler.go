@@ -25,9 +25,9 @@ import (
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
@@ -49,7 +49,7 @@ func (h *Handler) getHandlerForResource(ctx context.Context, group *akov2generat
 			return nil, errors.New("unsupported version v20250312 set in CR")
 		}
 		versionCount++
-		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312013, translator, h.deletionProtection)
+		selectedHandler = h.handlerv20250312(h.Client, atlasClients.SdkClient20250312, translator, h.deletionProtection)
 	}
 
 	if versionCount == 0 {

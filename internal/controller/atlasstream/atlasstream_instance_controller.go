@@ -17,7 +17,7 @@ package atlasstream
 import (
 	"context"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -41,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/statushandler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
@@ -124,7 +123,7 @@ func (r *AtlasStreamsInstanceReconciler) ensureAtlasStreamsInstance(ctx context.
 	workflowCtx.SdkClientSet = atlasClientSet
 	workflowCtx.OrgID = connectionConfig.OrgID
 
-	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20250312013.StreamsApi.
+	atlasStreamInstance, _, err := workflowCtx.SdkClientSet.SdkClient20250312.StreamsApi.
 		GetStreamWorkspace(workflowCtx.Context, project.ID(), akoStreamInstance.Spec.Name).
 		Execute()
 
@@ -180,7 +179,7 @@ func (r *AtlasStreamsInstanceReconciler) SetupWithManager(mgr ctrl.Manager, skip
 		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
-			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
+			SkipNameValidation:      new(skipNameValidation),
 			MaxConcurrentReconciles: r.maxConcurrentReconciles}).
 		Complete(r)
 }

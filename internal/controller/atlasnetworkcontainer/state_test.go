@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +45,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
@@ -262,7 +261,7 @@ func TestHandleCustomResource(t *testing.T) {
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					pAPI := mockadmin.NewProjectsApi(t)
 					return &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{ProjectsApi: pAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsApi: pAPI},
 					}, nil
 				},
 			},
@@ -313,7 +312,7 @@ func TestHandleCustomResource(t *testing.T) {
 					)
 					ncAPI.EXPECT().ListGroupContainersExecute(mock.Anything).Return(
 						&admin.PaginatedCloudProviderContainer{
-							Results: &[]admin.CloudProviderContainer{},
+							Results: []admin.CloudProviderContainer{},
 						}, nil, nil,
 					)
 					pAPI := mockadmin.NewProjectsApi(t)
@@ -322,11 +321,11 @@ func TestHandleCustomResource(t *testing.T) {
 					)
 					pAPI.EXPECT().GetGroupByNameExecute(mock.Anything).Return(
 						&admin.Group{
-							Id: pointer.MakePtr(testProjectID),
+							Id: new(testProjectID),
 						}, nil, nil,
 					)
 					return &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{
+						SdkClient20250312: &admin.APIClient{
 							NetworkPeeringApi: ncAPI,
 							ProjectsApi:       pAPI,
 						},

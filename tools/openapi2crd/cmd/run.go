@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
 	configv1alpha1 "github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/apis/config/v1alpha1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd/pkg/config"
@@ -33,10 +35,11 @@ import (
 )
 
 const (
-	outputOption = "output"
-	configOption = "config"
-	forceOption  = "force"
-	crdsOption   = "crds"
+	outputOption    = "output"
+	configOption    = "config"
+	forceOption     = "force"
+	crdsOption      = "crds"
+	multiFileOption = "multi-file"
 
 	crdsDefaultValue = "all"
 	readOnly         = os.O_RDONLY
@@ -50,6 +53,7 @@ type RunnerConfig struct {
 	Input     string
 	Output    string
 	Overwrite bool
+	MultiFile bool
 	Kinds     map[string]struct{}
 }
 
@@ -68,10 +72,13 @@ func RunCmd(ctx context.Context) *cobra.Command {
 			forceOverwrite := viper.GetBool(forceOption)
 			crds := viper.GetString(crdsOption)
 
+			multiFile := viper.GetBool(multiFileOption)
+
 			c := &RunnerConfig{
 				Input:     configPath,
 				Output:    outputPath,
 				Overwrite: forceOverwrite,
+				MultiFile: multiFile,
 				Kinds:     make(map[string]struct{}),
 			}
 
@@ -89,11 +96,12 @@ func RunCmd(ctx context.Context) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP(outputOption, "o", "", "Path to output file (required)")
+	cmd.Flags().StringP(outputOption, "o", "", "Path to output file/directory (required)")
 	_ = cmd.MarkFlagRequired(outputOption)
 	cmd.Flags().StringP(configOption, "c", "", "Path to the config file (required)")
 	_ = cmd.MarkFlagRequired(configOption)
 	cmd.Flags().BoolP(forceOption, "f", false, "Force overwrite the output file if it exists")
+	cmd.Flags().Bool(multiFileOption, false, "Write each CRD to its own file in the output directory instead of a single file")
 	cmd.Flags().String(crdsOption, crdsDefaultValue, "One or more Kind names to generate, separated by comma. Use 'all' to generate all CRDs.")
 	cobra.OnInitialize(initConfig)
 
@@ -118,13 +126,14 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 		return fmt.Errorf("error parsing config: %w", err)
 	}
 
-	fsExporter, err := exporter.New(fs, runnerConfig.Output, runnerConfig.Overwrite)
-	if err != nil {
-		return fmt.Errorf("error creating the exporter: %w", err)
+	var fsExporter exporter.Exporter
+	if runnerConfig.MultiFile {
+		fsExporter = exporter.NewMultiFileExporter(fs, runnerConfig.Output, runnerConfig.Overwrite)
+	} else {
+		fsExporter = exporter.NewSingleFileExporter(fs, runnerConfig.Output, runnerConfig.Overwrite)
 	}
 
-	err = fsExporter.Start()
-	if err != nil {
+	if err = fsExporter.Open(); err != nil {
 		return fmt.Errorf("error starting the exporter: %w", err)
 	}
 
@@ -139,28 +148,48 @@ func runOpenapi2crd(ctx context.Context, fs afero.Fs, runnerConfig *RunnerConfig
 		return fmt.Errorf("error creating plugin set: %w", err)
 	}
 
-	openapiLoader := config.NewKinOpeAPI(fs)
-	atlasLoader := config.NewAtlas(openapiLoader)
+	kinLoader := config.NewKinOpenAPI(fs)
+	pkgResolver := config.NewPackageResolver(kinLoader)
+	loader := config.NewLoader(kinLoader, pkgResolver)
 
+	// Collect the CRD configs to process, respecting the kind filter.
+	var activeCRDs []configv1alpha1.CRDConfig
 	for _, crdConfig := range cfg.Spec.CRDConfig {
 		_, shouldGen := runnerConfig.Kinds[crdConfig.GVK.Kind]
 		if len(runnerConfig.Kinds) > 0 && !shouldGen {
 			continue
 		}
+		activeCRDs = append(activeCRDs, crdConfig)
+	}
 
+	// Generate all CRDs in parallel, preserving config order via indexed results.
+	crdResults := make([]*apiextensions.CustomResourceDefinition, len(activeCRDs))
+
+	g, gctx := errgroup.WithContext(ctx)
+	for i, crdConfig := range activeCRDs {
 		pluginSet, err := plugins.GetPluginSet(pluginSets, crdConfig.PluginSet)
 		if err != nil {
 			return fmt.Errorf("error getting plugin set %q: %w", crdConfig.PluginSet, err)
 		}
 
-		g := generator.NewGenerator(definitionsMap, pluginSet, openapiLoader, atlasLoader)
-		crd, err := g.Generate(ctx, &crdConfig)
-		if err != nil {
-			return err
-		}
+		g.Go(func() error {
+			gen := generator.NewGenerator(definitionsMap, pluginSet, loader)
+			crd, genErr := gen.Generate(gctx, &crdConfig)
+			if genErr != nil {
+				return genErr
+			}
+			crdResults[i] = crd
+			return nil
+		})
+	}
 
-		err = fsExporter.Export(crd)
-		if err != nil {
+	// Wait for all generators to finish before exporting.
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	for _, crd := range crdResults {
+		if err := fsExporter.Export(crd); err != nil {
 			return err
 		}
 	}

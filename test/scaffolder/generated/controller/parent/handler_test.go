@@ -24,7 +24,7 @@ import (
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -140,7 +140,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
-						{Name: strPtr("test-integration")},
+						{Name: new("test-integration")},
 					},
 				},
 			},
@@ -167,7 +167,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
-						{Name: strPtr("test-integration")},
+						{Name: new("test-integration")},
 					},
 				},
 			},
@@ -186,7 +186,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 
 			provider := &mockProvider{
 				clientSet: &atlas.ClientSet{
-					SdkClient20250312013: &integrationssdk.APIClient{},
+					SdkClient20250312: &integrationssdk.APIClient{},
 				},
 			}
 
@@ -217,7 +217,7 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 	perResourceSecret := newCredentialSecret("resource-secret")
 
 	expectedClientSet := &atlas.ClientSet{
-		SdkClient20250312013: &integrationssdk.APIClient{},
+		SdkClient20250312: &integrationssdk.APIClient{},
 	}
 
 	tests := []struct {
@@ -313,7 +313,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -325,7 +325,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312013: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -383,7 +383,7 @@ func TestHandlerStateTransitions_Parent_NoVersion(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312013: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -437,7 +437,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -450,7 +450,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312013: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -524,7 +524,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
-				{Name: strPtr("test-integration")},
+				{Name: new("test-integration")},
 			},
 		},
 	}
@@ -537,7 +537,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 
 	provider := &mockProvider{
 		clientSet: &atlas.ClientSet{
-			SdkClient20250312013: &integrationssdk.APIClient{},
+			SdkClient20250312: &integrationssdk.APIClient{},
 		},
 	}
 
@@ -552,8 +552,4 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 	versionHandler, err := handler.getHandlerForResource(ctx, parent)
 	require.NoError(t, err)
 	assert.NotNil(t, versionHandler)
-}
-
-func strPtr(s string) *string {
-	return &s
 }

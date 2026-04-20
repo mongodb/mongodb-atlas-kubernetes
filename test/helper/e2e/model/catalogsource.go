@@ -23,7 +23,7 @@ import (
 type CatalogSource struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      *metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec            CatalogSourceSpec  `json:"spec,omitempty"`
+	Spec            CatalogSourceSpec  `json:"spec"`
 }
 
 type CatalogSourceSpec struct {

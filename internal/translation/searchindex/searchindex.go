@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -257,7 +257,7 @@ func (s *SearchIndex) toAtlasCreateView() (*admin.SearchIndexCreateRequest, erro
 		CollectionName: s.CollectionName,
 		Database:       s.DBName,
 		Name:           s.Name,
-		Type:           pointer.MakePtr(s.SearchIndex.Type),
+		Type:           new(s.SearchIndex.Type),
 		Definition: &admin.BaseSearchIndexCreateRequestDefinition{
 			Analyzer:       s.Analyzer,
 			Analyzers:      analyzers,
@@ -421,11 +421,11 @@ func jsonToMap(in *apiextensionsv1.JSON) (map[string]any, error) {
 	return result, nil
 }
 
-func jsonToInterface(in *apiextensionsv1.JSON) (*[]interface{}, error) {
+func jsonToInterface(in *apiextensionsv1.JSON) (*[]any, error) {
 	if in == nil {
-		return pointer.MakePtr([]interface{}{}), nil
+		return new([]any{}), nil
 	}
-	var result []interface{}
+	var result []any
 	if err := json.Unmarshal(in.Raw, &result); err != nil {
 		return nil, err
 	}
@@ -549,7 +549,7 @@ func convertStoredSource(in any) (*apiextensionsv1.JSON, error) {
 	return &apiextensionsv1.JSON{Raw: val}, nil
 }
 
-func convertFilters(in *[]interface{}) (*apiextensionsv1.JSON, error) {
+func convertFilters(in *[]any) (*apiextensionsv1.JSON, error) {
 	if in == nil {
 		return nil, nil
 	}

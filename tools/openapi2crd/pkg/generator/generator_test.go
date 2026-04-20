@@ -123,7 +123,6 @@ func TestClearPropertiesWithoutExtensions(t *testing.T) {
 
 func TestGeneratorGenerate(t *testing.T) {
 	tests := map[string]struct {
-		//openapi        *openapi3.T
 		apiDefinitions map[string]v1alpha1.OpenAPIDefinition
 		config         *v1alpha1.CRDConfig
 		expectedResult *apiextensions.CustomResourceDefinition
@@ -223,10 +222,8 @@ func TestGeneratorGenerate(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			openapiLoader := config.NewLoaderMock(t)
-			openapiLoader.EXPECT().Load(context.Background(), "testdata/openapi.yaml").Return(&openapi3.T{}, nil)
-
-			atlasLoader := config.NewLoaderMock(t)
+			loader := config.NewLoaderMock(t)
+			loader.EXPECT().Load(context.Background(), mock.AnythingOfType("v1alpha1.OpenAPIDefinition")).Return(&openapi3.T{}, nil)
 
 			crdPlugin := plugins.NewCRDPluginMock(t)
 			crdPlugin.EXPECT().Process(mock.AnythingOfType("*plugins.CRDProcessorRequest")).
@@ -254,8 +251,7 @@ func TestGeneratorGenerate(t *testing.T) {
 					Mapping:   []plugins.MappingPlugin{mappingPlugin},
 					Extension: []plugins.ExtensionPlugin{extensionPlugin},
 				},
-				openapiLoader: openapiLoader,
-				atlasLoader:   atlasLoader,
+				loader: loader,
 			}
 			result, err := g.Generate(context.Background(), tt.config)
 			if tt.expectError {

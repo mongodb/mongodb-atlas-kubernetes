@@ -17,7 +17,7 @@ package parent
 import (
 	"fmt"
 
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
@@ -41,15 +41,15 @@ var (
 	sdkVersions = []string{"integrations"}
 )
 
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=parents,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=parents/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,resources=parents/finalizers,verbs=update
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=parents,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=parents/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=parents/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=parents,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=parents/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=atlas.generated.mongodb.com,namespace=default,resources=parents/finalizers,verbs=update
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=parents,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=parents/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=parents/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 

@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
@@ -76,9 +75,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -120,9 +119,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -162,9 +161,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -201,9 +200,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -243,9 +242,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -288,9 +287,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -329,9 +328,9 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								Name: "VIEW_ALL_HISTORY",
 								Resources: []akov2.Resource{
 									{
-										Cluster:    pointer.MakePtr(true),
-										Database:   pointer.MakePtr("main"),
-										Collection: pointer.MakePtr("collection"),
+										Cluster:    new(true),
+										Database:   new("main"),
+										Collection: new("collection"),
 									},
 								},
 							},
@@ -395,7 +394,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 								pAPI.EXPECT().GetGroupExecute(admin.GetGroupApiRequest{ApiService: pAPI}).
 									Return(grp, nil, nil)
 							}
-							return &atlas.ClientSet{SdkClient20250312013: &admin.APIClient{
+							return &atlas.ClientSet{SdkClient20250312: &admin.APIClient{
 								CustomDatabaseRolesApi: cdrAPI,
 								ProjectsApi:            pAPI,
 							}}, nil

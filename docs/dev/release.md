@@ -200,9 +200,9 @@ Once the workflow ends sucessfully, please go to the projects PR tabs and comple
 
 The job log should end with direct links for you to create the PRs, they will look like this:
 ```
-https://github.com/k8s-operatorhub/community-operators/compare/main...mongodb-forks:community-operators:mongodb-atlas-operator-community-${version}
-https://github.com/redhat-openshift-ecosystem/community-operators-prod/compare/main...mongodb-forks:community-operators-prod:mongodb-atlas-operator-community-${version}
-https://github.com/redhat-openshift-ecosystem/certified-operators/compare/main...mongodb-forks:certified-operators:mongodb-atlas-kubernetes-operator-${version}
+https://github.com/mongodb-forks/community-operators/pull/new/mongodb-atlas-operator-community-${version}
+https://github.com/mongodb-forks/community-operators-prod/pull/new/mongodb-atlas-operator-community-${version}
+https://github.com/mongodb-forks/certified-operators/pull/new/mongodb-atlas-kubernetes-operator-${version}
 ```
 
 # Post install hook release

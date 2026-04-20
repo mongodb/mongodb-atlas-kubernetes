@@ -23,7 +23,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -75,7 +74,7 @@ var _ = Describe("CustomRoles", Label("custom-roles"), func() {
 							Name: "LIST_SESSIONS",
 							Resources: []akov2.Resource{
 								{
-									Cluster: pointer.MakePtr(true),
+									Cluster: new(true),
 								},
 							},
 						},
@@ -83,7 +82,7 @@ var _ = Describe("CustomRoles", Label("custom-roles"), func() {
 							Name: "KILL_ANY_SESSION",
 							Resources: []akov2.Resource{
 								{
-									Cluster: pointer.MakePtr(true),
+									Cluster: new(true),
 								},
 							},
 						},
@@ -120,7 +119,7 @@ func projectCustomRolesFlow(userData *model.TestDataProvider, customRoles []akov
 			Name: "USE_UUID",
 			Resources: []akov2.Resource{
 				{
-					Cluster: pointer.MakePtr(true),
+					Cluster: new(true),
 				},
 			},
 		})

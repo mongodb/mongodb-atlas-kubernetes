@@ -19,16 +19,15 @@ import (
 	"errors"
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312013/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
@@ -69,8 +68,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 
 	body := &v20250312sdk.ClusterDescription20240805{}
 	params := &v20250312sdk.CreateClusterApiParams{
-		ClusterDescription20240805: body,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
+		ClusterDescription20240805:         body,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -108,8 +108,9 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *a
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
-		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
+		ClusterName:                        id,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -142,8 +143,9 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2gen
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
-		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
+		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -171,8 +173,9 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2gen
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
-		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
+		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -234,8 +237,9 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
-		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
+		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
@@ -270,9 +274,10 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 
 	body := &v20250312sdk.ClusterDescription20240805{}
 	params := &v20250312sdk.UpdateClusterApiParams{
-		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
-		UseEffectiveInstanceFields: pointer.MakePtr(true),
-		ClusterDescription20240805: body,
+		ClusterName:                        *cluster.Spec.V20250312.Entry.Name,
+		UseEffectiveInstanceFields:         new(true),
+		UseEffectiveFieldsReplicationSpecs: new(true),
+		ClusterDescription20240805:         body,
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {

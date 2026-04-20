@@ -1,0 +1,13 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: IPAccessListEntry
+metadata:
+  name: my-ipaccesslist-with-groupref
+spec:
+  connectionSecretRef:
+    name: mongodb-atlas-operator-api-key
+  v20250312:
+    groupRef:
+      name: my-group
+    entry:
+      cidrBlock: "10.0.0.0/8"
+      comment: "Allow access from private network"

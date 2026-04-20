@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,7 +32,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "protection-enabled"), func() {
+var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-protection-enabled"), func() {
 	const (
 		interval               = PollingInterval
 		dataFederationBaseName = "test-data-federation-%s"

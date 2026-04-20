@@ -63,13 +63,12 @@ func (p *Parameters) Process(req *MappingProcessorRequest) error {
 			case "pretty":
 			default:
 				props := req.Converter.Convert(
-					converter.PropertyConvertInput{
-						Schema:              param.Value.Schema,
-						ExtensionsSchemaRef: openapi3.NewSchemaRef("", openapi3.NewSchema()),
-						PropertyConfig:      &req.MappingConfig.ParametersMapping,
-						Depth:               0,
-						Path:                []string{"$", param.Value.Name},
-					},
+					converter.NewPropertyConvertInput(
+						param.Value.Schema,
+						openapi3.NewSchemaRef("", openapi3.NewSchema()),
+						&req.MappingConfig.ParametersMapping,
+						[]string{"$", param.Value.Name},
+					),
 				)
 
 				// may have been filtered out by other plugins

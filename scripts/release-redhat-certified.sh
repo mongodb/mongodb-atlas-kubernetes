@@ -18,6 +18,8 @@ set -eou pipefail
 
 version=${1:-$VERSION}
 
+PROJECT_ROOT=$(pwd)
+
 if [ -z "${version}" ]; then
 	echo "version is not set as arguiment or VERSION env var"
 	exit 1
@@ -42,24 +44,23 @@ echo "${IMG_SHA_AMD64}"
 
 REPO="${RH_CERTIFIED_OPENSHIFT_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 
-cd "${REPO}"
-git checkout main
-git fetch origin main
-git reset --hard origin/main
+# Change to repo root for git operations
+cleanup() {
+  echo "Returning to original directory: ${PROJECT_ROOT}"
+  popd > /dev/null 2>&1 || cd "${PROJECT_ROOT}"
+}
+trap cleanup EXIT
+pushd "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}"
+
+git fetch upstream main
+git checkout -B "mongodb-atlas-kubernetes-operator-${version}" upstream/main
+
 mkdir -p "${REPO}/${version}"
-cd -
 
-pwd
-
-pushd "${REPO}"
-git checkout -b "mongodb-atlas-kubernetes-operator-${version}" origin/main || git checkout "mongodb-atlas-kubernetes-operator-${version}"
-git pull --rebase upstream main
-popd
-
-cp -r "releases/v${version}/bundle.Dockerfile" \
-      "releases/v${version}/bundle/manifests" \
-      "releases/v${version}/bundle/metadata" \
-      "releases/v${version}/bundle/tests" "${REPO}/${version}"
+cp -r "${PROJECT_ROOT}/releases/v${version}/bundle.Dockerfile" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/manifests" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/metadata" \
+      "${PROJECT_ROOT}/releases/v${version}/bundle/tests" "${REPO}/${version}"
 
 # Replace deployment image version with SHA256
 value="${IMG_SHA_AMD64}" yq e -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].image = "quay.io/mongodb/mongodb-atlas-kubernetes-operator@" + env(value)' \
@@ -83,13 +84,12 @@ value="${IMG_SHA_AMD64}" yq e -i '.metadata.annotations.containerImage = "quay.i
 yq e -i '.annotations = .annotations + { "com.redhat.openshift.versions": "v4.8-v4.18" }' \
   "${REPO}/${version}"/metadata/annotations.yaml
 
-pushd "${REPO}"
-git add "${REPO}/${version}"
+git add "operators/mongodb-atlas-kubernetes/${version}"
 git commit -m "operator mongodb-atlas-kubernetes (${version})" --signoff || true
+
 if [ "${RH_DRYRUN}" == "false" ]; then
-  git push -u origin "mongodb-atlas-kubernetes-operator-${version}"
+  git push -fu origin "mongodb-atlas-kubernetes-operator-${version}"
 else
   echo "DRYRUN Push (set RH_DRYRUN=true to push for real)"
   git push -fu --dry-run -u origin "mongodb-atlas-kubernetes-operator-${version}"
 fi
-cd -

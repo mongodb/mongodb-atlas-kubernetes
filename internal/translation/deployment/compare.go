@@ -29,7 +29,7 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 			ProjectID: desired.ProjectID,
 			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:   desired.Name,
-				Paused: pointer.MakePtr(pointer.GetOrDefault(desired.Paused, false)),
+				Paused: new(pointer.GetOrDefault(desired.Paused, false)),
 			},
 		}, true
 	}
@@ -63,22 +63,31 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 	}
 
 	changesReplicationSpecs := make([]*akov2.AdvancedReplicationSpec, 0, len(desired.ReplicationSpecs))
-	for _, desiredReplicationSpec := range desired.ReplicationSpecs {
+	for specIdx, desiredReplicationSpec := range desired.ReplicationSpecs {
+		var currentReplicationSpec *akov2.AdvancedReplicationSpec
+		if specIdx < len(current.ReplicationSpecs) {
+			currentReplicationSpec = current.ReplicationSpecs[specIdx]
+		}
 		changesRegionConfig := make([]*akov2.AdvancedRegionConfig, 0, len(desiredReplicationSpec.RegionConfigs))
-		for _, desiredRegionConfig := range desiredReplicationSpec.RegionConfigs {
-			changesRegionConfig = append(
-				changesRegionConfig,
-				&akov2.AdvancedRegionConfig{
-					ProviderName:        desiredRegionConfig.ProviderName,
-					BackingProviderName: desiredRegionConfig.BackingProviderName,
-					RegionName:          desiredRegionConfig.RegionName,
-					Priority:            desiredRegionConfig.Priority,
-					ElectableSpecs:      getSpecsChanges(desiredRegionConfig.ElectableSpecs),
-					ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs),
-					AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs),
-					AutoScaling:         getAutoScalingChanges(desiredRegionConfig.AutoScaling),
-				},
-			)
+		for regIdx, desiredRegionConfig := range desiredReplicationSpec.RegionConfigs {
+			var currentRegionConfig *akov2.AdvancedRegionConfig
+			if currentReplicationSpec != nil && regIdx < len(currentReplicationSpec.RegionConfigs) {
+				currentRegionConfig = currentReplicationSpec.RegionConfigs[regIdx]
+			}
+			regionConfig := &akov2.AdvancedRegionConfig{
+				ProviderName:        desiredRegionConfig.ProviderName,
+				BackingProviderName: desiredRegionConfig.BackingProviderName,
+				RegionName:          desiredRegionConfig.RegionName,
+				Priority:            desiredRegionConfig.Priority,
+				ElectableSpecs:      getSpecsChanges(desiredRegionConfig.ElectableSpecs, desiredRegionConfig.ProviderName),
+				ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs, desiredRegionConfig.ProviderName),
+				AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs, desiredRegionConfig.ProviderName),
+			}
+			// Only include AutoScaling if it has changed
+			if autoScalingChanges := getAutoScalingChanges(desiredRegionConfig.AutoScaling, currentRegionConfig); autoScalingChanges != nil {
+				regionConfig.AutoScaling = autoScalingChanges
+			}
+			changesRegionConfig = append(changesRegionConfig, regionConfig)
 		}
 
 		changedReplicationSpec := &akov2.AdvancedReplicationSpec{
@@ -94,27 +103,47 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 	return changes, true
 }
 
-func getSpecsChanges(desired *akov2.Specs) *akov2.Specs {
+func getSpecsChanges(desired *akov2.Specs, providerName string) *akov2.Specs {
 	if desired == nil {
 		return nil
 	}
 
-	return &akov2.Specs{
-		InstanceSize:  desired.InstanceSize,
-		NodeCount:     desired.NodeCount,
-		EbsVolumeType: pointer.GetOrDefault(&desired.EbsVolumeType, "STANDARD"),
-		DiskIOPS:      desired.DiskIOPS,
+	specs := &akov2.Specs{
+		InstanceSize: desired.InstanceSize,
+		NodeCount:    desired.NodeCount,
+		DiskIOPS:     desired.DiskIOPS,
 	}
+
+	// Only include EbsVolumeType when:
+	// 1. It's explicitly set (non-empty), OR
+	// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+	// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+	if desired.EbsVolumeType != "" || providerName == "AWS" {
+		specs.EbsVolumeType = pointer.GetOrDefault(&desired.EbsVolumeType, "STANDARD")
+	}
+
+	return specs
 }
 
-func getAutoScalingChanges(desired *akov2.AdvancedAutoScalingSpec) *akov2.AdvancedAutoScalingSpec {
+func getAutoScalingChanges(desired *akov2.AdvancedAutoScalingSpec, current *akov2.AdvancedRegionConfig) *akov2.AdvancedAutoScalingSpec {
+	var currentAutoScaling *akov2.AdvancedAutoScalingSpec
+	if current != nil {
+		currentAutoScaling = current.AutoScaling
+	}
+
+	// If desired and current are equal, return nil (no changes)
+	if autoscalingConfigAreEqual(desired, currentAutoScaling) {
+		return nil
+	}
+
+	// If desired is nil but current is not, we need to disable autoscaling
 	if desired == nil {
 		return &akov2.AdvancedAutoScalingSpec{
 			DiskGB: &akov2.DiskGB{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 			Compute: &akov2.ComputeSpec{
-				Enabled: pointer.MakePtr(false),
+				Enabled: new(false),
 			},
 		}
 	}

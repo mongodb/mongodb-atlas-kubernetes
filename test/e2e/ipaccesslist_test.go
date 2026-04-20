@@ -27,7 +27,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
@@ -151,7 +150,7 @@ var _ = Describe("Migrate ip access list from sub-resources to separate custom r
 		By("Updating project doesn't affect ip access list", func() {
 			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 			testData.Project.Spec.Settings = &akov2.ProjectSettings{
-				IsSchemaAdvisorEnabled: pointer.MakePtr(true),
+				IsSchemaAdvisorEnabled: new(true),
 			}
 
 			Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())

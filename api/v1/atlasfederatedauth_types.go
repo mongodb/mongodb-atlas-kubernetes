@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -87,7 +87,7 @@ func (f *AtlasFederatedAuthSpec) ToAtlas(orgID, idpID string, projectNameToID ma
 		}
 		atlasRoleMappings = append(atlasRoleMappings, admin.AuthFederationRoleMapping{
 			ExternalGroupName: roleMapping.ExternalGroupName,
-			RoleAssignments:   &atlasRoleAssignments,
+			RoleAssignments:   atlasRoleAssignments,
 		})
 	}
 

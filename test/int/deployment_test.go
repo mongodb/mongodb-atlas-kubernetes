@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +45,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/conditions"
@@ -68,7 +67,7 @@ const (
 	interval = PollingInterval
 )
 
-var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-non-backups"), func() {
+var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deployment-non-backups"), func() {
 	var (
 		deploymentService deployment.AtlasDeploymentsService
 		connectionSecret  *corev1.Secret
@@ -166,7 +165,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		}).WithTimeout(timeout).WithPolling(interval).Should(BeTrue())
 	}
 
-	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("focus-dedicated-termination-protection", "slow"), func() {
+	Describe("Deployment with Termination Protection should remain in Atlas after the CR is deleted", Label("focus-dedicated-termination-protection", "focus-slow"), func() {
 		It("Should succeed", func() {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			deploymentName := createdDeployment.GetDeploymentName()
@@ -201,7 +200,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
 					deploymentName).Execute()
 				Expect(err).NotTo(HaveOccurred())
-				aCluster.TerminationProtectionEnabled = pointer.MakePtr(false)
+				aCluster.TerminationProtectionEnabled = new(false)
 				aCluster.ConnectionStrings = nil
 				_, _, err = atlasClient.ClustersApi.UpdateCluster(ctx, createdProject.ID(), deploymentName, aCluster).Execute()
 				Expect(err).NotTo(HaveOccurred())
@@ -311,15 +310,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &akov2.Specs{
 						InstanceSize: "M30",
-						NodeCount:    pointer.MakePtr(3),
+						NodeCount:    new(3),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &akov2.Specs{
 						InstanceSize: "M30",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &akov2.Specs{
 						InstanceSize: "M30",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 				})
 				doDeploymentStatusChecks()
@@ -328,7 +327,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create deployment & change it to GEOSHARDED", Label("focus-int", "focus-geosharded", "focus-slow"), func() {
+	Describe("Create deployment & change it to GEOSHARDED", Label("focus-geosharded", "focus-slow"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -351,40 +350,40 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 								{
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(false),
-											ScaleDownEnabled: pointer.MakePtr(false),
+											Enabled:          new(false),
+											ScaleDownEnabled: new(false),
 										},
 									},
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(2),
+										NodeCount:    new(2),
 									},
 									AnalyticsSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(1),
+										NodeCount:    new(1),
 									},
-									Priority:     pointer.MakePtr(7),
+									Priority:     new(7),
 									ProviderName: "AWS",
 									RegionName:   "US_EAST_1",
 								},
 								{
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
 										DiskGB: &akov2.DiskGB{
-											Enabled: pointer.MakePtr(false),
+											Enabled: new(false),
 										},
 										Compute: &akov2.ComputeSpec{
-											Enabled:          pointer.MakePtr(false),
-											ScaleDownEnabled: pointer.MakePtr(false),
+											Enabled:          new(false),
+											ScaleDownEnabled: new(false),
 										},
 									},
 									ElectableSpecs: &akov2.Specs{
 										InstanceSize: "M10",
-										NodeCount:    pointer.MakePtr(1),
+										NodeCount:    new(1),
 									},
-									Priority:     pointer.MakePtr(6),
+									Priority:     new(6),
 									ProviderName: "AWS",
 									RegionName:   "US_WEST_1",
 								},
@@ -398,7 +397,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		})
 	})
 
-	Describe("Create/Update the deployment (more complex scenario)", Label("focus-int", "focus-create-update-complex-deployment", "slow"), func() {
+	Describe("Create/Update the deployment (more complex scenario)", Label("focus-create-update-complex-deployment", "focus-slow"), func() {
 		It("Should be created", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.DeploymentSpec.ClusterType = string(akov2.TypeReplicaSet)
@@ -410,47 +409,47 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					{
 						AutoScaling: &akov2.AdvancedAutoScalingSpec{
 							DiskGB: &akov2.DiskGB{
-								Enabled: pointer.MakePtr(true),
+								Enabled: new(true),
 							},
 							Compute: &akov2.ComputeSpec{
-								Enabled:          pointer.MakePtr(true),
-								ScaleDownEnabled: pointer.MakePtr(true),
+								Enabled:          new(true),
+								ScaleDownEnabled: new(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M20",
 							},
 						},
 						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
-							NodeCount:    pointer.MakePtr(2),
+							NodeCount:    new(2),
 						},
-						Priority:     pointer.MakePtr(7),
+						Priority:     new(7),
 						ProviderName: "AWS",
 						RegionName:   "US_EAST_1",
 					},
 					{
 						AutoScaling: &akov2.AdvancedAutoScalingSpec{
 							DiskGB: &akov2.DiskGB{
-								Enabled: pointer.MakePtr(true),
+								Enabled: new(true),
 							},
 							Compute: &akov2.ComputeSpec{
-								Enabled:          pointer.MakePtr(true),
-								ScaleDownEnabled: pointer.MakePtr(true),
+								Enabled:          new(true),
+								ScaleDownEnabled: new(true),
 								MinInstanceSize:  "M10",
 								MaxInstanceSize:  "M20",
 							},
 						},
 						ElectableSpecs: &akov2.Specs{
 							InstanceSize: "M10",
-							NodeCount:    pointer.MakePtr(1),
+							NodeCount:    new(1),
 						},
-						Priority:     pointer.MakePtr(6),
+						Priority:     new(6),
 						ProviderName: "AWS",
 						RegionName:   "US_WEST_2",
 					},
 				},
 			}
 
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(10)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = new(10)
 
 			replicationSpecsCheckFunc := func(c *admin.ClusterDescription20240805) {
 				mergedDeployment, _, err := mergedAdvancedDeployment(*c, *createdDeployment.Spec.DeploymentSpec)
@@ -482,38 +481,38 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 						{
 							AutoScaling: &akov2.AdvancedAutoScalingSpec{
 								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+									Enabled: new(true),
 								},
 								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
+									Enabled:          new(true),
+									ScaleDownEnabled: new(true),
 									MinInstanceSize:  "M10",
 									MaxInstanceSize:  "M30",
 								},
 							},
 							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
-								NodeCount:    pointer.MakePtr(2),
+								NodeCount:    new(2),
 							},
-							Priority:     pointer.MakePtr(7),
+							Priority:     new(7),
 							ProviderName: "AWS",
 							RegionName:   "US_EAST_1",
 						},
 						{
 							ElectableSpecs: &akov2.Specs{
 								InstanceSize: "M10",
-								NodeCount:    pointer.MakePtr(1),
+								NodeCount:    new(1),
 							},
-							Priority:     pointer.MakePtr(6),
+							Priority:     new(6),
 							ProviderName: "AWS",
 							RegionName:   "US_WEST_1",
 							AutoScaling: &akov2.AdvancedAutoScalingSpec{
 								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+									Enabled: new(true),
 								},
 								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
+									Enabled:          new(true),
+									ScaleDownEnabled: new(true),
 									MinInstanceSize:  "M10",
 									MaxInstanceSize:  "M30",
 								},
@@ -539,18 +538,18 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment = performUpdate(ctx, DeploymentUpdateTimeout, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &akov2.AdvancedAutoScalingSpec{
 						DiskGB: &akov2.DiskGB{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 						Compute: &akov2.ComputeSpec{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[1].AutoScaling = &akov2.AdvancedAutoScalingSpec{
 						DiskGB: &akov2.DiskGB{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 						Compute: &akov2.ComputeSpec{
-							Enabled: pointer.MakePtr(false),
+							Enabled: new(false),
 						},
 					}
 				})
@@ -595,10 +594,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		It("Should succeed (AWS) with enabled autoscaling for Disk size", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = new(20)
 			createdDeployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AutoScaling = &akov2.AdvancedAutoScalingSpec{
 				DiskGB: &akov2.DiskGB{
-					Enabled: pointer.MakePtr(true),
+					Enabled: new(true),
 				},
 			}
 
@@ -612,21 +611,21 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			By("Decreasing the Deployment disk size should not take effect", func() {
 				// prevDiskSize := *createdDeployment.Spec.DeploymentSpec.DiskSizeGB
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(14)
+					deployment.Spec.DeploymentSpec.DiskSizeGB = new(14)
 				})
 
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					// Expect(*c.DiskSizeGB).To(BeEquivalentTo(prevDiskSize)) // todo: find out if this should still work for advanced clusters
 
-					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(new(float64(0))), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 		})
 
 		It("Should Succeed (AWS)", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
-			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(20)
+			createdDeployment.Spec.DeploymentSpec.DiskSizeGB = new(20)
 			createdDeployment = createdDeployment.WithAutoscalingDisabled()
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
@@ -674,7 +673,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = pointer.MakePtr(true)
-					deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+					deployment.Spec.DeploymentSpec.BackupEnabled = new(true)
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
@@ -684,19 +683,19 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Decreasing the Deployment disk size", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.DiskSizeGB = pointer.MakePtr(15)
+					deployment.Spec.DeploymentSpec.DiskSizeGB = new(15)
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
 					Expect(int(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.GetDiskSizeGB())).To(BeEquivalentTo(*createdDeployment.Spec.DeploymentSpec.DiskSizeGB))
 
-					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(pointer.MakePtr[float64](0)), "DiskSizeGB is no longer a *float64, please check the spec!")
+					Expect(c.GetReplicationSpecs()[0].GetRegionConfigs()[0].ElectableSpecs.DiskSizeGB).To(BeAssignableToTypeOf(new(float64(0))), "DiskSizeGB is no longer a *float64, please check the spec!")
 				})
 			})
 
 			By("Pausing the deployment", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.Paused = pointer.MakePtr(true)
+					deployment.Spec.DeploymentSpec.Paused = new(true)
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
@@ -706,7 +705,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating the Deployment configuration while paused (should fail)", func() {
 				_, err := akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(false)
+					deployment.Spec.DeploymentSpec.BackupEnabled = new(false)
 				})
 				Expect(err).To(BeNil())
 
@@ -726,7 +725,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Unpausing the deployment", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.Paused = pointer.MakePtr(false)
+					deployment.Spec.DeploymentSpec.Paused = new(false)
 				})
 				doDeploymentStatusChecks()
 				checkAtlasState(func(c *admin.ClusterDescription20240805) {
@@ -750,15 +749,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					oldSizeName = deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &akov2.Specs{
 						InstanceSize: "M42",
-						NodeCount:    pointer.MakePtr(3),
+						NodeCount:    new(3),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &akov2.Specs{
 						InstanceSize: "M42",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &akov2.Specs{
 						InstanceSize: "M42",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 				})
 				Expect(err).To(BeNil())
@@ -939,15 +938,15 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 				createdDeployment, err = akoretry.RetryUpdateOnConflict(ctx, k8sClient, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs = &akov2.Specs{
 						InstanceSize: "M20",
-						NodeCount:    pointer.MakePtr(3),
+						NodeCount:    new(3),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ReadOnlySpecs = &akov2.Specs{
 						InstanceSize: "M20",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].AnalyticsSpecs = &akov2.Specs{
 						InstanceSize: "M20",
-						NodeCount:    pointer.MakePtr(0),
+						NodeCount:    new(0),
 					}
 				})
 				Expect(err).To(BeNil())
@@ -969,13 +968,13 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 					regionConfig.AnalyticsSpecs.InstanceSize = "M10"
 					regionConfig.AutoScaling = &akov2.AdvancedAutoScalingSpec{
 						Compute: &akov2.ComputeSpec{
-							Enabled:          pointer.MakePtr(true),
+							Enabled:          new(true),
 							MaxInstanceSize:  "M30",
 							MinInstanceSize:  "M10",
-							ScaleDownEnabled: pointer.MakePtr(true),
+							ScaleDownEnabled: new(true),
 						},
 						DiskGB: &akov2.DiskGB{
-							Enabled: pointer.MakePtr(true),
+							Enabled: new(true),
 						},
 					}
 				})
@@ -1024,33 +1023,33 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     pointer.MakePtr(1),
+								NodeCount:     new(1),
 							},
 							ElectableSpecs: &akov2.Specs{
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     pointer.MakePtr(3),
+								NodeCount:     new(3),
 							},
 							ReadOnlySpecs: &akov2.Specs{
 								DiskIOPS:      nil,
 								EbsVolumeType: "",
 								InstanceSize:  "M10",
-								NodeCount:     pointer.MakePtr(1),
+								NodeCount:     new(1),
 							},
 							AutoScaling: &akov2.AdvancedAutoScalingSpec{
 								DiskGB: &akov2.DiskGB{
-									Enabled: pointer.MakePtr(true),
+									Enabled: new(true),
 								},
 								Compute: &akov2.ComputeSpec{
-									Enabled:          pointer.MakePtr(true),
-									ScaleDownEnabled: pointer.MakePtr(true),
+									Enabled:          new(true),
+									ScaleDownEnabled: new(true),
 									MinInstanceSize:  "M10",
 									MaxInstanceSize:  "M40",
 								},
 							},
 							BackingProviderName: "AWS",
-							Priority:            pointer.MakePtr(7),
+							Priority:            new(7),
 							ProviderName:        "AWS",
 							RegionName:          "US_EAST_1",
 						},
@@ -1137,7 +1136,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 		It("Should Succeed", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 			createdDeployment.Spec.ProcessArgs = &akov2.ProcessArgs{
-				JavascriptEnabled:  pointer.MakePtr(true),
+				JavascriptEnabled:  new(true),
 				DefaultReadConcern: "available",
 			}
 
@@ -1150,7 +1149,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 
 			By("Updating Advanced Deployment Options", func() {
 				createdDeployment = performUpdate(ctx, 40*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.ProcessArgs.JavascriptEnabled = pointer.MakePtr(false)
+					deployment.Spec.ProcessArgs.JavascriptEnabled = new(false)
 				})
 				doDeploymentStatusChecks()
 				checkAdvancedDeploymentOptions(ctx, createdProject.ID(), createdDeployment)
@@ -1159,7 +1158,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "deployment-
 	})
 })
 
-var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "deployment-backups"), func() {
+var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "focus-deployment-backups"), func() {
 	var (
 		connectionSecret  *corev1.Secret
 		createdProject    *akov2.AtlasProject
@@ -1295,7 +1294,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 		It("Should succeed", func(ctx context.Context) {
 			By("Creating deployment with backups enabled", func() {
 				createdDeployment = akov2.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
-				createdDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+				createdDeployment.Spec.DeploymentSpec.BackupEnabled = new(true)
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
@@ -1344,9 +1343,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						UpdateSnapshots:       false,
 						CopySettings: []akov2.CopySetting{
 							{
-								CloudProvider:    pointer.MakePtr("AWS"),
-								RegionName:       pointer.MakePtr("US_WEST_1"),
-								ShouldCopyOplogs: pointer.MakePtr(false),
+								CloudProvider:    new("AWS"),
+								RegionName:       new("US_WEST_1"),
+								ShouldCopyOplogs: new(false),
 								Frequencies:      []string{"MONTHLY"},
 							},
 						},
@@ -1374,9 +1373,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						createdDeployment.GetDeploymentName(),
 						[]admin.DiskBackupCopySetting20240805{
 							{
-								CloudProvider:    pointer.MakePtr("AWS"),
-								RegionName:       pointer.MakePtr("US_WEST_1"),
-								ShouldCopyOplogs: pointer.MakePtr(false),
+								CloudProvider:    new("AWS"),
+								RegionName:       new("US_WEST_1"),
+								ShouldCopyOplogs: new(false),
 								Frequencies:      &[]string{"MONTHLY"},
 							},
 						},
@@ -1388,7 +1387,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 				secondDeployment = akov2.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name)
 				secondDeployment.WithName("deployment-advanced-k8s-2")
 				secondDeployment.Spec.DeploymentSpec.Name = "deployment-advanced-2"
-				secondDeployment.Spec.DeploymentSpec.BackupEnabled = pointer.MakePtr(true)
+				secondDeployment.Spec.DeploymentSpec.BackupEnabled = new(true)
 				secondDeployment.Spec.BackupScheduleRef = common.ResourceRefNamespaced{
 					Name:      bScheduleName,
 					Namespace: namespace.Name,
@@ -1414,9 +1413,9 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 						secondDeployment.GetDeploymentName(),
 						[]admin.DiskBackupCopySetting20240805{
 							{
-								CloudProvider:    pointer.MakePtr("AWS"),
-								RegionName:       pointer.MakePtr("US_WEST_1"),
-								ShouldCopyOplogs: pointer.MakePtr(false),
+								CloudProvider:    new("AWS"),
+								RegionName:       new("US_WEST_1"),
+								ShouldCopyOplogs: new(false),
 								Frequencies:      &[]string{"MONTHLY"},
 							},
 						},
@@ -1427,7 +1426,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "de
 	})
 })
 
-var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentSharding", "deployment-non-backups"), func() {
+var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentSharding", "focus-deployment-non-backups"), func() {
 	var (
 		connectionSecret  *corev1.Secret
 		createdProject    *akov2.AtlasProject
@@ -1746,7 +1745,8 @@ func deleteDeploymentFromKubernetes(project *akov2.AtlasProject, deployment *ako
 			By("Removing Atlas Deployment " + deployment.Name + " from Atlas manually")
 			Expect(deleteAtlasDeployment(project.Status.ID, deploymentName)).To(Succeed())
 		}
-		Eventually(checkAtlasDeploymentRemoved(project.Status.ID, deploymentName), 600, interval).Should(BeTrue())
+		Eventually(checkAtlasDeploymentRemoved(project.Status.ID, deploymentName), 1200, interval).Should(BeTrue(),
+			"Deployment deletion timed out after 20 minutes. This may indicate Cloud QA environment health issues.")
 	})
 }
 
@@ -1786,7 +1786,7 @@ func mergedAdvancedDeployment(
 		}
 	}
 	if value >= 1 {
-		atlasDeployment.DiskSizeGB = pointer.MakePtr(int(value))
+		atlasDeployment.DiskSizeGB = new(int(value))
 	}
 
 	if err = compat.JSONCopy(&atlasDeployment, atlasDeploymentAsAtlas); err != nil {
@@ -1809,17 +1809,17 @@ func mergedAdvancedDeployment(
 
 		if region.ElectableSpecs == nil {
 			region.ElectableSpecs = &notNilSpecs
-			region.ElectableSpecs.NodeCount = pointer.MakePtr(0)
+			region.ElectableSpecs.NodeCount = new(0)
 		}
 
 		if region.ReadOnlySpecs == nil {
 			region.ReadOnlySpecs = &notNilSpecs
-			region.ReadOnlySpecs.NodeCount = pointer.MakePtr(0)
+			region.ReadOnlySpecs.NodeCount = new(0)
 		}
 
 		if region.AnalyticsSpecs == nil {
 			region.AnalyticsSpecs = &notNilSpecs
-			region.AnalyticsSpecs.NodeCount = pointer.MakePtr(0)
+			region.AnalyticsSpecs.NodeCount = new(0)
 		}
 	}
 

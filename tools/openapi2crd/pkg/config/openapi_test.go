@@ -16,6 +16,8 @@
 package config
 
 import (
+	"context"
+	"sync"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -24,7 +26,114 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestKinOpeAPILoad(t *testing.T) {
+const testOpenAPISpec = `openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths: {}`
+
+func writeSpec(t *testing.T, fs afero.Fs, path string) {
+	t.Helper()
+	require.NoError(t, afero.WriteFile(fs, path, []byte(testOpenAPISpec), 0644))
+}
+
+func TestKinOpenAPILoadCachesResult(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeSpec(t, fs, "spec.yaml")
+
+	loader := NewKinOpenAPI(fs)
+
+	first, err := loader.load(context.Background(), "spec.yaml")
+	require.NoError(t, err)
+
+	second, err := loader.load(context.Background(), "spec.yaml")
+	require.NoError(t, err)
+
+	// Same pointer — the second call returned the cached result.
+	assert.Same(t, first, second)
+}
+
+func TestKinOpenAPILoadConcurrent(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeSpec(t, fs, "spec.yaml")
+
+	loader := NewKinOpenAPI(fs)
+
+	const goroutines = 20
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	results := make([]*openapi3.T, goroutines)
+
+	for i := range goroutines {
+		go func() {
+			defer wg.Done()
+			spec, err := loader.load(context.Background(), "spec.yaml")
+			require.NoError(t, err)
+			results[i] = spec
+		}()
+	}
+	wg.Wait()
+
+	// All goroutines got the same pointer.
+	for i := 1; i < goroutines; i++ {
+		assert.Same(t, results[0], results[i])
+	}
+}
+
+func TestKinOpenAPILoadFlattened(t *testing.T) {
+	input := `openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      properties:
+        name:
+          type: string
+    Cat:
+      type: object
+      properties:
+        indoor:
+          type: boolean
+    Dog:
+      type: object
+      properties:
+        breed:
+          type: string`
+
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, "test.yaml", []byte(input), 0644))
+
+	loader := NewKinOpenAPI(fs)
+	spec, err := loader.loadFlattened(nil, "test.yaml")
+	require.NoError(t, err)
+	require.NotNil(t, spec)
+
+	petSchema := spec.Components.Schemas["Pet"]
+	require.NotNil(t, petSchema)
+
+	assert.Nil(t, petSchema.Value.OneOf, "oneOf should be flattened away")
+	assert.Contains(t, petSchema.Value.Properties, "name")
+	assert.Contains(t, petSchema.Value.Properties, "indoor")
+	assert.Contains(t, petSchema.Value.Properties, "breed")
+}
+
+func TestKinOpenAPILoad(t *testing.T) {
 	tests := map[string]struct {
 		file            string
 		filePath        string
@@ -73,8 +182,8 @@ paths:
 
 			tt.expectedOpenAPI.Paths.Extensions = map[string]any{}
 
-			loader := NewKinOpeAPI(fs)
-			openapi, err := loader.Load(nil, tt.filePath)
+			loader := NewKinOpenAPI(fs)
+			openapi, err := loader.load(context.Background(), tt.filePath)
 			assert.Equal(t, tt.expectError, err)
 			assert.Equal(t, tt.expectedOpenAPI, openapi)
 		})

@@ -22,34 +22,33 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestAreSettingsInSync(t *testing.T) {
 	atlasDef := &akov2.ProjectSettings{
-		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
-		IsDataExplorerEnabled:                       pointer.MakePtr(true),
-		IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-		IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
-		IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
+		IsCollectDatabaseSpecificsStatisticsEnabled: new(true),
+		IsDataExplorerEnabled:                       new(true),
+		IsPerformanceAdvisorEnabled:                 new(true),
+		IsRealtimePerformancePanelEnabled:           new(true),
+		IsSchemaAdvisorEnabled:                      new(true),
 	}
 	specDef := &akov2.ProjectSettings{
-		IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
-		IsDataExplorerEnabled:                       pointer.MakePtr(true),
+		IsCollectDatabaseSpecificsStatisticsEnabled: new(true),
+		IsDataExplorerEnabled:                       new(true),
 	}
 
 	areEqual := areSettingsInSync(atlasDef, specDef)
 	assert.True(t, areEqual, "Only fields which are set should be compared")
 
-	specDef.IsPerformanceAdvisorEnabled = pointer.MakePtr(false)
+	specDef.IsPerformanceAdvisorEnabled = new(false)
 	areEqual = areSettingsInSync(atlasDef, specDef)
 	assert.False(t, areEqual, "Field values should be the same ")
 }
@@ -76,12 +75,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{ // These are the default settings on a fresh project
-							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(true),
-							IsDataExplorerEnabled:                       pointer.MakePtr(true),
-							IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
-							IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-							IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
-							IsSchemaAdvisorEnabled:                      pointer.MakePtr(true),
+							IsCollectDatabaseSpecificsStatisticsEnabled: new(true),
+							IsDataExplorerEnabled:                       new(true),
+							IsExtendedStorageSizesEnabled:               new(false),
+							IsPerformanceAdvisorEnabled:                 new(true),
+							IsRealtimePerformancePanelEnabled:           new(true),
+							IsSchemaAdvisorEnabled:                      new(true),
 						},
 						&http.Response{},
 						nil,
@@ -116,12 +115,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 		{
 			name: "Project Settings are equal in AKO & Atlas",
 			settings: &akov2.ProjectSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-				IsDataExplorerEnabled:                       pointer.MakePtr(false),
-				IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
-				IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+				IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+				IsDataExplorerEnabled:                       new(false),
+				IsExtendedStorageSizesEnabled:               new(false),
+				IsPerformanceAdvisorEnabled:                 new(true),
+				IsRealtimePerformancePanelEnabled:           new(false),
+				IsSchemaAdvisorEnabled:                      new(false),
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
@@ -130,12 +129,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
-							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-							IsDataExplorerEnabled:                       pointer.MakePtr(false),
-							IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
-							IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-							IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
-							IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+							IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+							IsDataExplorerEnabled:                       new(false),
+							IsExtendedStorageSizesEnabled:               new(false),
+							IsPerformanceAdvisorEnabled:                 new(true),
+							IsRealtimePerformancePanelEnabled:           new(false),
+							IsSchemaAdvisorEnabled:                      new(false),
 						},
 						&http.Response{},
 						nil,
@@ -151,12 +150,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 		{
 			name: "Project Settings are different in AKO & Atlas",
 			settings: &akov2.ProjectSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-				IsDataExplorerEnabled:                       pointer.MakePtr(false),
-				IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
-				IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+				IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+				IsDataExplorerEnabled:                       new(false),
+				IsExtendedStorageSizesEnabled:               new(false),
+				IsPerformanceAdvisorEnabled:                 new(true),
+				IsRealtimePerformancePanelEnabled:           new(true),
+				IsSchemaAdvisorEnabled:                      new(false),
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
@@ -165,12 +164,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
-							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-							IsDataExplorerEnabled:                       pointer.MakePtr(true),
-							IsExtendedStorageSizesEnabled:               pointer.MakePtr(true),
-							IsPerformanceAdvisorEnabled:                 pointer.MakePtr(false),
-							IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
-							IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+							IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+							IsDataExplorerEnabled:                       new(true),
+							IsExtendedStorageSizesEnabled:               new(true),
+							IsPerformanceAdvisorEnabled:                 new(false),
+							IsRealtimePerformancePanelEnabled:           new(false),
+							IsSchemaAdvisorEnabled:                      new(false),
 						},
 						&http.Response{},
 						nil,
@@ -191,12 +190,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 		{
 			name: "PATCH Atlas Project Settings errors",
 			settings: &akov2.ProjectSettings{
-				IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-				IsDataExplorerEnabled:                       pointer.MakePtr(false),
-				IsExtendedStorageSizesEnabled:               pointer.MakePtr(false),
-				IsPerformanceAdvisorEnabled:                 pointer.MakePtr(true),
-				IsRealtimePerformancePanelEnabled:           pointer.MakePtr(true),
-				IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+				IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+				IsDataExplorerEnabled:                       new(false),
+				IsExtendedStorageSizesEnabled:               new(false),
+				IsPerformanceAdvisorEnabled:                 new(true),
+				IsRealtimePerformancePanelEnabled:           new(true),
+				IsSchemaAdvisorEnabled:                      new(false),
 			},
 			projectAPI: func() *mockadmin.ProjectsApi {
 				projectAPI := mockadmin.NewProjectsApi(t)
@@ -205,12 +204,12 @@ func TestEnsureProjectSettings(t *testing.T) {
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
 					Return(
 						&admin.GroupSettings{
-							IsCollectDatabaseSpecificsStatisticsEnabled: pointer.MakePtr(false),
-							IsDataExplorerEnabled:                       pointer.MakePtr(true),
-							IsExtendedStorageSizesEnabled:               pointer.MakePtr(true),
-							IsPerformanceAdvisorEnabled:                 pointer.MakePtr(false),
-							IsRealtimePerformancePanelEnabled:           pointer.MakePtr(false),
-							IsSchemaAdvisorEnabled:                      pointer.MakePtr(false),
+							IsCollectDatabaseSpecificsStatisticsEnabled: new(false),
+							IsDataExplorerEnabled:                       new(true),
+							IsExtendedStorageSizesEnabled:               new(true),
+							IsPerformanceAdvisorEnabled:                 new(false),
+							IsRealtimePerformancePanelEnabled:           new(false),
+							IsSchemaAdvisorEnabled:                      new(false),
 						},
 						&http.Response{},
 						nil,
@@ -232,7 +231,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
-					SdkClient20250312013: &admin.APIClient{
+					SdkClient20250312: &admin.APIClient{
 						ProjectsApi: tc.projectAPI,
 					},
 				},

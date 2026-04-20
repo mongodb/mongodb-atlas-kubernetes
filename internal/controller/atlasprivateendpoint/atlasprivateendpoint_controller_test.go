@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -47,7 +47,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
 )
 
@@ -357,17 +356,17 @@ func TestEnsureCustomResource(t *testing.T) {
 					peAPI.EXPECT().GetPrivateEndpointServiceExecute(mock.AnythingOfType("admin.GetPrivateEndpointServiceApiRequest")).
 						Return(
 							&admin.EndpointService{
-								Id:            pointer.MakePtr("pe-service-id"),
+								Id:            new("pe-service-id"),
 								CloudProvider: "AWS",
-								RegionName:    pointer.MakePtr("US_EAST_1"),
-								Status:        pointer.MakePtr("INITIATING"),
+								RegionName:    new("US_EAST_1"),
+								Status:        new("INITIATING"),
 							},
 							nil,
 							nil,
 						)
 
 					return &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
 					}, nil
 				},
 			},

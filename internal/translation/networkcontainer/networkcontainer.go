@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -52,7 +52,7 @@ type networkContainerService struct {
 }
 
 func NewNetworkContainerServiceFromClientSet(clientSet *atlas.ClientSet) NetworkContainerService {
-	return NewNetworkContainerService(clientSet.SdkClient20250312013.NetworkPeeringApi)
+	return NewNetworkContainerService(clientSet.SdkClient20250312.NetworkPeeringApi)
 }
 
 func NewNetworkContainerService(peeringAPI admin.NetworkPeeringApi) NetworkContainerService {

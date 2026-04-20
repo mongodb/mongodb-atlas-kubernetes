@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
-	"go.mongodb.org/atlas-sdk/v20250312013/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/dbuser"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
@@ -187,7 +186,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					projectAPI.EXPECT().GetGroup(context.Background(), "project-id").
 						Return(admin.GetGroupApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupExecute(mock.Anything).
-						Return(&admin.Group{Id: pointer.MakePtr("project-id")}, nil, nil)
+						Return(&admin.Group{Id: new("project-id")}, nil, nil)
 
 					userAPI := mockadmin.NewDatabaseUsersApi(t)
 					userAPI.EXPECT().GetDatabaseUser(context.Background(), "project-id", "admin", "user1").
@@ -202,7 +201,7 @@ func TestHandleDatabaseUser(t *testing.T) {
 					clusterAPI := mockadmin.NewClustersApi(t)
 
 					return &atlas.ClientSet{
-						SdkClient20250312013: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
 					}, nil
 				},
 			},
@@ -2313,10 +2312,10 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
-				Return(&admin.Group{Id: pointer.MakePtr("my-project")}, nil, nil)
+				Return(&admin.Group{Id: new("my-project")}, nil, nil)
 
 			return &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{
+				SdkClient20250312: &admin.APIClient{
 					ProjectsApi:      projectAPI,
 					ClustersApi:      clusterAPI,
 					DatabaseUsersApi: userAPI,

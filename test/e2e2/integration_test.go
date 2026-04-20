@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -34,7 +35,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/utils"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/yml"
@@ -47,16 +47,16 @@ const (
 	AtlasThirdPartyIntegrationsCRDName = "atlasthirdpartyintegrations.atlas.mongodb.com"
 )
 
-var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctlr"), func() {
-	var ctx context.Context
+var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("integrations-ctrl"), func() {
 	var kubeClient client.Client
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
+	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
 		deletionProtectionOff := false
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
-		ako.Start(GinkgoT())
+		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
 		// AfterAll is not reliable in such cases.
@@ -66,7 +66,6 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			}
 		})
 
-		ctx = context.Background()
 		client, err := kube.NewTestClient()
 		Expect(err).To(Succeed())
 		kubeClient = client
@@ -77,7 +76,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 	_ = BeforeEach(func() {
 		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("integrations-ctlr-ns"),
+			Name: fmt.Sprintf("integrations-ctrl-ns-%s", rand.String(6)),
 		}}
 		Expect(kubeClient.Create(ctx, testNamespace))
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
@@ -92,7 +91,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
 			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
 	})
 
 	DescribeTable("Integrations samples",
@@ -118,7 +117,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						return condition.Status == metav1.ConditionTrue
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Apply updates", func() {
@@ -145,7 +144,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 						}
 					}
 					return false
-				}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 			})
 
 			By("Delete integration", func() {
@@ -210,7 +209,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		project := akov2.AtlasProject{
 			TypeMeta:   v1.TypeMeta{Kind: "AtlasProject", APIVersion: akov2.GroupVersion.String()},
 			ObjectMeta: v1.ObjectMeta{Name: "atlas-project", Namespace: testNamespace.Name},
-			Spec:       akov2.AtlasProjectSpec{Name: utils.RandomName("atlas-project")},
+			Spec:       akov2.AtlasProjectSpec{Name: fmt.Sprintf("atlas-project-%s", rand.String(6))},
 		}
 		projectID := ""
 
@@ -231,7 +230,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return true
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		integrationSecret := corev1.Secret{
@@ -292,7 +291,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					return condition.Status == metav1.ConditionTrue
 				}
 				return false
-			}).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
+			}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 		})
 
 		By("Update integration", func() {
@@ -341,7 +340,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 func WithRandomAtlasProject(obj client.Object) client.Object {
 	if project, ok := (obj).(*akov2.AtlasProject); ok {
 		renamed := project.DeepCopy()
-		renamed.Spec.Name = utils.RandomName(project.Spec.Name)
+		renamed.Spec.Name = fmt.Sprintf("%s-%s", project.Spec.Name, rand.String(6))
 		return renamed
 	}
 	return obj

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/nsf/jsondiff"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -156,7 +156,7 @@ func toAtlas(au *User) (*admin.CloudDatabaseUser, error) {
 		X509Type:        pointer.MakePtrOrNil(au.X509Type),
 		AwsIAMType:      pointer.MakePtrOrNil(au.AWSIAMType),
 		GroupId:         au.ProjectID,
-		Description:     pointer.MakePtr(au.Description),
+		Description:     new(au.Description),
 		Labels:          labelsToAtlas(au.Labels),
 		Roles:           rolesToAtlas(au.Roles),
 		Scopes:          scopesToAtlas(au.Scopes),
@@ -174,25 +174,25 @@ func dateToAtlas(d string) (*time.Time, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse %q to an ISO date: %w", d, err)
 	}
-	return pointer.MakePtr(date), nil
+	return new(date), nil
 }
 
-func rolesToAtlas(roles []akov2.RoleSpec) *[]admin.DatabaseUserRole {
+func rolesToAtlas(roles []akov2.RoleSpec) []admin.DatabaseUserRole {
 	if len(roles) == 0 {
 		return nil
 	}
-	atlasRoles := []admin.DatabaseUserRole{}
+	atlasRoles := make([]admin.DatabaseUserRole, 0, len(roles))
 	for _, role := range roles {
 		ar := admin.DatabaseUserRole{
 			RoleName:     role.RoleName,
 			DatabaseName: role.DatabaseName,
 		}
 		if role.CollectionName != "" {
-			ar.CollectionName = pointer.MakePtr(role.CollectionName)
+			ar.CollectionName = new(role.CollectionName)
 		}
 		atlasRoles = append(atlasRoles, ar)
 	}
-	return &atlasRoles
+	return atlasRoles
 }
 
 func scopesToAtlas(scopes []akov2.ScopeSpec) *[]admin.UserScope {
@@ -267,8 +267,8 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	atlasLabels := make([]admin.ComponentLabel, 0, len(labels))
 	for _, label := range labels {
 		atlasLabels = append(atlasLabels, admin.ComponentLabel{
-			Key:   pointer.MakePtr(label.Key),
-			Value: pointer.MakePtr(label.Value),
+			Key:   new(label.Key),
+			Value: new(label.Value),
 		})
 	}
 	return &atlasLabels

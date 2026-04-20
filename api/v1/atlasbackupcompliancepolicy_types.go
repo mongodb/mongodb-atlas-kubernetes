@@ -17,13 +17,12 @@ package v1
 import (
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func init() {
@@ -96,8 +95,8 @@ func (b *AtlasBackupCompliancePolicy) ToAtlas(projectID string) *admin.DataProte
 		CopyProtectionEnabled:   &b.Spec.CopyProtectionEnabled,
 		EncryptionAtRestEnabled: &b.Spec.EncryptionAtRestEnabled,
 		PitEnabled:              &b.Spec.PITEnabled,
-		ProjectId:               pointer.MakePtr(projectID),
-		RestoreWindowDays:       pointer.MakePtr(b.Spec.RestoreWindowDays),
+		ProjectId:               new(projectID),
+		RestoreWindowDays:       new(b.Spec.RestoreWindowDays),
 	}
 
 	var emptyPolicy AtlasOnDemandPolicy

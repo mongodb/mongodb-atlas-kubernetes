@@ -25,7 +25,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -57,7 +57,7 @@ const (
 	DBUserPassword2     = "H@lla#!"
 )
 
-var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "protection-disabled"), Ordered, func() {
+var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus-protection-disabled"), Ordered, func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var projectName string
@@ -103,16 +103,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "prote
 	Describe("Operator is running with deletion protection disabled", func() {
 		It("Adds database users and allow them to be deleted", Label("focus-user-removable"), func() {
 			By("Creating a database user previously on Atlas", func() {
-				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), dbUserName3)
+				roles := []admin.DatabaseUserRole{
+					{RoleName: "readWriteAnyDatabase", DatabaseName: "admin"},
+				}
+				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), roles, dbUserName3)
 				dbUser.SetPassword("mypass")
-				dbUser.SetRoles(
-					[]admin.DatabaseUserRole{
-						{
-							RoleName:     "readWriteAnyDatabase",
-							DatabaseName: "admin",
-						},
-					},
-				)
 				_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 				Expect(err).To(BeNil())
 			})

@@ -25,7 +25,7 @@ type DryRunError struct {
 	Msg string
 }
 
-func NewDryRunError(messageFmt string, args ...interface{}) error {
+func NewDryRunError(messageFmt string, args ...any) error {
 	msg := fmt.Sprintf(messageFmt, args...)
 
 	return &DryRunError{

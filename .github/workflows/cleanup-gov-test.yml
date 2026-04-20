@@ -10,13 +10,6 @@ on:
         type: number
         default: 1
         required: true
-  workflow_call:
-    inputs:
-      lifetime:
-        description: "Lifetime of project in hours"
-        type: number
-        default: 1
-        required: true
 
 concurrency:
   group: cleanup-gov-test
@@ -31,7 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
+        uses: jetify-com/devbox-install-action@v0.15.0
         with:
           enable-cache: 'true'
 

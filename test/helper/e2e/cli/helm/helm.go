@@ -48,7 +48,7 @@ func matchHelmSearch(match string) string {
 	Expect(regexp.MustCompile(match).Match(content)).Should(BeTrue())
 	version := regexp.MustCompile(match).FindStringSubmatch(string(content))
 	Expect(version).Should(HaveLen(2))
-	GinkgoWriter.Write([]byte(fmt.Sprintf("Found version %s for match %s", version[1], match)))
+	GinkgoWriter.Write(fmt.Appendf(nil, "Found version %s for match %s", version[1], match))
 	return version[1]
 }
 

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
 	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
@@ -73,13 +72,13 @@ var sampleAtlasOrgSettings = akov2.AtlasOrgSettings{
 		ConnectionSecretRef: &api.LocalObjectReference{
 			Name: "atlas-credentials",
 		},
-		ApiAccessListRequired:                  pointer.MakePtr(true),
-		GenAIFeaturesEnabled:                   pointer.MakePtr(true),
-		MaxServiceAccountSecretValidityInHours: pointer.MakePtr(10),
-		MultiFactorAuthRequired:                pointer.MakePtr(true),
-		RestrictEmployeeAccess:                 pointer.MakePtr(true),
-		SecurityContact:                        pointer.MakePtr("123@mongodb.com"),
-		StreamsCrossGroupEnabled:               pointer.MakePtr(true),
+		ApiAccessListRequired:                  new(true),
+		GenAIFeaturesEnabled:                   new(true),
+		MaxServiceAccountSecretValidityInHours: new(10),
+		MultiFactorAuthRequired:                new(true),
+		RestrictEmployeeAccess:                 new(true),
+		SecurityContact:                        new("123@mongodb.com"),
+		StreamsCrossGroupEnabled:               new(true),
 	},
 	Status: status.AtlasOrgSettingsStatus{},
 }
@@ -88,7 +87,7 @@ func createSuccessfulProvider() atlas.Provider {
 	return &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			return &atlas.ClientSet{
-				SdkClient20250312013: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
+				SdkClient20250312: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
 			}, nil
 		},
 	}
@@ -341,13 +340,13 @@ func TestUpsert(t *testing.T) {
 				&atlasorgsettings.AtlasOrgSettings{
 					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+						ApiAccessListRequired: new(false), // Different from sample
 					},
 				}, nil,
 				&atlasorgsettings.AtlasOrgSettings{
 					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: pointer.MakePtr(true),
+						ApiAccessListRequired: new(true),
 					},
 				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
@@ -434,7 +433,7 @@ func TestUpsert(t *testing.T) {
 				&atlasorgsettings.AtlasOrgSettings{
 					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+						ApiAccessListRequired: new(false), // Different from sample
 					},
 				}, nil, nil, errors.New("update failed"), true),
 			input:   &sampleAtlasOrgSettings,
@@ -451,7 +450,7 @@ func TestUpsert(t *testing.T) {
 				&atlasorgsettings.AtlasOrgSettings{
 					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+						ApiAccessListRequired: new(false), // Different from sample
 					},
 				}, nil, nil, nil, true), // Update returns nil
 			input:   &sampleAtlasOrgSettings,
@@ -545,13 +544,13 @@ func setupHandlerTest(t *testing.T, scheme *runtime.Scheme) (*AtlasOrgSettingsHa
 		&atlasorgsettings.AtlasOrgSettings{
 			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 				OrgID:                 fakeOrgID,
-				ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+				ApiAccessListRequired: new(false), // Different from sample
 			},
 		}, nil,
 		&atlasorgsettings.AtlasOrgSettings{
 			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 				OrgID:                 fakeOrgID,
-				ApiAccessListRequired: pointer.MakePtr(true),
+				ApiAccessListRequired: new(true),
 			},
 		}, nil, true)
 
@@ -636,7 +635,7 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			&atlasorgsettings.AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(true),
+					ApiAccessListRequired: new(true),
 				},
 			}, nil, true)
 
@@ -669,13 +668,13 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			&atlasorgsettings.AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(false), // Different from sample
+					ApiAccessListRequired: new(false), // Different from sample
 				},
 			}, nil,
 			&atlasorgsettings.AtlasOrgSettings{
 				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
 					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: pointer.MakePtr(true),
+					ApiAccessListRequired: new(true),
 				},
 			}, nil, true)
 

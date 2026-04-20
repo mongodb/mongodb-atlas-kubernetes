@@ -14,3 +14,4 @@ resources:
 - ../../../manager
 - ../../../crd
 - ../../../rbac/clusterwide
+- ../../../generated/rbac/clusterwide

@@ -21,12 +21,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func jsonMustEncode(jsn any) *apiextensionsv1.JSON {
@@ -37,7 +36,7 @@ func jsonMustEncode(jsn any) *apiextensionsv1.JSON {
 	return &apiextensionsv1.JSON{Raw: val}
 }
 
-func jsonMustEncodeMap(jsn map[string]interface{}) *apiextensionsv1.JSON {
+func jsonMustEncodeMap(jsn map[string]any) *apiextensionsv1.JSON {
 	val, err := json.Marshal(jsn)
 	if err != nil {
 		panic(err)
@@ -45,8 +44,8 @@ func jsonMustEncodeMap(jsn map[string]interface{}) *apiextensionsv1.JSON {
 	return &apiextensionsv1.JSON{Raw: val}
 }
 
-func jsonMustDecode(jsn *apiextensionsv1.JSON) *[]interface{} {
-	var val []interface{}
+func jsonMustDecode(jsn *apiextensionsv1.JSON) *[]any {
+	var val []any
 	err := json.Unmarshal(jsn.Raw, &val)
 	if err != nil {
 		panic(err)
@@ -82,7 +81,7 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 						}),
 						Mappings: &akov2.Mappings{
 							Dynamic: jsonMustEncode(true),
-							Fields: jsonMustEncode([]map[string]interface{}{
+							Fields: jsonMustEncode([]map[string]any{
 								{
 									"test": "value",
 								},
@@ -90,33 +89,33 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
 					},
-					VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]interface{}{
+					VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]any{
 						{"test": "value"},
 					})},
 				},
 				config: &akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer: new("lucene.standard"),
 					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 						{
 							Name: "MyAnalyzer",
-							TokenFilters: jsonMustEncode([]map[string]interface{}{
+							TokenFilters: jsonMustEncode([]map[string]any{
 								{"token": "value"},
 							}),
-							CharFilters: jsonMustEncode([]map[string]interface{}{
+							CharFilters: jsonMustEncode([]map[string]any{
 								{"filter": "value"},
 							}),
 							Tokenizer: akov2.Tokenizer{
-								Type:           pointer.MakePtr("standard"),
+								Type:           new("standard"),
 								MaxGram:        nil,
 								MinGram:        nil,
 								Group:          nil,
 								Pattern:        nil,
-								MaxTokenLength: pointer.MakePtr(255),
+								MaxTokenLength: new(255),
 							},
 						},
 					}),
-					SearchAnalyzer: pointer.MakePtr("lucene.standard"),
-					StoredSource:   jsonMustEncodeMap(map[string]interface{}{"include": "test"}),
+					SearchAnalyzer: new("lucene.standard"),
+					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 				},
 			},
 			want: &SearchIndex{
@@ -135,39 +134,39 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 						}),
 						Mappings: &akov2.Mappings{
 							Dynamic: jsonMustEncode(true),
-							Fields: jsonMustEncode([]map[string]interface{}{
+							Fields: jsonMustEncode([]map[string]any{
 								{"test": "value"},
 							}),
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
 					},
-					VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]interface{}{
+					VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]any{
 						{"test": "value"},
 					})},
 				},
 				AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer: new("lucene.standard"),
 					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 						{
 							Name: "MyAnalyzer",
-							TokenFilters: jsonMustEncode([]map[string]interface{}{
+							TokenFilters: jsonMustEncode([]map[string]any{
 								{"token": "value"},
 							}),
-							CharFilters: jsonMustEncode([]map[string]interface{}{
+							CharFilters: jsonMustEncode([]map[string]any{
 								{"filter": "value"},
 							}),
 							Tokenizer: akov2.Tokenizer{
-								Type:           pointer.MakePtr("standard"),
+								Type:           new("standard"),
 								MaxGram:        nil,
 								MinGram:        nil,
 								Group:          nil,
 								Pattern:        nil,
-								MaxTokenLength: pointer.MakePtr(255),
+								MaxTokenLength: new(255),
 							},
 						},
 					}),
-					SearchAnalyzer: pointer.MakePtr("lucene.standard"),
-					StoredSource:   jsonMustEncodeMap(map[string]interface{}{"include": "test"}),
+					SearchAnalyzer: new("lucene.standard"),
+					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 				},
 			},
 		},
@@ -196,38 +195,38 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 			name: "Convert from Atlas",
 			args: args{
 				index: admin.SearchIndexResponse{
-					CollectionName: pointer.MakePtr("collection"),
-					Database:       pointer.MakePtr("db"),
-					IndexID:        pointer.MakePtr("indexID"),
-					Name:           pointer.MakePtr("name"),
-					Status:         pointer.MakePtr("ACTIVE"),
-					Type:           pointer.MakePtr("search"),
+					CollectionName: new("collection"),
+					Database:       new("db"),
+					IndexID:        new("indexID"),
+					Name:           new("name"),
+					Status:         new("ACTIVE"),
+					Type:           new("search"),
 					LatestDefinition: &admin.BaseSearchIndexResponseLatestDefinition{
-						Analyzer: pointer.MakePtr("lucene.standard"),
+						Analyzer: new("lucene.standard"),
 						Analyzers: &([]admin.AtlasSearchAnalyzer{
 							{
-								CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+								CharFilters: jsonMustDecode(jsonMustEncode([]map[string]any{
 									{"char": "filter"},
 								})),
 								Name: "name",
-								TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+								TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]any{
 									{"token": "filter"},
 								})),
 								Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-									MaxGram:        pointer.MakePtr(20),
-									MinGram:        pointer.MakePtr(10),
-									Type:           pointer.MakePtr("standard"),
-									Group:          pointer.MakePtr(10),
-									Pattern:        pointer.MakePtr("testRegex"),
-									MaxTokenLength: pointer.MakePtr(255),
+									MaxGram:        new(20),
+									MinGram:        new(10),
+									Type:           new("standard"),
+									Group:          new(10),
+									Pattern:        new("testRegex"),
+									MaxTokenLength: new(255),
 								},
 							},
 						}),
 						Mappings: &admin.SearchMappings{
-							Dynamic: pointer.MakePtr(true),
-							Fields:  &map[string]interface{}{"field": "value"},
+							Dynamic: new(true),
+							Fields:  &map[string]any{"field": "value"},
 						},
-						SearchAnalyzer: pointer.MakePtr("search-analyzer"),
+						SearchAnalyzer: new("search-analyzer"),
 						Synonyms: &([]admin.SearchSynonymMappingDefinition{
 							{
 								Analyzer: "analyzer",
@@ -242,13 +241,13 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 								"testKey": "testValue",
 							},
 						}),
-						StoredSource: map[string]interface{}{"include": "test"},
+						StoredSource: map[string]any{"include": "test"},
 					},
 				},
 			},
 			want: &SearchIndex{
-				ID:     pointer.MakePtr("indexID"),
-				Status: pointer.MakePtr("ACTIVE"),
+				ID:     new("indexID"),
+				Status: new("ACTIVE"),
 				SearchIndex: akov2.SearchIndex{
 					Name:           "name",
 					DBName:         "db",
@@ -264,12 +263,12 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 						}),
 						Mappings: &akov2.Mappings{
 							Dynamic: jsonMustEncode(true),
-							Fields:  jsonMustEncodeMap(map[string]interface{}{"field": "value"}),
+							Fields:  jsonMustEncodeMap(map[string]any{"field": "value"}),
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
 					},
 					VectorSearch: &akov2.VectorSearch{
-						Fields: jsonMustEncode([]map[string]interface{}{
+						Fields: jsonMustEncode([]map[string]any{
 							{
 								"testKey": "testValue",
 							},
@@ -277,24 +276,24 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 					},
 				},
 				AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer: new("lucene.standard"),
 					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 						{
 							Name:         "name",
-							TokenFilters: jsonMustEncode([]map[string]interface{}{{"token": "filter"}}),
-							CharFilters:  jsonMustEncode([]map[string]interface{}{{"char": "filter"}}),
+							TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}}),
+							CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}}),
 							Tokenizer: akov2.Tokenizer{
-								MaxGram:        pointer.MakePtr(20),
-								MinGram:        pointer.MakePtr(10),
-								Type:           pointer.MakePtr("standard"),
-								Group:          pointer.MakePtr(10),
-								Pattern:        pointer.MakePtr("testRegex"),
-								MaxTokenLength: pointer.MakePtr(255),
+								MaxGram:        new(20),
+								MinGram:        new(10),
+								Type:           new("standard"),
+								Group:          new(10),
+								Pattern:        new("testRegex"),
+								MaxTokenLength: new(255),
 							},
 						},
 					}),
-					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
-					StoredSource:   jsonMustEncodeMap(map[string]interface{}{"include": "test"}),
+					SearchAnalyzer: new("search-analyzer"),
+					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 				},
 			},
 			wantErr: false,
@@ -334,14 +333,14 @@ func TestSearchIndex_EqualTo(t *testing.T) {
 				VectorSearch: nil,
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("analyzer"),
+				Analyzer: new("analyzer"),
 				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 					{
 						Name:         "test",
-						TokenFilters: jsonMustEncode([]map[string]interface{}{{"token": "filter"}, {"token1": "filter1"}}),
-						CharFilters:  jsonMustEncode([]map[string]interface{}{{"char": "filter"}, {"char1": "filter1"}}),
+						TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
+						CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
 						Tokenizer: akov2.Tokenizer{
-							Type:           pointer.MakePtr("type"),
+							Type:           new("type"),
 							MaxGram:        nil,
 							MinGram:        nil,
 							Group:          nil,
@@ -350,7 +349,7 @@ func TestSearchIndex_EqualTo(t *testing.T) {
 						},
 					},
 				}),
-				SearchAnalyzer: pointer.MakePtr("searchAnalyzer"),
+				SearchAnalyzer: new("searchAnalyzer"),
 				StoredSource:   nil,
 			},
 			ID:     nil,
@@ -373,14 +372,14 @@ func TestSearchIndex_EqualTo(t *testing.T) {
 				VectorSearch: nil,
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: pointer.MakePtr("analyzer"),
+				Analyzer: new("analyzer"),
 				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 					{
 						Name:         "test",
-						TokenFilters: jsonMustEncode([]map[string]interface{}{{"token": "filter"}, {"token1": "filter1"}}),
-						CharFilters:  jsonMustEncode([]map[string]interface{}{{"char": "filter"}, {"char1": "filter1"}}),
+						TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
+						CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
 						Tokenizer: akov2.Tokenizer{
-							Type:           pointer.MakePtr("type"),
+							Type:           new("type"),
 							MaxGram:        nil,
 							MinGram:        nil,
 							Group:          nil,
@@ -389,7 +388,7 @@ func TestSearchIndex_EqualTo(t *testing.T) {
 						},
 					},
 				}),
-				SearchAnalyzer: pointer.MakePtr("searchAnalyzer"),
+				SearchAnalyzer: new("searchAnalyzer"),
 				StoredSource:   nil,
 			},
 			ID:     nil,
@@ -433,64 +432,64 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 						}),
 						Mappings: &akov2.Mappings{
 							Dynamic: jsonMustEncode(true),
-							Fields:  jsonMustEncodeMap(map[string]interface{}{"field": "value"}),
+							Fields:  jsonMustEncodeMap(map[string]any{"field": "value"}),
 						},
 						SearchConfigurationRef: common.ResourceRefNamespaced{},
 					},
 					VectorSearch: &akov2.VectorSearch{},
 				},
 				AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer: new("lucene.standard"),
 					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
 						{
 							Name:         "name",
-							TokenFilters: jsonMustEncode([]map[string]interface{}{{"token": "filter"}}),
-							CharFilters:  jsonMustEncode([]map[string]interface{}{{"char": "filter"}}),
+							TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}}),
+							CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}}),
 							Tokenizer: akov2.Tokenizer{
-								MaxGram:        pointer.MakePtr(20),
-								MinGram:        pointer.MakePtr(10),
-								Type:           pointer.MakePtr("standard"),
-								Group:          pointer.MakePtr(10),
-								Pattern:        pointer.MakePtr("testRegex"),
-								MaxTokenLength: pointer.MakePtr(255),
+								MaxGram:        new(20),
+								MinGram:        new(10),
+								Type:           new("standard"),
+								Group:          new(10),
+								Pattern:        new("testRegex"),
+								MaxTokenLength: new(255),
 							},
 						},
 					}),
-					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
-					StoredSource:   jsonMustEncodeMap(map[string]interface{}{"include": "test"}),
+					SearchAnalyzer: new("search-analyzer"),
+					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 				},
 			},
 			want: &admin.SearchIndexCreateRequest{
 				CollectionName: "collection",
 				Database:       "db",
 				Name:           "name",
-				Type:           pointer.MakePtr("search"),
+				Type:           new("search"),
 				Definition: &admin.BaseSearchIndexCreateRequestDefinition{
-					Analyzer: pointer.MakePtr("lucene.standard"),
+					Analyzer: new("lucene.standard"),
 					Analyzers: &([]admin.AtlasSearchAnalyzer{
 						{
-							CharFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+							CharFilters: jsonMustDecode(jsonMustEncode([]map[string]any{
 								{"char": "filter"},
 							})),
 							Name: "name",
-							TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]interface{}{
+							TokenFilters: jsonMustDecode(jsonMustEncode([]map[string]any{
 								{"token": "filter"},
 							})),
 							Tokenizer: admin.ApiAtlasFTSAnalyzersTokenizer{
-								MaxGram:        pointer.MakePtr(20),
-								MinGram:        pointer.MakePtr(10),
-								Type:           pointer.MakePtr("standard"),
-								Group:          pointer.MakePtr(10),
-								Pattern:        pointer.MakePtr("testRegex"),
-								MaxTokenLength: pointer.MakePtr(255),
+								MaxGram:        new(20),
+								MinGram:        new(10),
+								Type:           new("standard"),
+								Group:          new(10),
+								Pattern:        new("testRegex"),
+								MaxTokenLength: new(255),
 							},
 						},
 					}),
 					Mappings: &admin.SearchMappings{
 						Dynamic: true,
-						Fields:  &map[string]interface{}{"field": "value"},
+						Fields:  &map[string]any{"field": "value"},
 					},
-					SearchAnalyzer: pointer.MakePtr("search-analyzer"),
+					SearchAnalyzer: new("search-analyzer"),
 					Synonyms: &([]admin.SearchSynonymMappingDefinition{
 						{
 							Analyzer: "analyzer",
@@ -501,7 +500,7 @@ func TestSearchIndex_ToAtlas(t *testing.T) {
 						},
 					}),
 					Fields:       nil,
-					StoredSource: map[string]interface{}{"include": "test"},
+					StoredSource: map[string]any{"include": "test"},
 				},
 			},
 			wantErr: false,

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 
+
 kind: Config
 apiVersion: atlas2crd.mongodb.com/v1alpha1
 
@@ -24,7 +25,7 @@ apiVersion: atlas2crd.mongodb.com/v1alpha1
       type:
         kind: Group
         resource: groups
-        group: atlas.generated.mongodb.com
+        group: atlas.generated.experimental.mongodb.com
         version: v1
       properties:
         - $.status.v20250312.id
@@ -53,13 +54,14 @@ spec:
 
   openapi:
     - name: v20250312
-      package: go.mongodb.org/atlas-sdk/v20250312013/admin
+      package: go.mongodb.org/atlas-sdk/v20250312018/admin
+      path: ../openapi/atlas-api-transformed.yaml
 
   crd:
     - gvk:
         version: v1
         kind: Group
-        group: atlas.generated.mongodb.com
+        group: atlas.generated.experimental.mongodb.com
       categories:
         - atlas
       shortNames:
@@ -86,7 +88,7 @@ spec:
     - gvk:
         version: v1
         kind: Cluster
-        group: atlas.generated.mongodb.com
+        group: atlas.generated.experimental.mongodb.com
       categories:
         - atlas
       shortNames:
@@ -104,6 +106,7 @@ spec:
             filters:
               skipProperties:
                 - $.Use-Effective-Instance-Fields
+                - $.Use-Effective-Fields-Replication-Specs
           entry:
             schema: 'ClusterDescription20240805'
             filters:
@@ -117,6 +120,7 @@ spec:
                 - $.featureCompatibilityVersion
                 - $.featureCompatibilityVersionExpirationDate
                 - $.internalClusterRole
+                - $.effectiveReplicationSpecs
                 - $.replicationSpecs[*].id
                 - $.replicationSpecs[*].regionConfigs[*].effectiveAnalyticsSpecs
                 - $.replicationSpecs[*].regionConfigs[*].effectiveElectableSpecs
@@ -139,17 +143,7 @@ spec:
                 - $.name
                 - $.paused
                 - $.pitEnabled
-                - $.replicationSpecs[*].numShards
-                - $.replicationSpecs[*].zoneName
-                - $.replicationSpecs[*].regionConfigs[*].analyticsAutoScaling
-                - $.replicationSpecs[*].regionConfigs[*].analyticsSpecs
-                - $.replicationSpecs[*].regionConfigs[*].autoScaling
-                - $.replicationSpecs[*].regionConfigs[*].backingProviderName
-                - $.replicationSpecs[*].regionConfigs[*].electableSpecs
-                - $.replicationSpecs[*].regionConfigs[*].priority
-                - $.replicationSpecs[*].regionConfigs[*].providerName
-                - $.replicationSpecs[*].regionConfigs[*].readOnlySpecs
-                - $.replicationSpecs[*].regionConfigs[*].regionName
+                - $.replicationSpecs
                 - $.rootCertType
                 - $.tags
                 - $.terminationProtectionEnabled
@@ -159,7 +153,7 @@ spec:
     - gvk:
         version: v1
         kind: FlexCluster
-        group: atlas.generated.mongodb.com
+        group: atlas.generated.experimental.mongodb.com
       categories:
         - atlas
       shortNames:
@@ -192,7 +186,7 @@ spec:
     - gvk:
         version: v1
         kind: DatabaseUser
-        group: atlas.generated.mongodb.com
+        group: atlas.generated.experimental.mongodb.com
       categories:
         - atlas
       shortNames:

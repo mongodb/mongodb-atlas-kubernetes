@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -39,8 +41,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/featureflags"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
+	generatedexpv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
 
 type managerMock struct {
@@ -84,6 +89,10 @@ func (m *managerMock) GetClient() client.Client {
 
 func (m *managerMock) GetFieldIndexer() client.FieldIndexer {
 	return &informertest.FakeInformers{}
+}
+
+func (m *managerMock) GetRESTMapper() meta.RESTMapper {
+	return testrestmapper.TestOnlyStaticRESTMapper(m.scheme)
 }
 
 func (m *managerMock) New(_ *rest.Config, options manager.Options) (manager.Manager, error) {
@@ -163,7 +172,10 @@ func TestBuildManager(t *testing.T) {
 			akoScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(akoScheme))
 			require.NoError(t, corev1.AddToScheme(akoScheme))
-
+			require.NoError(t, generatedv1.AddToScheme(akoScheme))
+			if version.IsExperimental() {
+				require.NoError(t, generatedexpv1.AddToScheme(akoScheme))
+			}
 			mgrMock := &managerMock{}
 			builder := NewBuilder(mgrMock, akoScheme, 5*time.Minute)
 			tt.configure(builder)

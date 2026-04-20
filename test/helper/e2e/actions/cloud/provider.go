@@ -313,7 +313,7 @@ func (a *ProviderAction) ValidatePrivateEndpointStatus(ctx context.Context, prov
 			return pe.State == "available"
 		case provider.ProviderGCP:
 			res := true
-			for i := 0; i < gcpNumAttachments; i++ {
+			for i := range gcpNumAttachments {
 				rule, err := a.gcpProvider.GetForwardingRule(ctx, endpoint, region, i)
 				g.Expect(err).To(BeNil())
 
@@ -455,7 +455,7 @@ func generateVPCWithSubnets() (string, []string, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	ip[2] = byte(r.Int64())
+	ip[2] = byte(r.Int64() & 0xFF)
 
 	vpcCIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask)
 	subnet1CIDR := fmt.Sprintf("%s/%d", ip.String(), privateRange.subnetMask+1)

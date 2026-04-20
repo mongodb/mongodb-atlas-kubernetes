@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -29,7 +29,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func (r *AtlasStreamsInstanceReconciler) create(
@@ -43,10 +42,10 @@ func (r *AtlasStreamsInstanceReconciler) create(
 			CloudProvider: streamInstance.Spec.Config.Provider,
 			Region:        streamInstance.Spec.Config.Region,
 		},
-		GroupId: pointer.MakePtr(project.ID()),
+		GroupId: new(project.ID()),
 	}
 
-	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 		CreateStreamWorkspace(ctx.Context, project.ID(), &streamTenant).
 		Execute()
 
@@ -63,7 +62,7 @@ func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *
 		Region:        &streamInstance.Spec.Config.Region,
 	}
 
-	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 		UpdateStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name, &updateRequest).
 		Execute()
 
@@ -90,7 +89,7 @@ func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *
 }
 
 func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
-	_, err := ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+	_, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 		DeleteStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name).
 		Execute()
 
@@ -114,7 +113,7 @@ func createConnections(
 			return err
 		}
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 			CreateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, connection).
 			Execute()
 
@@ -149,7 +148,7 @@ func updateConnections(
 			return err
 		}
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 			UpdateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, akoStreamConnection.Spec.Name, connection).
 			Execute()
 
@@ -178,7 +177,7 @@ func deleteConnections(
 	atlasStreamConnections []*admin.StreamsConnection,
 ) error {
 	for _, atlasStreamConnection := range atlasStreamConnections {
-		_, err := ctx.SdkClientSet.SdkClient20250312013.StreamsApi.
+		_, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
 			DeleteStreamConnection(ctx.Context, project.ID(), streamInstance.Spec.Name, atlasStreamConnection.GetName()).
 			Execute()
 

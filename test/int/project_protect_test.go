@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312018/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -30,11 +30,10 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/resources"
 )
 
-var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enabled"), func() {
+var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-enabled"), func() {
 	var testNamespace *corev1.Namespace
 	var stopManager context.CancelFunc
 	var connectionSecret corev1.Secret
@@ -93,7 +92,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "protection-enable
 				atlasProject := admin.Group{
 					OrgId:                     orgID,
 					Name:                      projectName,
-					WithDefaultAlertsSettings: pointer.MakePtr(true),
+					WithDefaultAlertsSettings: new(true),
 				}
 				_, _, err := atlasClient.ProjectsApi.CreateGroup(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())

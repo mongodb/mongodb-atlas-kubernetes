@@ -19,7 +19,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
@@ -44,12 +43,12 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 								AnalyticsSpecs: &akov2.Specs{},
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize: "M2",
-									NodeCount:    pointer.MakePtr(3),
+									NodeCount:    new(3),
 								},
 								ReadOnlySpecs:       &akov2.Specs{},
 								AutoScaling:         &akov2.AdvancedAutoScalingSpec{},
 								BackingProviderName: "AWS",
-								Priority:            pointer.MakePtr(7),
+								Priority:            new(7),
 								ProviderName:        "TENANT",
 								RegionName:          "US_EAST_1",
 							},

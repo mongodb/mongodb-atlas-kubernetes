@@ -13,7 +13,7 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
+        uses: jetify-com/devbox-install-action@v0.15.0
         with:
           enable-cache: 'true'
 
@@ -21,7 +21,7 @@ jobs:
         run: devbox run -- 'GO_TEST_FLAGS="-coverprofile=coverage.out" make unit-test'
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           name: unit-tests
           flags: unit
@@ -38,9 +38,9 @@ jobs:
           ref: ${{github.event.pull_request.head.sha}}
 
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.14.0
+        uses: jetify-com/devbox-install-action@v0.15.0
         with:
           enable-cache: 'true'
 
       - name: Run all linters
-        run: devbox run -- 'make -j3 all-lints'
+        run: devbox run -- 'make all-lints'

@@ -57,7 +57,7 @@ func ensureCredentials() error {
 	if credentials == "" {
 		return errors.New("GOOGLE_APPLICATION_CREDENTIALS and GCP_SA_CRED are unset, cant setup Google credentials")
 	}
-	if err := os.WriteFile(googleSAFilename, ([]byte)(credentials), 0600); err != nil {
+	if err := os.WriteFile(googleSAFilename, ([]byte)(credentials), 0600); err != nil { //#nosec G703
 		return fmt.Errorf("failed to save credentials contents GCP_SA_CRED to %s: %w",
 			googleSAFilename, err)
 	}

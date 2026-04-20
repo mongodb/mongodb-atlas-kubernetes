@@ -5,46 +5,57 @@ updates:
     schedule:
       interval: weekly
       day: tuesday
-    reviewers:
-      - "igor-karpukhin"
-      - "helderjs" 
-      - "josvazg"
-      - "roothorp"
-      - "s-urbaniak"
+    labels:
+      - dependencies
+      - go
     groups:
-      kubernetes:
+      go-deps:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "k8s.io*"
+          - "sigs.k8s.io/controller-runtime"
+      kubernetes-deps:
         patterns:
           - "k8s.io*"
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: tuesday
-    reviewers:
-      - "igor-karpukhin"
-      - "helderjs" 
-      - "josvazg"
-      - "roothorp"
-      - "s-urbaniak"
+    labels:
+      - dependencies
+      - github_actions
+    groups:
+      github-actions-deps:
+        patterns:
+          - "*"
+
   - package-ecosystem: gomod
     directory: "/tools/clean"
     schedule:
       interval: weekly
       day: tuesday
-    reviewers:
-      - "igor-karpukhin"
-      - "helderjs" 
-      - "josvazg"
-      - "roothorp"
-      - "s-urbaniak"
+    labels:
+      - dependencies
+      - tools_clean
+      - go
+    groups:
+      tools-clean-deps:
+        patterns:
+          - "*"
+
   - package-ecosystem: gomod
     directory: "/tools/makejwt"
     schedule:
       interval: weekly
       day: tuesday
-    reviewers:
-      - "igor-karpukhin"
-      - "helderjs" 
-      - "josvazg"
-      - "roothorp"
-      - "s-urbaniak"
+    labels:
+      - dependencies
+      - tools_makejwt
+      - go
+    groups:
+      tools-makejwt-deps:
+        patterns:
+          - "*"

@@ -79,7 +79,7 @@ func (g *Generator) Generate(opts *registry.Options) error {
 		return fmt.Errorf("failed to create controller directory: %w", err)
 	}
 
-	if err := generateControllerFile(controllerDir, resourceName, opts.TypesPath, parsedConfig.Mappings); err != nil {
+	if err := generateControllerFile(controllerDir, resourceName, opts.TypesPath, parsedConfig); err != nil {
 		return fmt.Errorf("failed to generate controller file: %w", err)
 	}
 
