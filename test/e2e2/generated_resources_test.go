@@ -102,16 +102,16 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 		It("Should create connection secrets for DatabaseUser for both Cluster and FlexCluster",
 			Label("focus-generated-resources-all"),
 			func() {
-				groupName := fmt.Sprintf("test-group-%s", rand.String(6))
+				groupName := fmt.Sprintf("test-group-%s", rand.String(8))
 				groupParams := testparams.New(orgID, control.MustEnvVar("OPERATOR_NAMESPACE"), DefaultGlobalCredentials).
 					WithGroupName(groupName).
 					WithNamespace(testNamespace.Name)
 
-				clusterName := fmt.Sprintf("cluster-%s", rand.String(6))
-				flexClusterName := fmt.Sprintf("flex-%s", rand.String(6))
-				username := fmt.Sprintf("testuser-%s", rand.String(6))
-				passwordSecretName := fmt.Sprintf("dbuser-pass-%s", rand.String(6))
-				ipalEntryName := fmt.Sprintf("ipal-%s", rand.String(6))
+				clusterName := fmt.Sprintf("cluster-%s", rand.String(8))
+				flexClusterName := fmt.Sprintf("flex-%s", rand.String(8))
+				username := fmt.Sprintf("testuser-%s", rand.String(8))
+				passwordSecretName := fmt.Sprintf("dbuser-pass-%s", rand.String(8))
+				ipalEntryName := fmt.Sprintf("ipal-%s", rand.String(8))
 
 				const ipalCIDR = "203.0.113.128/25"
 
