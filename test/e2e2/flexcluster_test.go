@@ -119,7 +119,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				Eventually(func(g Gomega) error {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+				}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
 			}
 		})
 		By("Clean up shared group namespace", func() {
@@ -144,6 +144,21 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 	_ = AfterEach(func() {
 		if kubeClient == nil {
 			return
+		}
+		// Explicitly delete remaining FlexClusters before removing the namespace.
+		// The namespace deletion timeout is short; if a FlexCluster finalizer is still
+		// waiting on Atlas (cluster deletion can take several minutes), the namespace
+		// hangs and AfterAll then finds the Atlas group still occupied → 409 on group DELETE.
+		flexList := &apiv1.FlexClusterList{}
+		if err := kubeClient.List(ctx, flexList, client.InNamespace(testNamespace.Name)); err == nil {
+			for i := range flexList.Items {
+				_ = kubeClient.Delete(ctx, &flexList.Items[i])
+			}
+			Eventually(func(g Gomega) {
+				remaining := &apiv1.FlexClusterList{}
+				g.Expect(kubeClient.List(ctx, remaining, client.InNamespace(testNamespace.Name))).To(Succeed())
+				g.Expect(remaining.Items).To(BeEmpty())
+			}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		}
 		Expect(
 			kubeClient.Delete(ctx, testNamespace),
