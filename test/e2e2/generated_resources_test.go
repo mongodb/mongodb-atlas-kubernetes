@@ -129,16 +129,44 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 					testGroup = objs[0].(*generatedv1.Group)
 					applyTestParamsToGroup(testGroup, groupParams)
 					Expect(kubeClient.Create(ctx, testGroup)).To(Succeed())
+					DeferCleanup(func() {
+						if err := kubeClient.Delete(ctx, testGroup); err != nil && !apierrors.IsNotFound(err) {
+							GinkgoWriter.Printf("Warning: failed to delete Group: %v\n", err)
+							return
+						}
+						Eventually(func(g Gomega) {
+							err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
+							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+						}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					})
 				})
 
 				By("Create Cluster (M0) referencing Group", func() {
 					testCluster = newSharedCluster(clusterName, testNamespace.Name, testGroup.GetName())
 					Expect(kubeClient.Create(ctx, testCluster)).To(Succeed())
+					DeferCleanup(func() {
+						if err := kubeClient.Delete(ctx, testCluster); err != nil && !apierrors.IsNotFound(err) {
+							GinkgoWriter.Printf("Warning: failed to delete Cluster: %v\n", err)
+							return
+						}
+						Eventually(func(g Gomega) {
+							g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster)).To(Succeed())
+						}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+					})
 				})
 
 				By("Create FlexCluster referencing Group", func() {
 					testFlexCluster = newSharedFlexCluster(flexClusterName, testNamespace.Name, testGroup.GetName())
 					Expect(kubeClient.Create(ctx, testFlexCluster)).To(Succeed())
+					DeferCleanup(func() {
+						if err := kubeClient.Delete(ctx, testFlexCluster); err != nil && !apierrors.IsNotFound(err) {
+							GinkgoWriter.Printf("Warning: failed to delete FlexCluster: %v\n", err)
+							return
+						}
+						Eventually(func(g Gomega) {
+							g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testFlexCluster)).To(Succeed())
+						}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+					})
 				})
 
 				By("Create IPAccessListEntry referencing Group", func() {
@@ -158,6 +186,16 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 						},
 					}
 					Expect(kubeClient.Create(ctx, testIAL)).To(Succeed())
+					DeferCleanup(func() {
+						if err := kubeClient.Delete(ctx, testIAL); err != nil && !apierrors.IsNotFound(err) {
+							GinkgoWriter.Printf("Warning: failed to delete IPAccessListEntry: %v\n", err)
+							return
+						}
+						Eventually(func(g Gomega) {
+							err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testIAL), testIAL)
+							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+						}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					})
 				})
 
 				By("Create DatabaseUser referencing Group", func() {
@@ -168,6 +206,16 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 					testDBUser = objs[0].(*generatedv1.DatabaseUser)
 					applyTestParamsToDBUser(testDBUser, testNamespace.Name, username, testGroup.GetName(), passwordSecretName)
 					Expect(kubeClient.Create(ctx, testDBUser)).To(Succeed())
+					DeferCleanup(func() {
+						if err := kubeClient.Delete(ctx, testDBUser); err != nil && !apierrors.IsNotFound(err) {
+							GinkgoWriter.Printf("Warning: failed to delete DatabaseUser: %v\n", err)
+							return
+						}
+						Eventually(func(g Gomega) {
+							err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testDBUser), testDBUser)
+							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+						}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					})
 				})
 
 				By("Wait for Group to be Ready", func() {
@@ -240,43 +288,6 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 					verifyConnectionSecret(flexClusterName, "flexcluster")
 				})
 
-				By("Delete DatabaseUser", func() {
-					Expect(kubeClient.Delete(ctx, testDBUser)).To(Succeed())
-					Eventually(func(g Gomega) {
-						err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testDBUser), testDBUser)
-						g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
-				})
-
-				By("Delete IPAccessListEntry", func() {
-					Expect(kubeClient.Delete(ctx, testIAL)).To(Succeed())
-					Eventually(func(g Gomega) {
-						err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testIAL), testIAL)
-						g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-					}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
-				})
-
-				By("Delete Cluster", func() {
-					Expect(kubeClient.Delete(ctx, testCluster)).To(Succeed())
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
-				})
-
-				By("Delete FlexCluster", func() {
-					Expect(kubeClient.Delete(ctx, testFlexCluster)).To(Succeed())
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testFlexCluster)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
-				})
-
-				By("Delete Group", func() {
-					Expect(kubeClient.Delete(ctx, testGroup)).To(Succeed())
-					Eventually(func(g Gomega) {
-						err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
-						g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-					}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
-				})
 			},
 		)
 	})
