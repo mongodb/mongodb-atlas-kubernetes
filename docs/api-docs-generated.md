@@ -4167,7 +4167,7 @@ This field sets restrictions on available regions in the project.
         <td><b>withDefaultAlertsSettings</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether to create the project with default alert settings. This setting cannot be updated after project creation.<br/>
+          Flag that indicates whether to create the project with default alert settings.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
