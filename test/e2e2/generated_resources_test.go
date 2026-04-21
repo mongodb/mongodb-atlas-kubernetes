@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package e2e2_test
 
 import (
@@ -123,7 +124,7 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 					testIAL         *generatedv1.IPAccessListEntry
 				)
 
-				By("Create Group", func() {
+				By("Create Group and wait for it to be Ready", func() {
 					objs := samples.MustLoadSampleObjects("atlas_generated_v1_group.yaml")
 					Expect(len(objs)).To(Equal(1))
 					testGroup = objs[0].(*generatedv1.Group)
@@ -139,9 +140,14 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 						}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					})
+					Eventually(func(g Gomega) {
+						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
+					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					Expect(testGroup.Status.V20250312).NotTo(BeNil())
+					Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
 				})
 
-				By("Create Cluster (M0) referencing Group", func() {
+				By("Create Cluster (M0) and wait for it to be Ready", func() {
 					testCluster = newSharedCluster(clusterName, testNamespace.Name, testGroup.GetName())
 					Expect(kubeClient.Create(ctx, testCluster)).To(Succeed())
 					DeferCleanup(func() {
@@ -153,9 +159,14 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testCluster)).To(Succeed())
 						}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 					})
+					Eventually(func(g Gomega) {
+						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster)).To(Succeed())
+					}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+					Expect(testCluster.Status.V20250312).NotTo(BeNil())
+					Expect(testCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
 				})
 
-				By("Create FlexCluster referencing Group", func() {
+				By("Create FlexCluster and wait for it to be Ready", func() {
 					testFlexCluster = newSharedFlexCluster(flexClusterName, testNamespace.Name, testGroup.GetName())
 					Expect(kubeClient.Create(ctx, testFlexCluster)).To(Succeed())
 					DeferCleanup(func() {
@@ -167,9 +178,14 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, testFlexCluster)).To(Succeed())
 						}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 					})
+					Eventually(func(g Gomega) {
+						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testFlexCluster)).To(Succeed())
+					}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
+					Expect(testFlexCluster.Status.V20250312).NotTo(BeNil())
+					Expect(testFlexCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
 				})
 
-				By("Create IPAccessListEntry referencing Group", func() {
+				By("Create IPAccessListEntry and wait for it to be Ready", func() {
 					testIAL = &generatedv1.IPAccessListEntry{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      ipalEntryName,
@@ -196,11 +212,15 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 						}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					})
+					Eventually(func(g Gomega) {
+						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testIAL)).To(Succeed())
+					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+					Expect(testIAL.Status.V20250312).NotTo(BeNil())
+					Expect(testIAL.Status.V20250312.CidrBlock).To(Equal(pointer.MakePtr(ipalCIDR)))
 				})
 
-				By("Create DatabaseUser referencing Group", func() {
+				By("Create DatabaseUser and wait for it to be Ready", func() {
 					Expect(kubeClient.Create(ctx, newPasswordSecret(testNamespace.Name, passwordSecretName))).To(Succeed())
-
 					objs := samples.MustLoadSampleObjects("atlas_generated_v1_databaseuser_with_groupref.yaml")
 					Expect(len(objs)).To(Equal(1))
 					testDBUser = objs[0].(*generatedv1.DatabaseUser)
@@ -216,41 +236,6 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 						}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					})
-				})
-
-				By("Wait for Group to be Ready", func() {
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
-					Expect(testGroup.Status.V20250312).NotTo(BeNil())
-					Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
-				})
-
-				By("Wait for Cluster to be Ready", func() {
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testCluster)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
-					Expect(testCluster.Status.V20250312).NotTo(BeNil())
-					Expect(testCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
-				})
-
-				By("Wait for FlexCluster to be Ready", func() {
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testFlexCluster)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(clusterCreateTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
-					Expect(testFlexCluster.Status.V20250312).NotTo(BeNil())
-					Expect(testFlexCluster.Status.V20250312.ConnectionStrings).NotTo(BeNil())
-				})
-
-				By("Wait for IPAccessListEntry to be Ready", func() {
-					Eventually(func(g Gomega) {
-						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testIAL)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
-					Expect(testIAL.Status.V20250312).NotTo(BeNil())
-					Expect(testIAL.Status.V20250312.CidrBlock).To(Equal(pointer.MakePtr(ipalCIDR)))
-				})
-
-				By("Wait for DatabaseUser to be Ready", func() {
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testDBUser)).To(Succeed())
 					}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
