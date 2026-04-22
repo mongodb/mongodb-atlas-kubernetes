@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mongodb-forks/digest"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v20250312018 "go.mongodb.org/atlas-sdk/v20250312018/admin"
@@ -46,20 +45,7 @@ type serviceAccountCreds struct {
 	clientSecret string
 }
 
-func createAtlasServiceAccount(ctx context.Context, orgID string) (*serviceAccountCreds, func()) {
-	publicKey := control.MustEnvVar("ATLAS_PUBLIC_KEY")
-	privateKey := control.MustEnvVar("ATLAS_PRIVATE_KEY")
-
-	transport := digest.NewTransport(publicKey, privateKey)
-	httpClient, err := transport.Client()
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	atlasClient, err := v20250312018.NewClient(
-		v20250312018.UseBaseURL("https://cloud-qa.mongodb.com"),
-		v20250312018.UseHTTPClient(httpClient),
-	)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
+func createAtlasServiceAccount(ctx context.Context, atlasClient *v20250312018.APIClient, orgID string) (*serviceAccountCreds, func()) {
 	saName := utils.RandomName("ako-e2e-sa")
 	sa, _, err := atlasClient.ServiceAccountsApi.
 		CreateOrgServiceAccount(ctx, orgID, &v20250312018.OrgServiceAccountRequest{
@@ -133,12 +119,13 @@ func waitForAccessTokenSecret(ctx context.Context, kubeClient client.Client, sec
 var _ = Describe("Service Account Controller", Ordered, Label("service-account"), func() {
 	ctx := context.Background()
 	var kubeClient client.Client
+	var atlasClient *v20250312018.APIClient
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
 
 	_ = BeforeAll(func() {
-		orgID = control.MustEnvVar("ATLAS_ORG_ID")
+		atlasClient, orgID = newTestAtlasClient()
 		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), false)
 		ako.Start(ctx, GinkgoT())
 
@@ -175,7 +162,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 	It("creates an access token secret for a service account credential secret", func() {
 		By("Creating an Atlas Service Account via the API")
-		saCreds, cleanupSA := createAtlasServiceAccount(ctx, orgID)
+		saCreds, cleanupSA := createAtlasServiceAccount(ctx, atlasClient, orgID)
 		DeferCleanup(cleanupSA)
 
 		credentialSecret := createServiceAccountCredentialSecret(ctx, kubeClient, "sa-test-credentials", testNamespace.Name, saCreds, orgID)
@@ -231,9 +218,9 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 	It("refreshes the access token when credentials are rotated in place", func() {
 		By("Creating two Atlas Service Accounts representing the pre- and post-rotation credentials")
-		firstCreds, cleanupFirst := createAtlasServiceAccount(ctx, orgID)
+		firstCreds, cleanupFirst := createAtlasServiceAccount(ctx, atlasClient, orgID)
 		DeferCleanup(cleanupFirst)
-		secondCreds, cleanupSecond := createAtlasServiceAccount(ctx, orgID)
+		secondCreds, cleanupSecond := createAtlasServiceAccount(ctx, atlasClient, orgID)
 		DeferCleanup(cleanupSecond)
 
 		credentialSecret := createServiceAccountCredentialSecret(ctx, kubeClient, "sa-rotate-credentials", testNamespace.Name, firstCreds, orgID)
@@ -273,7 +260,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 	It("creates an AtlasProject using service account auth", func() {
 		By("Creating an Atlas Service Account via the API")
-		saCreds, cleanupSA := createAtlasServiceAccount(ctx, orgID)
+		saCreds, cleanupSA := createAtlasServiceAccount(ctx, atlasClient, orgID)
 		DeferCleanup(cleanupSA)
 
 		resourcePrefix := utils.RandomName("sa-project")
@@ -333,7 +320,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 	It("creates an AtlasProject and AtlasDeployment (flex) using service account auth", func() {
 		By("Creating an Atlas Service Account via the API")
-		saCreds, cleanupSA := createAtlasServiceAccount(ctx, orgID)
+		saCreds, cleanupSA := createAtlasServiceAccount(ctx, atlasClient, orgID)
 		DeferCleanup(cleanupSA)
 
 		resourcePrefix := utils.RandomName("sa-flex")
