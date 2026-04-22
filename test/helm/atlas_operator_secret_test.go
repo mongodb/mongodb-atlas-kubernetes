@@ -39,7 +39,12 @@ func findCredentialsSecret(t *testing.T, output string) *corev1.Secret {
 		if s.Labels["atlas.mongodb.com/type"] != "credentials" {
 			continue
 		}
-		require.Nilf(t, found, "more than one credentials Secret rendered: %v and %v", found, s)
+		if _, ok := s.Data["orgId"]; !ok {
+			// Skip DB-user password Secrets, which also carry the
+			// credentials type label but have no orgId.
+			continue
+		}
+		require.Nilf(t, found, "more than one Atlas API credentials Secret rendered: %v and %v", found, s)
 		found = s
 	}
 	return found

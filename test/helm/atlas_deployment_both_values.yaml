@@ -8,4 +8,3 @@ atlas:
     clientId: "mdb_sa_id_01234567890abcdef"
     clientSecret: "mdb_sa_sk_01234567890abcdefghijklmnop"
     setCustomName: ""
-users: []

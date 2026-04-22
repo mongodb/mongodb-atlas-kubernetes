@@ -20,10 +20,10 @@ atlas:
     # secret already exist in the same namespace
     existing: ""
 
-    orgId: "<Atlas Organization ID>"
+    orgId: ""
     # API key (legacy)
-    publicApiKey: "<Atlas_api_public_key>"
-    privateApiKey: "<Atlas_api_private_key>"
+    publicApiKey: ""
+    privateApiKey: ""
     # Service Account (recommended)
     clientId: ""
     clientSecret: ""

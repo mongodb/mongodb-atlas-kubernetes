@@ -15,43 +15,13 @@
 package helm
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/decoder"
 )
 
 const atlasAdvancedChartPath = "../../helm-charts/atlas-advanced"
-
-// findAtlasAdvancedAPICredentialsSecret locates the Atlas API-credentials
-// Secret rendered by the atlas-advanced chart. The chart also renders a
-// separate Secret for the database user's password that carries the same
-// `atlas.mongodb.com/type: credentials` label, so we filter by the
-// "-secret"-suffixed name produced by the template.
-func findAtlasAdvancedAPICredentialsSecret(t *testing.T, output string) *corev1.Secret {
-	t.Helper()
-	objects := decoder.DecodeAll(t, strings.NewReader(output))
-	var found *corev1.Secret
-	for _, obj := range objects {
-		s, ok := obj.(*corev1.Secret)
-		if !ok {
-			continue
-		}
-		if s.Labels["atlas.mongodb.com/type"] != "credentials" {
-			continue
-		}
-		if !strings.HasSuffix(s.Name, "-secret") {
-			continue
-		}
-		require.Nilf(t, found, "more than one API-credentials Secret rendered: %v and %v", found, s)
-		found = s
-	}
-	return found
-}
 
 func TestAtlasAdvanced_RendersAPIKeySecret(t *testing.T) {
 	stdout, stderr, err := helmTemplate(t,
@@ -61,7 +31,7 @@ func TestAtlasAdvanced_RendersAPIKeySecret(t *testing.T) {
 	)
 	require.NoError(t, err, "stderr: %s", stderr)
 
-	secret := findAtlasAdvancedAPICredentialsSecret(t, stdout)
+	secret := findCredentialsSecret(t, stdout)
 	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
 
 	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
@@ -79,7 +49,7 @@ func TestAtlasAdvanced_RendersServiceAccountSecret(t *testing.T) {
 	)
 	require.NoError(t, err, "stderr: %s", stderr)
 
-	secret := findAtlasAdvancedAPICredentialsSecret(t, stdout)
+	secret := findCredentialsSecret(t, stdout)
 	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
 
 	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
