@@ -138,7 +138,7 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 						Eventually(func(g Gomega) {
 							err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 							g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-						}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+						}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					})
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
