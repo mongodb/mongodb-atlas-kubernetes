@@ -398,3 +398,55 @@ func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 	require.NoError(t, k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: expectedTokenName, Namespace: "ns"}, tokenSecret))
 }
+
+func TestMapAccessTokenSecretToOwner_EnqueuesOwner(t *testing.T) {
+	controller := true
+	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	tokenSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tokenSecretName,
+			Namespace: "ns",
+			OwnerReferences: []metav1.OwnerReference{
+				{APIVersion: "v1", Kind: "Secret", Name: "sa-creds", Controller: &controller},
+			},
+		},
+	}
+
+	reqs := serviceaccounttoken.MapAccessTokenSecretToOwner(context.Background(), tokenSecret)
+
+	require.Len(t, reqs, 1)
+	assert.Equal(t, types.NamespacedName{Namespace: "ns", Name: "sa-creds"}, reqs[0].NamespacedName)
+}
+
+func TestMapAccessTokenSecretToOwner_NoOwnerReturnsEmpty(t *testing.T) {
+	// A user-owned Connection Secret has no ownerReferences; the map function
+	// must return no requests so we do not duplicate the enqueue the For()
+	// watch already produces.
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+	}
+
+	reqs := serviceaccounttoken.MapAccessTokenSecretToOwner(context.Background(), s)
+
+	assert.Empty(t, reqs)
+}
+
+func TestMapAccessTokenSecretToOwner_NonSecretOwnerIgnored(t *testing.T) {
+	// An unrelated Secret owned by, say, an AtlasProject must not enqueue its
+	// owner via this path — the map is only for Access Token Secrets owned by
+	// Connection Secrets.
+	controller := true
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "some-other-secret",
+			Namespace: "ns",
+			OwnerReferences: []metav1.OwnerReference{
+				{APIVersion: "atlas.mongodb.com/v1", Kind: "AtlasProject", Name: "foo", Controller: &controller},
+			},
+		},
+	}
+
+	reqs := serviceaccounttoken.MapAccessTokenSecretToOwner(context.Background(), s)
+
+	assert.Empty(t, reqs)
+}

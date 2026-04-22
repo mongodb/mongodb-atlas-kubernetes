@@ -258,6 +258,34 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 	})
 
+	It("recreates the access token secret if it is accidentally deleted", func() {
+		By("Creating an Atlas Service Account via the API")
+		saCreds, cleanupSA := createAtlasServiceAccount(ctx, atlasClient, orgID)
+		DeferCleanup(cleanupSA)
+
+		credentialSecret := createServiceAccountCredentialSecret(ctx, kubeClient, "sa-recreate-credentials", testNamespace.Name, saCreds, orgID)
+
+		By("Waiting for the initial access token secret to be minted")
+		initial := waitForAccessTokenSecret(ctx, kubeClient, credentialSecret)
+		initialUID := initial.UID
+		Expect(string(initial.Data["accessToken"])).NotTo(BeEmpty())
+
+		By("Deleting the access token secret out from under the operator")
+		Expect(kubeClient.Delete(ctx, initial)).To(Succeed())
+
+		By("Waiting for the operator to recreate the access token secret via the ownerReference watch")
+		tokenName, _ := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
+		Eventually(func(g Gomega) {
+			recreated := &corev1.Secret{}
+			g.Expect(kubeClient.Get(ctx, client.ObjectKey{Name: tokenName, Namespace: credentialSecret.Namespace}, recreated)).To(Succeed())
+			g.Expect(recreated.UID).NotTo(Equal(initialUID), "recreated secret must have a fresh UID")
+			g.Expect(string(recreated.Data["accessToken"])).NotTo(BeEmpty(), "recreated secret must carry a bearer token")
+			g.Expect(recreated.Labels).To(HaveKeyWithValue(secretservice.TypeLabelKey, secretservice.CredLabelVal))
+			g.Expect(recreated.OwnerReferences).To(HaveLen(1))
+			g.Expect(recreated.OwnerReferences[0].Name).To(Equal(credentialSecret.Name))
+		}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).Should(Succeed())
+	})
+
 	It("creates an AtlasProject using service account auth", func() {
 		By("Creating an Atlas Service Account via the API")
 		saCreds, cleanupSA := createAtlasServiceAccount(ctx, atlasClient, orgID)

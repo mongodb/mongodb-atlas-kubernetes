@@ -24,11 +24,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -80,7 +82,7 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	clientID := string(secret.Data[reconciler.ClientIDKey])
 	clientSecret := string(secret.Data[reconciler.ClientSecretKey])
-	//Skip if not Service Account credentials secret
+	// Skip if not Service Account credentials secret
 	if clientID == "" || clientSecret == "" {
 		return ctrl.Result{}, nil
 	}
@@ -234,9 +236,32 @@ func (r *ServiceAccountTokenReconciler) For() (client.Object, builder.Predicates
 	)
 }
 
+// MapAccessTokenSecretToOwner returns a Reconcile request for the Connection Secret that owns the given Secret,
+// or nil if the Secret has no Secret owner.  This is used by SetupWithManager to re-enqueue the owner when the
+// Access Token Secret is deleted or updated, so that an accidentally deleted token Secret is recreated without
+// waiting for the next scheduled requeue.
+func MapAccessTokenSecretToOwner(_ context.Context, obj client.Object) []reconcile.Request {
+	for _, owner := range obj.GetOwnerReferences() {
+		if owner.APIVersion == "v1" && owner.Kind == "Secret" {
+			return []reconcile.Request{{
+				NamespacedName: types.NamespacedName{
+					Namespace: obj.GetNamespace(),
+					Name:      owner.Name,
+				},
+			}}
+		}
+	}
+	return nil
+}
+
 func (r *ServiceAccountTokenReconciler) SetupWithManager(mgr ctrl.Manager, skipNameValidation bool) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(r.For()).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(MapAccessTokenSecretToOwner),
+			builder.WithPredicates(credentialsLabelPredicate()),
+		).
 		WithOptions(controller.TypedOptions[reconcile.Request]{
 			RateLimiter:             ratelimit.NewRateLimiter[reconcile.Request](),
 			SkipNameValidation:      pointer.MakePtr(skipNameValidation),
