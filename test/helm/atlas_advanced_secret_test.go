@@ -16,56 +16,19 @@ package helm
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const atlasAdvancedChartPath = "../../helm-charts/atlas-advanced"
 
 func TestAtlasAdvanced_RendersAPIKeySecret(t *testing.T) {
-	stdout, stderr, err := helmTemplate(t,
-		"--namespace=default",
-		"--values=atlas_advanced_apikey_values.yaml",
-		atlasAdvancedChartPath,
-	)
-	require.NoError(t, err, "stderr: %s", stderr)
-
-	secret := findCredentialsSecret(t, stdout)
-	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
-
-	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
-	assert.Equal(t, "abcdefgh", string(secret.Data["publicApiKey"]))
-	assert.Equal(t, "12345678-1234-1234-1234-1234567890ab", string(secret.Data["privateApiKey"]))
-	assert.NotContains(t, secret.Data, "clientId")
-	assert.NotContains(t, secret.Data, "clientSecret")
+	assertAPIKeySecret(t, atlasAdvancedChartPath, "atlas_advanced_apikey_values.yaml")
 }
 
 func TestAtlasAdvanced_RendersServiceAccountSecret(t *testing.T) {
-	stdout, stderr, err := helmTemplate(t,
-		"--namespace=default",
-		"--values=atlas_advanced_sa_values.yaml",
-		atlasAdvancedChartPath,
-	)
-	require.NoError(t, err, "stderr: %s", stderr)
-
-	secret := findCredentialsSecret(t, stdout)
-	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
-
-	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
-	assert.Equal(t, "mdb_sa_id_01234567890abcdef", string(secret.Data["clientId"]))
-	assert.Equal(t, "mdb_sa_sk_01234567890abcdefghijklmnop", string(secret.Data["clientSecret"]))
-	assert.NotContains(t, secret.Data, "publicApiKey")
-	assert.NotContains(t, secret.Data, "privateApiKey")
+	assertServiceAccountSecret(t, atlasAdvancedChartPath, "atlas_advanced_sa_values.yaml")
 }
 
 func TestAtlasAdvanced_RejectsBothCredentialTypes(t *testing.T) {
-	_, stderr, err := helmTemplate(t,
-		"--namespace=default",
-		"--values=atlas_advanced_both_values.yaml",
-		atlasAdvancedChartPath,
-	)
-	require.Error(t, err, "expected helm template to fail when both credential types are set")
-	assert.Contains(t, stderr, "set either (publicKey,privateKey) or (clientId,clientSecret), not both",
-		"stderr did not include the mutual-exclusion message; got: %s", stderr)
+	assertRejectsBothCredentialTypes(t, atlasAdvancedChartPath, "atlas_advanced_both_values.yaml",
+		"set either (publicKey,privateKey) or (clientId,clientSecret), not both")
 }

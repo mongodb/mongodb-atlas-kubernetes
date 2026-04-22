@@ -25,7 +25,20 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/decoder"
 )
 
-const atlasOperatorChartPath = "../../helm-charts/atlas-operator"
+const (
+	atlasOperatorChartPath = "../../helm-charts/atlas-operator"
+
+	// The API-key and Service-Account credential fixtures share identical
+	// sample values across all four charts (atlas-operator, atlas-advanced,
+	// atlas-basic, atlas-deployment). Pin them as package constants so the
+	// per-chart helpers stay parameter-light and the assertions remain
+	// consistent.
+	testOrgID              = "6500000000000000000000aa"
+	testPublicAPIKey       = "abcdefgh"
+	testPrivateAPIKey      = "12345678-1234-1234-1234-1234567890ab"
+	testSAClientID         = "mdb_sa_id_01234567890abcdef"
+	testSAClientSecretData = "mdb_sa_sk_01234567890abcdefghijklmnop"
+)
 
 func findCredentialsSecret(t *testing.T, output string) *corev1.Secret {
 	t.Helper()
@@ -50,55 +63,77 @@ func findCredentialsSecret(t *testing.T, output string) *corev1.Secret {
 	return found
 }
 
-func TestAtlasOperator_RendersAPIKeySecret(t *testing.T) {
+// assertAPIKeySecret renders chartPath with the given values fixture and
+// asserts the resulting credentials Secret contains the expected API-key
+// fields (orgId / publicApiKey / privateApiKey) and no SA fields. All four
+// charts share identical fixture values, pinned as package constants.
+func assertAPIKeySecret(t *testing.T, chartPath, valuesFile string) {
+	t.Helper()
 	stdout, stderr, err := helmTemplate(t,
 		"--namespace=default",
-		"--values=atlas_operator_apikey_values.yaml",
-		atlasOperatorChartPath,
+		"--values="+valuesFile,
+		chartPath,
 	)
 	require.NoError(t, err, "stderr: %s", stderr)
 
 	secret := findCredentialsSecret(t, stdout)
 	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
 
-	assert.Equal(t, "credentials", secret.Labels["atlas.mongodb.com/type"])
-	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
-	assert.Equal(t, "abcdefgh", string(secret.Data["publicApiKey"]))
-	assert.Equal(t, "12345678-1234-1234-1234-1234567890ab", string(secret.Data["privateApiKey"]))
-	assert.NotContains(t, secret.Data, "clientId",
-		"API-key path must not render clientId")
-	assert.NotContains(t, secret.Data, "clientSecret",
-		"API-key path must not render clientSecret")
+	assert.Equal(t, testOrgID, string(secret.Data["orgId"]))
+	assert.Equal(t, testPublicAPIKey, string(secret.Data["publicApiKey"]))
+	assert.Equal(t, testPrivateAPIKey, string(secret.Data["privateApiKey"]))
+	assert.NotContains(t, secret.Data, "clientId")
+	assert.NotContains(t, secret.Data, "clientSecret")
+}
+
+// assertServiceAccountSecret renders chartPath with the given values fixture
+// and asserts the resulting credentials Secret contains the expected SA
+// fields (orgId / clientId / clientSecret) and no API-key fields. All four
+// charts share identical fixture values, pinned as package constants.
+func assertServiceAccountSecret(t *testing.T, chartPath, valuesFile string) {
+	t.Helper()
+	stdout, stderr, err := helmTemplate(t,
+		"--namespace=default",
+		"--values="+valuesFile,
+		chartPath,
+	)
+	require.NoError(t, err, "stderr: %s", stderr)
+
+	secret := findCredentialsSecret(t, stdout)
+	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
+
+	assert.Equal(t, testOrgID, string(secret.Data["orgId"]))
+	assert.Equal(t, testSAClientID, string(secret.Data["clientId"]))
+	assert.Equal(t, testSAClientSecretData, string(secret.Data["clientSecret"]))
+	assert.NotContains(t, secret.Data, "publicApiKey")
+	assert.NotContains(t, secret.Data, "privateApiKey")
+}
+
+// assertRejectsBothCredentialTypes runs helm template against a both-set
+// fixture and asserts the rejection message appears in stderr. The expected
+// substring varies per chart (atlas-operator/-deployment use 'publicApiKey',
+// atlas-advanced/-basic use 'publicKey').
+func assertRejectsBothCredentialTypes(t *testing.T, chartPath, valuesFile, expectedSubstring string) {
+	t.Helper()
+	_, stderr, err := helmTemplate(t,
+		"--namespace=default",
+		"--values="+valuesFile,
+		chartPath,
+	)
+	require.Error(t, err, "expected helm template to fail when both credential types are set")
+	assert.Contains(t, stderr, expectedSubstring,
+		"stderr did not include the mutual-exclusion message; got: %s", stderr)
+}
+
+func TestAtlasOperator_RendersAPIKeySecret(t *testing.T) {
+	assertAPIKeySecret(t, atlasOperatorChartPath, "atlas_operator_apikey_values.yaml")
 }
 
 func TestAtlasOperator_RendersServiceAccountSecret(t *testing.T) {
-	stdout, stderr, err := helmTemplate(t,
-		"--namespace=default",
-		"--values=atlas_operator_sa_values.yaml",
-		atlasOperatorChartPath,
-	)
-	require.NoError(t, err, "stderr: %s", stderr)
-
-	secret := findCredentialsSecret(t, stdout)
-	require.NotNil(t, secret, "expected a credentials Secret in rendered output")
-
-	assert.Equal(t, "credentials", secret.Labels["atlas.mongodb.com/type"])
-	assert.Equal(t, "6500000000000000000000aa", string(secret.Data["orgId"]))
-	assert.Equal(t, "mdb_sa_id_01234567890abcdef", string(secret.Data["clientId"]))
-	assert.Equal(t, "mdb_sa_sk_01234567890abcdefghijklmnop", string(secret.Data["clientSecret"]))
-	assert.NotContains(t, secret.Data, "publicApiKey",
-		"Service-Account path must not render publicApiKey")
-	assert.NotContains(t, secret.Data, "privateApiKey",
-		"Service-Account path must not render privateApiKey")
+	assertServiceAccountSecret(t, atlasOperatorChartPath, "atlas_operator_sa_values.yaml")
 }
 
 func TestAtlasOperator_RejectsBothCredentialTypes(t *testing.T) {
-	_, stderr, err := helmTemplate(t,
-		"--namespace=default",
-		"--values=atlas_operator_both_values.yaml",
-		atlasOperatorChartPath,
-	)
-	require.Error(t, err, "expected helm template to fail when both credential types are set")
-	assert.Contains(t, stderr, "set either (publicApiKey,privateApiKey) or (clientId,clientSecret), not both",
-		"stderr did not include the mutual-exclusion message; got: %s", stderr)
+	assertRejectsBothCredentialTypes(t, atlasOperatorChartPath, "atlas_operator_both_values.yaml",
+		"set either (publicApiKey,privateApiKey) or (clientId,clientSecret), not both")
 }

@@ -26,7 +26,7 @@ import (
 func helmTemplate(t *testing.T, args ...string) (string, string, error) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("helm", append([]string{"template"}, args...)...)
+	cmd := exec.CommandContext(t.Context(), "helm", append([]string{"template"}, args...)...) // #nosec G204 -- test-only invocation; args are static test fixtures
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
