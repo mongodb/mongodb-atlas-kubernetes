@@ -613,8 +613,13 @@ Scenarios (using the `test/e2e2/` framework):
 - `internal/controller/reconciler/credentials_test.go` — **Modified.** Tests for SA credential path, including the stale-hash branch.
 - `internal/controller/registry.go` — **Modified.** Register `ServiceAccountTokenReconciler`.
 - `config/rbac/role.yaml` — **Regenerated** by `make manifests` — adds `create;update;patch` to Secret permissions.
-- `charts/atlas-operator/values.yaml` — **Modified.** Add `atlas.serviceAccount.{orgId,clientId,clientSecret}` values.
-- `charts/atlas-operator/templates/secret.yaml` — **Modified.** Generate Connection Secret from either API key or Service Account values. Add chart-level validation.
+- `helm-charts/atlas-operator/` — **Modified.** Add `globalConnectionSecret.{clientId,clientSecret}` values and `secret.yaml` branching to emit either API-key or Service Account Secret; README documents both install variants.
+- `helm-charts/atlas-advanced/` — **Modified.** Add `secret.{clientId,clientSecret}` values and templates/secret.yaml branching.
+- `helm-charts/atlas-basic/` — **Modified.** Add `secret.{clientId,clientSecret}` values and templates/secret.yaml branching.
+- `helm-charts/atlas-deployment/` — **Modified.** Add `atlas.secret.{clientId,clientSecret}` values and templates/secret.yaml branching; README documents both install variants.
+- `helm-charts/atlas-operator/rbac.yaml` — **Regenerated** by `make helm-crds` — picks up the enriched Secret verbs.
+- `bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml` — **Regenerated** by `make bundle` — CSV reflects the enriched Secret verbs.
+- `test/helm/` — **New.** Unit tests pinning `helm template` output per chart (API-key Secret, SA Secret, mutual-exclusion rejection) plus a ClusterRole Secret-verbs regression test.
 - `test/e2e2/serviceaccount_test.go` — **New.** E2E test scenarios.
 - `docs/dev/td-service-accounts-phase1.md` — **New.** This document.
 
