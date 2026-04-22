@@ -119,14 +119,27 @@ provider.SdkClientSet()
 
 ---
 
+## Shared Package: `accesstoken`
+
+**Package:** `internal/controller/accesstoken/`
+
+A small, dependency-free helper package used by both the `ServiceAccountToken` controller (producer) and `reconciler.GetConnectionConfig` (consumer). It holds the schema of the Access Token Secret — exported constants `AccessTokenKey`, `ExpiryKey`, `CredentialsHashKey` for the data-field names, and the two helpers operating on the shape:
+
+- `DeriveSecretName(namespace, connectionSecretName string) (string, error)` — the deterministic `"atlas-access-token-<name>-<hash>"` derivation.
+- `CredentialsHash(clientID, clientSecret string) (string, error)` — the FNV-1a-64 fingerprint used for rotation detection.
+
+The package imports only `fmt`, `hash/fnv`, and `k8s.io/apimachinery/pkg/util/rand`. The Connection Secret field keys (`ClientIDKey`, `ClientSecretKey`) remain in the `reconciler` package because they describe a different Secret; both packages re-use them through the exported names.
+
+---
+
 ## Component 1: ServiceAccountToken Controller
 
 **Package:** `internal/controller/serviceaccounttoken/`
 
 **Files:**
-- `serviceaccounttoken_controller.go` — main controller
-- `token_provider.go` — Atlas SDK wrapper
-- `serviceaccounttoken_controller_test.go` — unit tests
+- `serviceaccounttoken_controller.go` — main controller. Uses `accesstoken.*` for the Access Token Secret schema and `reconciler.ClientIDKey` / `reconciler.ClientSecretKey` for the Connection Secret fields.
+- `token_provider.go` — Atlas SDK wrapper.
+- `serviceaccounttoken_controller_test.go` — unit tests.
 
 ### Watches
 
@@ -205,7 +218,7 @@ These markers are on the controller struct and will be picked up by `make manife
 
 The PoC branch used `generateName` to create the Access Token Secret and stored the generated name as an annotation (`atlas.mongodb.com/access-token`) on the user-provided Connection Secret. This has a GitOps compatibility problem: ArgoCD and Flux reconcile user-managed Secrets back to their declared state, which would remove the operator-written annotation and break the token lookup.
 
-Instead, the Access Token Secret name is derived deterministically:
+Instead, the Access Token Secret name is derived deterministically in `accesstoken.DeriveSecretName`:
 
 ```
 tokenSecretName = "atlas-access-token-" + connectionSecretName + "-" + rand.SafeEncodeString(fnv64a(namespace + "/" + connectionSecretName))
@@ -217,7 +230,7 @@ This matches the pattern already used in the codebase (see `pkg/controller/state
 
 Kubernetes Secrets can be rotated in place — a user updates the `clientId` / `clientSecret` fields on the Connection Secret while keeping the same resource name. Without an explicit check, the controller would keep using the cached bearer token until the previous token's natural expiry (up to one hour), even though the new credentials could have already invalidated the old ones on Atlas's side.
 
-To detect rotation the controller writes a non-cryptographic FNV-1a-64 fingerprint of `(clientId, clientSecret)` into `data.credentialsHash` on the Access Token Secret. On every reconcile the controller computes the same fingerprint from the current Connection Secret and compares it to the stored value. Any mismatch forces an immediate refresh — new token is fetched, hash is updated. A nul (`\x00`) separator in the hash input disambiguates `("ab", "c")` from `("a", "bc")`.
+To detect rotation the controller writes a non-cryptographic FNV-1a-64 fingerprint of `(clientId, clientSecret)`, computed by `accesstoken.CredentialsHash`, into `data.credentialsHash` on the Access Token Secret. On every reconcile the controller computes the same fingerprint from the current Connection Secret and compares it to the stored value. Any mismatch forces an immediate refresh — new token is fetched, hash is updated. A nul (`\x00`) separator in the hash input disambiguates `("ab", "c")` from `("a", "bc")`.
 
 Content hash is preferred over `ResourceVersion`: the latter changes for any update (new labels, annotations, unrelated data), triggering unnecessary token fetches. A hash of the credential material alone changes exactly when rotation occurs.
 
@@ -246,10 +259,11 @@ After reading the Connection Secret, detect which credential type is present:
 
 1. **API key path** (`publicApiKey` + `privateApiKey`): unchanged. Returns `ConnectionConfig` with `Credentials.APIKeys` populated.
 2. **Service Account path** (`clientId` + `clientSecret`):
-   - Compute `tokenSecretName` using the same deterministic hash as the controller.
+   - Compute `tokenSecretName` using `accesstoken.DeriveSecretName`.
    - Fetch the Access Token Secret from the informer cache.
    - If not found: return a descriptive error. The reconciler will `Terminate` and re-enqueue on `DefaultRetry` (10 seconds). Meanwhile, the `ServiceAccountToken` controller will create the token on its next reconcile. The credential Secret's `ResourceVersion` does not change when the Access Token Secret is created (different object), so the reconciler relies on the retry timer rather than a watch event for the initial token creation.
-   - If found: return `ConnectionConfig` with `Credentials.ServiceAccount.BearerToken` populated.
+   - Compare the current credentials' `accesstoken.CredentialsHash` against the `data.credentialsHash` on the token Secret. On mismatch return `"access token secret <ref> is stale (credentials rotated); waiting for the service-account-token controller to refresh"`; the downstream reconciler retries until the controller refreshes and the hash matches again.
+   - If found and hash matches: return `ConnectionConfig` with `Credentials.ServiceAccount.BearerToken` populated.
 
 ---
 
@@ -515,10 +529,14 @@ New unit tests in the new and modified packages:
 - Correct deterministic Secret name computation.
 - Credential Secret is never mutated by the controller (no annotations written).
 
+**`internal/controller/accesstoken/accesstoken_test.go`**
+- `DeriveSecretName` pins a known input to its expected output (compatibility contract), plus namespace- and name-sensitivity, far-past-limit length bound, and exact-253-character at the truncation boundary.
+- `CredentialsHash` pins a known input to its expected output, distinguishes distinct credential pairs, and disambiguates `("ab","c")` from `("a","bc")` via the nul separator.
+
 **`internal/controller/reconciler/credentials_test.go`**
-- `DeriveAccessTokenSecretName` is deterministic, namespace-sensitive, name-sensitive, and length-bounded (including off-by-one boundary).
 - SA Secret with no Access Token Secret yet → `"access token secret <ref> does not exist yet"`.
 - SA Secret with valid Access Token Secret → returns `ConnectionConfig` with `BearerToken`.
+- SA Secret with stale `data.credentialsHash` → `"is stale (credentials rotated); waiting for the service-account-token controller to refresh"`.
 - `validateConnectionSecret`: orgId-only / partial API keys / partial SA / both pairs present → each returns a specific error.
 - `validateConnectionSecret`: complete API keys or complete SA credentials with orgId → nil.
 
@@ -555,13 +573,15 @@ Scenarios (using the `test/e2e2/` framework):
 
 | File                                                                   | Change                                                                                                                               |
 |------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `internal/controller/serviceaccounttoken/serviceaccounttoken_controller.go`      | **New.** Main `ServiceAccountToken` controller. Watches credential Secrets, manages Access Token Secret lifecycle.                   |
+| `internal/controller/accesstoken/accesstoken.go`                                 | **New.** Shared schema (constants `AccessTokenKey`, `ExpiryKey`, `CredentialsHashKey`) and helpers (`DeriveSecretName`, `CredentialsHash`) for the Access Token Secret. |
+| `internal/controller/accesstoken/accesstoken_test.go`                            | **New.** Pinned-output and behavioural tests for `DeriveSecretName` and `CredentialsHash`.                                           |
+| `internal/controller/serviceaccounttoken/serviceaccounttoken_controller.go`      | **New.** Main `ServiceAccountToken` controller. Watches credential Secrets, manages Access Token Secret lifecycle. Consumes `accesstoken.*` for the Access Token Secret schema and `reconciler.ClientIDKey`/`ClientSecretKey` for the Connection Secret fields. |
 | `internal/controller/serviceaccounttoken/token_provider.go`                      | **New.** Atlas SDK `clientcredentials` wrapper with `TokenURL` override for QA/Gov.                                                  |
 | `internal/controller/serviceaccounttoken/serviceaccounttoken_controller_test.go` | **New.** Unit tests for `ServiceAccountToken` controller.                                                                            |
 | `internal/controller/atlas/provider.go`                                     | **Modified.** Add `ServiceAccountToken` type to `Credentials`. Branch `SdkClientSet` on credential type; use `oauth2.Transport` for bearer auth. |
 | `internal/controller/atlas/provider_test.go`                                | **Modified.** Tests for bearer transport and new credential branching.                                                               |
-| `internal/controller/reconciler/credentials.go`                             | **Modified.** Detect `clientId`/`clientSecret` in `GetConnectionConfig`. Add exported `DeriveAccessTokenSecretName` and `validateConnectionSecret` helpers. |
-| `internal/controller/reconciler/credentials_test.go`                        | **Modified.** Tests for SA credential path.                                                                                          |
+| `internal/controller/reconciler/credentials.go`                             | **Modified.** Detect `clientId`/`clientSecret` in `GetConnectionConfig`. Export `ClientIDKey` / `ClientSecretKey` for cross-package use. Add `validateConnectionSecret` helper and the stale-hash guard in `getServiceAccountAccessToken` (both via `accesstoken.*`). |
+| `internal/controller/reconciler/credentials_test.go`                        | **Modified.** Tests for SA credential path, including the stale-hash branch.                                                         |
 | `internal/controller/registry.go`                                           | **Modified.** Register `ServiceAccountTokenReconciler`.                                                                              |
 | `config/rbac/role.yaml`                                                | **Regenerated** by `make manifests` — adds `create;update;patch` to Secret permissions.                                              |
 | `charts/atlas-operator/values.yaml`                                    | **Modified.** Add `atlas.serviceAccount.{orgId,clientId,clientSecret}` values.                                                       |
