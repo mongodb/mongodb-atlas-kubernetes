@@ -456,46 +456,56 @@ Unchanged by this feature. Each resource reconciler (AtlasProject, AtlasDeployme
 
 ## Installation
 
-### Helm Chart Changes
+### Helm Charts
 
-**File:** `charts/atlas-operator/values.yaml`
+Every operator-adjacent chart that creates a credentials Secret from its
+`values.yaml` now renders either an API-key Secret or a Service Account
+Secret based on which fields are populated:
 
-A new `credentials` section is added under the existing `atlas` block to document the Service Account option. The chart already generates a Secret from these values — the only change is adding `clientId` and `clientSecret` as optional alternatives to `apiKey.publicKey` / `apiKey.privateKey`.
+- `atlas-operator` — `.Values.globalConnectionSecret.clientId` / `.clientSecret`.
+- `atlas-advanced` — `.Values.secret.clientId` / `.clientSecret`.
+- `atlas-basic` — `.Values.secret.clientId` / `.clientSecret`.
+- `atlas-deployment` — `.Values.atlas.secret.clientId` / `.clientSecret`.
 
-```yaml
-atlas:
-  # Option 1 (legacy): Programmatic API Key
-  apiKey:
-    orgId: ""
-    publicKey: ""
-    privateKey: ""
+Each chart keeps its existing API-key values keys unchanged and adds
+`clientId` / `clientSecret` next to them. The chart template emits the
+Secret with data keys `orgId + clientId + clientSecret` when SA fields
+are populated, otherwise `orgId + publicApiKey + privateApiKey`.
+Setting both pairs fails chart rendering with a clear message, matching
+the operator's `validateConnectionSecret` behaviour at runtime.
 
-  # Option 2 (recommended): Service Account
-  serviceAccount:
-    orgId: ""
-    clientId: ""
-    clientSecret: ""
-```
+Each chart's README now documents both install variants with `--set`
+examples.
 
-The chart template generates the Connection Secret from whichever option is populated. The generated Secret carries the `atlas.mongodb.com/type: credentials` label as today.
+### OLM / CSV
 
-Helm chart validation (`_helpers.tpl` or a named template) ensures exactly one of `apiKey` or `serviceAccount` is configured, not both.
+The `ServiceAccountToken` controller's `// +kubebuilder:rbac:...` markers
+grant `create`, `update`, `patch` on Secrets in addition to the existing
+`get`, `list`, `watch`. Running `make manifests && make bundle &&
+make helm-crds` propagates the enriched verbs through:
 
-**Quick-start guide updates:** The default `values.yaml` comment block is updated to explain both options, with a note that Service Account is recommended.
+1. `config/rbac/role.yaml` (and split cluster-scoped / namespaced variants)
+   — via `controller-gen` + `scripts/split_roles_yaml.sh`.
+2. `bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml`
+   — via `operator-sdk generate bundle`.
+3. `helm-charts/atlas-operator/rbac.yaml` — via `yq` in `make helm-crds`.
 
-### OLM / CSV Changes
+The `atlas-operator` chart's `cluster-roles.yaml` and `roles.yaml` already
+`.Files.Lines "rbac.yaml"`, so the enriched verbs flow through to both
+deployment modes (cluster-wide and namespaced) without hand-edits. No
+new env vars, `installModes`, or watch-namespace semantics.
 
-The `ServiceAccountToken` controller requires the following RBAC on Secrets (in addition to what already exists):
+### Testing
 
-```
-get, list, watch, create, update, patch
-```
+Install-time rendering is pinned by unit tests under `test/helm/` that run
+`helm template` against each chart and assert the resulting Secret (or,
+for the mutual-exclusion case, assert rendering fails with the expected
+message). An additional unit test pins the Secret verbs in the rendered
+`atlas-operator` ClusterRole, catching any regen-chain drift.
 
-The existing Secret permissions in the CSV cover `get`, `list`, `watch`. The new `create`, `update`, `patch` verbs are added.
-
-**How these get applied:** The `// +kubebuilder:rbac:...` marker on the controller struct is picked up by `make manifests`, which regenerates `config/rbac/role.yaml`. The updated role is then included in the next `make bundle` run, which regenerates the CSV. No manual CSV edits required.
-
-**OLM-specific note:** The CSV's `installModes` and `WATCH_NAMESPACE` injection are unaffected. No new env vars are introduced.
+Full install gates: `make bundle-validate` (OLM schema), `make
+validate-manifests` (regen drift), `make validate-crds-chart` (chart CRD
+parity with the bundle), `make unit-test` (chart rendering + RBAC).
 
 ---
 
