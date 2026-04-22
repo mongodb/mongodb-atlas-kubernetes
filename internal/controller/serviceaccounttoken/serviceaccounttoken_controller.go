@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/accesstoken"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -39,12 +40,6 @@ import (
 )
 
 const (
-	clientIDKey        = "clientId"
-	clientSecretKey    = "clientSecret"
-	accessTokenKey     = "accessToken"
-	expiryKey          = "expiry"
-	credentialsHashKey = "credentialsHash"
-
 	// refreshFraction picks the re-enqueue point well before expiry: with a 1h
 	// token TTL the controller requeues at ~40 minutes so a freshly refreshed
 	// token is always available to downstream reconcilers before the previous
@@ -83,8 +78,8 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	clientID := string(secret.Data[clientIDKey])
-	clientSecret := string(secret.Data[clientSecretKey])
+	clientID := string(secret.Data[reconciler.ClientIDKey])
+	clientSecret := string(secret.Data[reconciler.ClientSecretKey])
 	//Skip if not Service Account credentials secret
 	if clientID == "" || clientSecret == "" {
 		return ctrl.Result{}, nil
@@ -92,13 +87,13 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	log.Info("Reconciling service account credential secret")
 
-	tokenSecretName, err := reconciler.DeriveAccessTokenSecretName(secret.Namespace, secret.Name)
+	tokenSecretName, err := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to derive access token secret name: %w", err)
 	}
 	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
-	currentHash, err := reconciler.CredentialsHash(clientID, clientSecret)
+	currentHash, err := accesstoken.CredentialsHash(clientID, clientSecret)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -115,12 +110,12 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 	// If the credential Secret has been rotated since this token was issued,
 	// refresh immediately so reconcilers downstream do not keep using a token
 	// minted from revoked credentials.
-	if string(existingTokenSecret.Data[credentialsHashKey]) != currentHash {
+	if string(existingTokenSecret.Data[accesstoken.CredentialsHashKey]) != currentHash {
 		log.Info("Credential secret changed since token was issued; refreshing token")
 		return r.refreshToken(ctx, log, existingTokenSecret, clientID, clientSecret, currentHash)
 	}
 
-	expiryStr := string(existingTokenSecret.Data[expiryKey])
+	expiryStr := string(existingTokenSecret.Data[accesstoken.ExpiryKey])
 	expiry, parseErr := time.Parse(time.RFC3339, expiryStr)
 	if parseErr != nil {
 		log.Warnw("Failed to parse access token expiry; falling through to refresh",
@@ -148,9 +143,9 @@ func (r *ServiceAccountTokenReconciler) refreshToken(
 		return ctrl.Result{}, fmt.Errorf("failed to refresh access token: %w", err)
 	}
 
-	tokenSecret.Data[accessTokenKey] = []byte(token)
-	tokenSecret.Data[expiryKey] = []byte(expiry.Format(time.RFC3339))
-	tokenSecret.Data[credentialsHashKey] = []byte(credsHash)
+	tokenSecret.Data[accesstoken.AccessTokenKey] = []byte(token)
+	tokenSecret.Data[accesstoken.ExpiryKey] = []byte(expiry.Format(time.RFC3339))
+	tokenSecret.Data[accesstoken.CredentialsHashKey] = []byte(credsHash)
 
 	if err := r.Client.Update(ctx, tokenSecret); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update access token secret: %w", err)
@@ -193,9 +188,9 @@ func (r *ServiceAccountTokenReconciler) createToken(
 			},
 		},
 		Data: map[string][]byte{
-			accessTokenKey:     []byte(token),
-			expiryKey:          []byte(expiry.Format(time.RFC3339)),
-			credentialsHashKey: []byte(credsHash),
+			accesstoken.AccessTokenKey:     []byte(token),
+			accesstoken.ExpiryKey:          []byte(expiry.Format(time.RFC3339)),
+			accesstoken.CredentialsHashKey: []byte(credsHash),
 		},
 	}
 

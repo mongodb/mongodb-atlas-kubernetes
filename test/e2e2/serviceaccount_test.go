@@ -32,7 +32,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/accesstoken"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/secretservice"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/k8s"
@@ -117,7 +117,7 @@ func createServiceAccountCredentialSecret(
 }
 
 func waitForAccessTokenSecret(ctx context.Context, kubeClient client.Client, secret *corev1.Secret) *corev1.Secret {
-	expectedName, _ := reconciler.DeriveAccessTokenSecretName(secret.Namespace, secret.Name)
+	expectedName, _ := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenSecret := &corev1.Secret{}
 	EventuallyWithOffset(1, func(g Gomega) bool {
 		err := kubeClient.Get(ctx, client.ObjectKey{
@@ -217,7 +217,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		Expect(kubeClient.Create(ctx, apiKeySecret)).To(Succeed())
 
 		By("Verifying no access token secret is created")
-		expectedName, _ := reconciler.DeriveAccessTokenSecretName(apiKeySecret.Namespace, apiKeySecret.Name)
+		expectedName, _ := accesstoken.DeriveSecretName(apiKeySecret.Namespace, apiKeySecret.Name)
 		Consistently(func(g Gomega) bool {
 			tokenSecret := &corev1.Secret{}
 			err := kubeClient.Get(ctx, client.ObjectKey{
@@ -242,7 +242,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		initialToken := waitForAccessTokenSecret(ctx, kubeClient, credentialSecret)
 		initialAccessToken := string(initialToken.Data["accessToken"])
 		Expect(initialAccessToken).NotTo(BeEmpty())
-		initialHash, err := reconciler.CredentialsHash(firstCreds.clientID, firstCreds.clientSecret)
+		initialHash, err := accesstoken.CredentialsHash(firstCreds.clientID, firstCreds.clientSecret)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(initialToken.Data["credentialsHash"])).To(Equal(initialHash),
 			"initial token secret must record the hash of the first credentials")
@@ -257,10 +257,10 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).Should(Succeed())
 
 		By("Waiting for the access token secret to be refreshed with the second credentials")
-		expectedHash, err := reconciler.CredentialsHash(secondCreds.clientID, secondCreds.clientSecret)
+		expectedHash, err := accesstoken.CredentialsHash(secondCreds.clientID, secondCreds.clientSecret)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(func(g Gomega) {
-			tokenName, _ := reconciler.DeriveAccessTokenSecretName(credentialSecret.Namespace, credentialSecret.Name)
+			tokenName, _ := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
 			refreshed := &corev1.Secret{}
 			g.Expect(kubeClient.Get(ctx, client.ObjectKey{Name: tokenName, Namespace: credentialSecret.Namespace}, refreshed)).To(Succeed())
 			g.Expect(string(refreshed.Data["credentialsHash"])).To(Equal(expectedHash),

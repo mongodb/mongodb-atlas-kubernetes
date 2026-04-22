@@ -16,7 +16,6 @@ package reconciler
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +29,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/accesstoken"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
@@ -305,8 +305,8 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 	})
 
 	t.Run("service account secret with valid token", func(t *testing.T) {
-		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
-		matchingHash, err := CredentialsHash("client-id", "client-secret")
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
 		require.NoError(t, err)
 		tokenSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
@@ -339,8 +339,8 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 	})
 
 	t.Run("service account secret with stale token after credential rotation", func(t *testing.T) {
-		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
-		staleHash, err := CredentialsHash("old-client-id", "old-client-secret")
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		staleHash, err := accesstoken.CredentialsHash("old-client-id", "old-client-secret")
 		require.NoError(t, err)
 		tokenSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
@@ -387,8 +387,8 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 	})
 
 	t.Run("token secret with empty accessToken is rejected", func(t *testing.T) {
-		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
-		matchingHash, err := CredentialsHash("client-id", "client-secret")
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
 		require.NoError(t, err)
 		tokenSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
@@ -507,56 +507,6 @@ func TestValidate(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "both API key and service account credentials")
 	})
-}
-
-func TestDeriveAccessTokenSecretName_Deterministic(t *testing.T) {
-	const ns = "atlas-operator"
-	const name = "my-sa-creds"
-	first, _ := DeriveAccessTokenSecretName(ns, name)
-	for i := 0; i < 20; i++ {
-		second, _ := DeriveAccessTokenSecretName(ns, name)
-		require.Equal(t, first, second,
-			"function must return the same output for the same inputs on every call")
-	}
-	assert.True(t, strings.HasPrefix(first, "atlas-access-token-"))
-	assert.Contains(t, first, name)
-}
-
-func TestDeriveAccessTokenSecretName_NamespaceSensitive(t *testing.T) {
-	a, _ := DeriveAccessTokenSecretName("ns-a", "creds")
-	b, _ := DeriveAccessTokenSecretName("ns-b", "creds")
-	assert.NotEqual(t, a, b, "same name in different namespaces must yield different outputs")
-}
-
-func TestDeriveAccessTokenSecretName_NameSensitive(t *testing.T) {
-	a, _ := DeriveAccessTokenSecretName("ns", "creds-a")
-	b, _ := DeriveAccessTokenSecretName("ns", "creds-b")
-	assert.NotEqual(t, a, b, "different names in same namespace must yield different outputs")
-}
-
-func TestDeriveAccessTokenSecretName_LengthFarPastLimit(t *testing.T) {
-	longName := strings.Repeat("x", 500)
-	result, _ := DeriveAccessTokenSecretName("ns", longName)
-	assert.LessOrEqual(t, len(result), 253, "result must fit in DNS-1123 subdomain limit")
-	assert.True(t, strings.HasPrefix(result, "atlas-access-token-"))
-}
-
-func TestDeriveAccessTokenSecretName_LengthAtBoundary(t *testing.T) {
-	const ns = "ns"
-
-	// A very long input forces truncation; the result must be exactly 253.
-	veryLong, _ := DeriveAccessTokenSecretName(ns, strings.Repeat("a", 500))
-	assert.Equal(t, 253, len(veryLong),
-		"when truncation is forced, result length must be exactly 253 — guards off-by-one in maxNameLen")
-	assert.True(t, strings.HasPrefix(veryLong, accessTokenSecretPrefix),
-		"prefix must be preserved even under maximal truncation")
-
-	// A name whose output fits in the 253-char budget must not be truncated
-	// and must appear literally in the result.
-	short, _ := DeriveAccessTokenSecretName(ns, "short-name")
-	assert.LessOrEqual(t, len(short), 253)
-	assert.Contains(t, short, "short-name",
-		"short names are preserved literally")
 }
 
 func newFakeKubeClient(t *testing.T, objs ...client.Object) client.Client {
