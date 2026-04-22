@@ -1,0 +1,10 @@
+secret:
+  orgID: "6500000000000000000000aa"
+  clientId: "mdb_sa_id_01234567890abcdef"
+  clientSecret: "mdb_sa_sk_01234567890abcdefghijklmnop"
+
+project:
+  name: "test-project"
+
+deployment:
+  name: "test-deployment"
