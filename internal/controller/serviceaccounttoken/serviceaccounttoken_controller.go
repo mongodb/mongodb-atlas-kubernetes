@@ -225,7 +225,7 @@ func requeueDuration(expiry time.Time) time.Duration {
 // operator's credentials label. The global informer cache in
 // internal/operator/builder.go already applies this label selector in
 // cluster-wide mode, but not in namespaced mode. Declaring the predicate on
-// the controller itself keeps the behaviour uniform and cheap.
+// the controller itself keeps the behavior uniform and cheap.
 func credentialsLabelPredicate() predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return obj.GetLabels()[secretservice.TypeLabelKey] == secretservice.CredLabelVal
