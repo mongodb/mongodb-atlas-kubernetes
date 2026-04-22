@@ -16,9 +16,13 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"hash/fnv"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -29,7 +33,28 @@ const (
 	orgIDKey      = "orgId"
 	publicAPIKey  = "publicApiKey"
 	privateAPIKey = "privateApiKey"
+
+	clientIDKey     = "clientId"
+	clientSecretKey = "clientSecret"
+
+	accessTokenKey          = "accessToken"
+	credentialsHashKey      = "credentialsHash"
+	accessTokenSecretPrefix = "atlas-access-token-"
 )
+
+// CredentialsHash returns a deterministic, non-cryptographic fingerprint of
+// the (clientID, clientSecret) pair. The service-account-token controller
+// stores this fingerprint on the Access Token Secret under credentialsHashKey
+// so any component reading the Secret can detect that the source credentials
+// have been rotated since the cached bearer token was issued. The nul
+// separator disambiguates ("ab","c") from ("a","bc").
+func CredentialsHash(clientID, clientSecret string) (string, error) {
+	h := fnv.New64a()
+	if _, err := h.Write([]byte(clientID + "\x00" + clientSecret)); err != nil {
+		return "", fmt.Errorf("failed to compute credentials hash: %w", err)
+	}
+	return fmt.Sprint(h.Sum64()), nil
+}
 
 func (r *AtlasReconciler) ResolveConnectionConfig(ctx context.Context, referrer project.ProjectReferrerObject) (*atlas.ConnectionConfig, error) {
 	connectionSecret := r.connectionSecretRef(referrer)
@@ -78,7 +103,27 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
-	cfg := &atlas.ConnectionConfig{
+	if err := validateConnectionSecret(secret); err != nil {
+		return nil, fmt.Errorf("invalid connection secret %s: %w", secretRef, err)
+	}
+
+	if isServiceAccountCredentials(secret) {
+		bearerToken, err := getServiceAccountAccessToken(ctx, k8sClient, secret)
+		if err != nil {
+			return nil, err
+		}
+
+		return &atlas.ConnectionConfig{
+			OrgID: string(secret.Data[orgIDKey]),
+			Credentials: &atlas.Credentials{
+				ServiceAccount: &atlas.ServiceAccountToken{
+					BearerToken: bearerToken,
+				},
+			},
+		}, nil
+	}
+
+	return &atlas.ConnectionConfig{
 		OrgID: string(secret.Data[orgIDKey]),
 		Credentials: &atlas.Credentials{
 			APIKeys: &atlas.APIKeys{
@@ -86,41 +131,108 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 				PrivateKey: string(secret.Data[privateAPIKey]),
 			},
 		},
-	}
-
-	if missingFields, valid := validate(cfg); !valid {
-		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
-	}
-
-	return cfg, nil
+	}, nil
 }
 
-func validate(cfg *atlas.ConnectionConfig) ([]string, bool) {
-	missingFields := make([]string, 0, 3)
+// DeriveAccessTokenSecretName returns the deterministic name of the Access Token Secret for a given Connection Secret.
+// The Connection Secret name is included literally for operator debuggability; it is truncated when the total
+// exceeds the Kubernetes 253-character DNS-subdomain limit.
+func DeriveAccessTokenSecretName(namespace, connectionSecretName string) (string, error) {
+	hasher := fnv.New64a()
+	_, err := hasher.Write([]byte(namespace + "/" + connectionSecretName))
+	if err != nil {
+		return "", fmt.Errorf("failed to compute hash for access token secret name: %w", err)
+	}
+	hash := rand.SafeEncodeString(fmt.Sprint(hasher.Sum64()))
 
-	if cfg == nil {
-		return []string{orgIDKey, publicAPIKey, privateAPIKey}, false
+	const k8sNameLimit = 253
+	maxNameLen := k8sNameLimit - len(accessTokenSecretPrefix) - 1 - len(hash)
+	name := connectionSecretName
+	if len(name) > maxNameLen {
+		name = name[:maxNameLen]
 	}
 
-	if cfg.OrgID == "" {
+	return accessTokenSecretPrefix + name + "-" + hash, nil
+}
+
+func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, secret *corev1.Secret) (string, error) {
+	tokenSecretName, err := DeriveAccessTokenSecretName(secret.Namespace, secret.Name)
+	if err != nil {
+		return "", err
+	}
+	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
+
+	tokenSecret := &corev1.Secret{}
+	if err := k8sClient.Get(ctx, tokenRef, tokenSecret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return "", fmt.Errorf("access token secret %s does not exist yet", tokenRef.String())
+		}
+		return "", fmt.Errorf("failed to read access token secret %s: %w", tokenRef.String(), err)
+	}
+
+	// Guard against a stale cached token — if the credential Secret was
+	// rotated since the token was issued, the service-account-token controller
+	// may not have caught up yet. Returning an error prompts the downstream
+	// reconciler to retry rather than hitting Atlas with revoked credentials.
+	currentHash, err := CredentialsHash(string(secret.Data[clientIDKey]), string(secret.Data[clientSecretKey]))
+	if err != nil {
+		return "", err
+	}
+	if string(tokenSecret.Data[credentialsHashKey]) != currentHash {
+		return "", fmt.Errorf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRef.String())
+	}
+
+	bearerToken := string(tokenSecret.Data[accessTokenKey])
+	if bearerToken == "" {
+		return "", fmt.Errorf("access token secret %s has an empty accessToken field", tokenRef.String())
+	}
+
+	return bearerToken, nil
+}
+
+func isServiceAccountCredentials(credentials *corev1.Secret) bool {
+	clientID := credentials.Data[clientIDKey]
+	clientSecret := credentials.Data[clientSecretKey]
+
+	return len(clientID) > 0 && len(clientSecret) > 0
+}
+
+func validateConnectionSecret(secret *corev1.Secret) error {
+	hasAnyAPIKey := len(secret.Data[publicAPIKey]) > 0 || len(secret.Data[privateAPIKey]) > 0
+	hasAnySA := len(secret.Data[clientIDKey]) > 0 || len(secret.Data[clientSecretKey]) > 0
+
+	if hasAnyAPIKey && hasAnySA {
+		return errors.New("secret contains both API key and service account credentials; only one type is allowed")
+	}
+
+	var missingFields []string
+
+	if len(secret.Data[orgIDKey]) == 0 {
 		missingFields = append(missingFields, orgIDKey)
 	}
 
-	if cfg.Credentials == nil || cfg.Credentials.APIKeys == nil {
-		return append(missingFields, []string{publicAPIKey, privateAPIKey}...), false
-	}
-
-	if cfg.Credentials.APIKeys.PublicKey == "" {
-		missingFields = append(missingFields, publicAPIKey)
-	}
-
-	if cfg.Credentials.APIKeys.PrivateKey == "" {
-		missingFields = append(missingFields, privateAPIKey)
+	if hasAnyAPIKey {
+		if len(secret.Data[publicAPIKey]) == 0 {
+			missingFields = append(missingFields, publicAPIKey)
+		}
+		if len(secret.Data[privateAPIKey]) == 0 {
+			missingFields = append(missingFields, privateAPIKey)
+		}
+	} else if hasAnySA {
+		if len(secret.Data[clientIDKey]) == 0 {
+			missingFields = append(missingFields, clientIDKey)
+		}
+		if len(secret.Data[clientSecretKey]) == 0 {
+			missingFields = append(missingFields, clientSecretKey)
+		}
+	} else {
+		//By default, we are expecting API keys
+		missingFields = append(missingFields, publicAPIKey, privateAPIKey)
 	}
 
 	if len(missingFields) > 0 {
-		return missingFields, false
+		return fmt.Errorf("missing required fields: %v", missingFields)
 	}
 
-	return nil, true
+	return nil
 }

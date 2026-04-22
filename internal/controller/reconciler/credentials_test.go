@@ -16,6 +16,7 @@ package reconciler
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -280,36 +281,282 @@ func TestResolveConnectionConfig(t *testing.T) {
 	}
 }
 
-func TestValidateConnectionConfig(t *testing.T) {
-	t.Run("should be invalid and all missing data", func(t *testing.T) {
-		missing, ok := validate(nil)
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"orgId", "publicApiKey", "privateApiKey"})
+func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("service account secret with no access token secret yet", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "sa-creds",
+				Namespace: "ns",
+			},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, secret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "does not exist yet")
 	})
 
-	t.Run("should be invalid and organization id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"orgId"})
+	t.Run("service account secret with valid token", func(t *testing.T) {
+		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
+		matchingHash, err := CredentialsHash("client-id", "client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte("bearer-token-value"),
+				"expiry":          []byte("2099-01-01T00:00:00Z"),
+				"credentialsHash": []byte(matchingHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "sa-creds",
+				Namespace: "ns",
+			},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		cfg, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "org-123", cfg.OrgID)
+		require.NotNil(t, cfg.Credentials.ServiceAccount)
+		assert.Equal(t, "bearer-token-value", cfg.Credentials.ServiceAccount.BearerToken)
+		assert.Nil(t, cfg.Credentials.APIKeys)
 	})
 
-	t.Run("should be invalid and public key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PrivateKey: "secret"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"publicApiKey"})
+	t.Run("service account secret with stale token after credential rotation", func(t *testing.T) {
+		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
+		staleHash, err := CredentialsHash("old-client-id", "old-client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte("stale-bearer-token"),
+				"expiry":          []byte("2099-01-01T00:00:00Z"),
+				"credentialsHash": []byte(staleHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("new-client-id"),
+				"clientSecret": []byte("new-client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err = GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "is stale")
+		assert.Contains(t, err.Error(), "credentials rotated")
 	})
 
-	t.Run("should be invalid and private key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"privateApiKey"})
+	t.Run("secret with both API keys and service account is rejected", func(t *testing.T) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "bad-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+				"clientId":      []byte("client-id"),
+				"clientSecret":  []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, secret)
+		ref := client.ObjectKey{Name: "bad-creds", Namespace: "ns"}
+
+		_, err := GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "both API key and service account credentials")
 	})
 
-	t.Run("should be valid", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
-		assert.True(t, ok)
-		assert.Empty(t, missing)
+	t.Run("token secret with empty accessToken is rejected", func(t *testing.T) {
+		tokenSecretName, _ := DeriveAccessTokenSecretName("ns", "sa-creds")
+		matchingHash, err := CredentialsHash("client-id", "client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte(""),
+				"expiry":          []byte("2099-01-01T00:00:00Z"),
+				"credentialsHash": []byte(matchingHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err = GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "empty accessToken")
 	})
+}
+
+func TestValidate(t *testing.T) {
+	t.Run("should fail when secret has no data at all", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "orgId")
+		assert.Contains(t, err.Error(), "publicApiKey")
+		assert.Contains(t, err.Error(), "privateApiKey")
+	})
+
+	t.Run("should fail when orgId is missing", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"publicApiKey":  []byte("pub"),
+			"privateApiKey": []byte("priv"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "orgId")
+	})
+
+	t.Run("should fail when publicApiKey is missing", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":         []byte("org-123"),
+			"privateApiKey": []byte("priv"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "publicApiKey")
+	})
+
+	t.Run("should fail when privateApiKey is missing", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":        []byte("org-123"),
+			"publicApiKey": []byte("pub"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "privateApiKey")
+	})
+
+	t.Run("should succeed with complete API keys", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":         []byte("org-123"),
+			"publicApiKey":  []byte("pub"),
+			"privateApiKey": []byte("priv"),
+		}})
+		assert.NoError(t, err)
+	})
+
+	t.Run("should succeed with complete service account credentials", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":        []byte("org-123"),
+			"clientId":     []byte("client-id"),
+			"clientSecret": []byte("client-secret"),
+		}})
+		assert.NoError(t, err)
+	})
+
+	t.Run("should fail when clientId is missing", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":        []byte("org-123"),
+			"clientSecret": []byte("client-secret"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "clientId")
+	})
+
+	t.Run("should fail when clientSecret is missing", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":    []byte("org-123"),
+			"clientId": []byte("client-id"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "clientSecret")
+	})
+
+	t.Run("should fail when service account secret is missing orgId", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"clientId":     []byte("client-id"),
+			"clientSecret": []byte("client-secret"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "orgId")
+	})
+
+	t.Run("should fail when secret contains both API key and service account credentials", func(t *testing.T) {
+		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
+			"orgId":         []byte("org-123"),
+			"publicApiKey":  []byte("pub"),
+			"privateApiKey": []byte("priv"),
+			"clientId":      []byte("client-id"),
+			"clientSecret":  []byte("client-secret"),
+		}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "both API key and service account credentials")
+	})
+}
+
+func TestDeriveAccessTokenSecretName_Deterministic(t *testing.T) {
+	const ns = "atlas-operator"
+	const name = "my-sa-creds"
+	first, _ := DeriveAccessTokenSecretName(ns, name)
+	for i := 0; i < 20; i++ {
+		second, _ := DeriveAccessTokenSecretName(ns, name)
+		require.Equal(t, first, second,
+			"function must return the same output for the same inputs on every call")
+	}
+	assert.True(t, strings.HasPrefix(first, "atlas-access-token-"))
+	assert.Contains(t, first, name)
+}
+
+func TestDeriveAccessTokenSecretName_NamespaceSensitive(t *testing.T) {
+	a, _ := DeriveAccessTokenSecretName("ns-a", "creds")
+	b, _ := DeriveAccessTokenSecretName("ns-b", "creds")
+	assert.NotEqual(t, a, b, "same name in different namespaces must yield different outputs")
+}
+
+func TestDeriveAccessTokenSecretName_NameSensitive(t *testing.T) {
+	a, _ := DeriveAccessTokenSecretName("ns", "creds-a")
+	b, _ := DeriveAccessTokenSecretName("ns", "creds-b")
+	assert.NotEqual(t, a, b, "different names in same namespace must yield different outputs")
+}
+
+func TestDeriveAccessTokenSecretName_LengthFarPastLimit(t *testing.T) {
+	longName := strings.Repeat("x", 500)
+	result, _ := DeriveAccessTokenSecretName("ns", longName)
+	assert.LessOrEqual(t, len(result), 253, "result must fit in DNS-1123 subdomain limit")
+	assert.True(t, strings.HasPrefix(result, "atlas-access-token-"))
+}
+
+func TestDeriveAccessTokenSecretName_LengthAtBoundary(t *testing.T) {
+	const ns = "ns"
+
+	// A very long input forces truncation; the result must be exactly 253.
+	veryLong, _ := DeriveAccessTokenSecretName(ns, strings.Repeat("a", 500))
+	assert.Equal(t, 253, len(veryLong),
+		"when truncation is forced, result length must be exactly 253 — guards off-by-one in maxNameLen")
+	assert.True(t, strings.HasPrefix(veryLong, accessTokenSecretPrefix),
+		"prefix must be preserved even under maximal truncation")
+
+	// A name whose output fits in the 253-char budget must not be truncated
+	// and must appear literally in the result.
+	short, _ := DeriveAccessTokenSecretName(ns, "short-name")
+	assert.LessOrEqual(t, len(short), 253)
+	assert.Contains(t, short, "short-name",
+		"short names are preserved literally")
 }
 
 func newFakeKubeClient(t *testing.T, objs ...client.Object) client.Client {
