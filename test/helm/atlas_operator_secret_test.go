@@ -29,6 +29,6 @@ func TestAtlasOperator_RendersServiceAccountSecret(t *testing.T) {
 }
 
 func TestAtlasOperator_RejectsBothCredentialTypes(t *testing.T) {
-	assertRejectsBothCredentialTypes(t, atlasOperatorChartPath, "atlas_operator_both_values.yaml",
+	assertRejectsBothCredentialTypes(t, atlasOperatorChartPath, "atlas_operator_sa_and_pka_values.yaml",
 		"set either (publicApiKey,privateApiKey) or (clientId,clientSecret), not both")
 }
