@@ -500,12 +500,11 @@ new env vars, `installModes`, or watch-namespace semantics.
 Install-time rendering is pinned by unit tests under `test/helm/` that run
 `helm template` against each chart and assert the resulting Secret (or,
 for the mutual-exclusion case, assert rendering fails with the expected
-message). An additional unit test pins the Secret verbs in the rendered
-`atlas-operator` ClusterRole, catching any regen-chain drift.
+message).
 
 Full install gates: `make bundle-validate` (OLM schema), `make
 validate-manifests` (regen drift), `make validate-crds-chart` (chart CRD
-parity with the bundle), `make unit-test` (chart rendering + RBAC).
+parity with the bundle), `make unit-test` (chart rendering).
 
 ---
 
@@ -619,7 +618,7 @@ Scenarios (using the `test/e2e2/` framework):
 - `helm-charts/atlas-deployment/` — **Modified.** Add `atlas.secret.{clientId,clientSecret}` values and templates/secret.yaml branching; README documents both install variants.
 - `helm-charts/atlas-operator/rbac.yaml` — **Regenerated** by `make helm-crds` — picks up the enriched Secret verbs.
 - `bundle/manifests/mongodb-atlas-kubernetes.clusterserviceversion.yaml` — **Regenerated** by `make bundle` — CSV reflects the enriched Secret verbs.
-- `test/helm/` — **New.** Unit tests pinning `helm template` output per chart (API-key Secret, SA Secret, mutual-exclusion rejection) plus a ClusterRole Secret-verbs regression test.
+- `test/helm/` — **New.** Unit tests pinning `helm template` output per chart (API-key Secret, SA Secret, mutual-exclusion rejection).
 - `test/e2e2/serviceaccount_test.go` — **New.** E2E test scenarios.
 - `docs/dev/td-service-accounts-phase1.md` — **New.** This document.
 
