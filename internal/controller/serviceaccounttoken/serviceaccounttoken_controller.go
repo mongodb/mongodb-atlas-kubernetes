@@ -145,6 +145,10 @@ func (r *ServiceAccountTokenReconciler) refreshToken(
 		return ctrl.Result{}, fmt.Errorf("failed to refresh access token: %w", err)
 	}
 
+	if tokenSecret.Data == nil {
+		tokenSecret.Data = map[string][]byte{}
+	}
+
 	tokenSecret.Data[accesstoken.AccessTokenKey] = []byte(token)
 	tokenSecret.Data[accesstoken.ExpiryKey] = []byte(expiry.Format(time.RFC3339))
 	tokenSecret.Data[accesstoken.CredentialsHashKey] = []byte(credsHash)
