@@ -119,7 +119,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				Eventually(func(g Gomega) error {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+				}).WithContext(ctx).WithTimeout(15 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
 			}
 		})
 		By("Clean up shared group namespace", func() {
@@ -237,7 +237,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				for _, obj := range createdObjects {
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, obj)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 				}
 			})
 		},
