@@ -233,9 +233,22 @@ func credentialsLabelPredicate() predicate.Predicate {
 	})
 }
 
+func serviceAccountCredentialsPredicate() predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		secret, ok := obj.(*corev1.Secret)
+		if !ok {
+			return false
+		}
+
+		return len(secret.Data[reconciler.ClientIDKey]) > 0 &&
+			len(secret.Data[reconciler.ClientSecretKey]) > 0
+	})
+}
+
 func (r *ServiceAccountTokenReconciler) For() (client.Object, builder.Predicates) {
 	return &corev1.Secret{}, builder.WithPredicates(
 		credentialsLabelPredicate(),
+		serviceAccountCredentialsPredicate(), // new
 		predicate.ResourceVersionChangedPredicate{},
 	)
 }
