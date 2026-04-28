@@ -11,10 +11,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.298.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.50.5
-	github.com/aws/smithy-go v1.25.0
-	github.com/jedib0t/go-pretty/v6 v6.7.9
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.299.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.51.0
+	github.com/aws/smithy-go v1.25.1
+	github.com/jedib0t/go-pretty/v6 v6.7.10
 	go.mongodb.org/atlas-sdk/v20250312013 v20250312013.2.0
 	google.golang.org/api v0.276.0
 )
