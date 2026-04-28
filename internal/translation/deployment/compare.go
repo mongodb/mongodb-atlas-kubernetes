@@ -404,6 +404,22 @@ func ProcessArgsEqual(ako, atlas *akov2.ProcessArgs) bool {
 	if atlas == nil {
 		atlas = &akov2.ProcessArgs{}
 	}
+
+	// Each check below mirrors how processArgsToAtlas serializes the field:
+	//
+	//   *bool / *int64 fields  → check `!= nil`  (a non-nil pointer is sent,
+	//                                             even if it points to the
+	//                                             zero value)
+	//   string fields          → check `!= ""`   (empty string is dropped via
+	//                                             MakePtrOrNil and not sent)
+	//
+	// Keep the per-field style aligned with the converter — collapsing the two
+	// styles will reintroduce issue #3142.
+	//
+	// Fields intentionally absent below: they are not part of the SDK PATCH
+	// body and therefore cannot drive an update:
+	//   - DefaultReadConcern
+	//   - FailIndexKeyTooLong (deprecated by Atlas; warned on at the call site)
 	if ako.DefaultWriteConcern != "" && ako.DefaultWriteConcern != atlas.DefaultWriteConcern {
 		return false
 	}
