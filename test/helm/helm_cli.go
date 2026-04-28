@@ -21,8 +21,8 @@ import (
 )
 
 // helmTemplate runs `helm template <args>` and returns (stdout, stderr, err).
-// Unlike test/helper/cmd.RunCommand, this does not fail the test on non-zero
-// exit — callers that expect `{{ fail "..." }}` need to inspect stderr.
+// It does not fail the test on non-zero exit — callers that expect
+// `{{ fail "..." }}` need to inspect stderr.
 func helmTemplate(t *testing.T, args ...string) (string, string, error) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
