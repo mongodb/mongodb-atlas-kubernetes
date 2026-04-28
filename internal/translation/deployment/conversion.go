@@ -583,7 +583,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
-		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		TerminationProtectionEnabled: pointer.MakePtr(cluster.TerminationProtectionEnabled),
 		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }
@@ -602,7 +602,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
-		TerminationProtectionEnabled: pointer.MakePtrOrNil(cluster.TerminationProtectionEnabled),
+		TerminationProtectionEnabled: pointer.MakePtr(cluster.TerminationProtectionEnabled),
 		ConfigServerManagementMode:   pointer.MakePtrOrNil(cluster.ConfigServerManagementMode),
 	}
 }

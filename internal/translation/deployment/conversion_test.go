@@ -15,6 +15,7 @@
 package deployment
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,6 +26,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNewDeployment(t *testing.T) {
@@ -1239,4 +1241,80 @@ func TestIsType(t *testing.T) {
 			assert.Equal(t, tt.wantDedicated, d.IsDedicated())
 		})
 	}
+}
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// terminationProtectionEnabled=false must be sent to Atlas as an explicit false,
+// not omitted. Otherwise, when Atlas has it true (e.g. set via UI), the PATCH can
+// never disable it and the controller reconciles forever.
+func TestClusterUpdateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	req := clusterUpdateToAtlas(cluster)
+
+	require.NotNil(t, req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be sent as explicit false, got nil (field would be omitted from PATCH)")
+	assert.False(t, *req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be false")
+}
+
+func TestClusterCreateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	req := clusterCreateToAtlas(cluster)
+
+	require.NotNil(t, req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be sent as explicit false, got nil")
+	assert.False(t, *req.TerminationProtectionEnabled)
+}
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// When the user leaves processArgs fields unset in the CR, Atlas returns its own
+// defaults (e.g. DefaultWriteConcern="majority", OplogSizeMB=990). The reconciler's
+// equality check (reflect.DeepEqual on *akov2.ProcessArgs) must treat those
+// CR-unset fields as "no opinion" — otherwise the round-trip loops forever:
+//   - DeepEqual says desired != current
+//   - processArgsToAtlas drops zero values via MakePtrOrNil → PATCH body is empty
+//   - Atlas keeps its defaults → next reconcile reports the same diff → UPDATE
+//     is re-issued endlessly.
+//
+// This test pins the symmetry: a pair where AKO has an unset field and Atlas
+// has a server default should not require an update request. The fix may be
+// either in the compare step or in how processArgsFromAtlas normalizes defaults.
+func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
+	// What the user's CR yields after normalization: mostly defaults, no
+	// opinion on DefaultWriteConcern or OplogSizeMB.
+	akoArgs := &akov2.ProcessArgs{}
+	normalizeProcessArgs(akoArgs)
+
+	// What Atlas returns for an unconfigured cluster: populated server defaults.
+	atlasArgs := processArgsFromAtlas(&admin.ClusterDescriptionProcessArgs20240805{
+		DefaultWriteConcern:       pointer.MakePtr("majority"),
+		MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1_2"),
+		JavascriptEnabled:         pointer.MakePtr(true),
+		NoTableScan:               pointer.MakePtr(false),
+		OplogSizeMB:               pointer.MakePtr(990),
+	})
+
+	// Drives the controller's UpdateProcessArgs call at
+	// internal/controller/atlasdeployment/advanced_deployment.go:248.
+	require.True(t,
+		reflect.DeepEqual(akoArgs, atlasArgs),
+		"expected AKO processArgs (CR-unset defaults) to be considered equal to "+
+			"Atlas processArgs (server defaults), otherwise the controller will "+
+			"call UpdateProcessArgs every reconcile — and the PATCH body omits "+
+			"zero values, so Atlas never converges. Got:\n  ako:   %+v\n  atlas: %+v",
+		akoArgs, atlasArgs)
 }
