@@ -15,7 +15,6 @@
 package deployment
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -1308,10 +1307,10 @@ func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
 		OplogSizeMB:               pointer.MakePtr(990),
 	})
 
-	// Drives the controller's UpdateProcessArgs call at
-	// internal/controller/atlasdeployment/advanced_deployment.go:248.
+	// Drives the controller's UpdateProcessArgs call in
+	// internal/controller/atlasdeployment/advanced_deployment.go.
 	require.True(t,
-		reflect.DeepEqual(akoArgs, atlasArgs),
+		ProcessArgsEqual(akoArgs, atlasArgs),
 		"expected AKO processArgs (CR-unset defaults) to be considered equal to "+
 			"Atlas processArgs (server defaults), otherwise the controller will "+
 			"call UpdateProcessArgs every reconcile — and the PATCH body omits "+

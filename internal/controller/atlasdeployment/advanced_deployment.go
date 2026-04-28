@@ -17,7 +17,6 @@ package atlasdeployment
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -245,7 +244,7 @@ func (r *AtlasDeploymentReconciler) ensureAdvancedOptions(ctx *workflow.Context,
 		if deploymentInAKO.ProcessArgs.FailIndexKeyTooLong != nil {
 			ctx.Log.Warn("Process Arg FailIndexKeyTooLong is no longer available in Atlas. Setting this will have no effect.")
 		}
-		if !reflect.DeepEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
+		if !deployment.ProcessArgsEqual(deploymentInAKO.ProcessArgs, deploymentInAtlas.ProcessArgs) {
 			err = deploymentService.UpdateProcessArgs(ctx.Context, deploymentInAKO)
 			if err != nil {
 				return r.transitionFromLegacy(ctx, deploymentService, deploymentInAKO.GetProjectID(), deploymentInAKO.GetCustomResource(), err)
