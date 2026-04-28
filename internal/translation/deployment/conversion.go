@@ -950,6 +950,22 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 	return &specs
 }
 
+// int64PtrToIntPtr converts *int64 to *int while preserving nil-ness.
+// Use this instead of MakePtrOrNil(int(GetOrDefault(p, 0))) when the SDK
+// field is *int and an explicit zero is a meaningful user value that must
+// be sent over the wire (issue #3142).
+func int64PtrToIntPtr(p *int64) *int {
+	if p == nil {
+		return nil
+	}
+	v := int(*p)
+	return &v
+}
+
+// processArgsToAtlas builds the PATCH body. When adding or removing a field
+// here, mirror the change in deployment.ProcessArgsEqual — the comparator
+// must skip exactly the fields this function omits, or the reconciler loops
+// (issue #3142).
 func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionProcessArgs20240805, error) {
 	var oplogMinRetentionHours *float64
 	if config.OplogMinRetentionHours != "" {
@@ -966,9 +982,9 @@ func processArgsToAtlas(config *akov2.ProcessArgs) (*admin.ClusterDescriptionPro
 		MinimumEnabledTlsProtocol:        pointer.MakePtrOrNil(config.MinimumEnabledTLSProtocol),
 		JavascriptEnabled:                config.JavascriptEnabled,
 		NoTableScan:                      config.NoTableScan,
-		OplogSizeMB:                      pointer.MakePtrOrNil(int(pointer.GetOrDefault(config.OplogSizeMB, 0))),
-		SampleSizeBIConnector:            pointer.MakePtrOrNil(int(pointer.GetOrDefault(config.SampleSizeBIConnector, 0))),
-		SampleRefreshIntervalBIConnector: pointer.MakePtrOrNil(int(pointer.GetOrDefault(config.SampleRefreshIntervalBIConnector, 0))),
+		OplogSizeMB:                      int64PtrToIntPtr(config.OplogSizeMB),
+		SampleSizeBIConnector:            int64PtrToIntPtr(config.SampleSizeBIConnector),
+		SampleRefreshIntervalBIConnector: int64PtrToIntPtr(config.SampleRefreshIntervalBIConnector),
 		OplogMinRetentionHours:           oplogMinRetentionHours,
 	}, nil
 }

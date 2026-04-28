@@ -1317,3 +1317,45 @@ func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
 			"zero values, so Atlas never converges. Got:\n  ako:   %+v\n  atlas: %+v",
 		akoArgs, atlasArgs)
 }
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// (review follow-up). When the user sets an explicit zero on a *int64 processArgs
+// field (e.g. OplogSizeMB: pointer.MakePtr[int64](0)), processArgsToAtlas must
+// preserve that zero in the PATCH body — otherwise the same loop class returns:
+// the comparator sees a diff against Atlas's non-zero default, but the converter
+// drops the zero and Atlas never converges.
+func TestProcessArgsToAtlas_ExplicitZeroIntIsSent(t *testing.T) {
+	args := &akov2.ProcessArgs{
+		OplogSizeMB:                      pointer.MakePtr[int64](0),
+		SampleSizeBIConnector:            pointer.MakePtr[int64](0),
+		SampleRefreshIntervalBIConnector: pointer.MakePtr[int64](0),
+	}
+
+	got, err := processArgsToAtlas(args)
+	require.NoError(t, err)
+
+	require.NotNil(t, got.OplogSizeMB,
+		"expected OplogSizeMB=0 to survive PATCH conversion, got nil (field would be omitted)")
+	assert.Equal(t, 0, *got.OplogSizeMB)
+
+	require.NotNil(t, got.SampleSizeBIConnector,
+		"expected SampleSizeBIConnector=0 to survive PATCH conversion")
+	assert.Equal(t, 0, *got.SampleSizeBIConnector)
+
+	require.NotNil(t, got.SampleRefreshIntervalBIConnector,
+		"expected SampleRefreshIntervalBIConnector=0 to survive PATCH conversion")
+	assert.Equal(t, 0, *got.SampleRefreshIntervalBIConnector)
+}
+
+// Companion: nil on the AKO side must remain nil in the PATCH body — that's
+// the "no opinion" case ProcessArgsEqual relies on.
+func TestProcessArgsToAtlas_NilIntStaysNil(t *testing.T) {
+	args := &akov2.ProcessArgs{}
+
+	got, err := processArgsToAtlas(args)
+	require.NoError(t, err)
+
+	assert.Nil(t, got.OplogSizeMB)
+	assert.Nil(t, got.SampleSizeBIConnector)
+	assert.Nil(t, got.SampleRefreshIntervalBIConnector)
+}
