@@ -22,6 +22,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestComputeChanges(t *testing.T) {
@@ -2412,4 +2413,99 @@ func TestAreEqual(t *testing.T) {
 			})
 		}
 	})
+}
+
+// Regression coverage for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142.
+// ProcessArgsEqual must mirror the omitempty PATCH-body semantics of
+// processArgsToAtlas: a field that is the zero value on the AKO side cannot
+// drive an update (it would not be sent over the wire), so it must not be
+// considered a diff.
+func TestProcessArgsEqual(t *testing.T) {
+	tests := map[string]struct {
+		ako   *akov2.ProcessArgs
+		atlas *akov2.ProcessArgs
+		want  bool
+	}{
+		"both nil": {
+			ako: nil, atlas: nil, want: true,
+		},
+		"ako nil, atlas populated": {
+			ako:   nil,
+			atlas: &akov2.ProcessArgs{DefaultWriteConcern: "majority"},
+			want:  true,
+		},
+		"ako unset string, atlas server default": {
+			ako:   &akov2.ProcessArgs{},
+			atlas: &akov2.ProcessArgs{DefaultWriteConcern: "majority"},
+			want:  true,
+		},
+		"ako unset oplog, atlas server default": {
+			ako:   &akov2.ProcessArgs{},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
+			want:  true,
+		},
+		"ako sets javascriptEnabled true, atlas true": {
+			ako:   &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
+			atlas: &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
+			want:  true,
+		},
+		"ako sets javascriptEnabled false, atlas true": {
+			ako:   &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(false)},
+			atlas: &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
+			want:  false,
+		},
+		"ako sets defaultWriteConcern differently": {
+			ako:   &akov2.ProcessArgs{DefaultWriteConcern: "majority"},
+			atlas: &akov2.ProcessArgs{DefaultWriteConcern: "local"},
+			want:  false,
+		},
+		"ako sets oplogSizeMB differently": {
+			ako:   &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](1000)},
+			want:  false,
+		},
+		"ako sets minTLS differently": {
+			ako:   &akov2.ProcessArgs{MinimumEnabledTLSProtocol: "TLS1_2"},
+			atlas: &akov2.ProcessArgs{MinimumEnabledTLSProtocol: "TLS1_1"},
+			want:  false,
+		},
+		"ako sets noTableScan true, atlas false": {
+			ako:   &akov2.ProcessArgs{NoTableScan: pointer.MakePtr(true)},
+			atlas: &akov2.ProcessArgs{NoTableScan: pointer.MakePtr(false)},
+			want:  false,
+		},
+		"identical fully populated": {
+			ako: &akov2.ProcessArgs{
+				DefaultWriteConcern:       "majority",
+				MinimumEnabledTLSProtocol: "TLS1_2",
+				JavascriptEnabled:         pointer.MakePtr(true),
+				NoTableScan:               pointer.MakePtr(false),
+				OplogSizeMB:               pointer.MakePtr[int64](990),
+			},
+			atlas: &akov2.ProcessArgs{
+				DefaultWriteConcern:       "majority",
+				MinimumEnabledTLSProtocol: "TLS1_2",
+				JavascriptEnabled:         pointer.MakePtr(true),
+				NoTableScan:               pointer.MakePtr(false),
+				OplogSizeMB:               pointer.MakePtr[int64](990),
+			},
+			want: true,
+		},
+		"ako sample size differs": {
+			ako:   &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](100)},
+			atlas: &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](200)},
+			want:  false,
+		},
+		"ako oplog min retention differs": {
+			ako:   &akov2.ProcessArgs{OplogMinRetentionHours: "24"},
+			atlas: &akov2.ProcessArgs{OplogMinRetentionHours: "48"},
+			want:  false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, ProcessArgsEqual(tt.ako, tt.atlas))
+		})
+	}
 }

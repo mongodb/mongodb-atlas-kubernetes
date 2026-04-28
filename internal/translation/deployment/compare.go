@@ -388,3 +388,45 @@ func areEqual[T comparable](desired, current *T) bool {
 
 	return val1 == val2
 }
+
+// ProcessArgsEqual reports whether the AKO-side processArgs and the
+// Atlas-side processArgs are semantically equivalent for reconcile purposes.
+//
+// Fields that are the zero value on the AKO side are treated as "no opinion"
+// and not compared. This mirrors processArgsToAtlas, which omits zero values
+// from the PATCH body via MakePtrOrNil — if a field would not be sent over
+// the wire, it must not drive an update either, or the reconciler loops on
+// Atlas-populated server defaults (issue #3142).
+func ProcessArgsEqual(ako, atlas *akov2.ProcessArgs) bool {
+	if ako == nil {
+		return true
+	}
+	if atlas == nil {
+		atlas = &akov2.ProcessArgs{}
+	}
+	if ako.DefaultWriteConcern != "" && ako.DefaultWriteConcern != atlas.DefaultWriteConcern {
+		return false
+	}
+	if ako.MinimumEnabledTLSProtocol != "" && ako.MinimumEnabledTLSProtocol != atlas.MinimumEnabledTLSProtocol {
+		return false
+	}
+	if ako.OplogMinRetentionHours != "" && ako.OplogMinRetentionHours != atlas.OplogMinRetentionHours {
+		return false
+	}
+	if ako.JavascriptEnabled != nil && !areEqual(ako.JavascriptEnabled, atlas.JavascriptEnabled) {
+		return false
+	}
+	if ako.NoTableScan != nil && !areEqual(ako.NoTableScan, atlas.NoTableScan) {
+		return false
+	}
+	if ako.OplogSizeMB != nil && !areEqual(ako.OplogSizeMB, atlas.OplogSizeMB) {
+		return false
+	}
+	if ako.SampleSizeBIConnector != nil && !areEqual(ako.SampleSizeBIConnector, atlas.SampleSizeBIConnector) {
+		return false
+	}
+	if ako.SampleRefreshIntervalBIConnector != nil && !areEqual(ako.SampleRefreshIntervalBIConnector, atlas.SampleRefreshIntervalBIConnector) {
+		return false
+	}
+	return true
+}
