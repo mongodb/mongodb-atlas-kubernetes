@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -140,6 +141,22 @@ func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, 
 	}
 	if string(tokenSecret.Data[accesstoken.CredentialsHashKey]) != currentHash {
 		return "", fmt.Errorf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRef.String())
+	}
+
+	// Reject a token that has already expired. The service-account-token
+	// controller is expected to refresh ahead of expiry; this check guards
+	// against controller lag or clock skew so we never hand a downstream
+	// reconciler a token Atlas would already reject.
+	expiryRaw := string(tokenSecret.Data[accesstoken.ExpiryKey])
+	if expiryRaw == "" {
+		return "", fmt.Errorf("access token secret %s has an empty %s field", tokenRef.String(), accesstoken.ExpiryKey)
+	}
+	expiry, err := time.Parse(time.RFC3339, expiryRaw)
+	if err != nil {
+		return "", fmt.Errorf("access token secret %s has an invalid %s field %q: %w", tokenRef.String(), accesstoken.ExpiryKey, expiryRaw, err)
+	}
+	if !time.Now().Before(expiry) {
+		return "", fmt.Errorf("access token secret %s is expired (expiry: %s); waiting for the service-account-token controller to refresh", tokenRef.String(), expiryRaw)
 	}
 
 	bearerToken := string(tokenSecret.Data[accesstoken.AccessTokenKey])

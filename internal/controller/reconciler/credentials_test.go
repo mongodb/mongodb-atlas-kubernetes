@@ -386,6 +386,90 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 		assert.Contains(t, err.Error(), "both API key and service account credentials")
 	})
 
+	t.Run("token secret with already-expired token is rejected", func(t *testing.T) {
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte("bearer-token-value"),
+				"expiry":          []byte("2000-01-01T00:00:00Z"),
+				"credentialsHash": []byte(matchingHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err = GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "is expired")
+	})
+
+	t.Run("token secret with empty expiry is rejected", func(t *testing.T) {
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte("bearer-token-value"),
+				"expiry":          []byte(""),
+				"credentialsHash": []byte(matchingHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err = GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "empty expiry")
+	})
+
+	t.Run("token secret with unparseable expiry is rejected", func(t *testing.T) {
+		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
+		require.NoError(t, err)
+		tokenSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte("bearer-token-value"),
+				"expiry":          []byte("not-a-timestamp"),
+				"credentialsHash": []byte(matchingHash),
+			},
+		}
+		credSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		}
+		k8sClient := newFakeKubeClient(t, credSecret, tokenSecret)
+		ref := client.ObjectKey{Name: "sa-creds", Namespace: "ns"}
+
+		_, err = GetConnectionConfig(ctx, k8sClient, &ref, nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid expiry")
+	})
+
 	t.Run("token secret with empty accessToken is rejected", func(t *testing.T) {
 		tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
 		matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
