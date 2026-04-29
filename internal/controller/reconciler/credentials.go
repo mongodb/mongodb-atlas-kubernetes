@@ -16,11 +16,15 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/accesstoken"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/project"
 )
@@ -29,6 +33,9 @@ const (
 	orgIDKey      = "orgId"
 	publicAPIKey  = "publicApiKey"
 	privateAPIKey = "privateApiKey"
+
+	ClientIDKey     = "clientId"
+	ClientSecretKey = "clientSecret"
 )
 
 func (r *AtlasReconciler) ResolveConnectionConfig(ctx context.Context, referrer project.ProjectReferrerObject) (*atlas.ConnectionConfig, error) {
@@ -78,7 +85,27 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 		return nil, fmt.Errorf("failed to read Atlas API credentials from the secret %s: %w", secretRef.String(), err)
 	}
 
-	cfg := &atlas.ConnectionConfig{
+	if err := validateConnectionSecret(secret); err != nil {
+		return nil, fmt.Errorf("invalid connection secret %s: %w", secretRef, err)
+	}
+
+	if isServiceAccountCredentials(secret) {
+		bearerToken, err := getServiceAccountAccessToken(ctx, k8sClient, secret)
+		if err != nil {
+			return nil, err
+		}
+
+		return &atlas.ConnectionConfig{
+			OrgID: string(secret.Data[orgIDKey]),
+			Credentials: &atlas.Credentials{
+				ServiceAccount: &atlas.ServiceAccountToken{
+					BearerToken: bearerToken,
+				},
+			},
+		}, nil
+	}
+
+	return &atlas.ConnectionConfig{
 		OrgID: string(secret.Data[orgIDKey]),
 		Credentials: &atlas.Credentials{
 			APIKeys: &atlas.APIKeys{
@@ -86,41 +113,97 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 				PrivateKey: string(secret.Data[privateAPIKey]),
 			},
 		},
-	}
-
-	if missingFields, valid := validate(cfg); !valid {
-		return nil, fmt.Errorf("the following fields are missing in the secret %v: %v", secretRef, missingFields)
-	}
-
-	return cfg, nil
+	}, nil
 }
 
-func validate(cfg *atlas.ConnectionConfig) ([]string, bool) {
-	missingFields := make([]string, 0, 3)
+func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, secret *corev1.Secret) (string, error) {
+	tokenSecretName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
+	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
-	if cfg == nil {
-		return []string{orgIDKey, publicAPIKey, privateAPIKey}, false
+	tokenSecret := &corev1.Secret{}
+	if err := k8sClient.Get(ctx, tokenRef, tokenSecret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return "", fmt.Errorf("access token secret %s does not exist yet", tokenRef.String())
+		}
+		return "", fmt.Errorf("failed to read access token secret %s: %w", tokenRef.String(), err)
 	}
 
-	if cfg.OrgID == "" {
+	// Guard against a stale cached token — if the credential Secret was
+	// rotated since the token was issued, the service-account-token controller
+	// may not have caught up yet. Returning an error prompts the downstream
+	// reconciler to retry rather than hitting Atlas with revoked credentials.
+	currentHash := accesstoken.CredentialsHash(string(secret.Data[ClientIDKey]), string(secret.Data[ClientSecretKey]))
+	if string(tokenSecret.Data[accesstoken.CredentialsHashKey]) != currentHash {
+		return "", fmt.Errorf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRef.String())
+	}
+
+	// Reject a token that has already expired. The service-account-token
+	// controller is expected to refresh ahead of expiry; this check guards
+	// against controller lag or clock skew so we never hand a downstream
+	// reconciler a token Atlas would already reject.
+	expiryRaw := string(tokenSecret.Data[accesstoken.ExpiryKey])
+	if expiryRaw == "" {
+		return "", fmt.Errorf("access token secret %s has an empty %s field", tokenRef.String(), accesstoken.ExpiryKey)
+	}
+	expiry, err := time.Parse(time.RFC3339, expiryRaw)
+	if err != nil {
+		return "", fmt.Errorf("access token secret %s has an invalid %s field %q: %w", tokenRef.String(), accesstoken.ExpiryKey, expiryRaw, err)
+	}
+	if !time.Now().Before(expiry) {
+		return "", fmt.Errorf("access token secret %s is expired (expiry: %s); waiting for the service-account-token controller to refresh", tokenRef.String(), expiryRaw)
+	}
+
+	bearerToken := string(tokenSecret.Data[accesstoken.AccessTokenKey])
+	if bearerToken == "" {
+		return "", fmt.Errorf("access token secret %s has an empty accessToken field", tokenRef.String())
+	}
+
+	return bearerToken, nil
+}
+
+func isServiceAccountCredentials(credentials *corev1.Secret) bool {
+	clientID := credentials.Data[ClientIDKey]
+	clientSecret := credentials.Data[ClientSecretKey]
+
+	return len(clientID) > 0 && len(clientSecret) > 0
+}
+
+func validateConnectionSecret(secret *corev1.Secret) error {
+	hasAnyAPIKey := len(secret.Data[publicAPIKey]) > 0 || len(secret.Data[privateAPIKey]) > 0
+	hasAnySA := len(secret.Data[ClientIDKey]) > 0 || len(secret.Data[ClientSecretKey]) > 0
+
+	if hasAnyAPIKey && hasAnySA {
+		return errors.New("secret contains both API key and service account credentials; only one type is allowed")
+	}
+
+	var missingFields []string
+
+	if len(secret.Data[orgIDKey]) == 0 {
 		missingFields = append(missingFields, orgIDKey)
 	}
 
-	if cfg.Credentials == nil || cfg.Credentials.APIKeys == nil {
-		return append(missingFields, []string{publicAPIKey, privateAPIKey}...), false
-	}
-
-	if cfg.Credentials.APIKeys.PublicKey == "" {
-		missingFields = append(missingFields, publicAPIKey)
-	}
-
-	if cfg.Credentials.APIKeys.PrivateKey == "" {
-		missingFields = append(missingFields, privateAPIKey)
+	if hasAnyAPIKey {
+		if len(secret.Data[publicAPIKey]) == 0 {
+			missingFields = append(missingFields, publicAPIKey)
+		}
+		if len(secret.Data[privateAPIKey]) == 0 {
+			missingFields = append(missingFields, privateAPIKey)
+		}
+	} else if hasAnySA {
+		if len(secret.Data[ClientIDKey]) == 0 {
+			missingFields = append(missingFields, ClientIDKey)
+		}
+		if len(secret.Data[ClientSecretKey]) == 0 {
+			missingFields = append(missingFields, ClientSecretKey)
+		}
+	} else {
+		//By default, we are expecting API keys
+		missingFields = append(missingFields, publicAPIKey, privateAPIKey)
 	}
 
 	if len(missingFields) > 0 {
-		return missingFields, false
+		return fmt.Errorf("missing required fields: %v", missingFields)
 	}
 
-	return nil, true
+	return nil
 }
