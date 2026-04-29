@@ -287,6 +287,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 
 	// Pinned literal of accesstoken.DeriveSecretName("ns", "sa-creds").
 	const tokenSecretName = "atlas-access-token-sa-creds-6cd4c4d5f7d8d84ff"
+	const tokenSecretRef = "ns/" + tokenSecretName
 	// Pinned literal of accesstoken.CredentialsHash("client-id", "client-secret").
 	const matchingHash = "3974328787184052522"
 	// Pinned literal of accesstoken.CredentialsHash("old-client-id", "old-client-secret").
@@ -312,8 +313,6 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 			},
 		}
 	}
-
-	tokenRefStr := "ns/" + tokenSecretName
 	_, parseExpiryErr := time.Parse(time.RFC3339, "not-a-timestamp")
 	require.Error(t, parseExpiryErr)
 
@@ -326,7 +325,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 		{
 			name:          "no access token secret yet",
 			credSecret:    saCredSecret("client-id", "client-secret"),
-			expectedError: fmt.Sprintf("access token secret %s does not exist yet", tokenRefStr),
+			expectedError: fmt.Sprintf("access token secret %s does not exist yet", tokenSecretRef),
 		},
 		{
 			name:        "valid token returns service account credentials",
@@ -337,7 +336,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 			name:          "stale token after credential rotation",
 			credSecret:    saCredSecret("new-client-id", "new-client-secret"),
 			tokenSecret:   tokenSecret("stale-bearer-token", "2099-01-01T00:00:00Z", staleHash),
-			expectedError: fmt.Sprintf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRefStr),
+			expectedError: fmt.Sprintf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenSecretRef),
 		},
 		{
 			name: "secret with both API keys and service account credentials is rejected",
@@ -357,25 +356,25 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 			name:          "already-expired token is rejected",
 			credSecret:    saCredSecret("client-id", "client-secret"),
 			tokenSecret:   tokenSecret("bearer-token-value", "2000-01-01T00:00:00Z", matchingHash),
-			expectedError: fmt.Sprintf("access token secret %s is expired (expiry: 2000-01-01T00:00:00Z); waiting for the service-account-token controller to refresh", tokenRefStr),
+			expectedError: fmt.Sprintf("access token secret %s is expired (expiry: 2000-01-01T00:00:00Z); waiting for the service-account-token controller to refresh", tokenSecretRef),
 		},
 		{
 			name:          "empty expiry is rejected",
 			credSecret:    saCredSecret("client-id", "client-secret"),
 			tokenSecret:   tokenSecret("bearer-token-value", "", matchingHash),
-			expectedError: fmt.Sprintf("access token secret %s has an empty expiry field", tokenRefStr),
+			expectedError: fmt.Sprintf("access token secret %s has an empty expiry field", tokenSecretRef),
 		},
 		{
 			name:          "unparseable expiry is rejected",
 			credSecret:    saCredSecret("client-id", "client-secret"),
 			tokenSecret:   tokenSecret("bearer-token-value", "not-a-timestamp", matchingHash),
-			expectedError: fmt.Sprintf("access token secret %s has an invalid expiry field %q: %s", tokenRefStr, "not-a-timestamp", parseExpiryErr),
+			expectedError: fmt.Sprintf("access token secret %s has an invalid expiry field %q: %s", tokenSecretRef, "not-a-timestamp", parseExpiryErr),
 		},
 		{
 			name:          "empty accessToken is rejected",
 			credSecret:    saCredSecret("client-id", "client-secret"),
 			tokenSecret:   tokenSecret("", "2099-01-01T00:00:00Z", matchingHash),
-			expectedError: fmt.Sprintf("access token secret %s has an empty accessToken field", tokenRefStr),
+			expectedError: fmt.Sprintf("access token secret %s has an empty accessToken field", tokenSecretRef),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -401,97 +400,101 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	t.Run("should fail when secret has no data at all", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "orgId")
-		assert.Contains(t, err.Error(), "publicApiKey")
-		assert.Contains(t, err.Error(), "privateApiKey")
-	})
-
-	t.Run("should fail when orgId is missing", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"publicApiKey":  []byte("pub"),
-			"privateApiKey": []byte("priv"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "orgId")
-	})
-
-	t.Run("should fail when publicApiKey is missing", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":         []byte("org-123"),
-			"privateApiKey": []byte("priv"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "publicApiKey")
-	})
-
-	t.Run("should fail when privateApiKey is missing", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":        []byte("org-123"),
-			"publicApiKey": []byte("pub"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "privateApiKey")
-	})
-
-	t.Run("should succeed with complete API keys", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":         []byte("org-123"),
-			"publicApiKey":  []byte("pub"),
-			"privateApiKey": []byte("priv"),
-		}})
-		assert.NoError(t, err)
-	})
-
-	t.Run("should succeed with complete service account credentials", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":        []byte("org-123"),
-			"clientId":     []byte("client-id"),
-			"clientSecret": []byte("client-secret"),
-		}})
-		assert.NoError(t, err)
-	})
-
-	t.Run("should fail when clientId is missing", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":        []byte("org-123"),
-			"clientSecret": []byte("client-secret"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "clientId")
-	})
-
-	t.Run("should fail when clientSecret is missing", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":    []byte("org-123"),
-			"clientId": []byte("client-id"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "clientSecret")
-	})
-
-	t.Run("should fail when service account secret is missing orgId", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"clientId":     []byte("client-id"),
-			"clientSecret": []byte("client-secret"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "orgId")
-	})
-
-	t.Run("should fail when secret contains both API key and service account credentials", func(t *testing.T) {
-		err := validateConnectionSecret(&corev1.Secret{Data: map[string][]byte{
-			"orgId":         []byte("org-123"),
-			"publicApiKey":  []byte("pub"),
-			"privateApiKey": []byte("priv"),
-			"clientId":      []byte("client-id"),
-			"clientSecret":  []byte("client-secret"),
-		}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "both API key and service account credentials")
-	})
+	for _, tc := range []struct {
+		name          string
+		data          map[string][]byte
+		expectedError string
+	}{
+		{
+			name:          "secret has no data at all",
+			data:          nil,
+			expectedError: "missing required fields: [orgId publicApiKey privateApiKey]",
+		},
+		{
+			name: "API key secret is missing orgId",
+			data: map[string][]byte{
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+			},
+			expectedError: "missing required fields: [orgId]",
+		},
+		{
+			name: "API key secret is missing publicApiKey",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"privateApiKey": []byte("priv"),
+			},
+			expectedError: "missing required fields: [publicApiKey]",
+		},
+		{
+			name: "API key secret is missing privateApiKey",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"publicApiKey": []byte("pub"),
+			},
+			expectedError: "missing required fields: [privateApiKey]",
+		},
+		{
+			name: "complete API key secret is accepted",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+			},
+		},
+		{
+			name: "complete service account secret is accepted",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		},
+		{
+			name: "service account secret is missing clientId",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientSecret": []byte("client-secret"),
+			},
+			expectedError: "missing required fields: [clientId]",
+		},
+		{
+			name: "service account secret is missing clientSecret",
+			data: map[string][]byte{
+				"orgId":    []byte("org-123"),
+				"clientId": []byte("client-id"),
+			},
+			expectedError: "missing required fields: [clientSecret]",
+		},
+		{
+			name: "service account secret is missing orgId",
+			data: map[string][]byte{
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+			expectedError: "missing required fields: [orgId]",
+		},
+		{
+			name: "secret containing both API key and service account credentials is rejected",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+				"clientId":      []byte("client-id"),
+				"clientSecret":  []byte("client-secret"),
+			},
+			expectedError: "secret contains both API key and service account credentials; only one type is allowed",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateConnectionSecret(&corev1.Secret{Data: tc.data})
+			if tc.expectedError != "" {
+				require.EqualError(t, err, tc.expectedError)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func newFakeKubeClient(t *testing.T, objs ...client.Object) client.Client {
