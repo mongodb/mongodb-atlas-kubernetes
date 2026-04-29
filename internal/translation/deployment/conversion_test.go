@@ -25,6 +25,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNewDeployment(t *testing.T) {
@@ -1239,4 +1240,163 @@ func TestIsType(t *testing.T) {
 			assert.Equal(t, tt.wantDedicated, d.IsDedicated())
 		})
 	}
+}
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// terminationProtectionEnabled=false must be sent to Atlas as an explicit false,
+// not omitted. Otherwise, when Atlas has it true (e.g. set via UI), the PATCH can
+// never disable it and the controller reconciles forever.
+func TestClusterUpdateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	req := clusterUpdateToAtlas(cluster)
+
+	require.NotNil(t, req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be sent as explicit false, got nil (field would be omitted from PATCH)")
+	assert.False(t, *req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be false")
+}
+
+// Regression test for the Atlas integration failure introduced when always
+// sending TerminationProtectionEnabled. The pause path (ComputeChanges
+// special-case) must produce a PATCH body containing only the Paused field —
+// otherwise Atlas rejects the request with HTTP 409
+// CANNOT_UPDATE_AND_PAUSE_CLUSTER. The previous implementation relied on
+// MakePtrOrNil silently dropping zero-value fields; switching to MakePtr broke
+// that implicit contract.
+func TestClusterUpdateToAtlas_PauseOnlyOmitsOtherFields(t *testing.T) {
+	desired := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			Paused:                       pointer.MakePtr(true),
+			TerminationProtectionEnabled: false,
+		},
+	}
+	current := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			Paused:                       pointer.MakePtr(false),
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	changes, occurred := ComputeChanges(desired, current)
+	require.True(t, occurred)
+	require.NotNil(t, changes)
+
+	req := clusterUpdateToAtlas(changes)
+
+	require.NotNil(t, req.Paused)
+	assert.True(t, *req.Paused)
+	assert.Nil(t, req.TerminationProtectionEnabled,
+		"pause-only PATCH must not include TerminationProtectionEnabled or Atlas rejects with CANNOT_UPDATE_AND_PAUSE_CLUSTER")
+	assert.Nil(t, req.ClusterType)
+	assert.Nil(t, req.BackupEnabled)
+	assert.Nil(t, req.PitEnabled)
+	assert.Nil(t, req.ReplicationSpecs)
+}
+
+func TestClusterCreateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	req := clusterCreateToAtlas(cluster)
+
+	require.NotNil(t, req.TerminationProtectionEnabled,
+		"expected TerminationProtectionEnabled to be sent as explicit false, got nil")
+	assert.False(t, *req.TerminationProtectionEnabled)
+}
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// When the user leaves processArgs fields unset in the CR, Atlas returns its own
+// defaults (e.g. DefaultWriteConcern="majority", OplogSizeMB=990). The reconciler's
+// equality check (reflect.DeepEqual on *akov2.ProcessArgs) must treat those
+// CR-unset fields as "no opinion" — otherwise the round-trip loops forever:
+//   - DeepEqual says desired != current
+//   - processArgsToAtlas drops zero values via MakePtrOrNil → PATCH body is empty
+//   - Atlas keeps its defaults → next reconcile reports the same diff → UPDATE
+//     is re-issued endlessly.
+//
+// This test pins the symmetry: a pair where AKO has an unset field and Atlas
+// has a server default should not require an update request. The fix may be
+// either in the compare step or in how processArgsFromAtlas normalizes defaults.
+func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
+	// What the user's CR yields after normalization: mostly defaults, no
+	// opinion on DefaultWriteConcern or OplogSizeMB.
+	akoArgs := &akov2.ProcessArgs{}
+	normalizeProcessArgs(akoArgs)
+
+	// What Atlas returns for an unconfigured cluster: populated server defaults.
+	atlasArgs := processArgsFromAtlas(&admin.ClusterDescriptionProcessArgs20240805{
+		DefaultWriteConcern:       pointer.MakePtr("majority"),
+		MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1_2"),
+		JavascriptEnabled:         pointer.MakePtr(true),
+		NoTableScan:               pointer.MakePtr(false),
+		OplogSizeMB:               pointer.MakePtr(990),
+	})
+
+	// Drives the controller's UpdateProcessArgs call in
+	// internal/controller/atlasdeployment/advanced_deployment.go.
+	require.True(t,
+		ProcessArgsEqual(akoArgs, atlasArgs),
+		"expected AKO processArgs (CR-unset defaults) to be considered equal to "+
+			"Atlas processArgs (server defaults), otherwise the controller will "+
+			"call UpdateProcessArgs every reconcile — and the PATCH body omits "+
+			"zero values, so Atlas never converges. Got:\n  ako:   %+v\n  atlas: %+v",
+		akoArgs, atlasArgs)
+}
+
+// Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
+// (review follow-up). When the user sets an explicit zero on a *int64 processArgs
+// field (e.g. OplogSizeMB: pointer.MakePtr[int64](0)), processArgsToAtlas must
+// preserve that zero in the PATCH body — otherwise the same loop class returns:
+// the comparator sees a diff against Atlas's non-zero default, but the converter
+// drops the zero and Atlas never converges.
+func TestProcessArgsToAtlas_ExplicitZeroIntIsSent(t *testing.T) {
+	args := &akov2.ProcessArgs{
+		OplogSizeMB:                      pointer.MakePtr[int64](0),
+		SampleSizeBIConnector:            pointer.MakePtr[int64](0),
+		SampleRefreshIntervalBIConnector: pointer.MakePtr[int64](0),
+	}
+
+	got, err := processArgsToAtlas(args)
+	require.NoError(t, err)
+
+	require.NotNil(t, got.OplogSizeMB,
+		"expected OplogSizeMB=0 to survive PATCH conversion, got nil (field would be omitted)")
+	assert.Equal(t, 0, *got.OplogSizeMB)
+
+	require.NotNil(t, got.SampleSizeBIConnector,
+		"expected SampleSizeBIConnector=0 to survive PATCH conversion")
+	assert.Equal(t, 0, *got.SampleSizeBIConnector)
+
+	require.NotNil(t, got.SampleRefreshIntervalBIConnector,
+		"expected SampleRefreshIntervalBIConnector=0 to survive PATCH conversion")
+	assert.Equal(t, 0, *got.SampleRefreshIntervalBIConnector)
+}
+
+// Companion: nil on the AKO side must remain nil in the PATCH body — that's
+// the "no opinion" case ProcessArgsEqual relies on.
+func TestProcessArgsToAtlas_NilIntStaysNil(t *testing.T) {
+	args := &akov2.ProcessArgs{}
+
+	got, err := processArgsToAtlas(args)
+	require.NoError(t, err)
+
+	assert.Nil(t, got.OplogSizeMB)
+	assert.Nil(t, got.SampleSizeBIConnector)
+	assert.Nil(t, got.SampleRefreshIntervalBIConnector)
 }
