@@ -62,6 +62,12 @@ type Cluster struct {
 	computeAutoscalingEnabled bool
 	instanceSizeOverride      string
 	isTenant                  bool
+
+	// pauseOnly marks a Cluster produced by ComputeChanges' pause special-case.
+	// clusterUpdateToAtlas must build a body containing only Paused for these,
+	// because Atlas rejects PATCHes that combine pause with any other field
+	// change (HTTP 409 CANNOT_UPDATE_AND_PAUSE_CLUSTER).
+	pauseOnly bool
 }
 
 func (c *Cluster) GetName() string {
@@ -589,6 +595,13 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 }
 
 func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
+	// Pause-only updates must not include any other field, or Atlas rejects
+	// with HTTP 409 CANNOT_UPDATE_AND_PAUSE_CLUSTER.
+	if cluster.pauseOnly {
+		return &admin.ClusterDescription20240805{
+			Paused: cluster.Paused,
+		}
+	}
 	return &admin.ClusterDescription20240805{
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),

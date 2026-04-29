@@ -31,6 +31,7 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 				Name:   desired.Name,
 				Paused: new(pointer.GetOrDefault(desired.Paused, false)),
 			},
+			pauseOnly: true,
 		}, true
 	}
 

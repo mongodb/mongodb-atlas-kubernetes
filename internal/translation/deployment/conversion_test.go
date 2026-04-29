@@ -1263,6 +1263,47 @@ func TestClusterUpdateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
 		"expected TerminationProtectionEnabled to be false")
 }
 
+// Regression test for the Atlas integration failure introduced when always
+// sending TerminationProtectionEnabled. The pause path (ComputeChanges
+// special-case) must produce a PATCH body containing only the Paused field —
+// otherwise Atlas rejects the request with HTTP 409
+// CANNOT_UPDATE_AND_PAUSE_CLUSTER. The previous implementation relied on
+// MakePtrOrNil silently dropping zero-value fields; switching to MakePtr broke
+// that implicit contract.
+func TestClusterUpdateToAtlas_PauseOnlyOmitsOtherFields(t *testing.T) {
+	desired := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			Paused:                       pointer.MakePtr(true),
+			TerminationProtectionEnabled: false,
+		},
+	}
+	current := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:                         "cluster0",
+			ClusterType:                  "REPLICASET",
+			Paused:                       pointer.MakePtr(false),
+			TerminationProtectionEnabled: false,
+		},
+	}
+
+	changes, occurred := ComputeChanges(desired, current)
+	require.True(t, occurred)
+	require.NotNil(t, changes)
+
+	req := clusterUpdateToAtlas(changes)
+
+	require.NotNil(t, req.Paused)
+	assert.True(t, *req.Paused)
+	assert.Nil(t, req.TerminationProtectionEnabled,
+		"pause-only PATCH must not include TerminationProtectionEnabled or Atlas rejects with CANNOT_UPDATE_AND_PAUSE_CLUSTER")
+	assert.Nil(t, req.ClusterType)
+	assert.Nil(t, req.BackupEnabled)
+	assert.Nil(t, req.PitEnabled)
+	assert.Nil(t, req.ReplicationSpecs)
+}
+
 func TestClusterCreateToAtlas_TerminationProtectionFalseIsSent(t *testing.T) {
 	cluster := &Cluster{
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{

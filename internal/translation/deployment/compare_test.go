@@ -57,6 +57,7 @@ func TestComputeChanges(t *testing.T) {
 					Name:   "cluster0",
 					Paused: new(true),
 				},
+				pauseOnly: true,
 			},
 			changed: true,
 		},
