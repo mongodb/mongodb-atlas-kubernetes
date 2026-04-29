@@ -52,11 +52,9 @@ const (
 // would exceed the Kubernetes 253-character DNS-subdomain limit. Uniqueness
 // is guaranteed by the hash suffix, which always uses the full (untruncated)
 // name as input.
-func DeriveSecretName(namespace, connectionSecretName string) (string, error) {
+func DeriveSecretName(namespace, connectionSecretName string) string {
 	hasher := fnv.New64a()
-	if _, err := hasher.Write([]byte(namespace + "/" + connectionSecretName)); err != nil {
-		return "", fmt.Errorf("failed to compute hash for access token secret name: %w", err)
-	}
+	_, _ = hasher.Write([]byte(namespace + "/" + connectionSecretName))
 	hash := rand.SafeEncodeString(fmt.Sprint(hasher.Sum64()))
 
 	const k8sNameLimit = 253
@@ -65,16 +63,14 @@ func DeriveSecretName(namespace, connectionSecretName string) (string, error) {
 	if len(name) > maxNameLen {
 		name = name[:maxNameLen]
 	}
-	return secretNamePrefix + name + "-" + hash, nil
+	return secretNamePrefix + name + "-" + hash
 }
 
 // CredentialsHash returns a non-cryptographic fingerprint of the credential
 // pair. The nul separator disambiguates ("ab","c") from ("a","bc") — without
 // it, both would concatenate to the same input and collide.
-func CredentialsHash(clientID, clientSecret string) (string, error) {
+func CredentialsHash(clientID, clientSecret string) string {
 	h := fnv.New64a()
-	if _, err := h.Write([]byte(clientID + "\x00" + clientSecret)); err != nil {
-		return "", fmt.Errorf("failed to compute credentials hash: %w", err)
-	}
-	return fmt.Sprint(h.Sum64()), nil
+	_, _ = h.Write([]byte(clientID + "\x00" + clientSecret))
+	return fmt.Sprint(h.Sum64())
 }

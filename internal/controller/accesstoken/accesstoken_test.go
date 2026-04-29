@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/accesstoken"
 )
@@ -69,8 +68,7 @@ func TestDeriveSecretName(t *testing.T) {
 
 	for desc, data := range dataProvider {
 		t.Run(desc, func(t *testing.T) {
-			got, err := accesstoken.DeriveSecretName(data.namespace, data.connectionSecretName)
-			require.NoError(t, err)
+			got := accesstoken.DeriveSecretName(data.namespace, data.connectionSecretName)
 			assert.Equal(t, data.expected, got)
 		})
 	}
@@ -116,8 +114,7 @@ func TestCredentialsHash(t *testing.T) {
 
 	for desc, data := range dataProvider {
 		t.Run(desc, func(t *testing.T) {
-			got, err := accesstoken.CredentialsHash(data.clientID, data.clientSecret)
-			require.NoError(t, err)
+			got := accesstoken.CredentialsHash(data.clientID, data.clientSecret)
 			assert.Equal(t, data.expected, got)
 		})
 	}

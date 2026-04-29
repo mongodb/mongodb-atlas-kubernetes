@@ -103,7 +103,7 @@ func createServiceAccountCredentialSecret(
 }
 
 func waitForAccessTokenSecret(ctx context.Context, kubeClient client.Client, secret *corev1.Secret) *corev1.Secret {
-	expectedName, _ := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
+	expectedName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenSecret := &corev1.Secret{}
 	EventuallyWithOffset(1, func(g Gomega) bool {
 		err := kubeClient.Get(ctx, client.ObjectKey{
@@ -204,7 +204,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		Expect(kubeClient.Create(ctx, apiKeySecret)).To(Succeed())
 
 		By("Verifying no access token secret is created")
-		expectedName, _ := accesstoken.DeriveSecretName(apiKeySecret.Namespace, apiKeySecret.Name)
+		expectedName := accesstoken.DeriveSecretName(apiKeySecret.Namespace, apiKeySecret.Name)
 		Consistently(func(g Gomega) bool {
 			tokenSecret := &corev1.Secret{}
 			err := kubeClient.Get(ctx, client.ObjectKey{
@@ -229,8 +229,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		initialToken := waitForAccessTokenSecret(ctx, kubeClient, credentialSecret)
 		initialAccessToken := string(initialToken.Data["accessToken"])
 		Expect(initialAccessToken).NotTo(BeEmpty())
-		initialHash, err := accesstoken.CredentialsHash(firstCreds.clientID, firstCreds.clientSecret)
-		Expect(err).NotTo(HaveOccurred())
+		initialHash := accesstoken.CredentialsHash(firstCreds.clientID, firstCreds.clientSecret)
 		Expect(string(initialToken.Data["credentialsHash"])).To(Equal(initialHash),
 			"initial token secret must record the hash of the first credentials")
 
@@ -244,10 +243,9 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).Should(Succeed())
 
 		By("Waiting for the access token secret to be refreshed with the second credentials")
-		expectedHash, err := accesstoken.CredentialsHash(secondCreds.clientID, secondCreds.clientSecret)
-		Expect(err).NotTo(HaveOccurred())
+		expectedHash := accesstoken.CredentialsHash(secondCreds.clientID, secondCreds.clientSecret)
 		Eventually(func(g Gomega) {
-			tokenName, _ := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
+			tokenName := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
 			refreshed := &corev1.Secret{}
 			g.Expect(kubeClient.Get(ctx, client.ObjectKey{Name: tokenName, Namespace: credentialSecret.Namespace}, refreshed)).To(Succeed())
 			g.Expect(string(refreshed.Data["credentialsHash"])).To(Equal(expectedHash),
@@ -274,7 +272,7 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 		Expect(kubeClient.Delete(ctx, initial)).To(Succeed())
 
 		By("Waiting for the operator to recreate the access token secret via the ownerReference watch")
-		tokenName, _ := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
+		tokenName := accesstoken.DeriveSecretName(credentialSecret.Namespace, credentialSecret.Name)
 		Eventually(func(g Gomega) {
 			recreated := &corev1.Secret{}
 			g.Expect(kubeClient.Get(ctx, client.ObjectKey{Name: tokenName, Namespace: credentialSecret.Namespace}, recreated)).To(Succeed())

@@ -89,16 +89,10 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	log.Info("Reconciling service account credential secret")
 
-	tokenSecretName, err := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to derive access token secret name: %w", err)
-	}
+	tokenSecretName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
-	currentHash, err := accesstoken.CredentialsHash(clientID, clientSecret)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	currentHash := accesstoken.CredentialsHash(clientID, clientSecret)
 
 	existingTokenSecret := &corev1.Secret{}
 	if err := r.Client.Get(ctx, tokenRef, existingTokenSecret); err != nil {

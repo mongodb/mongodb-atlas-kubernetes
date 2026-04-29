@@ -114,7 +114,7 @@ func TestReconcile_CreatesTokenSecretOnFirstRun(t *testing.T) {
 	assert.True(t, result.RequeueAfter > 0)
 	assert.Equal(t, 1, tp.calls)
 
-	expectedTokenName, _ := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
+	expectedTokenName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 
 	tokenSecret := &corev1.Secret{}
 	require.NoError(t, k8sClient.Get(context.Background(),
@@ -139,13 +139,12 @@ func TestReconcile_CreatesTokenSecretOnFirstRun(t *testing.T) {
 
 func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 	expiredExpiry := time.Now().Add(-10 * time.Minute)
-	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	tokenSecretName := accesstoken.DeriveSecretName("ns", "sa-creds")
 
 	// Pre-populate credentialsHash to match the current creds so the staleness
 	// branch in Reconcile can't fire — leaves expiry as the only path that can
 	// trigger the refresh.
-	matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
-	require.NoError(t, err)
+	matchingHash := accesstoken.CredentialsHash("client-id", "client-secret")
 
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,18 +189,16 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 	require.NoError(t, k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: tokenSecretName, Namespace: "ns"}, updatedToken))
 	assert.Equal(t, "new-token", string(updatedToken.Data["accessToken"]))
-	expectedHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
-	require.NoError(t, err)
+	expectedHash := accesstoken.CredentialsHash("client-id", "client-secret")
 	assert.Equal(t, expectedHash, string(updatedToken.Data["credentialsHash"]),
 		"refresh must write the credentials hash alongside the new bearer token")
 }
 
 func TestReconcile_SkipsRefreshWhenTokenStillValid(t *testing.T) {
 	futureExpiry := time.Now().Add(1 * time.Hour)
-	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	tokenSecretName := accesstoken.DeriveSecretName("ns", "sa-creds")
 
-	matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
-	require.NoError(t, err)
+	matchingHash := accesstoken.CredentialsHash("client-id", "client-secret")
 
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -243,10 +240,9 @@ func TestReconcile_SkipsRefreshWhenTokenStillValid(t *testing.T) {
 
 func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 	futureExpiry := time.Now().Add(1 * time.Hour)
-	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	tokenSecretName := accesstoken.DeriveSecretName("ns", "sa-creds")
 
-	staleHash, err := accesstoken.CredentialsHash("old-client-id", "old-client-secret")
-	require.NoError(t, err)
+	staleHash := accesstoken.CredentialsHash("old-client-id", "old-client-secret")
 
 	// Token Secret was minted from old credentials ("old-client-id"/"old-client-secret").
 	tokenSecret := &corev1.Secret{
@@ -280,7 +276,7 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 	tp := &fakeTokenProvider{token: "fresh-token", expiry: newExpiry}
 	r, k8sClient := newReconciler(t, tp, credSecret, tokenSecret)
 
-	_, err = r.Reconcile(context.Background(), ctrl.Request{
+	_, err := r.Reconcile(context.Background(), ctrl.Request{
 		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
 	})
 	require.NoError(t, err)
@@ -290,8 +286,7 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 	require.NoError(t, k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: tokenSecretName, Namespace: "ns"}, updated))
 	assert.Equal(t, "fresh-token", string(updated.Data["accessToken"]))
-	expectedHash, err := accesstoken.CredentialsHash("new-client-id", "new-client-secret")
-	require.NoError(t, err)
+	expectedHash := accesstoken.CredentialsHash("new-client-id", "new-client-secret")
 	assert.Equal(t,
 		expectedHash,
 		string(updated.Data["credentialsHash"]),
@@ -363,7 +358,7 @@ func TestReconcile_RecreatesTokenWhenMissing(t *testing.T) {
 	assert.True(t, result.RequeueAfter > 0)
 	assert.Equal(t, 1, tp.calls)
 
-	expectedTokenName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	expectedTokenName := accesstoken.DeriveSecretName("ns", "sa-creds")
 	tokenSecret := &corev1.Secret{}
 	require.NoError(t, k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: expectedTokenName, Namespace: "ns"}, tokenSecret))
@@ -400,14 +395,14 @@ func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 	require.NoError(t, err, "duplicate reconcile must be idempotent")
 
 	// There must be exactly one token Secret at the derived name.
-	expectedTokenName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	expectedTokenName := accesstoken.DeriveSecretName("ns", "sa-creds")
 	tokenSecret := &corev1.Secret{}
 	require.NoError(t, k8sClient.Get(context.Background(),
 		types.NamespacedName{Name: expectedTokenName, Namespace: "ns"}, tokenSecret))
 }
 
 func TestMapAccessTokenSecretToOwner_EnqueuesOwner(t *testing.T) {
-	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
+	tokenSecretName := accesstoken.DeriveSecretName("ns", "sa-creds")
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tokenSecretName,

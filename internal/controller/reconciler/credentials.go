@@ -117,10 +117,7 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 }
 
 func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, secret *corev1.Secret) (string, error) {
-	tokenSecretName, err := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
-	if err != nil {
-		return "", err
-	}
+	tokenSecretName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
 	tokenSecret := &corev1.Secret{}
@@ -135,10 +132,7 @@ func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, 
 	// rotated since the token was issued, the service-account-token controller
 	// may not have caught up yet. Returning an error prompts the downstream
 	// reconciler to retry rather than hitting Atlas with revoked credentials.
-	currentHash, err := accesstoken.CredentialsHash(string(secret.Data[ClientIDKey]), string(secret.Data[ClientSecretKey]))
-	if err != nil {
-		return "", err
-	}
+	currentHash := accesstoken.CredentialsHash(string(secret.Data[ClientIDKey]), string(secret.Data[ClientSecretKey]))
 	if string(tokenSecret.Data[accesstoken.CredentialsHashKey]) != currentHash {
 		return "", fmt.Errorf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRef.String())
 	}
