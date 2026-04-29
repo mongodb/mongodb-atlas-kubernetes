@@ -69,6 +69,16 @@ helm install atlas-operator mongodb/mongodb-atlas-operator \
     --set globalConnectionSecret.orgId=<the_org_id>
 ```
 
+Alternatively, you can install the Operator using Atlas Service Account
+credentials (recommended) instead of an API key:
+
+```shell
+helm install mongodb-atlas-operator mongodb/mongodb-atlas-operator \
+    --set globalConnectionSecret.clientId=<the_client_id> \
+    --set globalConnectionSecret.clientSecret=<the_client_secret> \
+    --set globalConnectionSecret.orgId=<the_org_id>
+```
+
 ### Upgrading the Operator:
 
 ```

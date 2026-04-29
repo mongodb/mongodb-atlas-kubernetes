@@ -49,6 +49,19 @@ helm install atlas-deployment mongodb/atlas-deployment\
     --set atlas.secret.publicApiKey='<publicKey>' \
     --set atlas.secret.privateApiKey='<privateApiKey>'
 ```
+
+Or with a MongoDB Atlas Service Account (recommended):
+
+```shell
+helm install atlas-deployment mongodb/atlas-deployment \
+    --set project.atlasProjectName='My Project' \
+    --set atlas.secret.orgId='<orgid>' \
+    --set atlas.secret.clientId='<clientId>' \
+    --set atlas.secret.clientSecret='<clientSecret>'
+```
+
+Setting both API-key and Service Account fields at the same time is rejected at chart-render time.
+
 Note, by default a random password will be generated. You can optionally also pass in a random username, however since this value is shared across templates this must be passed in, for example:
 
 ```shell
