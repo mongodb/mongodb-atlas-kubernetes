@@ -141,6 +141,12 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 	expiredExpiry := time.Now().Add(-10 * time.Minute)
 	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
 
+	// Pre-populate credentialsHash to match the current creds so the staleness
+	// branch in Reconcile can't fire — leaves expiry as the only path that can
+	// trigger the refresh.
+	matchingHash, err := accesstoken.CredentialsHash("client-id", "client-secret")
+	require.NoError(t, err)
+
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tokenSecretName,
@@ -150,8 +156,9 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 			},
 		},
 		Data: map[string][]byte{
-			"accessToken": []byte("old-token"),
-			"expiry":      []byte(expiredExpiry.Format(time.RFC3339)),
+			"accessToken":     []byte("old-token"),
+			"expiry":          []byte(expiredExpiry.Format(time.RFC3339)),
+			"credentialsHash": []byte(matchingHash),
 		},
 	}
 	credSecret := &corev1.Secret{
