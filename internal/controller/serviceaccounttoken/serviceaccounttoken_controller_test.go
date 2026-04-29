@@ -407,14 +407,13 @@ func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 }
 
 func TestMapAccessTokenSecretToOwner_EnqueuesOwner(t *testing.T) {
-	controller := true
 	tokenSecretName, _ := accesstoken.DeriveSecretName("ns", "sa-creds")
 	tokenSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tokenSecretName,
 			Namespace: "ns",
 			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "v1", Kind: "Secret", Name: "sa-creds", Controller: &controller},
+				{APIVersion: "v1", Kind: "Secret", Name: "sa-creds", Controller: new(true)},
 			},
 		},
 	}
@@ -442,13 +441,12 @@ func TestMapAccessTokenSecretToOwner_NonSecretOwnerIgnored(t *testing.T) {
 	// An unrelated Secret owned by, say, an AtlasProject must not enqueue its
 	// owner via this path — the map is only for Access Token Secrets owned by
 	// Connection Secrets.
-	controller := true
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "some-other-secret",
 			Namespace: "ns",
 			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "atlas.mongodb.com/v1", Kind: "AtlasProject", Name: "foo", Controller: &controller},
+				{APIVersion: "atlas.mongodb.com/v1", Kind: "AtlasProject", Name: "foo", Controller: new(true)},
 			},
 		},
 	}
