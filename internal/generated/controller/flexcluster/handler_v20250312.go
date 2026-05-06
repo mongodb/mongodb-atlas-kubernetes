@@ -88,22 +88,34 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 
 // HandleImportRequested handles the importrequested state for version v20250312
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	externalName, ok := flexcluster.GetAnnotations()["mongodb.com/external-name"]
+	id, ok := flexcluster.GetAnnotations()["mongodb.com/external-id"]
 	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing mongodb.com/external-name"))
+		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
 	}
 
-	externalGroupID, ok := flexcluster.GetAnnotations()["mongodb.com/external-group-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing mongodb.com/external-group-id"))
-	}
-	flexClusterCopy := flexcluster.DeepCopy()
-	flexClusterCopy.Spec.V20250312.Entry.Name = externalName
-	flexClusterCopy.Spec.V20250312.GroupId = &externalGroupID
-	_, err := h.patchStatus(ctx, flexClusterCopy)
+	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to resolve FlexCluster dependencies: %w", err))
 	}
+
+	params := &v20250312sdk.GetFlexClusterApiParams{
+		Name: id,
+	}
+	err = h.translator.ToAPI(params, flexcluster, deps...)
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate FlexCluster API parameters to Atlas: %w", err))
+	}
+
+	_, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get FlexCluster with id %s: %w", id, err))
+	}
+
+	_, err = h.patchStatus(ctx, flexcluster)
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch FlexCluster status: %w", err))
+	}
+
 	return result.NextState(state.StateImported, "Imported Flex Cluster.")
 }
 
