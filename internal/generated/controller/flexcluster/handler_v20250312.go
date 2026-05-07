@@ -16,7 +16,6 @@ package flexcluster
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
@@ -88,9 +87,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 
 // HandleImportRequested handles the importrequested state for version v20250312
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	id, ok := flexcluster.GetAnnotations()["mongodb.com/external-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+	id, err := ctrlstate.GetExternalID(flexcluster)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
 	}
 
 	deps, err := h.getDependencies(ctx, flexcluster)

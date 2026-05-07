@@ -16,7 +16,6 @@ package group
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
@@ -81,9 +80,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2genera
 
 // HandleImportRequested handles the importrequested state for version v20250312
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	id, ok := group.GetAnnotations()["mongodb.com/external-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+	id, err := ctrlstate.GetExternalID(group)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
 	}
 
 	response, _, err := h.atlasClient.ProjectsApi.GetGroup(ctx, id).Execute()
