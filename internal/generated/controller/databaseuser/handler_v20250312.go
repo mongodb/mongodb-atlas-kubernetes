@@ -16,7 +16,6 @@ package databaseuser
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -85,9 +84,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, databaseuser *akov
 // HandleImportRequested handles the importrequested state for version v20250312.
 // The annotation mongodb.com/external-id must be set to "groupId:databaseName:username".
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	externalID, ok := databaseuser.GetAnnotations()["mongodb.com/external-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+	externalID, err := ctrlstate.GetExternalID(databaseuser)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
 	}
 
 	databaseName, username, err := parseExternalID(externalID)

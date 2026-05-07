@@ -14,12 +14,19 @@
 
 package state
 
-import "strings"
+import (
+	"fmt"
 
-const (
-	AnnotationReapplyTimestamp = "mongodb.internal.com/reapply-timestamp"
-	AnnotationStateTracker     = "mongodb.internal.com/state-tracker"
-	AnnotationExternalID       = "mongodb.com/external-id"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var jsonPatchReplacer = strings.NewReplacer("/", "~1", "~", "~0")
+// GetExternalID reads the AnnotationExternalID annotation from obj.
+// Returns an error if the annotation is absent or empty.
+func GetExternalID(obj metav1.Object) (string, error) {
+	id, ok := obj.GetAnnotations()[AnnotationExternalID]
+	if !ok || id == "" {
+		return "", fmt.Errorf("missing annotation %s", AnnotationExternalID)
+	}
+
+	return id, nil
+}
