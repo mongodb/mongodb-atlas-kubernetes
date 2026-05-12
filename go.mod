@@ -3,7 +3,7 @@ module github.com/mongodb/mongodb-atlas-kubernetes/v2
 go 1.26.3
 
 require (
-	cloud.google.com/go/kms v1.30.0
+	cloud.google.com/go/kms v1.31.0
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
@@ -15,14 +15,14 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.300.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.301.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.10
 	github.com/aws/aws-sdk-go-v2/service/kms v1.51.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1
 	github.com/aws/smithy-go v1.25.1
 	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
-	github.com/getkin/kin-openapi v0.137.0
+	github.com/getkin/kin-openapi v0.138.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
 	github.com/google/go-cmp v0.7.0
@@ -38,7 +38,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.9
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/api v0.277.0
+	google.golang.org/api v0.278.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.36.0
@@ -119,7 +119,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.61.0
+	cloud.google.com/go/compute v1.62.0
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
