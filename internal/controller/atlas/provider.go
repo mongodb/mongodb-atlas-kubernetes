@@ -26,6 +26,7 @@ import (
 	"github.com/mongodb-forks/digest"
 	v20250312 "go.mongodb.org/atlas-sdk/v20250312018/admin"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -62,16 +63,23 @@ type ConnectionConfig struct {
 }
 
 // Credentials is the type that holds credentials to authenticate against the Atlas API.
-// Currently, only API keys are support but more credential types could be added,
-// see https://www.mongodb.com/docs/atlas/configure-api-access/.
+// Either APIKeys or ServiceAccount must be set, but not both.
+// See https://www.mongodb.com/docs/atlas/configure-api-access/.
 type Credentials struct {
-	APIKeys *APIKeys
+	APIKeys        *APIKeys
+	ServiceAccount *ServiceAccountToken
 }
 
 // APIKeys is the type that holds Public/Private API keys to authenticate against the Atlas API.
 type APIKeys struct {
 	PublicKey  string
 	PrivateKey string
+}
+
+// ServiceAccountToken holds a pre-fetched OAuth2 bearer token obtained
+// by the service-account controller via the client credentials flow.
+type ServiceAccountToken struct {
+	BearerToken string
 }
 
 func NewProductionProvider(atlasDomain string, dryRun, isLogInDebug bool) *ProductionProvider {
@@ -123,8 +131,21 @@ func (p *ProductionProvider) IsResourceSupported(resource api.AtlasCustomResourc
 }
 
 func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credentials, log *zap.SugaredLogger) (*ClientSet, error) {
-	var transport http.RoundTripper = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
-	transport = p.newTransport(transport, log)
+	var baseTransport http.RoundTripper
+	switch {
+	case creds.ServiceAccount != nil:
+		baseTransport = &oauth2.Transport{
+			Source: oauth2.StaticTokenSource(&oauth2.Token{
+				AccessToken: creds.ServiceAccount.BearerToken,
+			}),
+		}
+	case creds.APIKeys != nil:
+		baseTransport = digest.NewTransport(creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey)
+	default:
+		return nil, fmt.Errorf("no credentials provided")
+	}
+
+	transport := p.newTransport(baseTransport, log)
 	transport = httputil.NewLoggingTransport(log, false, transport)
 	if p.isLogInDebug {
 		log.Debug("JSON payload diff is enabled for Atlas API requests (PATCH & PUT)")
@@ -133,7 +154,7 @@ func (p *ProductionProvider) SdkClientSet(ctx context.Context, creds *Credential
 
 	httpClient := &http.Client{Transport: transport}
 
-	return NewSDKClientSet(p.domain, creds.APIKeys.PublicKey, creds.APIKeys.PrivateKey, httpClient)
+	return NewSDKClientSet(p.domain, httpClient)
 }
 
 func (p *ProductionProvider) newTransport(delegate http.RoundTripper, log *zap.SugaredLogger) http.RoundTripper {
@@ -152,7 +173,7 @@ func operatorUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s;%s)", "MongoDBAtlasKubernetesOperator", version.Version, runtime.GOOS, runtime.GOARCH)
 }
 
-func NewSDKClientSet(domain, publicKey, privateKey string, httpClient *http.Client) (*ClientSet, error) {
+func NewSDKClientSet(domain string, httpClient *http.Client) (*ClientSet, error) {
 	clientv20250312, err := v20250312.NewClient(
 		v20250312.UseBaseURL(domain),
 		v20250312.UseHTTPClient(httpClient),

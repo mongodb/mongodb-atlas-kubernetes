@@ -16,7 +16,9 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -280,36 +282,219 @@ func TestResolveConnectionConfig(t *testing.T) {
 	}
 }
 
-func TestValidateConnectionConfig(t *testing.T) {
-	t.Run("should be invalid and all missing data", func(t *testing.T) {
-		missing, ok := validate(nil)
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"orgId", "publicApiKey", "privateApiKey"})
-	})
+func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
+	ctx := context.Background()
 
-	t.Run("should be invalid and organization id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"orgId"})
-	})
+	// Pinned literal of accesstoken.DeriveSecretName("ns", "sa-creds").
+	const tokenSecretName = "atlas-access-token-sa-creds-6cd4c4d5f7d8d84ff"
+	const tokenSecretRef = "ns/" + tokenSecretName
+	// Pinned literal of accesstoken.CredentialsHash("client-id", "client-secret").
+	const matchingHash = "3974328787184052522"
+	// Pinned literal of accesstoken.CredentialsHash("old-client-id", "old-client-secret").
+	const staleHash = "17764957043874091622"
 
-	t.Run("should be invalid and public key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PrivateKey: "secret"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"publicApiKey"})
-	})
+	saCredSecret := func(clientID, clientSecret string) *corev1.Secret {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte(clientID),
+				"clientSecret": []byte(clientSecret),
+			},
+		}
+	}
+	tokenSecret := func(accessToken, expiry, hash string) *corev1.Secret {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Data: map[string][]byte{
+				"accessToken":     []byte(accessToken),
+				"expiry":          []byte(expiry),
+				"credentialsHash": []byte(hash),
+			},
+		}
+	}
+	_, parseExpiryErr := time.Parse(time.RFC3339, "not-a-timestamp")
+	require.Error(t, parseExpiryErr)
 
-	t.Run("should be invalid and private key id is missing", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local"}}})
-		assert.False(t, ok)
-		assert.Equal(t, missing, []string{"privateApiKey"})
-	})
+	for _, tc := range []struct {
+		name          string
+		credSecret    *corev1.Secret
+		tokenSecret   *corev1.Secret
+		expectedError string
+	}{
+		{
+			name:          "no access token secret yet",
+			credSecret:    saCredSecret("client-id", "client-secret"),
+			expectedError: fmt.Sprintf("access token secret %s does not exist yet", tokenSecretRef),
+		},
+		{
+			name:        "valid token returns service account credentials",
+			credSecret:  saCredSecret("client-id", "client-secret"),
+			tokenSecret: tokenSecret("bearer-token-value", "2099-01-01T00:00:00Z", matchingHash),
+		},
+		{
+			name:          "stale token after credential rotation",
+			credSecret:    saCredSecret("new-client-id", "new-client-secret"),
+			tokenSecret:   tokenSecret("stale-bearer-token", "2099-01-01T00:00:00Z", staleHash),
+			expectedError: fmt.Sprintf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenSecretRef),
+		},
+		{
+			name: "secret with both API keys and service account credentials is rejected",
+			credSecret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: "bad-creds", Namespace: "ns"},
+				Data: map[string][]byte{
+					"orgId":         []byte("org-123"),
+					"publicApiKey":  []byte("pub"),
+					"privateApiKey": []byte("priv"),
+					"clientId":      []byte("client-id"),
+					"clientSecret":  []byte("client-secret"),
+				},
+			},
+			expectedError: "invalid connection secret ns/bad-creds: secret contains both API key and service account credentials; only one type is allowed",
+		},
+		{
+			name:          "already-expired token is rejected",
+			credSecret:    saCredSecret("client-id", "client-secret"),
+			tokenSecret:   tokenSecret("bearer-token-value", "2000-01-01T00:00:00Z", matchingHash),
+			expectedError: fmt.Sprintf("access token secret %s is expired (expiry: 2000-01-01T00:00:00Z); waiting for the service-account-token controller to refresh", tokenSecretRef),
+		},
+		{
+			name:          "empty expiry is rejected",
+			credSecret:    saCredSecret("client-id", "client-secret"),
+			tokenSecret:   tokenSecret("bearer-token-value", "", matchingHash),
+			expectedError: fmt.Sprintf("access token secret %s has an empty expiry field", tokenSecretRef),
+		},
+		{
+			name:          "unparseable expiry is rejected",
+			credSecret:    saCredSecret("client-id", "client-secret"),
+			tokenSecret:   tokenSecret("bearer-token-value", "not-a-timestamp", matchingHash),
+			expectedError: fmt.Sprintf("access token secret %s has an invalid expiry field %q: %s", tokenSecretRef, "not-a-timestamp", parseExpiryErr),
+		},
+		{
+			name:          "empty accessToken is rejected",
+			credSecret:    saCredSecret("client-id", "client-secret"),
+			tokenSecret:   tokenSecret("", "2099-01-01T00:00:00Z", matchingHash),
+			expectedError: fmt.Sprintf("access token secret %s has an empty accessToken field", tokenSecretRef),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			objects := []client.Object{tc.credSecret}
+			if tc.tokenSecret != nil {
+				objects = append(objects, tc.tokenSecret)
+			}
+			k8sClient := newFakeKubeClient(t, objects...)
+			cfg, err := GetConnectionConfig(ctx, k8sClient, new(client.ObjectKeyFromObject(tc.credSecret)), nil)
 
-	t.Run("should be valid", func(t *testing.T) {
-		missing, ok := validate(&atlas.ConnectionConfig{OrgID: "some", Credentials: &atlas.Credentials{APIKeys: &atlas.APIKeys{PublicKey: "local", PrivateKey: "secret"}}})
-		assert.True(t, ok)
-		assert.Empty(t, missing)
-	})
+			if tc.expectedError != "" {
+				require.EqualError(t, err, tc.expectedError)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, string(tc.credSecret.Data["orgId"]), cfg.OrgID)
+			require.NotNil(t, cfg.Credentials.ServiceAccount)
+			assert.Equal(t, string(tc.tokenSecret.Data["accessToken"]), cfg.Credentials.ServiceAccount.BearerToken)
+			assert.Nil(t, cfg.Credentials.APIKeys)
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		data          map[string][]byte
+		expectedError string
+	}{
+		{
+			name:          "secret has no data at all",
+			data:          nil,
+			expectedError: "missing required fields: [orgId publicApiKey privateApiKey]",
+		},
+		{
+			name: "API key secret is missing orgId",
+			data: map[string][]byte{
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+			},
+			expectedError: "missing required fields: [orgId]",
+		},
+		{
+			name: "API key secret is missing publicApiKey",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"privateApiKey": []byte("priv"),
+			},
+			expectedError: "missing required fields: [publicApiKey]",
+		},
+		{
+			name: "API key secret is missing privateApiKey",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"publicApiKey": []byte("pub"),
+			},
+			expectedError: "missing required fields: [privateApiKey]",
+		},
+		{
+			name: "complete API key secret is accepted",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+			},
+		},
+		{
+			name: "complete service account secret is accepted",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+		},
+		{
+			name: "service account secret is missing clientId",
+			data: map[string][]byte{
+				"orgId":        []byte("org-123"),
+				"clientSecret": []byte("client-secret"),
+			},
+			expectedError: "missing required fields: [clientId]",
+		},
+		{
+			name: "service account secret is missing clientSecret",
+			data: map[string][]byte{
+				"orgId":    []byte("org-123"),
+				"clientId": []byte("client-id"),
+			},
+			expectedError: "missing required fields: [clientSecret]",
+		},
+		{
+			name: "service account secret is missing orgId",
+			data: map[string][]byte{
+				"clientId":     []byte("client-id"),
+				"clientSecret": []byte("client-secret"),
+			},
+			expectedError: "missing required fields: [orgId]",
+		},
+		{
+			name: "secret containing both API key and service account credentials is rejected",
+			data: map[string][]byte{
+				"orgId":         []byte("org-123"),
+				"publicApiKey":  []byte("pub"),
+				"privateApiKey": []byte("priv"),
+				"clientId":      []byte("client-id"),
+				"clientSecret":  []byte("client-secret"),
+			},
+			expectedError: "secret contains both API key and service account credentials; only one type is allowed",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateConnectionSecret(&corev1.Secret{Data: tc.data})
+			if tc.expectedError != "" {
+				require.EqualError(t, err, tc.expectedError)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func newFakeKubeClient(t *testing.T, objs ...client.Object) client.Client {
