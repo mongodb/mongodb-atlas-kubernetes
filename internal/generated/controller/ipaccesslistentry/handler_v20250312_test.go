@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312019/admin"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
