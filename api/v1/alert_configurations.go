@@ -143,7 +143,7 @@ func (in Threshold) Key() string {
 	return in.Operator + "|" + in.Units + "|" + in.Threshold
 }
 
-func (in *Threshold) IsEqual(threshold *admin.StreamProcessorMetricThreshold) bool {
+func (in *Threshold) IsEqual(threshold *admin.DeprecatedStreamProcessorMetricThreshold) bool {
 	logger := zap.NewExample().Sugar()
 	if in == nil {
 		return threshold == nil
@@ -170,7 +170,7 @@ func (in *Threshold) IsEqual(threshold *admin.StreamProcessorMetricThreshold) bo
 	return true
 }
 
-func (in *Threshold) ToAtlas() (*admin.StreamProcessorMetricThreshold, error) {
+func (in *Threshold) ToAtlas() (*admin.DeprecatedStreamProcessorMetricThreshold, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -180,7 +180,7 @@ func (in *Threshold) ToAtlas() (*admin.StreamProcessorMetricThreshold, error) {
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
 
-	result := &admin.StreamProcessorMetricThreshold{
+	result := &admin.DeprecatedStreamProcessorMetricThreshold{
 		Operator:  &in.Operator,
 		Units:     &in.Units,
 		Threshold: &tr64,
@@ -375,7 +375,7 @@ func (in MetricThreshold) Key() string {
 		in.Mode
 }
 
-func (in *MetricThreshold) IsEqual(threshold *admin.FlexClusterMetricThreshold) bool {
+func (in *MetricThreshold) IsEqual(threshold *admin.StreamProcessorMetricThreshold) bool {
 	if in == nil {
 		return threshold == nil
 	}
@@ -396,7 +396,7 @@ func (in *MetricThreshold) IsEqual(threshold *admin.FlexClusterMetricThreshold) 
 		in.Mode == threshold.GetMode()
 }
 
-func (in *MetricThreshold) ToAtlas() (*admin.FlexClusterMetricThreshold, error) {
+func (in *MetricThreshold) ToAtlas() (*admin.StreamProcessorMetricThreshold, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -406,8 +406,8 @@ func (in *MetricThreshold) ToAtlas() (*admin.FlexClusterMetricThreshold, error) 
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
 
-	result := &admin.FlexClusterMetricThreshold{
-		MetricName: in.MetricName,
+	result := &admin.StreamProcessorMetricThreshold{
+		MetricName: &in.MetricName,
 		Operator:   &in.Operator,
 		Threshold:  &tr,
 		Units:      &in.Units,

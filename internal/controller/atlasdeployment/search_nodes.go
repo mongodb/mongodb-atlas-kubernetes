@@ -136,7 +136,7 @@ func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) w
 		return s.terminate(workflow.ErrorSearchNodesNotUpsertedInAtlas, errors.New("no search nodes found in Atlas"))
 	}
 
-	hasChanged := !reflect.DeepEqual(s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(), atlasNodes.GetSpecs())
+	hasChanged := !reflect.DeepEqual(s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(), responseSpecsToRequestSpecs(atlasNodes.GetSpecs()))
 	switch {
 	case hasChanged:
 		return s.terminate(workflow.ErrorSearchNodesOperationAborted, errors.New("aborting update/create: spec has changed"))
@@ -208,7 +208,7 @@ func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentRespo
 	s.ctx.Log.Debugf("updating search nodes %v", s.deployment.Spec.DeploymentSpec.SearchNodes)
 	currentAkoNodesAsAtlas := s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 	// We can deepequal without normalization here because there is only ever 1 spec in the array
-	if !reflect.DeepEqual(currentAkoNodesAsAtlas, atlasNodes.GetSpecs()) {
+	if !reflect.DeepEqual(currentAkoNodesAsAtlas, responseSpecsToRequestSpecs(atlasNodes.GetSpecs())) {
 		updateResponse, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.UpdateClusterSearchDeployment(
 			s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 				Specs: s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
@@ -280,6 +280,18 @@ func (s *searchNodeController) terminate(reason workflow.ConditionReason, err er
 func (s *searchNodeController) unmanage() workflow.DeprecatedResult {
 	s.ctx.UnsetCondition(api.SearchNodesReadyType)
 	return workflow.OK()
+}
+
+func responseSpecsToRequestSpecs(specs []admin.ApiSearchDeploymentSpec) []admin.ApiSearchDeploymentRequestSpec {
+	result := make([]admin.ApiSearchDeploymentRequestSpec, len(specs))
+	for i, s := range specs {
+		nodeCount := s.NodeCount
+		result[i] = admin.ApiSearchDeploymentRequestSpec{
+			InstanceSize: s.InstanceSize,
+			NodeCount:    &nodeCount,
+		}
+	}
+	return result
 }
 
 // idle transitions to idle state search nodes that are ready and idle.

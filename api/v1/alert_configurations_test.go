@@ -28,13 +28,13 @@ func TestServerlessMetricThreshold(t *testing.T) {
 	tests := []struct {
 		name      string
 		akoData   *MetricThreshold
-		atlasData *admin.FlexClusterMetricThreshold
+		atlasData *admin.StreamProcessorMetricThreshold
 		equal     bool
 	}{
 		{
 			name: "Should be able to parse float Theshold",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: admin.PtrString("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -51,8 +51,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be able to parse int Theshold",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: admin.PtrString("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(float64(3)),
@@ -69,8 +69,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if Theshold is not a number",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: admin.PtrString("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -99,8 +99,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if operator mismatched",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: admin.PtrString("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -117,8 +117,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should fail if Threshold mismatched",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: admin.PtrString("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),

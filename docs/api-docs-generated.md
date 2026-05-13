@@ -223,6 +223,13 @@ The entry fields of the cluster resource spec. These fields can be set for creat
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>adaptiveCapacity</b></td>
+        <td>string</td>
+        <td>
+          Governs adaptive capacity behavior of Azure nodes in single-cloud Azure clusters or multi-cloud clusters that include Azure nodes. Adaptive capacity enables fallback hardware selection when the primary instance family is unavailable. ``ENABLED`` means the cluster explicitly opts in to adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the cluster receives capacity errors instead of being placed on fallback hardware. ``null`` means the field is unset; Azure clusters use adaptive capacity by default when the feature is enabled at the group level. Setting this field for single-cloud AWS or GCP clusters is a no-op.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecv20250312entryadvancedconfiguration">advancedConfiguration</a></b></td>
         <td>object</td>
         <td>
@@ -903,6 +910,13 @@ Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ebsVolumeType</b></td>
         <td>string</td>
         <td>
@@ -1093,6 +1107,13 @@ Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ebsVolumeType</b></td>
         <td>string</td>
         <td>
@@ -1175,6 +1196,13 @@ Changing this value impacts cluster cost.<br/>
  Storage charge calculations depend on whether you choose the default value or a custom value.
 
  The maximum value for disk storage cannot exceed 50 times the maximum RAM for the selected cluster. If you require more storage space, consider upgrading your cluster to a higher tier.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1384,6 +1412,13 @@ The last observed Atlas state of the cluster resource for version v20250312.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>adaptiveCapacity</b></td>
+        <td>string</td>
+        <td>
+          Governs adaptive capacity behavior of Azure nodes in single-cloud Azure clusters or multi-cloud clusters that include Azure nodes. Adaptive capacity enables fallback hardware selection when the primary instance family is unavailable. ``ENABLED`` means the cluster explicitly opts in to adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the cluster receives capacity errors instead of being placed on fallback hardware. ``null`` means the field is unset; Azure clusters use adaptive capacity by default when the feature is enabled at the group level. Setting this field for single-cloud AWS or GCP clusters is a no-op.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterstatusv20250312advancedconfiguration">advancedConfiguration</a></b></td>
         <td>object</td>
         <td>
@@ -2072,6 +2107,13 @@ Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ebsVolumeType</b></td>
         <td>string</td>
         <td>
@@ -2262,6 +2304,13 @@ Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ebsVolumeType</b></td>
         <td>string</td>
         <td>
@@ -2337,6 +2386,13 @@ Changing this value impacts cluster cost.<br/>
  Storage charge calculations depend on whether you choose the default value or a custom value.
 
  The maximum value for disk storage cannot exceed 50 times the maximum RAM for the selected cluster. If you require more storage space, consider upgrading your cluster to a higher tier.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2418,6 +2474,13 @@ Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>ebsVolumeType</b></td>
         <td>string</td>
         <td>
@@ -2493,6 +2556,13 @@ Changing this value impacts cluster cost.<br/>
  Storage charge calculations depend on whether you choose the default value or a custom value.
 
  The maximum value for disk storage cannot exceed 50 times the maximum RAM for the selected cluster. If you require more storage space, consider upgrading your cluster to a higher tier.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2578,6 +2648,13 @@ Changing this value impacts cluster cost.<br/>
  Storage charge calculations depend on whether you choose the default value or a custom value.
 
  The maximum value for disk storage cannot exceed 50 times the maximum RAM for the selected cluster. If you require more storage space, consider upgrading your cluster to a higher tier.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>diskThroughput</b></td>
+        <td>integer</td>
+        <td>
+          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
