@@ -129,6 +129,21 @@ type DatadogIntegration struct {
 	// +kubebuilder:validation:Enum=enabled;disabled
 	// +kubebuilder:default:=disabled
 	SendDatabaseMetrics *string `json:"sendDatabaseMetrics"`
+
+	// SendQueryStatsMetrics toggles sending query shape metrics that includes
+	// query hash and metrics on latency, execution frequency, documents returned,
+	// and timestamps.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=enabled;disabled
+	// +kubebuilder:default:=disabled
+	SendQueryStatsMetrics *string `json:"sendQueryStatsMetrics"`
+
+	// SendUserProvidedResourceTags toggles sending user-provided group and cluster
+	// resource tags with the Datadog metrics.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=enabled;disabled
+	// +kubebuilder:default:=disabled
+	SendUserProvidedResourceTags *string `json:"sendUserProvidedResourceTags"`
 }
 
 type MicrosoftTeamsIntegration struct {

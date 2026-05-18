@@ -13371,6 +13371,29 @@ including database and collection names<br/>
             <i>Default</i>: disabled<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>sendQueryStatsMetrics</b></td>
+        <td>enum</td>
+        <td>
+          SendQueryStatsMetrics toggles sending query shape metrics that includes
+query hash and metrics on latency, execution frequency, documents returned,
+and timestamps.<br/>
+          <br/>
+            <i>Enum</i>: enabled, disabled<br/>
+            <i>Default</i>: disabled<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sendUserProvidedResourceTags</b></td>
+        <td>enum</td>
+        <td>
+          SendUserProvidedResourceTags toggles sending user-provided group and cluster
+resource tags with the Datadog metrics.<br/>
+          <br/>
+            <i>Enum</i>: enabled, disabled<br/>
+            <i>Default</i>: disabled<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
