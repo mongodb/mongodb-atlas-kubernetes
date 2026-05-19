@@ -322,7 +322,7 @@ func (r *AtlasDeploymentReconciler) transitionFromResult(ctx *workflow.Context, 
 }
 
 func (r *AtlasDeploymentReconciler) terminate(ctx *workflow.Context, errorCondition workflow.ConditionReason, err error) (ctrl.Result, error) {
-	r.Log.Error(err)
+	r.Log.Errorf("terminating reconciliation: %s", errorCondition)
 	terminated := workflow.Terminate(errorCondition, err)
 	ctx.SetConditionFromResult(api.DeploymentReadyType, terminated)
 
