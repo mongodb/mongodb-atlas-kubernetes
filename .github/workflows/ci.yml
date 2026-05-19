@@ -3,6 +3,9 @@ name: AKO CI
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   unit-test:
     name: AKO unit-tests 

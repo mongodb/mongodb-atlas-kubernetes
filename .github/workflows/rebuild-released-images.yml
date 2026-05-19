@@ -20,6 +20,9 @@ on:
         default: ""
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   read-versions:
     name: Read config file 

@@ -3,6 +3,10 @@ name: Promote Image
 on:
   workflow_call:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   # Promote image: this will be responsible for taking a tested image from an unofficial registry like
   # ghcr.io and promote it by adding it to an official registry (docker.io and quay.io)

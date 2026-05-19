@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,6 +30,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
+
+var safeKey = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 
 // simple test application
 // allows to check if users can use the provided connectionstring,
@@ -69,6 +72,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func getKeyValue(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
+	if !safeKey.MatchString(key) {
+		http.Error(w, "invalid key", http.StatusBadRequest)
+		return
+	}
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
 		log.Println(err)
@@ -100,6 +107,10 @@ func postKeyValue(w http.ResponseWriter, r *http.Request) {
 
 func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
+	if !safeKey.MatchString(key) {
+		http.Error(w, "invalid key", http.StatusBadRequest)
+		return
+	}
 	collection, err := getMongoCollection(dbName, collectionName)
 	if err != nil {
 		log.Println(err)

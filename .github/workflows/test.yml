@@ -31,6 +31,9 @@ on:
       - 'docs/**'
       - 'tools/**'
 
+permissions:
+  contents: read
+
 jobs:
   run-tests:
     name: Run Tests

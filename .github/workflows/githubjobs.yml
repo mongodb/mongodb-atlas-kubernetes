@@ -10,6 +10,9 @@ on:
     paths:
       - 'tools/githubjobs/**'
 
+permissions:
+  contents: read
+
 jobs:
 
   githubjobs:

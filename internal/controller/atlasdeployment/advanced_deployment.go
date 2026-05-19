@@ -212,7 +212,7 @@ func (r *AtlasDeploymentReconciler) ensureConnectionSecrets(ctx *workflow.Contex
 			return err
 		}
 
-		ctx.Log.Debugw("Creating a connection Secret", "data", data)
+		ctx.Log.Debugw("Creating a connection Secret", "dbUser", data.DBUserName)
 		secretName, err := secretservice.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Name, deploymentInAKO.GetProjectID(), deploymentInAKO.GetName(), data)
 		if err != nil {
 			return err

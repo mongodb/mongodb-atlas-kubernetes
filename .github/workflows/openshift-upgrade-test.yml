@@ -21,6 +21,10 @@ on:
 concurrency:
   group: test-openshift-operator-upgrade
   cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   e2e-tests:
     name: Upgrade test on Openshift
