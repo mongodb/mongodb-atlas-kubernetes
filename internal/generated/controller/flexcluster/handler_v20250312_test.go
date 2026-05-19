@@ -883,6 +883,20 @@ func TestHandleDeleting(t *testing.T) {
 			want: reenqueueResult(state.StateDeleting, "Deleting Flex Cluster."),
 		},
 		{
+			title:       "cluster in unexpected state after deletion — re-request deletion",
+			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
+			kubeObjects: []client.Object{
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
+			},
+			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				return &v20250312sdk.FlexClusterDescription20241113{
+					Id:        new(testClusterID),
+					StateName: new("IDLE"),
+				}, nil, nil
+			},
+			want: reenqueueResult(state.StateDeletionRequested, `Flex cluster is in "IDLE" state instead of DELETING, re-requesting deletion.`),
+		},
+		{
 			title:       "get cluster fails",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
 			kubeObjects: []client.Object{
@@ -892,7 +906,7 @@ func TestHandleDeleting(t *testing.T) {
 				return nil, nil, fmt.Errorf("get failed")
 			},
 			want:    errorResult(state.StateDeletionRequested),
-			wantErr: "failed to delete flexcluster",
+			wantErr: "failed to get flex cluster status",
 		},
 		{
 			title:       "get dependencies fails",
