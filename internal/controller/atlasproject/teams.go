@@ -118,6 +118,11 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 			}
 			delete(teamsToAssign, atlasAssignedTeam.TeamID)
 
+			if err = r.updateTeamState(ctx, project, &desiredTeam.TeamRef, false); err != nil {
+				teamErrors = errors.Join(teamErrors, err)
+				ctx.Log.Warnf("failed to update team %s status: %s", atlasAssignedTeam.TeamID, err.Error())
+			}
+
 			continue
 		}
 

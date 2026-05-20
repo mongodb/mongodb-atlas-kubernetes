@@ -326,6 +326,86 @@ func TestSyncAssignedTeams(t *testing.T) {
 	}
 }
 
+func TestSyncAssignedTeamsCleansDuplicateProjects(t *testing.T) {
+	ctx := context.Background()
+
+	team := &akov2.AtlasTeam{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "teamName_1",
+			Namespace: "testNS",
+		},
+		Spec: akov2.TeamSpec{Name: "teamName_1"},
+		Status: status.TeamStatus{
+			ID: "teamID_1",
+			Projects: []status.TeamProject{
+				{ID: "projectID", Name: "projectName"},
+				{ID: "projectID", Name: "projectName"},
+				{ID: "projectID", Name: "projectName"},
+			},
+		},
+	}
+	project := &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{Name: "projectName"},
+		Spec: akov2.AtlasProjectSpec{
+			Name: "projectName",
+			Teams: []akov2.Team{
+				{
+					TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+					Roles:   []akov2.TeamRole{"GROUP_OWNER"},
+				},
+			},
+		},
+		Status: status.AtlasProjectStatus{
+			ID: "projectID",
+			Teams: []status.ProjectTeamStatus{
+				{ID: "teamID_1", TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"}},
+			},
+		},
+	}
+
+	teamsToAssign := map[string]*akov2.Team{
+		"teamID_1": {
+			TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+			Roles:   []akov2.TeamRole{"GROUP_OWNER"},
+		},
+	}
+
+	s := translation.NewTeamsServiceMock(t)
+	s.EXPECT().ListProjectTeams(ctx, "projectID").Return([]teams.AssignedTeam{
+		{Roles: []string{"GROUP_OWNER"}, TeamID: "teamID_1", TeamName: "teamName_1"},
+	}, nil)
+
+	testScheme := runtime.NewScheme()
+	assert.NoError(t, akov2.AddToScheme(testScheme))
+	assert.NoError(t, corev1.AddToScheme(testScheme))
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(testScheme).
+		WithObjects(project, team).
+		WithStatusSubresource(project, team).
+		Build()
+
+	logger := zaptest.NewLogger(t).Sugar()
+	wfCtx := &workflow.Context{
+		Log:     logger,
+		Context: ctx,
+		SdkClientSet: &atlas.ClientSet{
+			SdkClient20250312: &admin.APIClient{},
+		},
+	}
+	r := &AtlasProjectReconciler{
+		Client:        k8sClient,
+		EventRecorder: record.NewFakeRecorder(10),
+		Log:           logger,
+	}
+
+	err := r.syncAssignedTeams(wfCtx, s, "projectID", project, teamsToAssign)
+	assert.NoError(t, err)
+
+	actualTeam := &akov2.AtlasTeam{}
+	assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(team), actualTeam))
+	assert.Equal(t, []status.TeamProject{{ID: "projectID", Name: "projectName"}}, actualTeam.Status.Projects)
+}
+
 func TestUpdateTeamState(t *testing.T) {
 	tests := map[string]struct {
 		team                     *akov2.AtlasTeam
