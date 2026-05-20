@@ -68,8 +68,12 @@ func fuzzIntegration(fuzzer *gofuzz.Fuzzer, index uint, integration *ThirdPartyI
 
 	if integration.Type == "DATADOG" {
 		index2 := index + 1
+		index3 := index + 2
+		index4 := index + 3
 		integration.Datadog.SendCollectionLatencyMetrics = enabledValues[index%uint(len(enabledValues))]
 		integration.Datadog.SendDatabaseMetrics = enabledValues[index2%uint(len(enabledValues))]
+		integration.Datadog.SendQueryStatsMetrics = enabledValues[index3%uint(len(enabledValues))]
+		integration.Datadog.SendUserProvidedResourceTags = enabledValues[index4%uint(len(enabledValues))]
 		integration.Datadog.APIKeySecretRef.Name = "" // not part of the atlas conversion roundtrip
 	} else {
 		integration.Datadog = nil

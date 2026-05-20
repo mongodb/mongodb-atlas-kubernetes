@@ -28,4 +28,6 @@ spec:
     region: US
     sendCollectionLatencyMetrics: enabled
     sendDatabaseMetrics: enabled
+    sendQueryStatsMetrics: enabled
+    sendUserProvidedResourceTags: enabled
 

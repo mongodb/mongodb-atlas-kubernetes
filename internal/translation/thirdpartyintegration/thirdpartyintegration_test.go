@@ -99,6 +99,8 @@ func TestIntegrationsCreate(t *testing.T) {
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: new("enabled"),
 						SendDatabaseMetrics:          new("disabled"),
+						SendQueryStatsMetrics:        new("disabled"),
+						SendUserProvidedResourceTags: new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -258,6 +260,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Datadog: &akov2.DatadogIntegration{
 						SendCollectionLatencyMetrics: new("disabled"),
 						SendDatabaseMetrics:          new("enabled"),
+						SendQueryStatsMetrics:        new("disabled"),
+						SendUserProvidedResourceTags: new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
