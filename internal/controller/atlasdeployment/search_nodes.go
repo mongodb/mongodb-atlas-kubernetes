@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 
 	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 
@@ -136,7 +135,7 @@ func (s *searchNodeController) handleUpserting(state workflow.ConditionReason) w
 		return s.terminate(workflow.ErrorSearchNodesNotUpsertedInAtlas, errors.New("no search nodes found in Atlas"))
 	}
 
-	hasChanged := !reflect.DeepEqual(s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(), atlasNodes.GetSpecs())
+	hasChanged := !searchDeploymentSpecsEqual(s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(), atlasNodes.GetSpecs())
 	switch {
 	case hasChanged:
 		return s.terminate(workflow.ErrorSearchNodesOperationAborted, errors.New("aborting update/create: spec has changed"))
@@ -208,7 +207,7 @@ func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentRespo
 	s.ctx.Log.Debugf("updating search nodes %v", s.deployment.Spec.DeploymentSpec.SearchNodes)
 	currentAkoNodesAsAtlas := s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 	// We can deepequal without normalization here because there is only ever 1 spec in the array
-	if !reflect.DeepEqual(currentAkoNodesAsAtlas, atlasNodes.GetSpecs()) {
+	if !searchDeploymentSpecsEqual(currentAkoNodesAsAtlas, atlasNodes.GetSpecs()) {
 		updateResponse, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.UpdateClusterSearchDeployment(
 			s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 				Specs: s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
@@ -286,6 +285,22 @@ func (s *searchNodeController) unmanage() workflow.DeprecatedResult {
 func (s *searchNodeController) idle() workflow.DeprecatedResult {
 	s.ctx.SetConditionTrue(api.SearchNodesReadyType)
 	return workflow.OK()
+}
+
+func searchDeploymentSpecsEqual(req []admin.ApiSearchDeploymentRequestSpec, resp []admin.ApiSearchDeploymentSpec) bool {
+	if len(req) != len(resp) {
+		return false
+	}
+	for i := range req {
+		reqNodeCount := 0
+		if req[i].NodeCount != nil {
+			reqNodeCount = *req[i].NodeCount
+		}
+		if req[i].InstanceSize != resp[i].InstanceSize || reqNodeCount != resp[i].NodeCount {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *searchNodeController) getAtlasSearchDeployment() (*admin.ApiSearchDeploymentResponse, bool, error) {
