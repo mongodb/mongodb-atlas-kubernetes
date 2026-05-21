@@ -115,7 +115,7 @@ func deleteKeyValue(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	deleteResult, err := collection.DeleteMany(ctx, bson.M{"key": key})
+	deleteResult, err := collection.DeleteMany(ctx, bson.D{{Key: "key", Value: key}})
 	if err != nil {
 		log.Println(err)
 	}
