@@ -118,6 +118,11 @@ func (r *AtlasProjectReconciler) syncAssignedTeams(ctx *workflow.Context, teamsS
 			}
 			delete(teamsToAssign, atlasAssignedTeam.TeamID)
 
+			if err = r.updateTeamState(ctx, project, &desiredTeam.TeamRef, false); err != nil {
+				teamErrors = errors.Join(teamErrors, err)
+				ctx.Log.Warnf("failed to update team %s status with existing project: %s", atlasAssignedTeam.TeamID, err.Error())
+			}
+
 			continue
 		}
 
@@ -203,11 +208,13 @@ func (r *AtlasProjectReconciler) updateTeamState(ctx *workflow.Context, project 
 		)
 	}
 
+	seen := map[string]struct{}{project.Status.ID: {}}
 	for _, projectStat := range team.Status.Projects {
-		if projectStat.ID == project.Status.ID {
+		if _, already := seen[projectStat.ID]; already {
 			continue
 		}
 
+		seen[projectStat.ID] = struct{}{}
 		assignedProjects = append(assignedProjects, projectStat)
 	}
 
