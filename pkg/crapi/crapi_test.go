@@ -241,8 +241,8 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 					SeverityOverride: new("CRITICIAL"),
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric",
+					MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: new("metric"),
 						Mode:       new("mode"),
 						Operator:   new("op"),
 						Threshold:  new(0.1),
@@ -566,8 +566,8 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),
@@ -1546,8 +1546,8 @@ func TestToAPI(t *testing.T) {
 							Value:     "value-2",
 						},
 					},
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric-1",
+					MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: new("metric-1"),
 						Mode:       new("mode"),
 						Operator:   new("operator"),
 						Threshold:  new(1.1),

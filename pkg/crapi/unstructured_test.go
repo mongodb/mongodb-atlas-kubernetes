@@ -189,8 +189,8 @@ func TestToAPIUnstructured(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),
@@ -257,8 +257,8 @@ func TestFromAPIUnstructured(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),
