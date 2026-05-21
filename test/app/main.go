@@ -70,9 +70,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "It is working")
 }
 
+func sanitizeKey(raw string) (string, error) {
+	if !safeKey.MatchString(raw) {
+		return "", fmt.Errorf("invalid key")
+	}
+	return raw, nil
+}
+
 func getKeyValue(w http.ResponseWriter, r *http.Request) {
-	key := mux.Vars(r)["key"]
-	if !safeKey.MatchString(key) {
+	rawKey := mux.Vars(r)["key"]
+	key, err := sanitizeKey(rawKey)
+	if err != nil {
 		http.Error(w, "invalid key", http.StatusBadRequest)
 		return
 	}
