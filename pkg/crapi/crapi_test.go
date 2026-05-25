@@ -25,7 +25,7 @@ import (
 	crd2gok8s "github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -241,8 +241,8 @@ func TestFromAPI(t *testing.T) {
 						},
 					},
 					SeverityOverride: new("CRITICIAL"),
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric",
+					MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: new("metric"),
 						Mode:       new("mode"),
 						Operator:   new("op"),
 						Threshold:  new(0.1),
@@ -566,8 +566,8 @@ func TestToAPIAllRefs(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),
@@ -1546,8 +1546,8 @@ func TestToAPI(t *testing.T) {
 							Value:     "value-2",
 						},
 					},
-					MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-						MetricName: "metric-1",
+					MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+						MetricName: new("metric-1"),
 						Mode:       new("mode"),
 						Operator:   new("operator"),
 						Threshold:  new(1.1),

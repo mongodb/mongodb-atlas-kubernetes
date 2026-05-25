@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -375,7 +375,7 @@ func (in MetricThreshold) Key() string {
 		in.Mode
 }
 
-func (in *MetricThreshold) IsEqual(threshold *admin.FlexClusterMetricThreshold) bool {
+func (in *MetricThreshold) IsEqual(threshold *admin.StreamProcessorMetricThreshold) bool {
 	if in == nil {
 		return threshold == nil
 	}
@@ -396,7 +396,7 @@ func (in *MetricThreshold) IsEqual(threshold *admin.FlexClusterMetricThreshold) 
 		in.Mode == threshold.GetMode()
 }
 
-func (in *MetricThreshold) ToAtlas() (*admin.FlexClusterMetricThreshold, error) {
+func (in *MetricThreshold) ToAtlas() (*admin.StreamProcessorMetricThreshold, error) {
 	if in == nil {
 		return nil, nil
 	}
@@ -406,8 +406,8 @@ func (in *MetricThreshold) ToAtlas() (*admin.FlexClusterMetricThreshold, error) 
 		return nil, fmt.Errorf("failed to parse threshold value: %w. should be float", err)
 	}
 
-	result := &admin.FlexClusterMetricThreshold{
-		MetricName: in.MetricName,
+	result := &admin.StreamProcessorMetricThreshold{
+		MetricName: &in.MetricName,
 		Operator:   &in.Operator,
 		Threshold:  &tr,
 		Units:      &in.Units,

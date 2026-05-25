@@ -21,20 +21,20 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 )
 
 func TestServerlessMetricThreshold(t *testing.T) {
 	tests := []struct {
 		name      string
 		akoData   *MetricThreshold
-		atlasData *admin.FlexClusterMetricThreshold
+		atlasData *admin.StreamProcessorMetricThreshold
 		equal     bool
 	}{
 		{
 			name: "Should be able to parse float Theshold",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: new("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -51,8 +51,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be able to parse int Theshold",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: new("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(float64(3)),
@@ -69,8 +69,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if Theshold is not a number",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: new("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -99,8 +99,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should be false if operator mismatched",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: new("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
@@ -117,8 +117,8 @@ func TestServerlessMetricThreshold(t *testing.T) {
 		},
 		{
 			name: "Should fail if Threshold mismatched",
-			atlasData: &admin.FlexClusterMetricThreshold{
-				MetricName: "test",
+			atlasData: &admin.StreamProcessorMetricThreshold{
+				MetricName: new("test"),
 				Mode:       new("test"),
 				Operator:   new("IN"),
 				Threshold:  new(3.14),
