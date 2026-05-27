@@ -62,24 +62,13 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 			wantReadyType: false,
 		},
 		{
-			name: "enabled in spec and disabled in atlas should toggle",
-			spec: &project.RegionalizedPrivateEndpoint{Enabled: true},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
-				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
-					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
-				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
-					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
-				api.EXPECT().ToggleRegionalEndpointMode(context.Background(), "testProjectID", mock.AnythingOfType("*admin.ProjectSettingItem")).
-					Return(admin.ToggleRegionalEndpointModeApiRequest{ApiService: api})
-				api.EXPECT().ToggleRegionalEndpointModeExecute(mock.Anything).
-					Return(&admin.ProjectSettingItem{Enabled: true}, &http.Response{}, nil)
-				return api
-			}(),
-			isOK:          true,
-			isWarning:     false,
-			wantReadyType: true,
-			wantStatus:    "True",
+			name:               "enabled in spec and disabled in atlas should toggle",
+			spec:               &project.RegionalizedPrivateEndpoint{Enabled: true},
+			privateEndpointAPI: mockAPIWithToggle(t, false, true),
+			isOK:               true,
+			isWarning:          false,
+			wantReadyType:      true,
+			wantStatus:         "True",
 		},
 		{
 			name: "enabled in spec and enabled in atlas should not toggle",
@@ -98,24 +87,13 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 			wantStatus:    "True",
 		},
 		{
-			name: "disabled in spec and enabled in atlas should toggle",
-			spec: &project.RegionalizedPrivateEndpoint{Enabled: false},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
-				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
-					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
-				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
-					Return(&admin.ProjectSettingItem{Enabled: true}, &http.Response{}, nil)
-				api.EXPECT().ToggleRegionalEndpointMode(context.Background(), "testProjectID", mock.AnythingOfType("*admin.ProjectSettingItem")).
-					Return(admin.ToggleRegionalEndpointModeApiRequest{ApiService: api})
-				api.EXPECT().ToggleRegionalEndpointModeExecute(mock.Anything).
-					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
-				return api
-			}(),
-			isOK:          true,
-			isWarning:     false,
-			wantReadyType: true,
-			wantStatus:    "True",
+			name:               "disabled in spec and enabled in atlas should toggle",
+			spec:               &project.RegionalizedPrivateEndpoint{Enabled: false},
+			privateEndpointAPI: mockAPIWithToggle(t, true, false),
+			isOK:               true,
+			isWarning:          false,
+			wantReadyType:      true,
+			wantStatus:         "True",
 		},
 		{
 			name: "disabled in spec and disabled in atlas should not toggle",
@@ -199,6 +177,21 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 			con, ok := workflowCtx.GetCondition(api.RegionalizedPrivateEndpointReadyType)
 			assert.Equal(t, tc.wantReadyType, ok)
 			assert.Equal(t, tc.wantStatus, string(con.Status))
+			// TODO: assert atlasProject.Status.RegionalizedPrivateEndpoint reflects the Atlas-side value in each case
 		})
 	}
+}
+
+func mockAPIWithToggle(t *testing.T, currentMode, afterToggle bool) *mockadmin.PrivateEndpointServicesApi {
+	t.Helper()
+	peAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+	peAPI.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
+		Return(admin.GetRegionalEndpointModeApiRequest{ApiService: peAPI})
+	peAPI.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+		Return(&admin.ProjectSettingItem{Enabled: currentMode}, &http.Response{}, nil)
+	peAPI.EXPECT().ToggleRegionalEndpointMode(context.Background(), "testProjectID", mock.AnythingOfType("*admin.ProjectSettingItem")).
+		Return(admin.ToggleRegionalEndpointModeApiRequest{ApiService: peAPI})
+	peAPI.EXPECT().ToggleRegionalEndpointModeExecute(mock.Anything).
+		Return(&admin.ProjectSettingItem{Enabled: afterToggle}, &http.Response{}, nil)
+	return peAPI
 }
