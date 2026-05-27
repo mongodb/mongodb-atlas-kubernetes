@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -266,6 +267,11 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
 					Return(nil, nil, nil)
+				privateEndpoints.EXPECT().GetRegionalEndpointMode(context.Background(), "projectID").
+					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
+				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
+
 				networkPeering := mockadmin.NewNetworkPeeringApi(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.AnythingOfType("*admin.ListGroupPeersApiParams")).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
@@ -358,6 +364,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
 					Return(nil, nil, nil)
+				privateEndpoints.EXPECT().GetRegionalEndpointMode(context.Background(), "projectID").
+					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
+				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 				networkPeering := mockadmin.NewNetworkPeeringApi(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
@@ -463,6 +473,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
 					Return(nil, nil, nil)
+				privateEndpoints.EXPECT().GetRegionalEndpointMode(context.Background(), "projectID").
+					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
+				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 				networkPeering := mockadmin.NewNetworkPeeringApi(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
@@ -569,6 +583,10 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
 					Return(nil, nil, nil)
+				privateEndpoints.EXPECT().GetRegionalEndpointMode(context.Background(), "projectID").
+					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
+				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 				networkPeering := mockadmin.NewNetworkPeeringApi(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})

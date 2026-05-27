@@ -17,6 +17,7 @@ package atlasproject
 import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
 )
@@ -24,13 +25,6 @@ import (
 // ensureRegionalizedPrivateEndpointMode ensures that if the AtlasProject spec
 // defines a regionalized private endpoint setting, it is reflected in Atlas.
 func (r *AtlasProjectReconciler) ensureRegionalizedPrivateEndpointMode(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
-	if atlasProject.Spec.RegionalizedPrivateEndpoint == nil {
-		workflowCtx.UnsetCondition(api.RegionalizedPrivateEndpointReadyType)
-		return workflow.OK()
-	}
-
-	expectedMode := atlasProject.Spec.RegionalizedPrivateEndpoint.Enabled
-
 	peApi := privateendpoint.NewPrivateEndpointAPI(workflowCtx.SdkClientSet.SdkClient20250312.PrivateEndpointServicesApi)
 	currentMode, err := peApi.GetRegionalizedPrivateEndpointMode(workflowCtx.Context, atlasProject.ID())
 	if err != nil {
@@ -38,7 +32,15 @@ func (r *AtlasProjectReconciler) ensureRegionalizedPrivateEndpointMode(workflowC
 		workflowCtx.SetConditionFromResult(api.RegionalizedPrivateEndpointReadyType, result)
 		return result
 	}
+	atlasProject.Status.RegionalizedPrivateEndpoint = &project.RegionalizedPrivateEndpoint{
+		Enabled: currentMode,
+	}
+	if atlasProject.Spec.RegionalizedPrivateEndpoint == nil {
+		workflowCtx.UnsetCondition(api.RegionalizedPrivateEndpointReadyType)
+		return workflow.OK()
+	}
 
+	expectedMode := atlasProject.Spec.RegionalizedPrivateEndpoint.Enabled
 	if currentMode != expectedMode {
 		if _, err := peApi.ToggleRegionalizedPrivateEndpointMode(workflowCtx.Context, atlasProject.ID(), expectedMode); err != nil {
 			result := workflow.Terminate(workflow.ProjectRegionalizedEndpointModeIsNotReadyInAtlas, err)

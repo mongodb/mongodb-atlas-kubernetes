@@ -47,12 +47,19 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		wantStatus    string
 	}{
 		{
-			name:               "nil spec should unset condition and return OK",
-			spec:               nil,
-			privateEndpointAPI: mockadmin.NewPrivateEndpointServicesApi(t),
-			isOK:               true,
-			isWarning:          false,
-			wantReadyType:      false,
+			name: "nil spec should unset condition and return OK",
+			spec: nil,
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
+				api := mockadmin.NewPrivateEndpointServicesApi(t)
+				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
+					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
+				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
+					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
+				return api
+			}(),
+			isOK:          true,
+			isWarning:     false,
+			wantReadyType: false,
 		},
 		{
 			name: "enabled in spec and disabled in atlas should toggle",
