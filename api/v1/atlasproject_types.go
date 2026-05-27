@@ -78,6 +78,11 @@ type AtlasProjectSpec struct {
 	// +optional
 	PrivateEndpoints []PrivateEndpoint `json:"privateEndpoints,omitempty"`
 
+	// RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+	// https://www.mongodb.com/docs/atlas/security-private-endpoint/
+	// +optional
+	RegionalizedPrivateEndpoint *project.RegionalizedPrivateEndpoint `json:"regionalizedPrivateEndpoint,omitempty"`
+
 	// CloudProviderAccessRoles is a list of Cloud Provider Access Roles configured for the current Project.
 	// Deprecated: This configuration was deprecated in favor of CloudProviderIntegrations
 	// +optional

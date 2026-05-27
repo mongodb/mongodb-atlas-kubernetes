@@ -8108,6 +8108,14 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#atlasprojectspecregionalizedprivateendpoint">regionalizedPrivateEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+https://www.mongodb.com/docs/atlas/security-private-endpoint/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasprojectspecsettings">settings</a></b></td>
         <td>object</td>
         <td>
@@ -10207,6 +10215,34 @@ at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-reso
 </table>
 
 
+### AtlasProject.spec.regionalizedPrivateEndpoint
+<sup><sup>[↩ Parent](#atlasprojectspec)</sup></sup>
+
+
+
+RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+https://www.mongodb.com/docs/atlas/security-private-endpoint/
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### AtlasProject.spec.settings
 <sup><sup>[↩ Parent](#atlasprojectspec)</sup></sup>
 
@@ -10399,6 +10435,13 @@ AtlasProjectStatus defines the observed state of AtlasProject
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b><a href="#atlasprojectstatusregionalizedprivateendpointomitempty">regionalizedPrivateEndpoint.omitempty</a></b></td>
+        <td>object</td>
+        <td>
+          Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
         <td><b><a href="#atlasprojectstatusalertconfigurationsindex">alertConfigurations</a></b></td>
         <td>[]object</td>
         <td>
@@ -10538,6 +10581,33 @@ Represented in ISO 8601 format.<br/>
         <td>string</td>
         <td>
           The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasProject.status.regionalizedPrivateEndpoint.omitempty
+<sup><sup>[↩ Parent](#atlasprojectstatus)</sup></sup>
+
+
+
+Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
