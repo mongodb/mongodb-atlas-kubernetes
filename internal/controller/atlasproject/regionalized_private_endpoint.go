@@ -47,6 +47,10 @@ func (r *AtlasProjectReconciler) ensureRegionalizedPrivateEndpointMode(workflowC
 			workflowCtx.SetConditionFromResult(api.RegionalizedPrivateEndpointReadyType, result)
 			return result
 		}
+		// since we toggled successfully update status accordingly
+		atlasProject.Status.RegionalizedPrivateEndpoint = &project.RegionalizedPrivateEndpoint{
+			Enabled: expectedMode,
+		}
 	}
 
 	workflowCtx.SetConditionTrue(api.RegionalizedPrivateEndpointReadyType)

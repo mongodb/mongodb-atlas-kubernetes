@@ -43,8 +43,9 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		isOK      bool
 		isWarning bool
 
-		wantReadyType bool
-		wantStatus    string
+		wantRegionalizedMode bool
+		wantReadyType        bool
+		wantStatus           string
 	}{
 		{
 			name: "nil spec should unset condition and return OK",
@@ -57,18 +58,20 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 				return api
 			}(),
-			isOK:          true,
-			isWarning:     false,
-			wantReadyType: false,
+			isOK:                 true,
+			isWarning:            false,
+			wantReadyType:        false,
+			wantRegionalizedMode: false,
 		},
 		{
-			name:               "enabled in spec and disabled in atlas should toggle",
-			spec:               &project.RegionalizedPrivateEndpoint{Enabled: true},
-			privateEndpointAPI: mockAPIWithToggle(t, false, true),
-			isOK:               true,
-			isWarning:          false,
-			wantReadyType:      true,
-			wantStatus:         "True",
+			name:                 "enabled in spec and disabled in atlas should toggle",
+			spec:                 &project.RegionalizedPrivateEndpoint{Enabled: true},
+			privateEndpointAPI:   mockAPIWithToggle(t, false, true),
+			isOK:                 true,
+			isWarning:            false,
+			wantReadyType:        true,
+			wantStatus:           "True",
+			wantRegionalizedMode: true,
 		},
 		{
 			name: "enabled in spec and enabled in atlas should not toggle",
@@ -81,19 +84,21 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 					Return(&admin.ProjectSettingItem{Enabled: true}, &http.Response{}, nil)
 				return api
 			}(),
-			isOK:          true,
-			isWarning:     false,
-			wantReadyType: true,
-			wantStatus:    "True",
+			isOK:                 true,
+			isWarning:            false,
+			wantReadyType:        true,
+			wantStatus:           "True",
+			wantRegionalizedMode: true,
 		},
 		{
-			name:               "disabled in spec and enabled in atlas should toggle",
-			spec:               &project.RegionalizedPrivateEndpoint{Enabled: false},
-			privateEndpointAPI: mockAPIWithToggle(t, true, false),
-			isOK:               true,
-			isWarning:          false,
-			wantReadyType:      true,
-			wantStatus:         "True",
+			name:                 "disabled in spec and enabled in atlas should toggle",
+			spec:                 &project.RegionalizedPrivateEndpoint{Enabled: false},
+			privateEndpointAPI:   mockAPIWithToggle(t, true, false),
+			isOK:                 true,
+			isWarning:            false,
+			wantReadyType:        true,
+			wantStatus:           "True",
+			wantRegionalizedMode: false,
 		},
 		{
 			name: "disabled in spec and disabled in atlas should not toggle",
@@ -106,10 +111,11 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 				return api
 			}(),
-			isOK:          true,
-			isWarning:     false,
-			wantReadyType: true,
-			wantStatus:    "True",
+			isOK:                 true,
+			isWarning:            false,
+			wantReadyType:        true,
+			wantStatus:           "True",
+			wantRegionalizedMode: false,
 		},
 		{
 			name: "get current mode fails should terminate",
@@ -177,7 +183,9 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 			con, ok := workflowCtx.GetCondition(api.RegionalizedPrivateEndpointReadyType)
 			assert.Equal(t, tc.wantReadyType, ok)
 			assert.Equal(t, tc.wantStatus, string(con.Status))
-			// TODO: assert atlasProject.Status.RegionalizedPrivateEndpoint reflects the Atlas-side value in each case
+			if result.IsOk() {
+				assert.Equal(t, tc.wantRegionalizedMode, atlasProject.Status.RegionalizedPrivateEndpoint.Enabled)
+			}
 		})
 	}
 }
