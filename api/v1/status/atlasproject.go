@@ -138,5 +138,5 @@ type AtlasProjectStatus struct {
 	Prometheus *Prometheus `json:"prometheus,omitempty"`
 
 	// Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
-	RegionalizedPrivateEndpoint *project.RegionalizedPrivateEndpoint `json:"regionalizedPrivateEndpoint.omitempty"`
+	RegionalizedPrivateEndpoint *project.RegionalizedPrivateEndpoint `json:"regionalizedPrivateEndpoint,omitempty"`
 }
