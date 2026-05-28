@@ -10435,13 +10435,6 @@ AtlasProjectStatus defines the observed state of AtlasProject
         </td>
         <td>true</td>
       </tr><tr>
-        <td><b><a href="#atlasprojectstatusregionalizedprivateendpointomitempty">regionalizedPrivateEndpoint.omitempty</a></b></td>
-        <td>object</td>
-        <td>
-          Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b><a href="#atlasprojectstatusalertconfigurationsindex">alertConfigurations</a></b></td>
         <td>[]object</td>
         <td>
@@ -10519,6 +10512,13 @@ including the prometheusDiscoveryURL<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#atlasprojectstatusregionalizedprivateendpoint">regionalizedPrivateEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasprojectstatusteamsindex">teams</a></b></td>
         <td>[]object</td>
         <td>
@@ -10581,33 +10581,6 @@ Represented in ISO 8601 format.<br/>
         <td>string</td>
         <td>
           The reason for the condition's last transition.<br/>
-        </td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-### AtlasProject.status.regionalizedPrivateEndpoint.omitempty
-<sup><sup>[↩ Parent](#atlasprojectstatus)</sup></sup>
-
-
-
-Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>
-          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11664,6 +11637,33 @@ including the prometheusDiscoveryURL
         <td>string</td>
         <td>
           Protocol scheme used for Prometheus requests.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasProject.status.regionalizedPrivateEndpoint
+<sup><sup>[↩ Parent](#atlasprojectstatus)</sup></sup>
+
+
+
+Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
