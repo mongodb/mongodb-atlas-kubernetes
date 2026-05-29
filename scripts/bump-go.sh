@@ -39,8 +39,6 @@ GO_MOD_FILES=(
   "tools/clean/go.mod"
   "tools/githubjobs/go.mod"
   "tools/makejwt/go.mod"
-  "tools/openapi2crd/go.mod"
-  "tools/openapi2crd/hack/tools/go.mod"
   "tools/scaffolder/go.mod"
   "tools/scandeprecation/go.mod"
   "tools/toolbox/go.mod"
