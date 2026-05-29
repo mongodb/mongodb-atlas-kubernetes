@@ -66,6 +66,7 @@ func TestHandleInitial(t *testing.T) {
 		flexCluster                *akov2generated.FlexCluster
 		kubeObjects                []client.Object
 		atlasCreateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
+		atlasGetFlexClusterFunc    func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
 		interceptorFuncs           *interceptor.Funcs
 		want                       ctrlstate.Result
 		wantErr                    string
@@ -146,6 +147,62 @@ func TestHandleInitial(t *testing.T) {
 			want:    ctrlstate.Result{NextState: state.StateInitial},
 			wantErr: "failed to patch flex cluster status",
 		},
+		{
+			title: "duplicate cluster name - recovers when id already in status",
+			flexCluster: withStatusID(
+				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
+				testClusterID,
+			),
+			kubeObjects: []client.Object{
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
+			},
+			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				apiErr := &v20250312sdk.GenericOpenAPIError{}
+				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "DUPLICATE_CLUSTER_NAME"})
+				return nil, nil, apiErr
+			},
+			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				return &v20250312sdk.FlexClusterDescription20241113{
+					Id:        new(testClusterID),
+					StateName: new("CREATING"),
+				}, nil, nil
+			},
+			want: reenqueueResult(state.StateCreating, "Creating Flex Cluster."),
+		},
+		{
+			title: "duplicate cluster name - get existing cluster fails when id in status",
+			flexCluster: withStatusID(
+				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
+				testClusterID,
+			),
+			kubeObjects: []client.Object{
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
+			},
+			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				apiErr := &v20250312sdk.GenericOpenAPIError{}
+				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "DUPLICATE_CLUSTER_NAME"})
+				return nil, nil, apiErr
+			},
+			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				return nil, nil, fmt.Errorf("get cluster failed")
+			},
+			want:    ctrlstate.Result{NextState: state.StateInitial},
+			wantErr: "failed to get existing flex cluster",
+		},
+		{
+			title:       "duplicate cluster name - no id in status - no recovery",
+			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), testGroupName),
+			kubeObjects: []client.Object{
+				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
+			},
+			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
+				apiErr := &v20250312sdk.GenericOpenAPIError{}
+				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "DUPLICATE_CLUSTER_NAME"})
+				return nil, nil, apiErr
+			},
+			want:    ctrlstate.Result{NextState: state.StateInitial},
+			wantErr: "failed to create flex cluster",
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.interceptorFuncs)
@@ -156,6 +213,12 @@ func TestHandleInitial(t *testing.T) {
 				req := admin.CreateFlexClusterApiRequest{ApiService: flexAPI}
 				flexAPI.EXPECT().CreateFlexClusterWithParams(mock.Anything, mock.Anything).Return(req)
 				flexAPI.EXPECT().CreateFlexClusterExecute(req).Return(cluster, rsp, err)
+			}
+			if tc.atlasGetFlexClusterFunc != nil {
+				cluster, rsp, err := tc.atlasGetFlexClusterFunc()
+				req := admin.GetFlexClusterApiRequest{ApiService: flexAPI}
+				flexAPI.EXPECT().GetFlexClusterWithParams(mock.Anything, mock.Anything).Return(req)
+				flexAPI.EXPECT().GetFlexClusterExecute(req).Return(cluster, rsp, err)
 			}
 
 			atlasClient := buildAtlasClient(flexAPI)
@@ -1140,6 +1203,15 @@ func assertError(t *testing.T, err error, wantErr string) {
 func withStatus(flexCluster *akov2generated.FlexCluster) *akov2generated.FlexCluster {
 	flexCluster.Status = akov2generated.FlexClusterStatus{
 		V20250312: &akov2generated.FlexClusterStatusV20250312{},
+	}
+	return flexCluster
+}
+
+// withStatusID creates a FlexCluster with a status ID, simulating a resource whose Atlas cluster
+// was already created in a previous reconcile.
+func withStatusID(flexCluster *akov2generated.FlexCluster, id string) *akov2generated.FlexCluster {
+	flexCluster.Status = akov2generated.FlexClusterStatus{
+		V20250312: &akov2generated.FlexClusterStatusV20250312{Id: &id},
 	}
 	return flexCluster
 }

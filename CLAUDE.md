@@ -85,6 +85,24 @@ Do not:
 - Add new dependencies without running `make lint` and `make unit-test` to verify compatibility.
 - Introduce e2e tests when unit or integration tests suffice. E2e tests are expensive and slow CI.
 
+## Git commits
+
+When writing a `git commit` command:
+
+- Use multiple `-m` flags instead of a heredoc — one flag for the title, one per summary paragraph.
+- Title: 50 chars soft limit, 72 chars hard limit.
+- Body lines: no hard limit, but prefer wrapping around 72 chars for readability.
+- Each `-m` after the title becomes a paragraph separated by a blank line.
+
+Example:
+
+```sh
+git commit \
+  -m "fix: short imperative title under 50 chars" \
+  -m "First paragraph explaining the why of the change." \
+  -m "Optional second paragraph with extra context."
+```
+
 ## Verification
 
 After making changes, run `make ci` to execute all unit tests and linting checks before considering the work done. This is the same gate that CI enforces on pull requests.

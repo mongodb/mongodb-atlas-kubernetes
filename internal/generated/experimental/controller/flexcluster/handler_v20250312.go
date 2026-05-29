@@ -71,7 +71,23 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 	}
 
 	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.CreateFlexClusterWithParams(ctx, params).Execute()
-	if err != nil {
+	if v20250312sdk.IsErrorCode(err, "DUPLICATE_CLUSTER_NAME") {
+		// Only recover if a previous reconcile already wrote the Atlas ID to status — confirming we
+		// own this cluster. If status has no ID, the name conflict is either genuine (a pre-existing
+		// Atlas resource we must not hijack) or the cache is too stale to confirm ownership; return
+		// an error so the next retry (after backoff) reads the updated cache and decides correctly.
+		if flexcluster.Status.V20250312 == nil || flexcluster.Status.V20250312.Id == nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
+		}
+		getParams := &v20250312sdk.GetFlexClusterApiParams{}
+		if translateErr := h.translator.ToAPI(getParams, flexcluster, deps...); translateErr != nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to translate get params for existing cluster: %w", translateErr))
+		}
+		atlasFlexCluster, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, getParams).Execute()
+		if err != nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to get existing flex cluster: %w", err))
+		}
+	} else if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
 	}
 	newFlexCluster := flexcluster.DeepCopy()
