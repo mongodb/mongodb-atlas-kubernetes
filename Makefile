@@ -464,14 +464,15 @@ deploy-olm: bundle-build bundle-push catalog-build catalog-push build-catalogsou
 image-push: ## Push the docker image
 	$(CONTAINER_ENGINE) push ${IMG}
 
-# Kubernetes version for the local kind cluster. kind pulls kindest/node:vX.Y.Z.
-# Override with: make run-kind KIND_K8S_VERSION=v1.29.0
+# Kubernetes version and node image for the local kind cluster.
+# Override both together: make run-kind KIND_K8S_VERSION=v1.33.7 KIND_NODE_IMAGE=kindest/node:v1.33.7
 KIND_K8S_VERSION ?= v$(shell jq -r '.kubernetes.max' kubernetes-versions.json)
+KIND_NODE_IMAGE  ?= $(shell jq -r '.kind.images.max' kubernetes-versions.json):$(KIND_K8S_VERSION)
 
 # Additional make goals
 .PHONY: run-kind
 run-kind: ## Create a local kind cluster
-	KIND_K8S_VERSION=$(KIND_K8S_VERSION) bash ./scripts/create_kind_cluster.sh;
+	KIND_K8S_VERSION=$(KIND_K8S_VERSION) KIND_NODE_IMAGE=$(KIND_NODE_IMAGE) bash ./scripts/create_kind_cluster.sh;
 
 .PHONY: stop-kind
 stop-kind: ## Stop the local kind cluster

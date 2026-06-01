@@ -96,14 +96,13 @@ jobs:
       - id: test
         name: Compute test matrix for k8s versions
         run: |
-          K8S_MIN_VERSION=$(./scripts/get-k8s-version.sh min)
-          K8S_MAX_VERSION=$(./scripts/get-k8s-version.sh max)
+          KIND_MIN_IMAGE=$(./scripts/get-kind-image.sh min)
+          KIND_MAX_IMAGE=$(./scripts/get-kind-image.sh max)
 
-          # Note the use of external single quotes to allow for double quotes at inline YAML array
-          matrix="[\"${K8S_MIN_VERSION}\"]"
+          matrix="[\"${KIND_MIN_IMAGE}\"]"
           # Nightly runs in both the newest and oldest supported Kubernetes versions
           if [ "${{ github.ref }}" == "refs/heads/main" ];then
-            matrix="[\"${K8S_MIN_VERSION}\", \"${K8S_MAX_VERSION}\"]"
+            matrix="[\"${KIND_MIN_IMAGE}\", \"${KIND_MAX_IMAGE}\"]"
             echo "Nightly runs oldest and newest Kubernetes supported versions"
           fi
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
@@ -144,10 +143,10 @@ jobs:
       - name: Set properties
         id: properties
         run: |
-          version=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $1}')
-          platform=$(echo ${{ matrix.k8s }} | awk -F "-" '{print $2}')
-          echo "k8s_version=$version" >> $GITHUB_OUTPUT
-          echo "k8s_platform=$platform" >> $GITHUB_OUTPUT
+          image="${{ matrix.k8s }}"
+          version=$(echo "${image}" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+          echo "kind_node_image=${image}" >> $GITHUB_OUTPUT
+          echo "k8s_version=${version}" >> $GITHUB_OUTPUT
 
       - name: Run E2E2 test
         env:
@@ -159,7 +158,7 @@ jobs:
           USE_CURRENT_VERSION: "true"
         run: |
           echo "Using ENV: ${{ steps.select-env.outputs.ENV }}"
-          devbox run -- make e2e2 label=${{ env.TEST_NAME }}
+          devbox run -- make e2e2 label=${{ env.TEST_NAME }} KIND_K8S_VERSION=${{ steps.properties.outputs.k8s_version }} KIND_NODE_IMAGE=${{ steps.properties.outputs.kind_node_image }}
 
       - name: Upload operator logs
         if: ${{ failure() }}
