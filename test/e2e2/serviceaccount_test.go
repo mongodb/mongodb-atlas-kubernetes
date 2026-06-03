@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v20250312018 "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312020 "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,10 +45,10 @@ type serviceAccountCreds struct {
 	clientSecret string
 }
 
-func createAtlasServiceAccount(ctx context.Context, atlasClient *v20250312018.APIClient, orgID string) (*serviceAccountCreds, func()) {
+func createAtlasServiceAccount(ctx context.Context, atlasClient *v20250312020.APIClient, orgID string) (*serviceAccountCreds, func()) {
 	saName := utils.RandomName("ako-e2e-sa")
 	sa, _, err := atlasClient.ServiceAccountsApi.
-		CreateOrgServiceAccount(ctx, orgID, &v20250312018.OrgServiceAccountRequest{
+		CreateOrgServiceAccount(ctx, orgID, &v20250312020.OrgServiceAccountRequest{
 			Name:                    saName,
 			Description:             fmt.Sprintf("AKO e2e test service account %s", saName),
 			Roles:                   []string{"ORG_OWNER"},
@@ -119,7 +119,7 @@ func waitForAccessTokenSecret(ctx context.Context, kubeClient client.Client, sec
 var _ = Describe("Service Account Controller", Ordered, Label("service-account"), func() {
 	ctx := context.Background()
 	var kubeClient client.Client
-	var atlasClient *v20250312018.APIClient
+	var atlasClient *v20250312020.APIClient
 	var ako operator.Operator
 	var testNamespace *corev1.Namespace
 	var orgID string
