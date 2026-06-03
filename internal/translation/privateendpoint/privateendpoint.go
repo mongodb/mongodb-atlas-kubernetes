@@ -31,6 +31,7 @@ type PrivateEndpointService interface {
 	ListPrivateEndpoints(ctx context.Context, projectID, provider string) ([]EndpointService, error)
 	GetPrivateEndpoint(ctx context.Context, projectID, provider, ID string) (EndpointService, error)
 	CreatePrivateEndpointService(ctx context.Context, projectID string, peService EndpointService) (EndpointService, error)
+	UpdatePrivateEndpointService(ctx context.Context, projectID, serviceID string, peService EndpointService) (EndpointService, error)
 	DeleteEndpointService(ctx context.Context, projectID, provider, ID string) error
 	CreatePrivateEndpointInterface(ctx context.Context, projectID, provider, serviceID, gcpProjectID string, peInterface EndpointInterface) (EndpointInterface, error)
 	DeleteEndpointInterface(ctx context.Context, projectID, provider, serviceID, ID string) error
@@ -118,6 +119,16 @@ func (pe *PrivateEndpoint) CreatePrivateEndpointService(ctx context.Context, pro
 	}
 
 	return serviceFromAtlas(service, []EndpointInterface{}), nil
+}
+
+func (pe *PrivateEndpoint) UpdatePrivateEndpointService(ctx context.Context, projectID, serviceID string, peService EndpointService) (EndpointService, error) {
+	service, _, err := pe.api.UpdatePrivateEndpointService(ctx, projectID, serviceID, serviceUpdateToAtlas(peService)).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to update the private endpoint service: %w", err)
+	}
+
+	return serviceFromAtlas(service, peService.EndpointInterfaces()), nil
 }
 
 func (pe *PrivateEndpoint) DeleteEndpointService(ctx context.Context, projectID, provider, ID string) error {

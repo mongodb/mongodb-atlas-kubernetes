@@ -292,6 +292,11 @@ func (in *AtlasPrivateEndpointStatus) DeepCopyInto(out *AtlasPrivateEndpointStat
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.SupportedRegions != nil {
+		in, out := &in.SupportedRegions, &out.SupportedRegions
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Endpoints != nil {
 		in, out := &in.Endpoints, &out.Endpoints
 		*out = make([]EndpointInterfaceStatus, len(*in))

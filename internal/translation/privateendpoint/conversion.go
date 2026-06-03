@@ -79,7 +79,8 @@ func (s *CommonEndpointService) ErrorMessage() string {
 type AWSService struct {
 	CommonEndpointService
 
-	ServiceName string
+	ServiceName      string
+	SupportedRegions []string
 }
 
 func (s *AWSService) Provider() string {
@@ -98,7 +99,8 @@ func (s *AzureService) Provider() string {
 
 type GCPService struct {
 	CommonEndpointService
-	AttachmentNames []string
+	AttachmentNames    []string
+	PortMappingEnabled bool
 }
 
 func (s *GCPService) Provider() string {
@@ -177,7 +179,8 @@ func NewPrivateEndpoint(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) Endpoint
 				Error:         akoPrivateEndpoint.Status.Error,
 				Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
 			},
-			ServiceName: akoPrivateEndpoint.Status.ServiceName,
+			ServiceName:      akoPrivateEndpoint.Status.ServiceName,
+			SupportedRegions: akoPrivateEndpoint.Spec.SupportedRegions,
 		}
 	case ProviderAzure:
 		return &AzureService{
@@ -200,7 +203,8 @@ func NewPrivateEndpoint(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) Endpoint
 				Error:         akoPrivateEndpoint.Status.Error,
 				Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
 			},
-			AttachmentNames: akoPrivateEndpoint.Status.ServiceAttachmentNames,
+			AttachmentNames:    akoPrivateEndpoint.Status.ServiceAttachmentNames,
+			PortMappingEnabled: akoPrivateEndpoint.Spec.PortMappingEnabled,
 		}
 	}
 
@@ -249,6 +253,7 @@ func NewPrivateEndpointStatus(peService EndpointService) status.AtlasPrivateEndp
 		switch pe := peService.(type) {
 		case *AWSService:
 			s.ServiceName = pe.ServiceName
+			s.SupportedRegions = pe.SupportedRegions
 		case *AzureService:
 			s.ServiceName = pe.ServiceName
 			s.ResourceID = pe.ResourceID
@@ -355,7 +360,8 @@ func serviceFromAtlas(peService *admin.EndpointService, endpoints EndpointInterf
 				Error:         peService.GetErrorMessage(),
 				Interfaces:    endpoints,
 			},
-			ServiceName: peService.GetEndpointServiceName(),
+			ServiceName:      peService.GetEndpointServiceName(),
+			SupportedRegions: peService.GetSupportedRemoteRegions(),
 		}
 	case ProviderAzure:
 		return &AzureService{
@@ -378,7 +384,8 @@ func serviceFromAtlas(peService *admin.EndpointService, endpoints EndpointInterf
 				Error:         peService.GetErrorMessage(),
 				Interfaces:    endpoints,
 			},
-			AttachmentNames: peService.GetServiceAttachmentNames(),
+			AttachmentNames:    peService.GetServiceAttachmentNames(),
+			PortMappingEnabled: peService.GetPortMappingEnabled(),
 		}
 	}
 
@@ -386,10 +393,27 @@ func serviceFromAtlas(peService *admin.EndpointService, endpoints EndpointInterf
 }
 
 func serviceCreateToAtlas(peService EndpointService) *admin.CloudProviderEndpointServiceRequest {
-	return &admin.CloudProviderEndpointServiceRequest{
+	req := &admin.CloudProviderEndpointServiceRequest{
 		ProviderName: peService.Provider(),
 		Region:       peService.Region(),
 	}
+	if awsSvc, ok := peService.(*AWSService); ok && len(awsSvc.SupportedRegions) > 0 {
+		req.SupportedRemoteRegions = &awsSvc.SupportedRegions
+	}
+	if gcpSvc, ok := peService.(*GCPService); ok && gcpSvc.PortMappingEnabled {
+		req.PortMappingEnabled = new(gcpSvc.PortMappingEnabled)
+	}
+	return req
+}
+
+func serviceUpdateToAtlas(peService EndpointService) *admin.ApiAtlasModifyEndpointServiceRequest {
+	req := &admin.ApiAtlasModifyEndpointServiceRequest{
+		CloudProvider: peService.Provider(),
+	}
+	if awsSvc, ok := peService.(*AWSService); ok {
+		req.SupportedRemoteRegions = &awsSvc.SupportedRegions
+	}
+	return req
 }
 
 func interfaceFromAtlas(peInterface *admin.PrivateLinkEndpoint) EndpointInterface {

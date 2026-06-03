@@ -626,3 +626,124 @@ func TestDeletePrivateEndpointInterface(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdatePrivateEndpointService(t *testing.T) {
+	tests := map[string]struct {
+		service              EndpointService
+		mockUpdateReturnFunc func() (*admin.EndpointService, *http.Response, error)
+		expectedPE           EndpointService
+		expectedErr          error
+	}{
+		"failed to update the service": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{
+					ID:          "pe-service-ID",
+					CloudRegion: "US_EAST_1",
+				},
+				SupportedRegions: []string{"US_WEST_1"},
+			},
+			mockUpdateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
+				return nil, &http.Response{}, errors.New("atlas failed to update")
+			},
+			expectedErr: fmt.Errorf("failed to update the private endpoint service: %w", errors.New("atlas failed to update")),
+		},
+		"update AWS supported regions": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{
+					ID:          "pe-service-ID",
+					CloudRegion: "US_EAST_1",
+				},
+				SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
+			},
+			mockUpdateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
+				return &admin.EndpointService{
+					CloudProvider:          "AWS",
+					Id:                     new("pe-service-ID"),
+					RegionName:             new("US_EAST_1"),
+					Status:                 new("AVAILABLE"),
+					SupportedRemoteRegions: &[]string{"US_WEST_1", "EU_WEST_1"},
+				}, &http.Response{}, nil
+			},
+			expectedPE: &AWSService{
+				CommonEndpointService: CommonEndpointService{
+					ID:            "pe-service-ID",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+				},
+				SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			projectID := "project-ID"
+			serviceID := "pe-service-ID"
+			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api.EXPECT().UpdatePrivateEndpointService(ctx, projectID, serviceID, mock.AnythingOfType("*admin.ApiAtlasModifyEndpointServiceRequest")).
+				Return(admin.UpdatePrivateEndpointServiceApiRequest{ApiService: api})
+			api.EXPECT().UpdatePrivateEndpointServiceExecute(mock.AnythingOfType("admin.UpdatePrivateEndpointServiceApiRequest")).
+				Return(tt.mockUpdateReturnFunc())
+
+			pe := &PrivateEndpoint{api: api}
+
+			result, err := pe.UpdatePrivateEndpointService(ctx, projectID, serviceID, tt.service)
+			assert.Equal(t, tt.expectedErr, err)
+			assert.Equal(t, tt.expectedPE, result)
+		})
+	}
+}
+
+func TestServiceCreateToAtlas(t *testing.T) {
+	tests := map[string]struct {
+		service  EndpointService
+		expected *admin.CloudProviderEndpointServiceRequest
+	}{
+		"AWS without cross-region": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{CloudRegion: "US_EAST_1"},
+			},
+			expected: &admin.CloudProviderEndpointServiceRequest{
+				ProviderName: "AWS",
+				Region:       "US_EAST_1",
+			},
+		},
+		"AWS with cross-region": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{CloudRegion: "US_EAST_1"},
+				SupportedRegions:      []string{"US_WEST_1", "EU_WEST_1"},
+			},
+			expected: &admin.CloudProviderEndpointServiceRequest{
+				ProviderName:           "AWS",
+				Region:                 "US_EAST_1",
+				SupportedRemoteRegions: &[]string{"US_WEST_1", "EU_WEST_1"},
+			},
+		},
+		"GCP without port mapping": {
+			service: &GCPService{
+				CommonEndpointService: CommonEndpointService{CloudRegion: "EUROPE_WEST_3"},
+			},
+			expected: &admin.CloudProviderEndpointServiceRequest{
+				ProviderName: "GCP",
+				Region:       "EUROPE_WEST_3",
+			},
+		},
+		"GCP with port mapping": {
+			service: &GCPService{
+				CommonEndpointService: CommonEndpointService{CloudRegion: "EUROPE_WEST_3"},
+				PortMappingEnabled:    true,
+			},
+			expected: &admin.CloudProviderEndpointServiceRequest{
+				ProviderName:       "GCP",
+				Region:             "EUROPE_WEST_3",
+				PortMappingEnabled: new(true),
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := serviceCreateToAtlas(tt.service)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
