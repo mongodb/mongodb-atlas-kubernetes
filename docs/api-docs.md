@@ -2272,20 +2272,18 @@ Information about the cloud provider region to which the Federated Database Inst
     </thead>
     <tbody><tr>
         <td><b>cloudProvider</b></td>
-        <td>enum</td>
+        <td>string</td>
         <td>
-          Name of the cloud service that hosts the Federated Database Instance's infrastructure.<br/>
-          <br/>
-            <i>Enum</i>: AWS<br/>
+          Name of the cloud service that hosts the Federated Database Instance's infrastructure.
+see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-cloudprovider<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>region</b></td>
-        <td>enum</td>
+        <td>string</td>
         <td>
-          Name of the region to which the data lake routes client connections.<br/>
-          <br/>
-            <i>Enum</i>: SYDNEY_AUS, MUMBAI_IND, FRANKFURT_DEU, DUBLIN_IRL, LONDON_GBR, VIRGINIA_USA, OREGON_USA, SAOPAULO_BRA, SINGAPORE_SGP<br/>
+          Name of the region to which the data lake routes client connections.
+see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-region<br/>
         </td>
         <td>false</td>
       </tr></tbody>

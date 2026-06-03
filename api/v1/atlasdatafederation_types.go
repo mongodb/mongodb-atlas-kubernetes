@@ -83,10 +83,10 @@ type GCPProviderConfig struct {
 
 type DataProcessRegion struct {
 	// Name of the cloud service that hosts the Federated Database Instance's infrastructure.
-	// +kubebuilder:validation:Enum:=AWS
+	// see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-cloudprovider
 	CloudProvider string `json:"cloudProvider,omitempty"`
 	// Name of the region to which the data lake routes client connections.
-	// +kubebuilder:validation:Enum:=SYDNEY_AUS;MUMBAI_IND;FRANKFURT_DEU;DUBLIN_IRL;LONDON_GBR;VIRGINIA_USA;OREGON_USA;SAOPAULO_BRA;SINGAPORE_SGP
+	// see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-region
 	Region string `json:"region,omitempty"`
 }
 
@@ -305,7 +305,8 @@ func (c *AtlasDataFederation) WithAWSCloudProviderConfig(AWSRoleID, S3Bucket str
 		AWS: &AWSProviderConfig{
 			RoleID:       AWSRoleID,
 			TestS3Bucket: S3Bucket,
-		}}
+		},
+	}
 	return c
 }
 
