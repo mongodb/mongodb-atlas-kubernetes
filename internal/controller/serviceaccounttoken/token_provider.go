@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.mongodb.org/atlas-sdk/v20250312018/auth/clientcredentials"
+	"go.mongodb.org/atlas-sdk/v20250312020/auth/clientcredentials"
 )
 
 // TokenProvider abstracts the OAuth token acquisition so it can be mocked in tests.
