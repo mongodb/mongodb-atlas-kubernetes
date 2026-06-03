@@ -2148,6 +2148,20 @@ Configuration for the cloud provider where this Federated Database Instance is h
           Configuration for running Data Federation in AWS.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationspeccloudproviderconfigazure">azure</a></b></td>
+        <td>object</td>
+        <td>
+          Configuration for running Data Federation in Azure.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationspeccloudproviderconfiggcp">gcp</a></b></td>
+        <td>object</td>
+        <td>
+          Configuration for running Data Federation in GCP.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2182,6 +2196,60 @@ Configuration for running Data Federation in AWS.
           Name of the S3 data bucket that the provided role ID is authorized to access.Required if specifying cloudProviderConfig.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.spec.cloudProviderConfig.azure
+<sup><sup>[↩ Parent](#atlasdatafederationspeccloudproviderconfig)</sup></sup>
+
+
+
+Configuration for running Data Federation in Azure.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>roleId</b></td>
+        <td>string</td>
+        <td>
+          Unique identifier of the role that Data Federation can use to access the data stores.<br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.spec.cloudProviderConfig.gcp
+<sup><sup>[↩ Parent](#atlasdatafederationspeccloudproviderconfig)</sup></sup>
+
+
+
+Configuration for running Data Federation in GCP.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>roleId</b></td>
+        <td>string</td>
+        <td>
+          Unique identifier of the role that Data Federation can use to access the data stores.<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -2551,6 +2619,13 @@ This label must exactly match the name of an S3 bucket that the data lake can ac
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>clusterName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label of the Atlas cluster used as a data store (provider: atlas).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>delimiter</b></td>
         <td>string</td>
         <td>
@@ -2600,12 +2675,128 @@ If set to false, the configured AWS IAM role must include permissions to access 
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#atlasdatafederationspecstoragestoresindexreadconcern">readConcern</a></b></td>
+        <td>object</td>
+        <td>
+          Read concern for Atlas cluster data stores (provider: atlas).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationspecstoragestoresindexreadpreference">readPreference</a></b></td>
+        <td>object</td>
+        <td>
+          Read preference for Atlas cluster data stores (provider: atlas).<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>region</b></td>
         <td>string</td>
         <td>
           Physical location where MongoDB Cloud deploys your AWS-hosted MongoDB cluster nodes. The region you choose can affect network latency for clients accessing your databases.
 When MongoDB Atlas deploys a dedicated cluster, it checks if a VPC or VPC connection exists for that provider and region. If not, MongoDB Atlas creates them as part of the deployment.
 To limit a new VPC peering connection to one CIDR block and region, create the connection first. Deploy the cluster after the connection starts.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.spec.storage.stores[index].readConcern
+<sup><sup>[↩ Parent](#atlasdatafederationspecstoragestoresindex)</sup></sup>
+
+
+
+Read concern for Atlas cluster data stores (provider: atlas).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>level</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.spec.storage.stores[index].readPreference
+<sup><sup>[↩ Parent](#atlasdatafederationspecstoragestoresindex)</sup></sup>
+
+
+
+Read preference for Atlas cluster data stores (provider: atlas).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>maxStalenessSeconds</b></td>
+        <td>integer</td>
+        <td>
+          Maximum replication lag in seconds for reads from secondaries.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>string</td>
+        <td>
+          Read preference mode.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationspecstoragestoresindexreadpreferencetagsetsindexindex">tagSets</a></b></td>
+        <td>[][]object</td>
+        <td>
+          List of tag sets to route read requests to specific replica set members.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.spec.storage.stores[index].readPreference.tagSets[index][index]
+<sup><sup>[↩ Parent](#atlasdatafederationspecstoragestoresindexreadpreference)</sup></sup>
+
+
+
+ReadPreferenceTag is a key-value pair used to route read requests.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2635,6 +2826,13 @@ DataFederationStatus defines the observed state of AtlasDataFederation.
           Conditions is the list of statuses showing the current state of the Atlas Custom Resource<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationstatuscloudproviderconfig">cloudProviderConfig</a></b></td>
+        <td>object</td>
+        <td>
+          CloudProviderConfig holds Atlas-assigned read-only fields for the cloud provider configuration.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b>mongoDBVersion</b></td>
         <td>string</td>
@@ -2708,6 +2906,156 @@ Represented in ISO 8601 format.<br/>
         <td>string</td>
         <td>
           The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.status.cloudProviderConfig
+<sup><sup>[↩ Parent](#atlasdatafederationstatus)</sup></sup>
+
+
+
+CloudProviderConfig holds Atlas-assigned read-only fields for the cloud provider configuration.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#atlasdatafederationstatuscloudproviderconfigaws">aws</a></b></td>
+        <td>object</td>
+        <td>
+          AWS holds Atlas-assigned read-only fields for the AWS cloud provider config.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationstatuscloudproviderconfigazure">azure</a></b></td>
+        <td>object</td>
+        <td>
+          Azure holds Atlas-assigned read-only fields for the Azure cloud provider config.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdatafederationstatuscloudproviderconfiggcp">gcp</a></b></td>
+        <td>object</td>
+        <td>
+          GCP holds Atlas-assigned read-only fields for the GCP cloud provider config.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.status.cloudProviderConfig.aws
+<sup><sup>[↩ Parent](#atlasdatafederationstatuscloudproviderconfig)</sup></sup>
+
+
+
+AWS holds Atlas-assigned read-only fields for the AWS cloud provider config.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>externalId</b></td>
+        <td>string</td>
+        <td>
+          ExternalID is the IAM role external ID assigned by Atlas.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>iamAssumedRoleARN</b></td>
+        <td>string</td>
+        <td>
+          IAMAssumedRoleARN is the ARN of the IAM role Atlas assumes when accessing data stores.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>iamUserARN</b></td>
+        <td>string</td>
+        <td>
+          IAMUserARN is the ARN of the IAM user Atlas assumes when accessing data stores.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.status.cloudProviderConfig.azure
+<sup><sup>[↩ Parent](#atlasdatafederationstatuscloudproviderconfig)</sup></sup>
+
+
+
+Azure holds Atlas-assigned read-only fields for the Azure cloud provider config.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>atlasAppId</b></td>
+        <td>string</td>
+        <td>
+          AtlasAppID is the App ID generated by Atlas for the Service Principal's access policy.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>servicePrincipalId</b></td>
+        <td>string</td>
+        <td>
+          ServicePrincipalID is the ID of the Service Principal Atlas uses to access Azure resources.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tenantId</b></td>
+        <td>string</td>
+        <td>
+          TenantID is the Azure Active Directory tenant ID of the Service Principal.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDataFederation.status.cloudProviderConfig.gcp
+<sup><sup>[↩ Parent](#atlasdatafederationstatuscloudproviderconfig)</sup></sup>
+
+
+
+GCP holds Atlas-assigned read-only fields for the GCP cloud provider config.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>gcpServiceAccount</b></td>
+        <td>string</td>
+        <td>
+          GCPServiceAccount is the email of the GCP service account created by Atlas.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
