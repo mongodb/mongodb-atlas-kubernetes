@@ -45,6 +45,10 @@ func (r *AtlasDataFederationReconciler) ensureDataFederation(ctx *workflow.Conte
 		return workflow.InProgress(workflow.DataFederationCreating, "Data Federation is being created")
 	}
 
+	if atlasDataFederation != nil && atlasDataFederation.CloudProviderStatus != nil {
+		ctx.EnsureStatusOption(datafederation.NewCloudProviderConfigStatusOption(atlasDataFederation.CloudProviderStatus))
+	}
+
 	if akoDataFederation.SpecEqualsTo(atlasDataFederation) {
 		return workflow.OK()
 	}

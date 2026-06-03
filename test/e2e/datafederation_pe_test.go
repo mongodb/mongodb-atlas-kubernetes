@@ -82,29 +82,16 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 	It("Creates a data federation with private endpoint", func(ctx context.Context) {
 		const dataFederationInstanceName = "test-data-federation-aws"
 
-		//nolint:dupl
-		By("Create private endpoint in AWS", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
-				Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
+		dfKey := types.NamespacedName{
+			Namespace: testData.Project.Namespace,
+			Name:      dataFederationInstanceName,
+		}
 
-			vpcId := providerAction.SetupNetwork(ctx, "AWS", cloud.WithAWSConfig(&cloud.AWSConfig{
-				VPC:           utils.RandomName("datafederation-private-endpoint"),
-				Region:        config.AWSRegionEU,
-				EnableCleanup: true,
-			}))
-			pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
-				ID:     "vpce-" + vpcId,
-				Region: config.AWSRegionEU,
-				// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
-				ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
-			})
-		})
-
-		By("Creating DataFederation with a PrivateEndpoint", func() {
+		By("Creating DataFederation without PrivateEndpoint", func() {
 			createdDataFederation := akov2.NewDataFederationInstance(
 				testData.Project.Name,
 				dataFederationInstanceName,
-				testData.Project.Namespace).WithPrivateEndpoint(pe.ID, "AWS", "DATA_LAKE")
+				testData.Project.Namespace)
 			createdDataFederation.Spec.Storage = &akov2.Storage{
 				Databases: []akov2.Database{
 					{
@@ -128,6 +115,13 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 					{
 						Name:     "http-test",
 						Provider: "http",
+						ReadPreference: &akov2.ReadPreference{
+							Mode:                "nearest",
+							MaxStalenessSeconds: 90,
+							TagSets: [][]akov2.ReadPreferenceTag{
+								{{Name: "region", Value: "us-east-1"}},
+							},
+						},
 					},
 				},
 			}
@@ -142,12 +136,73 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			}).WithTimeout(20 * time.Minute).WithPolling(15 * time.Second).ShouldNot(HaveOccurred())
 		})
 
+		By("Checking DataFederation is ready without PrivateEndpoint", func() {
+			df := &akov2.AtlasDataFederation{}
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
+			Eventually(func() bool {
+				return resources.CheckCondition(testData.K8SClient, df, api.TrueCondition(api.ReadyType))
+			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
+		})
+
+		By("Updating DataFederation to add a second store with ReadConcern", func() {
+			df := &akov2.AtlasDataFederation{}
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
+
+			df.Spec.Storage.Stores = append(df.Spec.Storage.Stores, akov2.Store{
+				Name:        "http-test-2",
+				Provider:    "http",
+				ReadConcern: &akov2.ReadConcern{Level: "local"},
+			})
+			df.Spec.Storage.Databases[0].Collections = append(
+				df.Spec.Storage.Databases[0].Collections,
+				akov2.Collection{
+					Name: "test-collection-2",
+					DataSources: []akov2.DataSource{
+						{StoreName: "http-test-2", Urls: []string{
+							"https://data.cityofnewyork.us/api/views/vfnx-vebw/rows.csv",
+						}},
+					},
+				},
+			)
+			Expect(testData.K8SClient.Update(context.Background(), df)).ShouldNot(HaveOccurred())
+
+			Eventually(func() bool {
+				return resources.CheckCondition(testData.K8SClient, df, api.TrueCondition(api.ReadyType))
+			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
+		})
+
+		//nolint:dupl
+		By("Create private endpoint in AWS", func() {
+			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+				Name:      testData.Project.Name,
+				Namespace: testData.Resources.Namespace,
+			}, testData.Project)).To(Succeed())
+
+			vpcId := providerAction.SetupNetwork(ctx, "AWS", cloud.WithAWSConfig(&cloud.AWSConfig{
+				VPC:           utils.RandomName("datafederation-private-endpoint"),
+				Region:        config.AWSRegionEU,
+				EnableCleanup: true,
+			}))
+			pe = providerAction.SetupPrivateEndpoint(ctx, &cloud.AWSPrivateEndpointRequest{
+				ID:     "vpce-" + vpcId,
+				Region: config.AWSRegionEU,
+				// See https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Data-Federation/operation/createDataFederationPrivateEndpoint
+				ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-052f1840aa0c4f1f9",
+			})
+		})
+
+		By("Adding PrivateEndpoint to existing DataFederation", func() {
+			df := &akov2.AtlasDataFederation{}
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
+			df.Spec.PrivateEndpoints = []akov2.DataFederationPE{
+				{EndpointID: pe.ID, Provider: "AWS", Type: "DATA_LAKE"},
+			}
+			Expect(testData.K8SClient.Update(context.Background(), df)).ShouldNot(HaveOccurred())
+		})
+
 		By("Checking the DataFederation is ready", func() {
 			df := &akov2.AtlasDataFederation{}
-			Expect(testData.K8SClient.Get(context.Background(), types.NamespacedName{
-				Namespace: testData.Project.Namespace,
-				Name:      dataFederationInstanceName,
-			}, df)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(testData.K8SClient, df, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
@@ -155,8 +210,10 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 
 		//nolint:dupl
 		By("Create a new private endpoint in AWS", func() {
-			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{Name: testData.Project.Name,
-				Namespace: testData.Resources.Namespace}, testData.Project)).To(Succeed())
+			Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+				Name:      testData.Project.Name,
+				Namespace: testData.Resources.Namespace,
+			}, testData.Project)).To(Succeed())
 
 			vpcId := providerAction.SetupNetwork(ctx, "AWS", cloud.WithAWSConfig(&cloud.AWSConfig{
 				VPC:           utils.RandomName("datafederation-private-endpoint2"),
@@ -173,20 +230,14 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 
 		By("Update DataFederation with the new Private Endpoint", func() {
 			df := &akov2.AtlasDataFederation{}
-			Expect(testData.K8SClient.Get(context.Background(), types.NamespacedName{
-				Namespace: testData.Project.Namespace,
-				Name:      dataFederationInstanceName,
-			}, df)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
 			df.Spec.PrivateEndpoints[0].EndpointID = secondPE.ID
 			Expect(testData.K8SClient.Update(context.Background(), df)).ShouldNot(HaveOccurred())
 		})
 
 		By("Checking the DataFederation is ready", func() {
 			df := &akov2.AtlasDataFederation{}
-			Expect(testData.K8SClient.Get(context.Background(), types.NamespacedName{
-				Namespace: testData.Project.Namespace,
-				Name:      dataFederationInstanceName,
-			}, df)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
 			Eventually(func() bool {
 				return resources.CheckCondition(testData.K8SClient, df, api.TrueCondition(api.ReadyType))
 			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
@@ -194,10 +245,7 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 
 		By("Delete DataFederation", func() {
 			df := &akov2.AtlasDataFederation{}
-			Expect(testData.K8SClient.Get(context.Background(), types.NamespacedName{
-				Namespace: testData.Project.Namespace,
-				Name:      dataFederationInstanceName,
-			}, df)).To(Succeed())
+			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
 			Expect(testData.K8SClient.Delete(testData.Context, df)).Should(Succeed())
 		})
 

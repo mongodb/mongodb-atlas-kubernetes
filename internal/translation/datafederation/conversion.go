@@ -22,14 +22,16 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/cmp"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 type DataFederation struct {
 	*akov2.DataFederationSpec
-	ProjectID string
-	Hostnames []string
+	ProjectID           string
+	Hostnames           []string
+	CloudProviderStatus *status.DataFederationCloudProviderConfigStatus
 }
 
 // SpecEqualsTo returns true if the spec of the data federation instance semantically equals to the given one.
@@ -50,9 +52,12 @@ func pruneSpec(spec *akov2.DataFederationSpec) *akov2.DataFederationSpec {
 		return nil
 	}
 
-	// Atlas embeds AWS config as a value, AKO embeds AWS config as a pointer,
-	// hence treat the absence of both in AKO equally.
-	if spec.CloudProviderConfig == nil || spec.CloudProviderConfig.AWS == nil {
+	// Treat a config with no providers as absent (Atlas may return an empty
+	// struct even when none is configured).
+	if spec.CloudProviderConfig != nil &&
+		spec.CloudProviderConfig.AWS == nil &&
+		spec.CloudProviderConfig.Azure == nil &&
+		spec.CloudProviderConfig.GCP == nil {
 		spec.CloudProviderConfig = nil
 	}
 
@@ -66,6 +71,26 @@ func pruneSpec(spec *akov2.DataFederationSpec) *akov2.DataFederationSpec {
 	// normalize nested empty stores/database slices
 	if spec.Storage != nil && (len(spec.Storage.Stores) == 0 && len(spec.Storage.Databases) == 0) {
 		spec.Storage = nil
+	}
+
+	// nil inner tag-sets cannot roundtrip through Atlas (they become empty slices),
+	// so strip them before comparison.
+	if spec.Storage != nil {
+		for i := range spec.Storage.Stores {
+			if rp := spec.Storage.Stores[i].ReadPreference; rp != nil {
+				normalized := rp.TagSets[:0]
+				for _, ts := range rp.TagSets {
+					if len(ts) > 0 {
+						normalized = append(normalized, ts)
+					}
+				}
+				if len(normalized) == 0 {
+					rp.TagSets = nil
+				} else {
+					rp.TagSets = normalized
+				}
+			}
+		}
 	}
 
 	return spec
@@ -107,7 +132,7 @@ func fromAtlas(federation *admin.DataLakeTenant) (*DataFederation, error) {
 		return nil, nil
 	}
 
-	return NewDataFederation(
+	df, err := NewDataFederation(
 		&akov2.DataFederationSpec{
 			CloudProviderConfig: cloudProviderConfigFromAtlas(federation.CloudProviderConfig),
 			DataProcessRegion:   dataProcessRegionFromAtlas(federation.DataProcessRegion),
@@ -117,6 +142,13 @@ func fromAtlas(federation *admin.DataLakeTenant) (*DataFederation, error) {
 		federation.GetGroupId(),
 		federation.GetHostnames(),
 	)
+	if err != nil {
+		return nil, err
+	}
+	if df != nil {
+		df.CloudProviderStatus = cloudProviderConfigStatusFromAtlas(federation.CloudProviderConfig)
+	}
+	return df, nil
 }
 
 func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
@@ -171,10 +203,58 @@ func storageFromAtlas(storage *admin.DataLakeStorage) *akov2.Storage {
 			Prefix:      atlasStore.GetPrefix(),
 			Public:      atlasStore.GetPublic(),
 			Region:      atlasStore.GetRegion(),
+			ClusterName: atlasStore.GetClusterName(),
 		}
 		store.AdditionalStorageClasses = append(store.AdditionalStorageClasses, atlasStore.GetAdditionalStorageClasses()...)
+		if rc := atlasStore.ReadConcern; rc != nil {
+			store.ReadConcern = &akov2.ReadConcern{Level: rc.GetLevel()}
+		}
+		if rp := atlasStore.ReadPreference; rp != nil {
+			store.ReadPreference = readPreferenceFromAtlas(rp)
+		}
 		result.Stores = append(result.Stores, store)
 	}
+	return result
+}
+
+func readPreferenceFromAtlas(rp *admin.DataLakeAtlasStoreReadPreference) *akov2.ReadPreference {
+	result := &akov2.ReadPreference{
+		Mode:                rp.GetMode(),
+		MaxStalenessSeconds: rp.GetMaxStalenessSeconds(),
+	}
+	for _, atlasTagSet := range rp.GetTagSets() {
+		tagSet := make([]akov2.ReadPreferenceTag, 0, len(atlasTagSet))
+		for _, atlasTag := range atlasTagSet {
+			tagSet = append(tagSet, akov2.ReadPreferenceTag{
+				Name:  atlasTag.GetName(),
+				Value: atlasTag.GetValue(),
+			})
+		}
+		result.TagSets = append(result.TagSets, tagSet)
+	}
+	return result
+}
+
+func readPreferenceToAtlas(rp *akov2.ReadPreference) *admin.DataLakeAtlasStoreReadPreference {
+	result := &admin.DataLakeAtlasStoreReadPreference{
+		Mode:                pointer.MakePtrOrNil(rp.Mode),
+		MaxStalenessSeconds: pointer.MakePtrOrNil(rp.MaxStalenessSeconds),
+	}
+	var atlasSets [][]admin.DataLakeAtlasStoreReadPreferenceTag
+	for _, tagSet := range rp.TagSets {
+		if len(tagSet) == 0 {
+			continue // nil/empty inner slices don't roundtrip through Atlas
+		}
+		atlasTagSet := make([]admin.DataLakeAtlasStoreReadPreferenceTag, 0, len(tagSet))
+		for _, tag := range tagSet {
+			atlasTagSet = append(atlasTagSet, admin.DataLakeAtlasStoreReadPreferenceTag{
+				Name:  pointer.MakePtrOrNil(tag.Name),
+				Value: pointer.MakePtrOrNil(tag.Value),
+			})
+		}
+		atlasSets = append(atlasSets, atlasTagSet)
+	}
+	result.TagSets = pointer.GetOrNilIfEmpty(atlasSets)
 	return result
 }
 
@@ -239,10 +319,19 @@ func storageToAtlas(storage *akov2.Storage) *admin.DataLakeStorage {
 			Prefix:      pointer.MakePtrOrNil(store.Prefix),
 			Public:      new(store.Public),
 			Region:      pointer.MakePtrOrNil(store.Region),
+			ClusterName: pointer.MakePtrOrNil(store.ClusterName),
 		}
 		additionalStorageClasses := make([]string, 0, len(store.AdditionalStorageClasses))
 		additionalStorageClasses = append(additionalStorageClasses, store.AdditionalStorageClasses...)
 		atlasStore.AdditionalStorageClasses = pointer.GetOrNilIfEmpty(additionalStorageClasses)
+		if store.ReadConcern != nil {
+			atlasStore.ReadConcern = &admin.DataLakeAtlasStoreReadConcern{
+				Level: pointer.MakePtrOrNil(store.ReadConcern.Level),
+			}
+		}
+		if store.ReadPreference != nil {
+			atlasStore.ReadPreference = readPreferenceToAtlas(store.ReadPreference)
+		}
 		stores = append(stores, atlasStore)
 	}
 	result.Stores = pointer.GetOrNilIfEmpty(stores)
@@ -280,17 +369,88 @@ func cloudProviderConfigFromAtlas(config *admin.DataLakeCloudProviderConfig) *ak
 			TestS3Bucket: aws.GetTestS3Bucket(),
 		}
 	}
+	if azure, ok := config.GetAzureOk(); ok {
+		result.Azure = &akov2.AzureProviderConfig{
+			RoleID: azure.GetRoleId(),
+		}
+	}
+	if gcp, ok := config.GetGcpOk(); ok {
+		result.GCP = &akov2.GCPProviderConfig{
+			RoleID: gcp.GetRoleId(),
+		}
+	}
 	return result
 }
 
-func cloudProviderConfigToAtlas(config *akov2.CloudProviderConfig) *admin.DataLakeCloudProviderConfig {
-	if config == nil || config.AWS == nil {
+func cloudProviderConfigStatusFromAtlas(config *admin.DataLakeCloudProviderConfig) *status.DataFederationCloudProviderConfigStatus {
+	if config == nil {
 		return nil
 	}
-	return &admin.DataLakeCloudProviderConfig{
-		Aws: &admin.DataLakeAWSCloudProviderConfig{
+	cs := &status.DataFederationCloudProviderConfigStatus{}
+	hasAny := false
+	if aws, ok := config.GetAwsOk(); ok {
+		cs.AWS = &status.AWSProviderConfigStatus{
+			ExternalID:        aws.GetExternalId(),
+			IAMAssumedRoleARN: aws.GetIamAssumedRoleARN(),
+			IAMUserARN:        aws.GetIamUserARN(),
+		}
+		hasAny = true
+	}
+	if azure, ok := config.GetAzureOk(); ok {
+		cs.Azure = &status.AzureProviderConfigStatus{
+			AtlasAppID:         azure.GetAtlasAppId(),
+			ServicePrincipalID: azure.GetServicePrincipalId(),
+			TenantID:           azure.GetTenantId(),
+		}
+		hasAny = true
+	}
+	if gcp, ok := config.GetGcpOk(); ok {
+		cs.GCP = &status.GCPProviderConfigStatus{
+			GCPServiceAccount: gcp.GetGcpServiceAccount(),
+		}
+		hasAny = true
+	}
+	if !hasAny {
+		return nil
+	}
+	return cs
+}
+
+// NewCloudProviderConfigStatusOption returns a status option that writes
+// the Atlas-assigned read-only cloud provider fields into the DataFederation status.
+func NewCloudProviderConfigStatusOption(cs *status.DataFederationCloudProviderConfigStatus) status.DataFederationStatusOption {
+	return func(s *status.DataFederationStatus) {
+		s.CloudProviderConfig = cs
+	}
+}
+
+func cloudProviderConfigToAtlas(config *akov2.CloudProviderConfig) *admin.DataLakeCloudProviderConfig {
+	if config == nil {
+		return nil
+	}
+	result := &admin.DataLakeCloudProviderConfig{}
+	hasAny := false
+	if config.AWS != nil {
+		result.Aws = &admin.DataLakeAWSCloudProviderConfig{
 			RoleId:       config.AWS.RoleID,
 			TestS3Bucket: config.AWS.TestS3Bucket,
-		},
+		}
+		hasAny = true
 	}
+	if config.Azure != nil {
+		result.Azure = &admin.DataFederationAzureCloudProviderConfig{
+			RoleId: config.Azure.RoleID,
+		}
+		hasAny = true
+	}
+	if config.GCP != nil {
+		result.Gcp = &admin.DataFederationGCPCloudProviderConfig{
+			RoleId: config.GCP.RoleID,
+		}
+		hasAny = true
+	}
+	if !hasAny {
+		return nil
+	}
+	return result
 }
