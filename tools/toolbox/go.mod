@@ -1,6 +1,6 @@
 module toolbox
 
-go 1.26.3
+go 1.26.4
 
 tool (
 	fybrik.io/crdoc

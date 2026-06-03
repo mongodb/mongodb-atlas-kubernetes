@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/tools/openapi2crd
 
-go 1.26.3
+go 1.26.4
 
 tool (
 	github.com/daixiang0/gci
