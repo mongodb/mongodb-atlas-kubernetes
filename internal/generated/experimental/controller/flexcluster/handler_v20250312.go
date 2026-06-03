@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,7 +71,23 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 	}
 
 	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.CreateFlexClusterWithParams(ctx, params).Execute()
-	if err != nil {
+	if v20250312sdk.IsErrorCode(err, "DUPLICATE_CLUSTER_NAME") {
+		// Only recover if a previous reconcile already wrote the Atlas ID to status — confirming we
+		// own this cluster. If status has no ID, the name conflict is either genuine (a pre-existing
+		// Atlas resource we must not hijack) or the cache is too stale to confirm ownership; return
+		// an error so the next retry (after backoff) reads the updated cache and decides correctly.
+		if flexcluster.Status.V20250312 == nil || flexcluster.Status.V20250312.Id == nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
+		}
+		getParams := &v20250312sdk.GetFlexClusterApiParams{}
+		if translateErr := h.translator.ToAPI(getParams, flexcluster, deps...); translateErr != nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to translate get params for existing cluster: %w", translateErr))
+		}
+		atlasFlexCluster, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, getParams).Execute()
+		if err != nil {
+			return result.Error(state.StateInitial, fmt.Errorf("failed to get existing flex cluster: %w", err))
+		}
+	} else if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
 	}
 	newFlexCluster := flexcluster.DeepCopy()
@@ -176,14 +192,22 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov
 		return result.Error(state.StateDeleting, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
-	_, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
 	case err != nil:
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete flexcluster: %w", err))
+		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get flex cluster status: %w", err))
 	}
-	return result.NextState(state.StateDeleting, "Deleting Flex Cluster.")
+
+	if atlasFlexCluster.GetStateName() == "DELETING" {
+		return result.NextState(state.StateDeleting, "Deleting Flex Cluster.")
+	}
+
+	// Atlas returned the cluster in a non-deleting state. This can happen when Atlas silently
+	// ignores the deletion request. Re-request deletion so the DELETE is retried.
+	return result.NextState(state.StateDeletionRequested,
+		fmt.Sprintf("Flex cluster is in %q state instead of DELETING, re-requesting deletion.", atlasFlexCluster.GetStateName()))
 }
 
 // For returns the resource and predicates for the controller

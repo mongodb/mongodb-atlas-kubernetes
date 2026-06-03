@@ -16,12 +16,11 @@ package databaseuser
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,17 +84,31 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, databaseuser *akov
 // HandleImportRequested handles the importrequested state for version v20250312.
 // The annotation mongodb.com/external-id must be set to "groupId:databaseName:username".
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	externalID, ok := databaseuser.GetAnnotations()["mongodb.com/external-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
-	}
-
-	groupID, databaseName, username, err := parseExternalID(externalID)
+	externalID, err := ctrlstate.GetExternalID(databaseuser)
 	if err != nil {
 		return result.Error(state.StateImportRequested, err)
 	}
 
-	response, _, err := h.atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+	databaseName, username, err := parseExternalID(externalID)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
+	}
+
+	deps, err := h.getDependencies(ctx, databaseuser)
+	if err != nil {
+		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+	}
+
+	params := &v20250312sdk.GetDatabaseUserApiParams{
+		DatabaseName: databaseName,
+		Username:     username,
+	}
+	err = h.translator.ToAPI(params, databaseuser, deps...)
+	if err != nil {
+		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+	}
+
+	response, _, err := h.atlasClient.DatabaseUsersApi.GetDatabaseUserWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get DatabaseUser %q: %w", externalID, err))
 	}
@@ -455,11 +468,11 @@ func checkExpiry(databaseuser *akov2generated.DatabaseUser) (bool, error) {
 }
 
 // parseExternalID parses the mongodb.com/external-id annotation value.
-// Expected format: "groupId:databaseName:username".
-func parseExternalID(externalID string) (groupID, databaseName, username string, err error) {
-	parts := strings.SplitN(externalID, ":", 3)
-	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
-		return "", "", "", fmt.Errorf("invalid mongodb.com/external-id %q: expected format \"groupId:databaseName:username\"", externalID)
+// Expected format: "databaseName:username".
+func parseExternalID(externalID string) (databaseName, username string, err error) {
+	parts := strings.SplitN(externalID, ":", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid mongodb.com/external-id %q: expected format \"databaseName:username\"", externalID)
 	}
-	return parts[0], parts[1], parts[2], nil
+	return parts[0], parts[1], nil
 }

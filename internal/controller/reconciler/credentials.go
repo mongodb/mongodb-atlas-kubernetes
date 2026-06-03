@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -116,10 +117,7 @@ func GetConnectionConfig(ctx context.Context, k8sClient client.Client, secretRef
 }
 
 func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, secret *corev1.Secret) (string, error) {
-	tokenSecretName, err := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
-	if err != nil {
-		return "", err
-	}
+	tokenSecretName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
 	tokenSecret := &corev1.Secret{}
@@ -134,12 +132,25 @@ func getServiceAccountAccessToken(ctx context.Context, k8sClient client.Client, 
 	// rotated since the token was issued, the service-account-token controller
 	// may not have caught up yet. Returning an error prompts the downstream
 	// reconciler to retry rather than hitting Atlas with revoked credentials.
-	currentHash, err := accesstoken.CredentialsHash(string(secret.Data[ClientIDKey]), string(secret.Data[ClientSecretKey]))
-	if err != nil {
-		return "", err
-	}
+	currentHash := accesstoken.CredentialsHash(string(secret.Data[ClientIDKey]), string(secret.Data[ClientSecretKey]))
 	if string(tokenSecret.Data[accesstoken.CredentialsHashKey]) != currentHash {
 		return "", fmt.Errorf("access token secret %s is stale (credentials rotated); waiting for the service-account-token controller to refresh", tokenRef.String())
+	}
+
+	// Reject a token that has already expired. The service-account-token
+	// controller is expected to refresh ahead of expiry; this check guards
+	// against controller lag or clock skew so we never hand a downstream
+	// reconciler a token Atlas would already reject.
+	expiryRaw := string(tokenSecret.Data[accesstoken.ExpiryKey])
+	if expiryRaw == "" {
+		return "", fmt.Errorf("access token secret %s has an empty %s field", tokenRef.String(), accesstoken.ExpiryKey)
+	}
+	expiry, err := time.Parse(time.RFC3339, expiryRaw)
+	if err != nil {
+		return "", fmt.Errorf("access token secret %s has an invalid %s field %q: %w", tokenRef.String(), accesstoken.ExpiryKey, expiryRaw, err)
+	}
+	if !time.Now().Before(expiry) {
+		return "", fmt.Errorf("access token secret %s is expired (expiry: %s); waiting for the service-account-token controller to refresh", tokenRef.String(), expiryRaw)
 	}
 
 	bearerToken := string(tokenSecret.Data[accesstoken.AccessTokenKey])

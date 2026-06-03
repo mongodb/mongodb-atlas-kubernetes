@@ -16,6 +16,9 @@ on:
       - 'crd2go/openapi2crd*.yaml'
       - '.github/workflows/gen-ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
 
   scaffolder:

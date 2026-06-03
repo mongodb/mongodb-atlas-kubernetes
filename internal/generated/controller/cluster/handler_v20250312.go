@@ -16,10 +16,9 @@ package cluster
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -97,9 +96,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 
 // HandleImportRequested handles the importrequested state for version v20250312
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	id, ok := cluster.GetAnnotations()["mongodb.com/external-id"]
-	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+	id, err := ctrlstate.GetExternalID(cluster)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
 	}
 
 	deps, err := h.getDependencies(ctx, cluster)

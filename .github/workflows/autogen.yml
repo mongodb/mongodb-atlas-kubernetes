@@ -1,6 +1,11 @@
 name: Autogenerate AKO
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   autogen:
     runs-on: ubuntu-latest

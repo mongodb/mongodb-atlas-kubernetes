@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -193,6 +193,8 @@ func toAtlas(tpi *ThirdPartyIntegration) (*admin.ThirdPartyIntegration, error) {
 		ai.Region = &tpi.Datadog.Region
 		ai.SendCollectionLatencyMetrics = new(isEnabled(tpi.Datadog.SendCollectionLatencyMetrics))
 		ai.SendDatabaseMetrics = new(isEnabled(tpi.Datadog.SendDatabaseMetrics))
+		ai.SendQueryStatsMetrics = new(isEnabled(tpi.Datadog.SendQueryStatsMetrics))
+		ai.SendUserProvidedResourceTags = new(isEnabled(tpi.Datadog.SendUserProvidedResourceTags))
 	case "MICROSOFT_TEAMS":
 		if tpi.MicrosoftTeams == nil || tpi.MicrosoftTeamsSecrets == nil {
 			return nil, errors.New("missing Microsoft teams settings")
@@ -267,6 +269,8 @@ func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) 
 			Region:                       ai.GetRegion(),
 			SendCollectionLatencyMetrics: encodeEnabled(ai.GetSendCollectionLatencyMetrics()),
 			SendDatabaseMetrics:          encodeEnabled(ai.GetSendDatabaseMetrics()),
+			SendQueryStatsMetrics:        encodeEnabled(ai.GetSendQueryStatsMetrics()),
+			SendUserProvidedResourceTags: encodeEnabled(ai.GetSendUserProvidedResourceTags()),
 		}
 	case "MICROSOFT_TEAMS":
 		tpi.MicrosoftTeamsSecrets = &MicrosoftTeamsSecrets{

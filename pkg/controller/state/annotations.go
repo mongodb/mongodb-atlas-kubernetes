@@ -19,6 +19,7 @@ import "strings"
 const (
 	AnnotationReapplyTimestamp = "mongodb.internal.com/reapply-timestamp"
 	AnnotationStateTracker     = "mongodb.internal.com/state-tracker"
+	AnnotationExternalID       = "mongodb.com/external-id"
 )
 
 var jsonPatchReplacer = strings.NewReplacer("/", "~1", "~", "~0")

@@ -10,6 +10,9 @@ on:
     paths:
       - 'tools/compute-test-labels/**'
 
+permissions:
+  contents: read
+
 jobs:
 
   compute-test-labels:

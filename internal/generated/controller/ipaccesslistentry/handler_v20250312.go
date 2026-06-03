@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -85,9 +85,9 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, ipaccesslistentry 
 // HandleImportRequested imports an existing Atlas IP access list entry.
 // The annotation mongodb.com/external-id must be set to the entry value (IP address, CIDR block or AWS security group)
 func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
-	entryValue, ok := ipaccesslistentry.GetAnnotations()["mongodb.com/external-id"]
-	if !ok || entryValue == "" {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id: set it to the entry value (IP, CIDR, or AWS SG)"))
+	entryValue, err := ctrlstate.GetExternalID(ipaccesslistentry)
+	if err != nil {
+		return result.Error(state.StateImportRequested, err)
 	}
 
 	groupID, err := h.resolveGroupID(ctx, ipaccesslistentry)

@@ -1611,6 +1611,11 @@ func (in *AtlasProjectSpec) DeepCopyInto(out *AtlasProjectSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.RegionalizedPrivateEndpoint != nil {
+		in, out := &in.RegionalizedPrivateEndpoint, &out.RegionalizedPrivateEndpoint
+		*out = new(project.RegionalizedPrivateEndpoint)
+		**out = **in
+	}
 	if in.CloudProviderAccessRoles != nil {
 		in, out := &in.CloudProviderAccessRoles, &out.CloudProviderAccessRoles
 		*out = make([]CloudProviderAccessRole, len(*in))
@@ -2728,6 +2733,16 @@ func (in *DatadogIntegration) DeepCopyInto(out *DatadogIntegration) {
 	}
 	if in.SendDatabaseMetrics != nil {
 		in, out := &in.SendDatabaseMetrics, &out.SendDatabaseMetrics
+		*out = new(string)
+		**out = **in
+	}
+	if in.SendQueryStatsMetrics != nil {
+		in, out := &in.SendQueryStatsMetrics, &out.SendQueryStatsMetrics
+		*out = new(string)
+		**out = **in
+	}
+	if in.SendUserProvidedResourceTags != nil {
+		in, out := &in.SendUserProvidedResourceTags, &out.SendUserProvidedResourceTags
 		*out = new(string)
 		**out = **in
 	}

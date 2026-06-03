@@ -5563,11 +5563,9 @@ RoleMapping maps an external group from an identity provider to roles within Atl
         <td>false</td>
       </tr><tr>
         <td><b>role</b></td>
-        <td>enum</td>
+        <td>string</td>
         <td>
-          The role in Atlas that should be given to group members.<br/>
-          <br/>
-            <i>Enum</i>: ORG_MEMBER, ORG_READ_ONLY, ORG_BILLING_ADMIN, ORG_GROUP_CREATOR, ORG_OWNER, ORG_BILLING_READ_ONLY, GROUP_OWNER, GROUP_READ_ONLY, GROUP_DATA_ACCESS_ADMIN, GROUP_DATA_ACCESS_READ_ONLY, GROUP_DATA_ACCESS_READ_WRITE, GROUP_CLUSTER_MANAGER, GROUP_SEARCH_INDEX_EDITOR, GROUP_DATABASE_ACCESS_ADMIN, GROUP_BACKUP_MANAGER, GROUP_STREAM_PROCESSING_OWNER, ORG_STREAM_PROCESSING_ADMIN, GROUP_OBSERVABILITY_VIEWER<br/>
+          The role in Atlas that should be given to group members. See https://www.mongodb.com/docs/atlas/reference/user-roles/ for allowed values<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8110,6 +8108,14 @@ In Atlas for Government, not setting this field (defaulting to NONE) means the p
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#atlasprojectspecregionalizedprivateendpoint">regionalizedPrivateEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+https://www.mongodb.com/docs/atlas/security-private-endpoint/<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasprojectspecsettings">settings</a></b></td>
         <td>object</td>
         <td>
@@ -10209,6 +10215,34 @@ at https://www.mongodb.com/docs/atlas/operator/current/migrate-parameter-to-reso
 </table>
 
 
+### AtlasProject.spec.regionalizedPrivateEndpoint
+<sup><sup>[↩ Parent](#atlasprojectspec)</sup></sup>
+
+
+
+RegionalizedPrivateEndpoint allows to enable regionalized private endpoints. See more at
+https://www.mongodb.com/docs/atlas/security-private-endpoint/
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### AtlasProject.spec.settings
 <sup><sup>[↩ Parent](#atlasprojectspec)</sup></sup>
 
@@ -10475,6 +10509,13 @@ The Atlas Operator updates this field to the value of 'metadata.generation' as s
         <td>
           Prometheus contains the status for Prometheus integration
 including the prometheusDiscoveryURL<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasprojectstatusregionalizedprivateendpoint">regionalizedPrivateEndpoint</a></b></td>
+        <td>object</td>
+        <td>
+          Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -11596,6 +11637,33 @@ including the prometheusDiscoveryURL
         <td>string</td>
         <td>
           Protocol scheme used for Prometheus requests.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasProject.status.regionalizedPrivateEndpoint
+<sup><sup>[↩ Parent](#atlasprojectstatus)</sup></sup>
+
+
+
+Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag indicating whether regionalized private endpoint mode should be enabled.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13366,6 +13434,29 @@ Datadog contains the config fields for Datadog's Integration.
         <td>
           SendDatabaseMetrics toggles sending database metrics,
 including database and collection names<br/>
+          <br/>
+            <i>Enum</i>: enabled, disabled<br/>
+            <i>Default</i>: disabled<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sendQueryStatsMetrics</b></td>
+        <td>enum</td>
+        <td>
+          SendQueryStatsMetrics toggles sending query shape metrics that includes
+query hash and metrics on latency, execution frequency, documents returned,
+and timestamps.<br/>
+          <br/>
+            <i>Enum</i>: enabled, disabled<br/>
+            <i>Default</i>: disabled<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>sendUserProvidedResourceTags</b></td>
+        <td>enum</td>
+        <td>
+          SendUserProvidedResourceTags toggles sending user-provided group and cluster
+resource tags with the Datadog metrics.<br/>
           <br/>
             <i>Enum</i>: enabled, disabled<br/>
             <i>Default</i>: disabled<br/>

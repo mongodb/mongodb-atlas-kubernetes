@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
-	"go.mongodb.org/atlas-sdk/v20250312018/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
@@ -99,6 +99,8 @@ func TestIntegrationsCreate(t *testing.T) {
 						Region:                       testRegion,
 						SendCollectionLatencyMetrics: new("enabled"),
 						SendDatabaseMetrics:          new("disabled"),
+						SendQueryStatsMetrics:        new("disabled"),
+						SendUserProvidedResourceTags: new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
@@ -258,6 +260,8 @@ func TestIntegrationsCreate(t *testing.T) {
 					Datadog: &akov2.DatadogIntegration{
 						SendCollectionLatencyMetrics: new("disabled"),
 						SendDatabaseMetrics:          new("enabled"),
+						SendQueryStatsMetrics:        new("disabled"),
+						SendUserProvidedResourceTags: new("disabled"),
 					},
 				},
 				DatadogSecrets: &integration.DatadogSecrets{

@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -169,16 +169,17 @@ type AdvancedDeploymentSpec struct {
 	ConfigServerManagementMode string `json:"configServerManagementMode,omitempty"`
 }
 
-func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentSpec {
+func (s *AdvancedDeploymentSpec) SearchNodesToAtlas() []admin.ApiSearchDeploymentRequestSpec {
 	if len(s.SearchNodes) == 0 {
 		return nil
 	}
-	result := make([]admin.ApiSearchDeploymentSpec, len(s.SearchNodes))
+	result := make([]admin.ApiSearchDeploymentRequestSpec, len(s.SearchNodes))
 
 	for i := 0; i < len(s.SearchNodes); i++ {
-		result[i] = admin.ApiSearchDeploymentSpec{
+		nodeCount := int(s.SearchNodes[i].NodeCount)
+		result[i] = admin.ApiSearchDeploymentRequestSpec{
 			InstanceSize: s.SearchNodes[i].InstanceSize,
-			NodeCount:    int(s.SearchNodes[i].NodeCount),
+			NodeCount:    &nodeCount,
 		}
 	}
 	return result

@@ -136,4 +136,7 @@ type AtlasProjectStatus struct {
 	// including the prometheusDiscoveryURL
 	// +optional
 	Prometheus *Prometheus `json:"prometheus,omitempty"`
+
+	// Status of the multiple regionalized private endpoint setting ("Multiple Regionalized Private Endpoints" setting in the UI)
+	RegionalizedPrivateEndpoint *project.RegionalizedPrivateEndpoint `json:"regionalizedPrivateEndpoint,omitempty"`
 }

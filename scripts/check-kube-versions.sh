@@ -21,7 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="${CONFIG_FILE:-$PROJECT_ROOT/kubernetes-versions.json}"
 OPERATOR_RELEASE_DATE="${OPERATOR_RELEASE_DATE:-$(date +%Y-%m-%d)}"
-BUFFER_MONTHS=1
+NEW_VERSION_BUFFER_DAYS=60
+EOL_BUFFER_DAYS=30
 
 # API Endpoints
 K8S_API="https://endoflife.date/api/kubernetes.json"
@@ -55,14 +56,14 @@ main() {
     info "--------------------------------------------------------"
     info "Checking Support Policy Compliance"
     display "Operator Release Date: $OPERATOR_RELEASE_DATE"
-    display "Buffer: $BUFFER_MONTHS months"
+    display "New Version Buffer: $NEW_VERSION_BUFFER_DAYS days | EOL Buffer: $EOL_BUFFER_DAYS days"
     info "--------------------------------------------------------"
     
     check_dependencies
     validate_config
     
-    THRESHOLD_DATE=$(calc_date "$OPERATOR_RELEASE_DATE" "-$BUFFER_MONTHS")
-    EOL_THRESHOLD_DATE=$(calc_date "$OPERATOR_RELEASE_DATE" "+$BUFFER_MONTHS")
+    THRESHOLD_DATE=$(calc_date "$OPERATOR_RELEASE_DATE" "-$NEW_VERSION_BUFFER_DAYS")
+    EOL_THRESHOLD_DATE=$(calc_date "$OPERATOR_RELEASE_DATE" "+$EOL_BUFFER_DAYS")
     
     display "Policy Cutoff (New Versions): Releases before $THRESHOLD_DATE must be supported."
     display ""
@@ -358,29 +359,24 @@ normalize_version() {
     echo "$version" | cut -d. -f1,2
 }
 
-# Calculate date with month offset
+# Calculate date with day offset (e.g. "-45" or "+45")
 calc_date() {
     local date_str="$1"
-    local months="$2"
-    
+    local days="$2"
+
     # Detect BSD (macOS) vs GNU date
-    if date -v+1m >/dev/null 2>&1; then
+    if date -v+1d >/dev/null 2>&1; then
         # BSD date (macOS)
-        if [[ $months =~ ^- ]]; then
-            # Negative months: remove minus sign and use -v-${abs}m
-            local abs_months="${months#-}"
-            date -v-"${abs_months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
-        elif [[ $months =~ ^\+ ]]; then
-            # Positive months: remove plus sign and use -v+${abs}m
-            local abs_months="${months#+}"
-            date -v+"${abs_months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
+        if [[ $days =~ ^- ]]; then
+            local abs="${days#-}"
+            date -v-"${abs}d" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
         else
-            # No sign prefix, assume positive
-            date -v+"${months}m" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
+            local abs="${days#+}"
+            date -v+"${abs}d" -j -f "%Y-%m-%d" "$date_str" +%Y-%m-%d
         fi
     else
         # GNU date (Linux)
-        date -d "$date_str $months months" +%Y-%m-%d
+        date -d "$date_str $days days" +%Y-%m-%d
     fi
 }
 

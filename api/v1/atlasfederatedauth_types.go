@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -129,8 +129,7 @@ type RoleMapping struct {
 type RoleAssignment struct {
 	// The Atlas project in the same org in which the role should be given.
 	ProjectName string `json:"projectName,omitempty"`
-	// The role in Atlas that should be given to group members.
-	// +kubebuilder:validation:Enum=ORG_MEMBER;ORG_READ_ONLY;ORG_BILLING_ADMIN;ORG_GROUP_CREATOR;ORG_OWNER;ORG_BILLING_READ_ONLY;GROUP_OWNER;GROUP_READ_ONLY;GROUP_DATA_ACCESS_ADMIN;GROUP_DATA_ACCESS_READ_ONLY;GROUP_DATA_ACCESS_READ_WRITE;GROUP_CLUSTER_MANAGER;GROUP_SEARCH_INDEX_EDITOR;GROUP_DATABASE_ACCESS_ADMIN;GROUP_BACKUP_MANAGER;GROUP_STREAM_PROCESSING_OWNER;ORG_STREAM_PROCESSING_ADMIN;GROUP_OBSERVABILITY_VIEWER
+	// The role in Atlas that should be given to group members. See https://www.mongodb.com/docs/atlas/reference/user-roles/ for allowed values
 	Role string `json:"role,omitempty"`
 }
 

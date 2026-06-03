@@ -24,6 +24,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   release-rh:
     runs-on: ubuntu-latest

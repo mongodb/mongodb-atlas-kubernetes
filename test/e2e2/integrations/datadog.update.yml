@@ -12,3 +12,5 @@ spec:
     region: EU
     sendCollectionLatencyMetrics: disabled
     sendDatabaseMetrics: disabled
+    sendQueryStatsMetrics: disabled
+    sendUserProvidedResourceTags: disabled

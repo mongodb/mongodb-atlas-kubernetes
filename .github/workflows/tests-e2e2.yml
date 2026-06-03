@@ -17,6 +17,10 @@ on:
         required: false
         default: 'main'
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   detect-tests:
     name: "Select tests to run"

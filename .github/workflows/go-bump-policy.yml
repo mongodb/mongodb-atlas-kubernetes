@@ -5,6 +5,12 @@ on:
     # Runs on the 1st and 15th of each month at 08:00 UTC (~every 2 weeks).
     - cron: '0 8 1,15 * *'
   workflow_dispatch:
+    inputs:
+      soak_days:
+        description: 'Override POLICY_SOAK_DAYS (days the latest minor .0 must age before we bump). Leave blank to use the script default (90).'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   check-and-bump:
@@ -16,13 +22,13 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Token with write access so create-go-bump-pr.sh can push a branch.
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           # Stable toolchain to run the policy script; bump-go.sh passes
           # FULL_VERSION to update_go_version.sh so the target version's
@@ -33,4 +39,5 @@ jobs:
       - name: Run Go bump policy check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POLICY_SOAK_DAYS: ${{ inputs.soak_days }}
         run: scripts/check-go-bump-policy.sh

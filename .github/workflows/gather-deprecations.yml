@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * 6' # Run after nightly test
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   gather-deprecations:
     name: Gather Deprecation Warnings

@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin2025 "go.mongodb.org/atlas-sdk/v20250312018/admin"
+	admin2025 "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -189,8 +189,8 @@ func TestToAPIUnstructured(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),
@@ -257,8 +257,8 @@ func TestFromAPIUnstructured(t *testing.T) {
 					},
 				},
 				SeverityOverride: new("severe"),
-				MetricThreshold: &admin2025.FlexClusterMetricThreshold{
-					MetricName: "metric",
+				MetricThreshold: &admin2025.StreamProcessorMetricThreshold{
+					MetricName: new("metric"),
 					Mode:       new("mode"),
 					Operator:   new("operator"),
 					Threshold:  new(1.0),

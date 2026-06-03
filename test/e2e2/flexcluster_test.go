@@ -20,6 +20,7 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,8 +57,8 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 	var ctx = suiteCtx
 
 	_ = BeforeAll(func() {
-		deletionProtectionOff := false
-		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtectionOff)
+		deletionProtection := true
+		ako = runTestAKO(DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), deletionProtection)
 		ako.Start(ctx, GinkgoT())
 
 		// Register cleanup - this should even when the process is interrupted with Ctrl+C
@@ -119,7 +120,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				Eventually(func(g Gomega) error {
 					err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)
 					return err
-				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
+				}).WithContext(ctx).WithTimeout(15 * time.Minute).WithPolling(5 * time.Second).NotTo(Succeed())
 			}
 		})
 		By("Clean up shared group namespace", func() {
@@ -164,6 +165,10 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 			// Track created objects for cleanup
 			var createdObjects []client.Object
 			var cluster *apiv1.FlexCluster
+			// Atlas coordinates for post-test cleanup (set during create / group-ready steps)
+			var atlasCleanupGroupID string
+			var atlasCleanupClusterName string
+			var atlasDeleteProject bool // true when the project was created by this test (groupRef case)
 
 			By("Copy credentials secret to test namespace", func() {
 				Expect(resources.CopyCredentialsToNamespace(ctx, kubeClient, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), testNamespace.Name, GinkGoFieldOwner)).To(Succeed())
@@ -176,6 +181,12 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				cluster = createMutation(objs, testParams)
 				Expect(cluster).NotTo(BeNil())
 
+				// Cluster name and direct groupId (if set) are fixed at create time
+				atlasCleanupClusterName = cluster.Spec.V20250312.Entry.Name
+				if cluster.Spec.V20250312.GroupId != nil {
+					atlasCleanupGroupID = *cluster.Spec.V20250312.GroupId
+				}
+
 				// Apply all objects to namespace
 				var err error
 				createdObjects, err = resources.ApplyObjectsToNamespace(ctx, kubeClient, objs, testNamespace.Name, GinkGoFieldOwner)
@@ -185,7 +196,6 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 			})
 
 			By("Wait for Group to be Ready (if using groupRef)", func() {
-				// Check if any Group objects were created
 				for _, obj := range createdObjects {
 					if group, ok := obj.(*apiv1.Group); ok {
 						groupObj := &apiv1.Group{
@@ -194,6 +204,11 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 						Eventually(func(g Gomega) {
 							g.Expect(resources.CheckResourceReady(ctx, kubeClient, groupObj)).To(Succeed())
 						}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+						// Capture Atlas project ID — this project was created by the test and must be cleaned up
+						Expect(groupObj.Status.V20250312).NotTo(BeNil())
+						Expect(groupObj.Status.V20250312.Id).NotTo(BeNil())
+						atlasCleanupGroupID = *groupObj.Status.V20250312.Id
+						atlasDeleteProject = true
 					}
 				}
 			})
@@ -237,7 +252,31 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				for _, obj := range createdObjects {
 					Eventually(func(g Gomega) {
 						g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, obj)).To(Succeed())
-					}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+					}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+				}
+			})
+
+			By("Delete Atlas resources (best-effort cleanup)", func() {
+				if atlasCleanupGroupID == "" || atlasCleanupClusterName == "" {
+					return
+				}
+				atlasClient, _ := newTestAtlasClient()
+				_, err := atlasClient.FlexClustersApi.DeleteFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
+				if !admin.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
+					Expect(err).NotTo(HaveOccurred())
+				}
+				deadline := time.Now().Add(3 * time.Minute)
+				for time.Now().Before(deadline) {
+					time.Sleep(10 * time.Second)
+					_, _, err = atlasClient.FlexClustersApi.GetFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
+					if admin.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
+						break
+					}
+				}
+				if atlasDeleteProject {
+					if _, err := atlasClient.ProjectsApi.DeleteGroup(ctx, atlasCleanupGroupID).Execute(); err != nil {
+						GinkgoWriter.Printf("WARNING: failed to delete Atlas project %s: %v\n", atlasCleanupGroupID, err)
+					}
 				}
 			})
 		},

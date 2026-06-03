@@ -83,7 +83,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 				continue
 			}
 			connURLs = append(connURLs, connURL)
-			ctx.Log.Debugw("Connection URL created", "url", connURL)
+			ctx.Log.Debugw("Connection URL created", "host", host)
 		}
 
 		data := secretservice.ConnectionData{
@@ -92,7 +92,7 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 			ConnURL:    strings.Join(connURLs, ","),
 		}
 
-		ctx.Log.Debugw("Creating a connection Secret", "data", data)
+		ctx.Log.Debugw("Creating a connection Secret", "dbUser", data.DBUserName)
 
 		secretName, err := secretservice.Ensure(ctx.Context, r.Client, dbUser.Namespace, project.Spec.Name, project.ID(), df.Spec.Name, data)
 		if err != nil {

@@ -148,29 +148,37 @@ func TestProvider_IsResourceSupported(t *testing.T) {
 	}
 }
 
-func TestProvider_SdkClientSet_NilCredentials(t *testing.T) {
-	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
-	_, err := p.SdkClientSet(context.Background(), &Credentials{}, nil)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no credentials provided")
-}
+func TestProvider_SdkClientSet(t *testing.T) {
+	dataProvider := map[string]struct {
+		credentials    *Credentials
+		errorSubstring string // empty means no error expected
+	}{
+		"nil credentials returns error": {
+			credentials:    &Credentials{},
+			errorSubstring: "no credentials provided",
+		},
+		"API key credentials return a client set": {
+			credentials: &Credentials{APIKeys: &APIKeys{PublicKey: "pub", PrivateKey: "priv"}},
+		},
+		"service account credentials return a client set": {
+			credentials: &Credentials{ServiceAccount: &ServiceAccountToken{BearerToken: "test-token"}},
+		},
+	}
 
-func TestProvider_SdkClientSet_APIKeys(t *testing.T) {
-	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
-	creds := &Credentials{APIKeys: &APIKeys{PublicKey: "pub", PrivateKey: "priv"}}
-	cs, err := p.SdkClientSet(context.Background(), creds, zap.NewNop().Sugar())
-	require.NoError(t, err)
-	assert.NotNil(t, cs)
-	assert.NotNil(t, cs.SdkClient20250312)
-}
-
-func TestProvider_SdkClientSet_ServiceAccount(t *testing.T) {
-	p := NewProductionProvider("https://cloud.mongodb.com", false, false)
-	creds := &Credentials{ServiceAccount: &ServiceAccountToken{BearerToken: "test-token"}}
-	cs, err := p.SdkClientSet(context.Background(), creds, zap.NewNop().Sugar())
-	require.NoError(t, err)
-	assert.NotNil(t, cs)
-	assert.NotNil(t, cs.SdkClient20250312)
+	for desc, data := range dataProvider {
+		t.Run(desc, func(t *testing.T) {
+			p := NewProductionProvider("https://cloud.mongodb.com", false, false)
+			cs, err := p.SdkClientSet(context.Background(), data.credentials, zap.NewNop().Sugar())
+			if data.errorSubstring != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), data.errorSubstring)
+				return
+			}
+			require.NoError(t, err)
+			assert.NotNil(t, cs)
+			assert.NotNil(t, cs.SdkClient20250312)
+		})
+	}
 }
 
 func TestBearerTokenTransport(t *testing.T) {

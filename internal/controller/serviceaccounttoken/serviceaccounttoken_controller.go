@@ -89,16 +89,10 @@ func (r *ServiceAccountTokenReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	log.Info("Reconciling service account credential secret")
 
-	tokenSecretName, err := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to derive access token secret name: %w", err)
-	}
+	tokenSecretName := accesstoken.DeriveSecretName(secret.Namespace, secret.Name)
 	tokenRef := client.ObjectKey{Namespace: secret.Namespace, Name: tokenSecretName}
 
-	currentHash, err := accesstoken.CredentialsHash(clientID, clientSecret)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	currentHash := accesstoken.CredentialsHash(clientID, clientSecret)
 
 	existingTokenSecret := &corev1.Secret{}
 	if err := r.Client.Get(ctx, tokenRef, existingTokenSecret); err != nil {
@@ -143,6 +137,10 @@ func (r *ServiceAccountTokenReconciler) refreshToken(
 	token, expiry, err := r.TokenProvider.FetchToken(ctx, clientID, clientSecretValue)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to refresh access token: %w", err)
+	}
+
+	if tokenSecret.Data == nil {
+		tokenSecret.Data = map[string][]byte{}
 	}
 
 	tokenSecret.Data[accesstoken.AccessTokenKey] = []byte(token)
@@ -229,9 +227,22 @@ func credentialsLabelPredicate() predicate.Predicate {
 	})
 }
 
+func serviceAccountCredentialsPredicate() predicate.Predicate {
+	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		secret, ok := obj.(*corev1.Secret)
+		if !ok {
+			return false
+		}
+
+		return len(secret.Data[reconciler.ClientIDKey]) > 0 &&
+			len(secret.Data[reconciler.ClientSecretKey]) > 0
+	})
+}
+
 func (r *ServiceAccountTokenReconciler) For() (client.Object, builder.Predicates) {
 	return &corev1.Secret{}, builder.WithPredicates(
 		credentialsLabelPredicate(),
+		serviceAccountCredentialsPredicate(), // new
 		predicate.ResourceVersionChangedPredicate{},
 	)
 }

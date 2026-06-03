@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/atlas-sdk/v20250312018/admin"
+	"go.mongodb.org/atlas-sdk/v20250312020/admin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -387,6 +387,40 @@ func TestUpdateTeamState(t *testing.T) {
 			isRemoval:                true,
 			expectedAssignedProjects: nil,
 		},
+		"should deduplicate pre-existing entries for the current project": {
+			team: &akov2.AtlasTeam{
+				ObjectMeta: metav1.ObjectMeta{Name: "testTeam", Namespace: "testNS"},
+				Status: status.TeamStatus{
+					ID: "testTeamStatus",
+					Projects: []status.TeamProject{
+						{ID: "projectID", Name: "projectName"},
+						{ID: "projectID", Name: "projectName"},
+						{ID: "projectID", Name: "projectName"},
+					},
+				},
+			},
+			isRemoval: false,
+			expectedAssignedProjects: []status.TeamProject{
+				{ID: "projectID", Name: "projectName"},
+			},
+		},
+		"should deduplicate pre-existing entries for other projects": {
+			team: &akov2.AtlasTeam{
+				ObjectMeta: metav1.ObjectMeta{Name: "testTeam", Namespace: "testNS"},
+				Status: status.TeamStatus{
+					ID: "testTeamStatus",
+					Projects: []status.TeamProject{
+						{ID: "otherProjectID", Name: "otherProjectName"},
+						{ID: "otherProjectID", Name: "otherProjectName"},
+					},
+				},
+			},
+			isRemoval: false,
+			expectedAssignedProjects: []status.TeamProject{
+				{ID: "projectID", Name: "projectName"},
+				{ID: "otherProjectID", Name: "otherProjectName"},
+			},
+		},
 		"should not modify status of other assigned projects": {
 			team: &akov2.AtlasTeam{
 				ObjectMeta: metav1.ObjectMeta{
@@ -470,4 +504,119 @@ func TestUpdateTeamState(t *testing.T) {
 			assert.Equal(t, tt.expectedAssignedProjects, actualTeam.Status.Projects)
 		})
 	}
+}
+
+// TestSyncAssignedTeamsSteadyStateDeduplication is the regression test for the bug
+// reported in https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3359.
+//
+// Root cause: a prior operator bug (fixed in 33196ea9) caused updateTeamState to
+// append rather than replace project entries, so each reconcile cycle that
+// triggered a team assignment would grow status.projects by one entry. After
+// upgrading to the version with that fix, the duplicates never go away because
+// syncAssignedTeams skips calling updateTeamState for teams already in steady
+// state (assigned with matching roles). Crucially, in steady state the count does
+// not keep growing either — it is simply frozen.
+//
+// This test simulates two consecutive reconcile cycles in steady state and verifies
+// that:
+//   - the duplicate count does not increase between cycles (frozen without the fix),
+//   - the list converges to exactly one entry on the first cycle (with the fix), and
+//   - a second cycle leaves the list unchanged (fix is idempotent).
+//
+// Without the fix both assertions on Projects length fail because updateTeamState
+// is never called for steady-state teams and the three duplicates remain.
+func TestSyncAssignedTeamsSteadyStateDeduplication(t *testing.T) {
+	ctx := context.Background()
+
+	// Team carries three copies of the same project — the residue left by the
+	// prior accumulation bug after an operator upgrade.
+	team := &akov2.AtlasTeam{
+		ObjectMeta: metav1.ObjectMeta{Name: "teamName_1", Namespace: "testNS"},
+		Spec:       akov2.TeamSpec{Name: "teamName_1"},
+		Status: status.TeamStatus{
+			ID: "teamID_1",
+			Projects: []status.TeamProject{
+				{ID: "projectID", Name: "projectName"},
+				{ID: "projectID", Name: "projectName"},
+				{ID: "projectID", Name: "projectName"},
+			},
+		},
+	}
+	project := &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "testNS"},
+		Spec: akov2.AtlasProjectSpec{
+			Name: "projectName",
+			Teams: []akov2.Team{
+				{
+					TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+					Roles:   []akov2.TeamRole{"GROUP_OWNER"},
+				},
+			},
+		},
+		Status: status.AtlasProjectStatus{
+			ID: "projectID",
+			Teams: []status.ProjectTeamStatus{
+				{ID: "teamID_1", TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"}},
+			},
+		},
+	}
+
+	testScheme := runtime.NewScheme()
+	assert.NoError(t, akov2.AddToScheme(testScheme))
+	assert.NoError(t, corev1.AddToScheme(testScheme))
+	k8sClient := fake.NewClientBuilder().
+		WithScheme(testScheme).
+		WithObjects(project, team).
+		WithStatusSubresource(project, team).
+		Build()
+
+	// Atlas already has the team assigned with the correct role — steady state.
+	// The mock is registered twice: once per reconcile cycle.
+	atlasAssignedTeams := []teams.AssignedTeam{
+		{TeamID: "teamID_1", TeamName: "teamName_1", Roles: []string{"GROUP_OWNER"}},
+	}
+	teamsService := translation.NewTeamsServiceMock(t)
+	teamsService.EXPECT().
+		ListProjectTeams(ctx, "projectID").
+		Return(atlasAssignedTeams, nil).
+		Times(2)
+
+	logger := zaptest.NewLogger(t).Sugar()
+	r := &AtlasProjectReconciler{
+		Client:        k8sClient,
+		EventRecorder: record.NewFakeRecorder(10),
+		Log:           logger,
+	}
+	workflowCtx := &workflow.Context{
+		Log:          logger,
+		Context:      ctx,
+		SdkClientSet: &atlas.ClientSet{SdkClient20250312: &admin.APIClient{}},
+	}
+	newTeamsToAssign := func() map[string]*akov2.Team {
+		return map[string]*akov2.Team{
+			"teamID_1": {
+				TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+				Roles:   []akov2.TeamRole{"GROUP_OWNER"},
+			},
+		}
+	}
+
+	// Cycle 1: duplicates must be cleaned up.
+	assert.NoError(t, r.syncAssignedTeams(workflowCtx, teamsService, "projectID", project, newTeamsToAssign()))
+	got := &akov2.AtlasTeam{}
+	assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(team), got))
+	assert.Equal(t,
+		[]status.TeamProject{{ID: "projectID", Name: "projectName"}},
+		got.Status.Projects,
+		"cycle 1: steady-state reconcile must deduplicate status.projects",
+	)
+
+	// Cycle 2: a second reconcile must not re-introduce duplicates (fix is idempotent).
+	assert.NoError(t, r.syncAssignedTeams(workflowCtx, teamsService, "projectID", project, newTeamsToAssign()))
+	assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(team), got))
+	assert.Equal(t,
+		[]status.TeamProject{{ID: "projectID", Name: "projectName"}},
+		got.Status.Projects,
+		"cycle 2: a second steady-state reconcile must leave status.projects unchanged",
+	)
 }
