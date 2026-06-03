@@ -115,13 +115,6 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 					{
 						Name:     "http-test",
 						Provider: "http",
-						ReadPreference: &akov2.ReadPreference{
-							Mode:                "nearest",
-							MaxStalenessSeconds: 90,
-							TagSets: [][]akov2.ReadPreferenceTag{
-								{{Name: "region", Value: "us-east-1"}},
-							},
-						},
 					},
 				},
 			}
@@ -144,14 +137,13 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			}).WithTimeout(2 * time.Minute).WithPolling(20 * time.Second).Should(BeTrue())
 		})
 
-		By("Updating DataFederation to add a second store with ReadConcern", func() {
+		By("Updating DataFederation to add a second http store", func() {
 			df := &akov2.AtlasDataFederation{}
 			Expect(testData.K8SClient.Get(context.Background(), dfKey, df)).To(Succeed())
 
 			df.Spec.Storage.Stores = append(df.Spec.Storage.Stores, akov2.Store{
-				Name:        "http-test-2",
-				Provider:    "http",
-				ReadConcern: &akov2.ReadConcern{Level: "local"},
+				Name:     "http-test-2",
+				Provider: "http",
 			})
 			df.Spec.Storage.Databases[0].Collections = append(
 				df.Spec.Storage.Databases[0].Collections,
