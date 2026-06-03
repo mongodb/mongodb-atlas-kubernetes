@@ -26,14 +26,20 @@ subobjectDeletionProtection: true
 # globalConnectionSecret is a default "global" Secret containing Atlas
 # authentication information.
 #
-# It is used if the project-level connection Secret is not provided.
+# Configure EITHER the API-key fields (publicApiKey + privateApiKey) OR the
+# Service Account fields (clientId + clientSecret). Setting both at the same
+# time is rejected at chart-render time.
 #
 # You should never check-in these values as part of values.yaml file on your
 # CVS. Instead set these values with `--set`.
 globalConnectionSecret:
   orgId: ""
+  # API key (legacy)
   publicApiKey: ""
   privateApiKey: ""
+  # Service Account (recommended)
+  clientId: ""
+  clientSecret: ""
 
 # Determines whether RBAC resources should be created across namespaces.
 # If set to true, RBAC resources will be created across all namespaces specified in watchNamespaces.

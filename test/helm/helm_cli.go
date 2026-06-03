@@ -12,31 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package helm
 
 import (
 	"bytes"
-	"context"
-	"io"
 	"os/exec"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-// RunCommand executes the given command with the given arguments
-// and returns the resulting stdout and stderr as an io.Reader.
-//
-// If the command fails to run, the given test is being failed immediately.
-func RunCommand(t *testing.T, name string, args ...string) io.Reader {
-	var result bytes.Buffer
-	cmd := exec.CommandContext(context.Background(), name, args...)
-	cmd.Stdout = &result
-	cmd.Stderr = &result
+// helmTemplate runs `helm template <args>` and returns (stdout, stderr, err).
+// It does not fail the test on non-zero exit — callers that expect
+// `{{ fail "..." }}` need to inspect stderr.
+func helmTemplate(t *testing.T, args ...string) (string, string, error) {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	cmd := exec.CommandContext(t.Context(), "helm", append([]string{"template"}, args...)...) // #nosec G204 -- test-only invocation; args are static test fixtures
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err := cmd.Run()
-	if err != nil {
-		t.Log(result.String())
-	}
-	require.NoError(t, err)
-	return &result
+	return stdout.String(), stderr.String(), err
 }

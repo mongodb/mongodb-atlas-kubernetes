@@ -15,6 +15,7 @@
 package helm
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -22,17 +23,16 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/cmd"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/decoder"
 )
 
 func TestFlexSpec(t *testing.T) {
-	output := cmd.RunCommand(t,
-		"helm", "template",
+	stdout, stderr, err := helmTemplate(t,
 		"--namespace=default",
 		"--values=flex_values.yaml",
 		"../../helm-charts/atlas-deployment")
-	objects := decoder.DecodeAll(t, output)
+	require.NoError(t, err, "stderr: %s", stderr)
+	objects := decoder.DecodeAll(t, strings.NewReader(stdout))
 
 	var gotDeployment *akov2.AtlasDeployment
 	for _, obj := range objects {

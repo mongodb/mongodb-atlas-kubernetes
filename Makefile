@@ -266,8 +266,14 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "--------------------"
 	@echo "Licenses check: PASS"
 
+.PHONY: helm-deps
+helm-deps: ## Package the local atlas-operator-crds subchart for helm-template unit tests.
+	rm -rf helm-charts/atlas-operator/charts
+	mkdir -p helm-charts/atlas-operator/charts
+	helm package -d helm-charts/atlas-operator/charts helm-charts/atlas-operator-crds
+
 .PHONY: unit-test
-unit-test: manifests regen-crds
+unit-test: manifests regen-crds helm-deps
 	go test -race -cover $(GO_UNIT_TEST_FOLDERS) $(GO_TEST_FLAGS)
 
 ## Run integration tests. Sample with labels: `make test/int GINKGO_FILTER_LABEL=AtlasProject`

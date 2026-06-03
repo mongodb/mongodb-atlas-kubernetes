@@ -1,7 +1,14 @@
+# Configure EITHER the API-key fields (publicKey + privateKey) OR the Service
+# Account fields (clientId + clientSecret). Setting both at the same time is
+# rejected at chart-render time.
 secret:
   orgID: ""
+  # API key (legacy)
   privateKey: ""
   publicKey: ""
+  # Service Account (recommended)
+  clientId: ""
+  clientSecret: ""
 
 project:
   name: ""

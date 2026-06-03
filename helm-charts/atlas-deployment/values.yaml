@@ -9,7 +9,10 @@ postInstallHook:
   # resources to reach the ready state.
   enabled: false
 
-# Please provide Atlas API credentials and Organization
+# Please provide Atlas API credentials and Organization.
+# Configure EITHER the API-key fields (publicApiKey + privateApiKey) OR the
+# Service Account fields (clientId + clientSecret). Setting both at the same
+# time is rejected at chart-render time.
 atlas:
   secret:
     # project uses Global Key (highest priority)
@@ -17,9 +20,13 @@ atlas:
     # secret already exist in the same namespace
     existing: ""
 
-    orgId: "<Atlas Organization ID>"
-    publicApiKey: "<Atlas_api_public_key>"
-    privateApiKey: "<Atlas_api_private_key>"
+    orgId: ""
+    # API key (legacy)
+    publicApiKey: ""
+    privateApiKey: ""
+    # Service Account (recommended)
+    clientId: ""
+    clientSecret: ""
     # use custom secret name during new secret creation
     setCustomName: ""
 
