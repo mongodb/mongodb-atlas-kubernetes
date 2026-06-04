@@ -93,6 +93,13 @@ securityContext:
   allowPrivilegeEscalation: false
 
 
+# extraArgs passes additional command-line arguments to the operator binary.
+# Use this to set flags not exposed as dedicated values, such as --log-level.
+# Example:
+#   extraArgs:
+#     - --log-level=debug
+extraArgs: []
+
 # configure extra environment variables
 # Extra environment variables are writen in kubernetes format and added "as is" to the pod's env variables
 # https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
