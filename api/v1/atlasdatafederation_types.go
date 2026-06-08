@@ -50,7 +50,14 @@ type DataFederationSpec struct {
 
 type CloudProviderConfig struct {
 	// Configuration for running Data Federation in AWS.
+	// +optional
 	AWS *AWSProviderConfig `json:"aws,omitempty"`
+	// Configuration for running Data Federation in Azure.
+	// +optional
+	Azure *AzureProviderConfig `json:"azure,omitempty"`
+	// Configuration for running Data Federation in GCP.
+	// +optional
+	GCP *GCPProviderConfig `json:"gcp,omitempty"`
 }
 
 type AWSProviderConfig struct {
@@ -60,12 +67,26 @@ type AWSProviderConfig struct {
 	TestS3Bucket string `json:"testS3Bucket,omitempty"`
 }
 
+// AzureProviderConfig is the configuration for running Data Federation in Azure.
+type AzureProviderConfig struct {
+	// Unique identifier of the role that Data Federation can use to access the data stores.
+	// +kubebuilder:validation:Required
+	RoleID string `json:"roleId"`
+}
+
+// GCPProviderConfig is the configuration for running Data Federation in GCP.
+type GCPProviderConfig struct {
+	// Unique identifier of the role that Data Federation can use to access the data stores.
+	// +kubebuilder:validation:Required
+	RoleID string `json:"roleId"`
+}
+
 type DataProcessRegion struct {
 	// Name of the cloud service that hosts the Federated Database Instance's infrastructure.
-	// +kubebuilder:validation:Enum:=AWS
+	// see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-cloudprovider
 	CloudProvider string `json:"cloudProvider,omitempty"`
 	// Name of the region to which the data lake routes client connections.
-	// +kubebuilder:validation:Enum:=SYDNEY_AUS;MUMBAI_IND;FRANKFURT_DEU;DUBLIN_IRL;LONDON_GBR;VIRGINIA_USA;OREGON_USA;SAOPAULO_BRA;SINGAPORE_SGP
+	// see the list of available values here: https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-creategroupdatafederation#operation-creategroupdatafederation-body-application-vnd-atlas-2023-01-01-json-dataprocessregion-region
 	Region string `json:"region,omitempty"`
 }
 
@@ -164,6 +185,39 @@ type Store struct {
 	// When MongoDB Atlas deploys a dedicated cluster, it checks if a VPC or VPC connection exists for that provider and region. If not, MongoDB Atlas creates them as part of the deployment.
 	// To limit a new VPC peering connection to one CIDR block and region, create the connection first. Deploy the cluster after the connection starts.
 	Region string `json:"region,omitempty"`
+	// Human-readable label of the Atlas cluster used as a data store (provider: atlas).
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
+	// Read concern for Atlas cluster data stores (provider: atlas).
+	// +optional
+	ReadConcern *ReadConcern `json:"readConcern,omitempty"`
+	// Read preference for Atlas cluster data stores (provider: atlas).
+	// +optional
+	ReadPreference *ReadPreference `json:"readPreference,omitempty"`
+}
+
+// ReadConcern specifies the consistency and isolation properties of data read from an Atlas cluster store.
+type ReadConcern struct {
+	Level string `json:"level,omitempty"`
+}
+
+// ReadPreferenceTag is a key-value pair used to route read requests.
+type ReadPreferenceTag struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+// ReadPreference describes how to route read requests to an Atlas cluster store.
+type ReadPreference struct {
+	// Read preference mode.
+	// +optional
+	Mode string `json:"mode,omitempty"`
+	// Maximum replication lag in seconds for reads from secondaries.
+	// +optional
+	MaxStalenessSeconds int `json:"maxStalenessSeconds,omitempty"`
+	// List of tag sets to route read requests to specific replica set members.
+	// +optional
+	TagSets [][]ReadPreferenceTag `json:"tagSets,omitempty"`
 }
 
 type DataFederationPE struct {
@@ -251,7 +305,8 @@ func (c *AtlasDataFederation) WithAWSCloudProviderConfig(AWSRoleID, S3Bucket str
 		AWS: &AWSProviderConfig{
 			RoleID:       AWSRoleID,
 			TestS3Bucket: S3Bucket,
-		}}
+		},
+	}
 	return c
 }
 
