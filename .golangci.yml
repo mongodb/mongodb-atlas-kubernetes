@@ -37,6 +37,9 @@ linters:
     gosec:
       excludes:
         - G117 # Exported struct field name matching secret pattern - field names are not secrets, only values matter
+    govet:
+      disable:
+      - inline
   exclusions:
     generated: lax
     rules:
