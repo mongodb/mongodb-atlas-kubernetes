@@ -1502,6 +1502,11 @@ func (in *AtlasPrivateEndpointList) DeepCopyObject() runtime.Object {
 func (in *AtlasPrivateEndpointSpec) DeepCopyInto(out *AtlasPrivateEndpointSpec) {
 	*out = *in
 	in.ProjectDualReference.DeepCopyInto(&out.ProjectDualReference)
+	if in.SupportedRegions != nil {
+		in, out := &in.SupportedRegions, &out.SupportedRegions
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.AWSConfiguration != nil {
 		in, out := &in.AWSConfiguration, &out.AWSConfiguration
 		*out = make([]AWSPrivateEndpointConfiguration, len(*in))

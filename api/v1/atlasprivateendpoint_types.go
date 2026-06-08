@@ -42,6 +42,13 @@ type AtlasPrivateEndpointSpec struct {
 	// Region of the chosen cloud provider in which you want to create the private endpoint service.
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
+	// SupportedRegions is the list of regions from which AWS Private Link traffic is forwarded to this endpoint. AWS only.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=35
+	SupportedRegions []string `json:"supportedRegions,omitempty"`
+	// PortMappingEnabled indicates whether this endpoint service uses PSC port-mapping. GCP only.
+	// +kubebuilder:validation:Optional
+	PortMappingEnabled bool `json:"portMappingEnabled,omitempty"`
 	// AWSConfiguration is the specific AWS settings for the private endpoint.
 	// +listType=map
 	// +listMapKey=id

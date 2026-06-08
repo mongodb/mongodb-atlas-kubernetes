@@ -7772,11 +7772,25 @@ Mutually exclusive with the "projectRef" field.<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>portMappingEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          PortMappingEnabled indicates whether this endpoint service uses PSC port-mapping. GCP only.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasprivateendpointspecprojectref">projectRef</a></b></td>
         <td>object</td>
         <td>
           projectRef is a reference to the parent AtlasProject resource.
 Mutually exclusive with the "externalProjectRef" field.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>supportedRegions</b></td>
+        <td>[]string</td>
+        <td>
+          SupportedRegions is the list of regions from which AWS Private Link traffic is forwarded to this endpoint. AWS only.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8058,6 +8072,13 @@ The Atlas Operator updates this field to the value of 'metadata.generation' as s
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>portMappingEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          PortMappingEnabled indicates whether the GCP endpoint service uses PSC port-mapping. GCP only.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>resourceId</b></td>
         <td>string</td>
         <td>
@@ -8090,6 +8111,13 @@ The Atlas Operator updates this field to the value of 'metadata.generation' as s
         <td>string</td>
         <td>
           ServiceStatus is the state of the private endpoint service<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>supportedRegions</b></td>
+        <td>[]string</td>
+        <td>
+          SupportedRegions is the list of regions from which AWS Private Link traffic is forwarded. AWS only.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

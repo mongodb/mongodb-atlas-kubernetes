@@ -423,6 +423,114 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 					WithMessageRegexp("Private Endpoint is being deleted"),
 			},
 		},
+		"update AWS supported regions": {
+			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pe1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasPrivateEndpointSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
+					},
+					Provider:         "AWS",
+					Region:           "US_EAST_1",
+					SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
+				},
+				Status: status.AtlasPrivateEndpointStatus{
+					ServiceID:     "pe-service-id",
+					ServiceStatus: "AVAILABLE",
+				},
+			},
+			peClient: func() privateendpoint.PrivateEndpointService {
+				atlasService := &privateendpoint.AWSService{
+					CommonEndpointService: privateendpoint.CommonEndpointService{
+						ID:            "pe-service-id",
+						CloudRegion:   "US_EAST_1",
+						ServiceStatus: "AVAILABLE",
+						Interfaces:    privateendpoint.EndpointInterfaces{},
+					},
+				}
+				updatedService := &privateendpoint.AWSService{
+					CommonEndpointService: privateendpoint.CommonEndpointService{
+						ID:            "pe-service-id",
+						CloudRegion:   "US_EAST_1",
+						ServiceStatus: "AVAILABLE",
+						Interfaces:    privateendpoint.EndpointInterfaces{},
+					},
+					SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
+				}
+
+				c := translation.NewPrivateEndpointServiceMock(t)
+				c.EXPECT().GetPrivateEndpoint(ctx, projectID, "AWS", "pe-service-id").
+					Return(atlasService, nil)
+				c.EXPECT().UpdatePrivateEndpointService(ctx, projectID, "pe-service-id", mock.AnythingOfType("*privateendpoint.AWSService")).
+					Return(updatedService, nil)
+
+				return c
+			},
+			expectedResult: reconcile.Result{},
+			expectedConditions: []api.Condition{
+				api.TrueCondition(api.PrivateEndpointServiceReady),
+				api.FalseCondition(api.ReadyType),
+				api.FalseCondition(api.PrivateEndpointReady).
+					WithReason(string(workflow.PrivateEndpointConfigurationPending)).
+					WithMessageRegexp("waiting for private endpoint configuration from customer side"),
+			},
+		},
+		"fail to update AWS supported regions": {
+			wantErr: true,
+			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pe1",
+					Namespace: "default",
+				},
+				Spec: akov2.AtlasPrivateEndpointSpec{
+					ProjectDualReference: akov2.ProjectDualReference{
+						ExternalProjectRef: &akov2.ExternalProjectReference{
+							ID: projectID,
+						},
+						ConnectionSecret: &api.LocalObjectReference{},
+					},
+					Provider:         "AWS",
+					Region:           "US_EAST_1",
+					SupportedRegions: []string{"US_WEST_1"},
+				},
+				Status: status.AtlasPrivateEndpointStatus{
+					ServiceID:     "pe-service-id",
+					ServiceStatus: "AVAILABLE",
+				},
+			},
+			peClient: func() privateendpoint.PrivateEndpointService {
+				atlasService := &privateendpoint.AWSService{
+					CommonEndpointService: privateendpoint.CommonEndpointService{
+						ID:            "pe-service-id",
+						CloudRegion:   "US_EAST_1",
+						ServiceStatus: "AVAILABLE",
+						Interfaces:    privateendpoint.EndpointInterfaces{},
+					},
+				}
+
+				c := translation.NewPrivateEndpointServiceMock(t)
+				c.EXPECT().GetPrivateEndpoint(ctx, projectID, "AWS", "pe-service-id").
+					Return(atlasService, nil)
+				c.EXPECT().UpdatePrivateEndpointService(ctx, projectID, "pe-service-id", mock.AnythingOfType("*privateendpoint.AWSService")).
+					Return(nil, errors.New("failed to update"))
+
+				return c
+			},
+			// SetConditionTrue(PrivateEndpointServiceReady) is called before terminate, so it occupies
+			// position 0; terminate then adds ReadyType at position 1 and updates PrivateEndpointServiceReady in place.
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.PrivateEndpointServiceReady).
+					WithReason(string(workflow.PrivateEndpointServiceFailedToConfigure)).
+					WithMessageRegexp("failed to update"),
+				api.FalseCondition(api.ReadyType),
+			},
+		},
 		"private endpoint service is available": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1333,6 +1441,50 @@ func TestDeletePrivateEndpoint(t *testing.T) {
 
 			_, err := r.deletePrivateEndpoint(ctx, tt.peClient(), projectID, tt.peService)
 			assert.Equal(t, tt.expectedErr, err)
+		})
+	}
+}
+
+func TestServiceNeedsUpdate(t *testing.T) {
+	tests := map[string]struct {
+		ako    privateendpoint.EndpointService
+		atlas  privateendpoint.EndpointService
+		expect bool
+	}{
+		"both empty": {
+			ako:    &privateendpoint.AWSService{},
+			atlas:  &privateendpoint.AWSService{},
+			expect: false,
+		},
+		"same supported regions": {
+			ako:    &privateendpoint.AWSService{SupportedRegions: []string{"US_EAST_1", "US_WEST_1"}},
+			atlas:  &privateendpoint.AWSService{SupportedRegions: []string{"US_WEST_1", "US_EAST_1"}},
+			expect: false,
+		},
+		"different supported regions": {
+			ako:    &privateendpoint.AWSService{SupportedRegions: []string{"US_EAST_1", "EU_WEST_1"}},
+			atlas:  &privateendpoint.AWSService{SupportedRegions: []string{"US_EAST_1"}},
+			expect: true,
+		},
+		"ako adds regions where atlas has none": {
+			ako:    &privateendpoint.AWSService{SupportedRegions: []string{"US_WEST_1"}},
+			atlas:  &privateendpoint.AWSService{},
+			expect: true,
+		},
+		"non-AWS provider never needs update": {
+			ako:    &privateendpoint.GCPService{},
+			atlas:  &privateendpoint.GCPService{},
+			expect: false,
+		},
+		"mixed provider types": {
+			ako:    &privateendpoint.AWSService{SupportedRegions: []string{"US_EAST_1"}},
+			atlas:  &privateendpoint.GCPService{},
+			expect: false,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.expect, serviceNeedsUpdate(tt.ako, tt.atlas))
 		})
 	}
 }

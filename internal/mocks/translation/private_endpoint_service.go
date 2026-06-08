@@ -481,6 +481,67 @@ func (_c *PrivateEndpointServiceMock_ToggleRegionalizedPrivateEndpointMode_Call)
 	return _c
 }
 
+// UpdatePrivateEndpointService provides a mock function with given fields: ctx, projectID, serviceID, peService
+func (_m *PrivateEndpointServiceMock) UpdatePrivateEndpointService(ctx context.Context, projectID string, serviceID string, peService privateendpoint.EndpointService) (privateendpoint.EndpointService, error) {
+	ret := _m.Called(ctx, projectID, serviceID, peService)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdatePrivateEndpointService")
+	}
+
+	var r0 privateendpoint.EndpointService
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, privateendpoint.EndpointService) (privateendpoint.EndpointService, error)); ok {
+		return rf(ctx, projectID, serviceID, peService)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, privateendpoint.EndpointService) privateendpoint.EndpointService); ok {
+		r0 = rf(ctx, projectID, serviceID, peService)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(privateendpoint.EndpointService)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, privateendpoint.EndpointService) error); ok {
+		r1 = rf(ctx, projectID, serviceID, peService)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdatePrivateEndpointService'
+type PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call struct {
+	*mock.Call
+}
+
+// UpdatePrivateEndpointService is a helper method to define mock.On call
+//   - ctx context.Context
+//   - projectID string
+//   - serviceID string
+//   - peService privateendpoint.EndpointService
+func (_e *PrivateEndpointServiceMock_Expecter) UpdatePrivateEndpointService(ctx interface{}, projectID interface{}, serviceID interface{}, peService interface{}) *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call {
+	return &PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call{Call: _e.mock.On("UpdatePrivateEndpointService", ctx, projectID, serviceID, peService)}
+}
+
+func (_c *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call) Run(run func(ctx context.Context, projectID string, serviceID string, peService privateendpoint.EndpointService)) *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(privateendpoint.EndpointService))
+	})
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call) Return(_a0 privateendpoint.EndpointService, _a1 error) *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call) RunAndReturn(run func(context.Context, string, string, privateendpoint.EndpointService) (privateendpoint.EndpointService, error)) *PrivateEndpointServiceMock_UpdatePrivateEndpointService_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewPrivateEndpointServiceMock creates a new instance of PrivateEndpointServiceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewPrivateEndpointServiceMock(t interface {

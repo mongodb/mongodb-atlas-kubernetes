@@ -17,6 +17,7 @@ package atlasprivateendpoint
 import (
 	"context"
 	"errors"
+	"slices"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -110,6 +111,14 @@ func (r *AtlasPrivateEndpointReconciler) watchServiceState(
 
 	ctx.SetConditionTrue(api.PrivateEndpointServiceReady)
 	r.EventRecorder.Event(akoPrivateEndpoint, "Normal", string(workflow.PrivateEndpointServiceCreated), "Private Endpoint Service is available")
+
+	if serviceNeedsUpdate(akoPEService, atlasPEService) {
+		updatedService, err := privateEndpointService.UpdatePrivateEndpointService(ctx.Context, projectID, atlasPEService.ServiceID(), akoPEService)
+		if err != nil {
+			return r.terminate(ctx, akoPrivateEndpoint, atlasPEService, api.PrivateEndpointServiceReady, workflow.PrivateEndpointServiceFailedToConfigure, err)
+		}
+		atlasPEService = updatedService
+	}
 
 	return r.handlePrivateEndpointInterface(ctx, privateEndpointService, projectID, akoPrivateEndpoint, akoPEService, atlasPEService)
 }
@@ -264,6 +273,20 @@ func hasInterfaceFailed(ep privateendpoint.EndpointInterface) bool {
 	status := ep.Status()
 
 	return status == privateendpoint.StatusFailed || status == privateendpoint.StatusRejected
+}
+
+// Only AWS supportedRegions are mutable after creation. portMappingEnabled (GCP) is immutable
+func serviceNeedsUpdate(ako, atlas privateendpoint.EndpointService) bool {
+	akoAWS, akoOK := ako.(*privateendpoint.AWSService)
+	atlasAWS, atlasOK := atlas.(*privateendpoint.AWSService)
+	if !akoOK || !atlasOK {
+		return false
+	}
+	akoRegions := slices.Clone(akoAWS.SupportedRegions)
+	atlasRegions := slices.Clone(atlasAWS.SupportedRegions)
+	slices.Sort(akoRegions)
+	slices.Sort(atlasRegions)
+	return !slices.Equal(akoRegions, atlasRegions)
 }
 
 func getGCPProjectID(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint, interfaceID string) string {
