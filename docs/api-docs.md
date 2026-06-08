@@ -7726,6 +7726,13 @@ The Atlas Operator updates this field to the value of 'metadata.generation' as s
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>portMappingEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          PortMappingEnabled indicates whether the GCP endpoint service uses PSC port-mapping. GCP only.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>resourceId</b></td>
         <td>string</td>
         <td>
