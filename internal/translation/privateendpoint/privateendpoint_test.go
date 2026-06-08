@@ -747,3 +747,46 @@ func TestServiceCreateToAtlas(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceUpdateToAtlas(t *testing.T) {
+	emptyRegions := []string{}
+	tests := map[string]struct {
+		service  EndpointService
+		expected *admin.ApiAtlasModifyEndpointServiceRequest
+	}{
+		"AWS nil regions sends empty slice not null": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{},
+				SupportedRegions:      nil,
+			},
+			expected: &admin.ApiAtlasModifyEndpointServiceRequest{
+				CloudProvider:          "AWS",
+				SupportedRemoteRegions: &emptyRegions,
+			},
+		},
+		"AWS with regions sends them": {
+			service: &AWSService{
+				CommonEndpointService: CommonEndpointService{},
+				SupportedRegions:      []string{"US_WEST_1", "EU_WEST_1"},
+			},
+			expected: &admin.ApiAtlasModifyEndpointServiceRequest{
+				CloudProvider:          "AWS",
+				SupportedRemoteRegions: &[]string{"US_WEST_1", "EU_WEST_1"},
+			},
+		},
+		"non-AWS provider sends no regions": {
+			service: &AzureService{
+				CommonEndpointService: CommonEndpointService{},
+			},
+			expected: &admin.ApiAtlasModifyEndpointServiceRequest{
+				CloudProvider: "AZURE",
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := serviceUpdateToAtlas(tt.service)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}

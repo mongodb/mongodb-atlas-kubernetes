@@ -35,6 +35,8 @@ type AtlasPrivateEndpointStatus struct {
 	ServiceAttachmentNames []string `json:"serviceAttachmentNames,omitempty"`
 	// SupportedRegions is the list of regions from which AWS Private Link traffic is forwarded. AWS only.
 	SupportedRegions []string `json:"supportedRegions,omitempty"`
+	// PortMappingEnabled indicates whether the GCP endpoint service uses PSC port-mapping. GCP only.
+	PortMappingEnabled bool `json:"portMappingEnabled,omitempty"`
 	// Endpoints are the status of the endpoints connected to the service
 	Endpoints []EndpointInterfaceStatus `json:"endpoints,omitempty"`
 }

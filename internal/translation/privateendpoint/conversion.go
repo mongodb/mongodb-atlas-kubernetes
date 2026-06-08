@@ -259,6 +259,7 @@ func NewPrivateEndpointStatus(peService EndpointService) status.AtlasPrivateEndp
 			s.ResourceID = pe.ResourceID
 		case *GCPService:
 			s.ServiceAttachmentNames = pe.AttachmentNames
+			s.PortMappingEnabled = pe.PortMappingEnabled
 		}
 	}
 }
@@ -411,7 +412,11 @@ func serviceUpdateToAtlas(peService EndpointService) *admin.ApiAtlasModifyEndpoi
 		CloudProvider: peService.Provider(),
 	}
 	if awsSvc, ok := peService.(*AWSService); ok {
-		req.SupportedRemoteRegions = &awsSvc.SupportedRegions
+		regions := awsSvc.SupportedRegions
+		if regions == nil {
+			regions = []string{}
+		}
+		req.SupportedRemoteRegions = &regions
 	}
 	return req
 }
