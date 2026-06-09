@@ -41,13 +41,7 @@ cleanup() {
 trap cleanup EXIT
 pushd "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}"
 
-git fetch upstream main
-git checkout -B "mongodb-atlas-operator-community-${version}" upstream/main
-
-# Drop upstream CI workflows before pushing: GitHub refuses pushes that add/modify
-# .github/workflows/* when the token lacks `workflows` permission.
-git rm -rf .github/workflows > /dev/null 2>&1 && \
-  git commit -m "chore: drop upstream ci workflows" --signoff || true
+git checkout -B "mongodb-atlas-operator-community-${version}" origin/main
 
 # Copy operator from community-operators repo
 # Remove destination if it exists to avoid nested directory structure
