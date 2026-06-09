@@ -52,7 +52,9 @@ cleanup() {
 trap cleanup EXIT
 pushd "${RH_CERTIFIED_OPENSHIFT_REPO_PATH}"
 
-git checkout -B "mongodb-atlas-kubernetes-operator-${version}" origin/main
+git fetch upstream main
+git push -f origin upstream/main:main
+git checkout -B "mongodb-atlas-kubernetes-operator-${version}" upstream/main
 
 mkdir -p "${REPO}/${version}"
 

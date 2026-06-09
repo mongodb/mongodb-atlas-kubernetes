@@ -41,7 +41,9 @@ cleanup() {
 trap cleanup EXIT
 pushd "${RH_COMMUNITY_OPENSHIFT_REPO_PATH}"
 
-git checkout -B "mongodb-atlas-operator-community-${version}" origin/main
+git fetch upstream main
+git push -f origin upstream/main:main
+git checkout -B "mongodb-atlas-operator-community-${version}" upstream/main
 
 # Copy operator from community-operators repo
 # Remove destination if it exists to avoid nested directory structure

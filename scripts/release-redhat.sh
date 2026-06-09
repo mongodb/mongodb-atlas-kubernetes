@@ -33,7 +33,9 @@ cleanup() {
 trap cleanup EXIT
 pushd "${RH_COMMUNITY_OPERATORHUB_REPO_PATH}"
 
-git checkout -B "mongodb-atlas-operator-community-${version}" origin/main
+git fetch upstream main
+git push -f origin upstream/main:main
+git checkout -B "mongodb-atlas-operator-community-${version}" upstream/main
 
 repo="${RH_COMMUNITY_OPERATORHUB_REPO_PATH}/operators/mongodb-atlas-kubernetes"
 mkdir -p "${repo}/${version}"
