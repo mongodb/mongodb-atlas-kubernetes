@@ -445,14 +445,14 @@ Group of settings that configures a subset of the advanced configuration details
         <td><b>customOpensslCipherConfigTls12</b></td>
         <td>[]string</td>
         <td>
-          The custom OpenSSL cipher suite list for TLS 1.2. This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.<br/>
+          The custom OpenSSL cipher suite list for TLS 1.2. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is omitted, supplying a non-empty list infers `CUSTOM`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>customOpensslCipherConfigTls13</b></td>
         <td>[]string</td>
         <td>
-          The custom OpenSSL cipher suite list for TLS 1.3. This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.<br/>
+          The custom OpenSSL cipher suite list for TLS 1.3. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is omitted, supplying a non-empty list infers `CUSTOM`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -924,7 +924,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1121,7 +1125,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1213,7 +1221,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1592,14 +1604,14 @@ Group of settings that configures a subset of the advanced configuration details
         <td><b>customOpensslCipherConfigTls12</b></td>
         <td>[]string</td>
         <td>
-          The custom OpenSSL cipher suite list for TLS 1.2. This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.<br/>
+          The custom OpenSSL cipher suite list for TLS 1.2. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is omitted, supplying a non-empty list infers `CUSTOM`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>customOpensslCipherConfigTls13</b></td>
         <td>[]string</td>
         <td>
-          The custom OpenSSL cipher suite list for TLS 1.3. This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.<br/>
+          The custom OpenSSL cipher suite list for TLS 1.3. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is omitted, supplying a non-empty list infers `CUSTOM`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2121,7 +2133,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2318,7 +2334,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2403,7 +2423,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2488,7 +2512,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2573,7 +2601,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2665,7 +2697,11 @@ Changing this value impacts cluster cost.<br/>
 
 - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size. 
 
-- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.<br/>
+- `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+- `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
         </td>
         <td>false</td>
       </tr><tr>
