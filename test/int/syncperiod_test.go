@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -36,9 +37,9 @@ var _ = Describe("Sync Period test", Label("int", "sync-period"), func() {
 	const syncInterval = 40 * time.Second
 
 	var (
-		connectionSecret        corev1.Secret
-		createdProject          *akov2.AtlasProject
-		previousResourceVersion string
+		connectionSecret corev1.Secret
+		createdProject   *akov2.AtlasProject
+		sleepStart       time.Time
 	)
 
 	BeforeEach(func() {
@@ -86,31 +87,30 @@ var _ = Describe("Sync Period test", Label("int", "sync-period"), func() {
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 
 			events.EventExists(k8sClient, createdProject, "Normal", "Ready", "")
-
-			Eventually(func(g Gomega) bool {
-				if !resources.ReadAtlasResource(context.Background(), k8sClient, createdProject) {
-					return false
-				}
-				previousResourceVersion = createdProject.ResourceVersion
-				return true
-			}).WithTimeout(10 * time.Second).WithPolling(2 * time.Second).Should(BeTrue())
 		})
 
 		By(fmt.Sprintf("Should wait for at least %f seconds", (syncInterval*2).Seconds()), func() {
+			sleepStart = time.Now()
 			time.Sleep(syncInterval * 2)
 		})
 
-		By("Project resource version should be different", func() {
-			var currentResourceVersion string
-			Eventually(func(g Gomega) bool {
-				if !resources.ReadAtlasResource(context.Background(), k8sClient, createdProject) {
+		By("Project should have been reconciled after SyncPeriod", func() {
+			Eventually(func() bool {
+				eventList := corev1.EventList{}
+				if err := k8sClient.List(context.Background(), &eventList,
+					client.InNamespace(createdProject.GetNamespace()),
+				); err != nil {
 					return false
 				}
-				currentResourceVersion = createdProject.ResourceVersion
-				return true
-			}).WithTimeout(10 * time.Second).WithPolling(2 * time.Second).Should(BeTrue())
-
-			Expect(currentResourceVersion).ToNot(BeEquivalentTo(previousResourceVersion))
+				for i := range eventList.Items {
+					e := &eventList.Items[i]
+					if e.InvolvedObject.Name == createdProject.GetName() &&
+						e.LastTimestamp.After(sleepStart) {
+						return true
+					}
+				}
+				return false
+			}).WithTimeout(syncInterval + 2*time.Minute).WithPolling(interval).Should(BeTrue())
 		})
 	})
 })
