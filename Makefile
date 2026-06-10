@@ -210,7 +210,7 @@ endif
 CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
 
 # LOCAL TOOLS
-OPENAPI2CRD := tools/openapi2crd/bin/openapi2crd
+OPENAPI2CRD := go tool -modfile=tools/toolbox/go.mod openapi2crd
 SCAFFOLDER := tools/scaffolder/bin/scaffolder
 
 SCAFFOLDER_FLAGS ?= --all
@@ -502,7 +502,6 @@ clean-gen-crds: ## Clean only generated CRD files
 
 clean: clean-gen-crds ## Clean built binaries
 	rm -rf bin/*
-	rm -rf tools/openapi2crd/bin/
 	rm -rf tools/scaffolder/bin/
 	rm -rf config/manifests/bases/
 	rm -f config/crd/bases/*.yaml
@@ -931,13 +930,10 @@ manifests-autogen:
 	$(CONTROLLER_GEN) rbac:roleName=generated-manager-role $(PATHS) output:rbac:artifacts:config=config/generated/rbac
 	@./scripts/split_roles_yaml.sh config/generated/rbac
 
-tools/openapi2crd/bin/openapi2crd:
-	$(MAKE) -C tools/openapi2crd build
-
 tools/scaffolder/bin/scaffolder:
 	make -C tools/scaffolder build
 
-gen-crds: tools/openapi2crd/bin/openapi2crd
+gen-crds:
 	@echo "==> Generating CRDs..."
 	$(OPENAPI2CRD) --config $(realpath .)/crd2go/openapi2crd.yaml \
 	--multi-file --output $(realpath .)/config/generated/crd/bases
@@ -951,7 +947,7 @@ endif
 regen-crds: clean-gen-crds gen-crds ## Clean and regenerate CRDs
 
 .PHONY: gen-combined-crds
-gen-combined-crds: tools/openapi2crd/bin/openapi2crd ## Generate a transient combined CRD file for tooling (crd2go, scaffolder)
+gen-combined-crds: ## Generate a transient combined CRD file for tooling (crd2go, scaffolder)
 	@echo "==> Generating transient combined CRD file..."
 	$(OPENAPI2CRD) --config $(realpath .)/crd2go/openapi2crd.yaml \
 	--output $(realpath .)/config/generated/crd/bases/crds.yaml
