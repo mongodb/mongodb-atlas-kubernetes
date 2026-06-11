@@ -56,22 +56,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Delete private endpoints before project deletion", func() {
-			peList := &akov2.AtlasPrivateEndpointList{}
-			Expect(testData.K8SClient.List(testData.Context, peList, client.InNamespace(testData.Resources.Namespace))).To(Succeed())
-			for i := range peList.Items {
-				_ = testData.K8SClient.Delete(testData.Context, &peList.Items[i])
-			}
-			Eventually(func(g Gomega) {
-				pList := &akov2.AtlasPrivateEndpointList{}
-				g.Expect(testData.K8SClient.List(testData.Context, pList, client.InNamespace(testData.Resources.Namespace))).To(Succeed())
-				g.Expect(pList.Items).To(BeEmpty())
-			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
-		})
-		By("Delete Project and cluster resources", func() {
-			actions.DeleteTestDataProject(testData)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
-		})
+		deletePrivateEndpointsAndProject(testData)
 	})
 
 	DescribeTable(
@@ -285,10 +270,24 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Delete Project and cluster resources", func() {
-			actions.DeleteTestDataProject(testData)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+		By("Clear project sub-resource private endpoints", func() {
+			Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+			if len(testData.Project.Spec.PrivateEndpoints) > 0 {
+				// Resume reconciliation in case it was paused, and clear sub-resource PEs so the
+				// controller finishes deleting Atlas PE services before we delete the project.
+				// Without this, the project controller races: it fires Atlas DELETE on PE services
+				// then immediately tries to DELETE the group, which Atlas rejects with 409 until
+				// the PE services are fully terminated.
+				delete(testData.Project.Annotations, customresource.ReconciliationPolicyAnnotation)
+				testData.Project.Spec.PrivateEndpoints = nil
+				Expect(testData.K8SClient.Update(testData.Context, testData.Project)).To(Succeed())
+				Eventually(func(g Gomega) {
+					g.Expect(testData.K8SClient.Get(testData.Context, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
+					g.Expect(testData.Project.Status.Conditions).To(ContainElement(conditions.MatchCondition(api.TrueCondition(api.ReadyType))))
+				}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			}
 		})
+		deletePrivateEndpointsAndProject(testData)
 	})
 
 	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func(ctx SpecContext) {
@@ -652,10 +651,7 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
-		By("Delete Project and cluster resources", func() {
-			actions.DeleteTestDataProject(testData)
-			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
-		})
+		deletePrivateEndpointsAndProject(testData)
 	})
 
 	It("Should migrate a private endpoint configured in a project as sub-resource to a separate custom resource", func(ctx SpecContext) {
@@ -749,6 +745,25 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 		})
 	})
 })
+
+func deletePrivateEndpointsAndProject(data *model.TestDataProvider) {
+	By("Delete private endpoints before project deletion", func() {
+		peList := &akov2.AtlasPrivateEndpointList{}
+		Expect(data.K8SClient.List(data.Context, peList, client.InNamespace(data.Resources.Namespace))).To(Succeed())
+		for i := range peList.Items {
+			_ = data.K8SClient.Delete(data.Context, &peList.Items[i])
+		}
+		Eventually(func(g Gomega) {
+			pList := &akov2.AtlasPrivateEndpointList{}
+			g.Expect(data.K8SClient.List(data.Context, pList, client.InNamespace(data.Resources.Namespace))).To(Succeed())
+			g.Expect(pList.Items).To(BeEmpty())
+		}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+	})
+	By("Delete Project and cluster resources", func() {
+		actions.DeleteTestDataProject(data)
+		actions.AfterEachFinalCleanup([]model.TestDataProvider{*data})
+	})
+}
 
 func statusForProvider(peStatus []status.ProjectPrivateEndpoint, providerName provider.ProviderName) *status.ProjectPrivateEndpoint {
 	for _, s := range peStatus {
