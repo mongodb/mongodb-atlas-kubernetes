@@ -56,6 +56,18 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 		if CurrentSpecReport().Failed() {
 			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
 		}
+		By("Delete private endpoints before project deletion", func() {
+			peList := &akov2.AtlasPrivateEndpointList{}
+			Expect(testData.K8SClient.List(testData.Context, peList, client.InNamespace(testData.Resources.Namespace))).To(Succeed())
+			for i := range peList.Items {
+				_ = testData.K8SClient.Delete(testData.Context, &peList.Items[i])
+			}
+			Eventually(func(g Gomega) {
+				pList := &akov2.AtlasPrivateEndpointList{}
+				g.Expect(testData.K8SClient.List(testData.Context, pList, client.InNamespace(testData.Resources.Namespace))).To(Succeed())
+				g.Expect(pList.Items).To(BeEmpty())
+			}).WithTimeout(15 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		})
 		By("Delete Project and cluster resources", func() {
 			actions.DeleteTestDataProject(testData)
 			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
@@ -71,7 +83,15 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 			actions.ProjectCreationFlow(testData)
 
 			By("Preparing private endpoint resource", func() {
+				// Reset the entire object to clear stale state from FlakeAttempts retries.
+				// The pe pointer is shared across attempts; Kubernetes populates fields like
+				// ResourceVersion on Create which would cause subsequent Create calls to fail.
+				name := pe.Name
+				providerName := pe.Spec.Provider
+				*pe = akov2.AtlasPrivateEndpoint{}
+				pe.Name = name
 				pe.Namespace = testData.Resources.Namespace
+				pe.Spec.Provider = providerName
 				pe.Spec.ProjectRef = &common.ResourceRefNamespaced{
 					Name:      testData.Project.Name,
 					Namespace: testData.Project.Namespace,
