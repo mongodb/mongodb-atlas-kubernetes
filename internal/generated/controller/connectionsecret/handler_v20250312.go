@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/crd2go/constate"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/stringutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 )
 
 func (r *ConnectionSecretReconciler) handleUpsert(ctx context.Context, ids *ConnectionSecretIdentifiers, user *generatedv1.DatabaseUser, connectionTarget target.ConnectionTargetInstance) (reconcile.Result, error) {

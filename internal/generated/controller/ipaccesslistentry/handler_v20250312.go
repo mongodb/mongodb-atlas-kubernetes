@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	ctrlstate "github.com/crd2go/constate"
+	state "github.com/crd2go/constate/state"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -32,10 +34,8 @@ import (
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // expiredStateMsg is stored in the State condition's Message field to signal that the entry

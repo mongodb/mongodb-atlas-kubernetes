@@ -19,11 +19,10 @@ import (
 	"testing"
 	"time"
 
+	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 var defaultRequeueResult = reconcile.Result{RequeueAfter: 15 * time.Second}

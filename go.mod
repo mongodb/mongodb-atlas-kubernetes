@@ -22,6 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3
 	github.com/aws/smithy-go v1.27.1
 	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
+	github.com/crd2go/constate v0.0.0-20260611090334-e608f57526c8
 	github.com/getkin/kin-openapi v0.140.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1

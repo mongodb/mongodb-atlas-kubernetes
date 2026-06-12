@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package state
+package crapi
 
-import "strings"
-
-const (
-	AnnotationReapplyTimestamp = "mongodb.internal.com/reapply-timestamp"
-	AnnotationStateTracker     = "mongodb.internal.com/state-tracker"
-	AnnotationExternalID       = "mongodb.com/external-id"
+import (
+	ctrlstate "github.com/crd2go/constate"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var jsonPatchReplacer = strings.NewReplacer("/", "~1", "~", "~0")
+// VersionedHandlerFunc is a factory function that creates a StateHandler for a specific
+// Atlas SDK version, wired up with the provided Kubernetes client, Atlas API client,
+// CRD translator, and deletion-protection setting.
+type VersionedHandlerFunc[C any, T any] func(kubeClient client.Client, atlasClient *C, translator Translator, deletionProtection bool) ctrlstate.StateHandler[T]

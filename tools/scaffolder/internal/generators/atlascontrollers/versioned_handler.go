@@ -142,7 +142,7 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			jen.If(jen.Err().Op("!=").Nil()).Block(
 				jen.Return(
 					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-						jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", "State"+strings.TrimPrefix(handler.name, "Handle")),
+						jen.Qual("github.com/crd2go/constate/state", "State"+strings.TrimPrefix(handler.name, "Handle")),
 						jen.Qual("fmt", "Errorf").Call(
 							jen.Lit(fmt.Sprintf("failed to resolve %s dependencies: %%w", resourceName)),
 							jen.Err(),
@@ -155,7 +155,7 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			jen.Comment("TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client"),
 			jen.Comment("TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods"),
 			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
-				jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", handler.nextState),
+				jen.Qual("github.com/crd2go/constate/state", handler.nextState),
 				jen.Lit(handler.message),
 			)),
 		}

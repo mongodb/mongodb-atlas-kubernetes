@@ -21,6 +21,8 @@ import (
 	"os"
 	"testing"
 
+	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,10 +39,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/refs"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 

@@ -17,6 +17,7 @@ package child
 import (
 	"fmt"
 
+	ctrlstate "github.com/crd2go/constate"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +27,6 @@ import (
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
@@ -59,7 +59,7 @@ type Handler struct {
 	deletionProtection bool
 	predicates         []predicate.Predicate
 	translators        map[string]crapi.Translator
-	handlerv20250312   ctrlstate.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Child]
+	handlerv20250312   crapi.VersionedHandlerFunc[v20250312sdk.APIClient, akov2generated.Child]
 }
 
 func NewChildReconciler(

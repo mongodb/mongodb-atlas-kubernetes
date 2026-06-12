@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	pkgCtrlState = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
+	pkgCtrlState = "github.com/crd2go/constate"
 )
 
 func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *config.ParsedConfig) error {
@@ -90,7 +90,7 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 				"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "Translator",
 			),
 			jen.Id("handler"+versionSuffix).
-				Qual(pkgCtrlState, "VersionedHandlerFunc").
+				Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "VersionedHandlerFunc").
 				Types(
 					jen.Qual(sdkImportPath, "APIClient"),
 					jen.Qual(apiPkg, resourceName),
