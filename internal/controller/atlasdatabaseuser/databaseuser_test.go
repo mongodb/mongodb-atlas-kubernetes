@@ -536,6 +536,7 @@ func TestDbuLifeCycle(t *testing.T) {
 
 				return service
 			},
+			wantErr:        true,
 			expectedResult: ctrl.Result{},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
@@ -591,6 +592,7 @@ func TestDbuLifeCycle(t *testing.T) {
 
 				return service
 			},
+			wantErr:        true,
 			expectedResult: ctrl.Result{},
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
