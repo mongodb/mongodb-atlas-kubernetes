@@ -592,6 +592,7 @@ func TestDbuLifeCycle(t *testing.T) {
 				return service
 			},
 			expectedResult: ctrl.Result{},
+			wantErr:        true,
 			expectedConditions: []api.Condition{
 				api.FalseCondition(api.DatabaseUserReadyType).
 					WithReason(string(workflow.DatabaseUserInvalidSpec)).

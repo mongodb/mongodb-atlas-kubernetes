@@ -103,7 +103,7 @@ func (r *AtlasDatabaseUserReconciler) dbuLifeCycle(ctx *workflow.Context, dbUser
 		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, err)
 	}
 	if !scopesAreValid {
-		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, false, errors.New("\"scopes\" field refer to one or more deployments that don't exist"))
+		return r.terminate(ctx, atlasDatabaseUser, api.DatabaseUserReadyType, workflow.DatabaseUserInvalidSpec, true, errors.New("\"scopes\" field refer to one or more deployments that don't exist"))
 	}
 
 	dbUserExists := databaseUserInAtlas != nil
