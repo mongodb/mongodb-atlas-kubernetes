@@ -39,7 +39,7 @@ jobs:
       commit_sha: ${{ steps.resolve.outputs.commit_sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Log in to Docker registry
         uses: docker/login-action@v4
@@ -92,7 +92,7 @@ jobs:
           echo "repo=mongodb/mongodb-atlas-kubernetes-operator-prerelease" | tee -a $GITHUB_OUTPUT
         fi
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
         ref: ${{ needs.image2commit.outputs.commit_sha }}
@@ -143,7 +143,7 @@ jobs:
       QUAY_CERTIFIED_IMAGE_URL: quay.io/${{ needs.compute-repo.outputs.repo }}:${{ needs.compute-repo.outputs.image_version }}-certified
     steps:
       - name: Checkout CI branch (workflow branch)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

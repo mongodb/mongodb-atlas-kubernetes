@@ -32,7 +32,7 @@ jobs:
       releases: ${{ steps.releases.outputs.releases }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: true
           fetch-depth: 0
@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "Building ${{matrix.version}} version"
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: "v${{ matrix.version }}"
           submodules: true

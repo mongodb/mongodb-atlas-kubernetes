@@ -22,7 +22,7 @@ jobs:
   scaffolder:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Set up Go
       uses: actions/setup-go@v6
@@ -38,7 +38,7 @@ jobs:
     needs:
     - scaffolder
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Install devbox
       uses: jetify-com/devbox-install-action@v0.15.0
@@ -60,7 +60,7 @@ jobs:
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Send Slack Notification
         env:
