@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	ctrlstate "github.com/crd2go/constate"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312020/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
