@@ -1,7 +1,7 @@
 # Please push to quay.io/mongodb/mongodb-atlas-kubernetes-operator-test-app:v1
 
 # Build the manager binary
-FROM golang:1.25 as builder
+FROM golang:1.26 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
