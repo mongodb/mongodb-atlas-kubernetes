@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	ctrlstate "github.com/crd2go/constate"
+	state "github.com/crd2go/constate/state"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,9 +30,7 @@ import (
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	state "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set

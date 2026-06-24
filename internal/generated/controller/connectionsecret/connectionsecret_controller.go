@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"time"
 
+	controllerstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,10 +51,8 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
 	generatedindexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/indexers"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	controllerstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	mckpredicate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/predicate"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 const (

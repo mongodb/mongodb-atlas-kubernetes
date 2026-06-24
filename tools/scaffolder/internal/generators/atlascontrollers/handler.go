@@ -158,7 +158,7 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerI
 				Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName))),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state", startStateMap[handlerName]),
+					jen.Qual("github.com/crd2go/constate/state", startStateMap[handlerName]),
 					jen.Id("err"),
 				)),
 			),

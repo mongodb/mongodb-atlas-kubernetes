@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -39,8 +41,6 @@ import (
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 const (

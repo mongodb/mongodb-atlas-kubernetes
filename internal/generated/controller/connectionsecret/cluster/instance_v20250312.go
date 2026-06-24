@@ -17,13 +17,13 @@ package cluster
 import (
 	"context"
 
+	"github.com/crd2go/constate/state"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/data"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 // ClusterInstance_v20250312 is the instance type that implements ConnectionTargetInstance

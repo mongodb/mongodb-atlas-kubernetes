@@ -103,7 +103,7 @@ spec:
 	assert.Contains(t, contentStr, "Apache License, Version 2.0")
 
 	// Verify imports
-	assert.Contains(t, contentStr, `ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"`)
+	assert.Contains(t, contentStr, `ctrlstate "github.com/crd2go/constate"`)
 	assert.Contains(t, contentStr, `akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"`)
 	assert.Contains(t, contentStr, `v20250312sdk "go.mongodb.org/atlas-sdk/v20250312008/admin"`)
 

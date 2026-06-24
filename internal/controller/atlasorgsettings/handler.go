@@ -18,14 +18,14 @@ import (
 	"context"
 	"fmt"
 
+	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 type reconcileRequest struct {

@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"reflect"
 
+	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate/state"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/state"
 )
 
 const (

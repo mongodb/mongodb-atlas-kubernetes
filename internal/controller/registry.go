@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	ctrlstate "github.com/crd2go/constate"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -54,7 +55,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/group"
 	akogeneratedipaccesslistentry "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/ipaccesslistentry"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
-	ctrlstate "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/controller/state"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/ratelimit"
 )
 
