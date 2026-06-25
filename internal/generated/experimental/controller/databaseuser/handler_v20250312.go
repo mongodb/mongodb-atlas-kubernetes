@@ -20,6 +20,7 @@ import (
 
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
+	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -28,7 +29,6 @@ import (
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 

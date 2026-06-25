@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 
+	crapi "github.com/crd2go/crapi"
 	admin "go.mongodb.org/atlas-sdk/v20250312021/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	crapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
 )
 
 type FlexClusterExporter struct {

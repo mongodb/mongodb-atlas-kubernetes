@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	pkgCtrlState = "github.com/crd2go/constate"
+	pkgCtrlState  = "github.com/crd2go/constate"
+	pkgCRAPIHandler = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
 )
 
 func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *config.ParsedConfig) error {
@@ -87,10 +88,10 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 		handlerFields = append(
 			handlerFields,
 			jen.Id("translators").Map(jen.String()).Qual(
-				"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "Translator",
+				"github.com/crd2go/crapi", "Translator",
 			),
 			jen.Id("handler"+versionSuffix).
-				Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "VersionedHandlerFunc").
+				Qual(pkgCRAPIHandler, "VersionedHandlerFunc").
 				Types(
 					jen.Qual(sdkImportPath, "APIClient"),
 					jen.Qual(apiPkg, resourceName),
@@ -137,7 +138,7 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 			),
 		),
 		jen.List(jen.Id("translators"), jen.Id("err")).Op(":=").Qual(
-			"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "NewPerVersionTranslators",
+			"github.com/crd2go/crapi", "NewPerVersionTranslators",
 		).Call(
 			jen.Id("c").Dot("GetScheme").Call(),
 			jen.Id("crd"),
@@ -179,7 +180,7 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 		handlerFuncParams := []jen.Code{
 			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
 			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-			jen.Id("translator").Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi", "Translator"),
+			jen.Id("translator").Qual("github.com/crd2go/crapi", "Translator"),
 			jen.Id("deletionProtection").Bool(),
 		}
 
