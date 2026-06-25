@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -29,6 +30,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/data"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
+	akoretry "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/retry"
 )
 
 var _ = Describe("UserLogin", Label("global-deployment"), func() {
@@ -81,6 +83,92 @@ var _ = Describe("UserLogin", Label("global-deployment"), func() {
 				},
 			},
 		),
+	)
+})
+
+// Regression test for AUTO_SCALINGS_MUST_MATCH (HTTP 400).
+// Atlas requires all autoScaling (and analyticsAutoScaling) objects to match across all
+// regionConfigs in a cluster. When the operator adds a new region while autoscaling is
+// enabled on existing regions, it must send consistent autoScaling values in the PATCH
+// body — otherwise Atlas rejects the request.
+var _ = Describe("AtlasDeployment autoscaling region add", Label("deployment-autoscaling-region-add"), func() {
+	var testData *model.TestDataProvider
+
+	AfterEach(func() {
+		GinkgoWriter.Write([]byte("\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+			Expect(actions.SaveDeploymentsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		By("Delete Resources", func() {
+			actions.DeleteTestDataDeployments(testData)
+			actions.DeleteTestDataProject(testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+		})
+	})
+
+	BeforeEach(func(ctx SpecContext) {
+		testData = model.DataProvider(
+			ctx,
+			"autoscaling-region-add",
+			model.NewEmptyAtlasKeyType().UseDefaultFullAccess(),
+			40000,
+			[]func(*model.TestDataProvider){},
+		).WithProject(data.DefaultProject())
+		actions.ProjectCreationFlow(testData)
+	})
+
+	It("Should add a readOnly region to a cluster with autoscaling without AUTO_SCALINGS_MUST_MATCH",
+		Label("focus-autoscaling-region-add"),
+		func(ctx context.Context) {
+			name := "autoscaling-region-add"
+			d := data.CreateDeploymentWithAutoscaling(name)
+			d.Namespace = testData.Resources.Namespace
+			d.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.NodeCount = new(3)
+
+			By("Creating the initial deployment with one region and autoscaling enabled", func() {
+				Expect(testData.K8SClient.Create(testData.Context, d)).To(Succeed())
+				Eventually(func(g Gomega) bool {
+					g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+						Name:      d.Name,
+						Namespace: d.Namespace,
+					}, d)).To(Succeed())
+					return d.Status.StateName == status.StateIDLE
+				}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
+			By("Adding a second readOnly region with the same autoscaling settings", func() {
+				_, err := akoretry.RetryUpdateOnConflict(
+					ctx,
+					testData.K8SClient,
+					client.ObjectKeyFromObject(d),
+					func(dep *akov2.AtlasDeployment) {
+						data.UpdateDeploymentAddReadOnlyRegion(dep)
+					},
+				)
+				Expect(err).To(BeNil())
+			})
+
+			By("Waiting for the cluster to reach IDLE state after adding the second region", func() {
+				Eventually(func(g Gomega) bool {
+					g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+						Name:      d.Name,
+						Namespace: d.Namespace,
+					}, d)).To(Succeed())
+					for _, condition := range d.Status.Conditions {
+						if condition.Type == api.DeploymentReadyType {
+							g.Expect(condition.Status).To(Equal(corev1.ConditionTrue),
+								"DeploymentReady condition is False: %s", condition.Message)
+							return condition.Status == corev1.ConditionTrue
+						}
+					}
+					return false
+				}).WithTimeout(30 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+			})
+		},
 	)
 })
 

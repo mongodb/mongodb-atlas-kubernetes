@@ -332,6 +332,9 @@ type AdvancedRegionConfig struct {
 	ReadOnlySpecs *Specs `json:"readOnlySpecs,omitempty"`
 	// Options that determine how this cluster handles resource scaling.
 	AutoScaling *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
+	// Options that determine how this cluster handles resource scaling for analytics nodes specifically.
+	// When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.
+	AnalyticsAutoScaling *AdvancedAutoScalingSpec `json:"analyticsAutoScaling,omitempty"`
 	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 	// This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
 	// Otherwise, it should be equal to the "providerName" value.

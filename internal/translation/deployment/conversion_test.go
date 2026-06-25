@@ -1400,3 +1400,76 @@ func TestProcessArgsToAtlas_NilIntStaysNil(t *testing.T) {
 	assert.Nil(t, got.SampleSizeBIConnector)
 	assert.Nil(t, got.SampleRefreshIntervalBIConnector)
 }
+
+// Regression test: analyticsAutoScaling must round-trip through Atlas API conversion.
+// Atlas requires all autoScaling objects in regionConfigs to match (AUTO_SCALINGS_MUST_MATCH).
+// When regions have readOnlySpecs/analyticsSpecs, Atlas auto-populates analyticsAutoScaling.
+// If the operator does not read/write analyticsAutoScaling, the PATCH omits it for existing
+// regions while Atlas still has it set, causing an inconsistency that triggers the 400 error.
+func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
+	atlasAutoScaling := admin.AdvancedAutoScalingSettings{
+		Compute: &admin.AdvancedComputeAutoScaling{
+			Enabled:          pointer.MakePtr(true),
+			ScaleDownEnabled: pointer.MakePtr(true),
+			MinInstanceSize:  pointer.MakePtr("M40"),
+			MaxInstanceSize:  pointer.MakePtr("M60"),
+		},
+		DiskGB: &admin.DiskGBAutoScaling{
+			Enabled: pointer.MakePtr(true),
+		},
+	}
+
+	atlasRegionConfigs := []admin.ReplicationSpec20240805{
+		{
+			RegionConfigs: &[]admin.CloudRegionConfig20240805{
+				{
+					ProviderName: pointer.MakePtr("AWS"),
+					RegionName:   pointer.MakePtr("US_EAST_1"),
+					Priority:     pointer.MakePtr(7),
+					ElectableSpecs: &admin.HardwareSpec20240805{
+						InstanceSize: pointer.MakePtr("M40"),
+						NodeCount:    pointer.MakePtr(3),
+					},
+					AutoScaling:          &atlasAutoScaling,
+					AnalyticsAutoScaling: &atlasAutoScaling,
+				},
+				{
+					ProviderName: pointer.MakePtr("AWS"),
+					RegionName:   pointer.MakePtr("US_WEST_2"),
+					Priority:     pointer.MakePtr(0),
+					ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
+						InstanceSize: pointer.MakePtr("M40"),
+						NodeCount:    pointer.MakePtr(1),
+					},
+					AutoScaling:          &atlasAutoScaling,
+					AnalyticsAutoScaling: &atlasAutoScaling,
+				},
+			},
+		},
+	}
+
+	// replicationSpecFromAtlas must preserve analyticsAutoScaling
+	akoSpecs := replicationSpecFromAtlas(atlasRegionConfigs)
+	require.Len(t, akoSpecs, 1)
+	require.Len(t, akoSpecs[0].RegionConfigs, 2)
+
+	for i, rc := range akoSpecs[0].RegionConfigs {
+		require.NotNil(t, rc.AnalyticsAutoScaling, "region %d: analyticsAutoScaling must not be nil after reading from Atlas", i)
+		require.NotNil(t, rc.AnalyticsAutoScaling.Compute)
+		assert.Equal(t, true, *rc.AnalyticsAutoScaling.Compute.Enabled)
+	}
+
+	// replicationSpecToAtlas must send analyticsAutoScaling back to Atlas
+	sentSpecsPtr := replicationSpecToAtlas(akoSpecs, "REPLICASET", nil)
+	require.NotNil(t, sentSpecsPtr)
+	sentSpecs := *sentSpecsPtr
+	require.Len(t, sentSpecs, 1)
+	sentRegions := *sentSpecs[0].RegionConfigs
+	require.Len(t, sentRegions, 2)
+
+	for i, rc := range sentRegions {
+		require.NotNil(t, rc.AnalyticsAutoScaling, "region %d: analyticsAutoScaling must be sent to Atlas in PATCH", i)
+		require.NotNil(t, rc.AnalyticsAutoScaling.Compute)
+		assert.Equal(t, true, *rc.AnalyticsAutoScaling.Compute.Enabled)
+	}
+}

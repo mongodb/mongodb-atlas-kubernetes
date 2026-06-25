@@ -1895,6 +1895,65 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			autoscalingEnabled: false,
 			expected:           false,
 		},
+		"should return false when analyticsAutoScaling has changed": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           false,
+		},
+		"should return true when analyticsAutoScaling matches": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           true,
+		},
 		"should return false when backing provider has changed for tenant instances": {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName:        "TENANT",
