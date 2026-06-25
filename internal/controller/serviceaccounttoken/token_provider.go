@@ -17,6 +17,7 @@ package serviceaccounttoken
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"go.mongodb.org/atlas-sdk/v20250312021/auth/clientcredentials"
@@ -38,7 +39,14 @@ func NewAtlasTokenProvider(atlasDomain string) *AtlasTokenProvider {
 
 func (p *AtlasTokenProvider) FetchToken(ctx context.Context, clientID, clientSecret string) (string, time.Time, error) {
 	cfg := clientcredentials.NewConfig(clientID, clientSecret)
-	cfg.TokenURL = p.atlasDomain + clientcredentials.TokenAPIPath
+
+	baseURL, err := url.Parse(p.atlasDomain)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("invalid Atlas domain %q: %w", p.atlasDomain, err)
+	}
+
+	tokenURL := baseURL.ResolveReference(&url.URL{Path: clientcredentials.TokenAPIPath})
+	cfg.TokenURL = tokenURL.String()
 
 	token, err := cfg.Token(ctx)
 	if err != nil {
