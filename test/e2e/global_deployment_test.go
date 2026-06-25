@@ -131,6 +131,7 @@ var _ = Describe("AtlasDeployment autoscaling region add", Label("deployment-aut
 
 			By("Creating the initial deployment with one region and autoscaling enabled", func() {
 				Expect(testData.K8SClient.Create(testData.Context, d)).To(Succeed())
+				testData.InitialDeployments = append(testData.InitialDeployments, d)
 				Eventually(func(g Gomega) bool {
 					g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
 						Name:      d.Name,
