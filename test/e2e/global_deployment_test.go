@@ -152,6 +152,16 @@ var _ = Describe("AtlasDeployment autoscaling region add", Label("deployment-aut
 				Expect(err).To(BeNil())
 			})
 
+			By("Waiting for the cluster to leave IDLE (operator picked up the change)", func() {
+				Eventually(func(g Gomega) bool {
+					g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
+						Name:      d.Name,
+						Namespace: d.Namespace,
+					}, d)).To(Succeed())
+					return d.Status.StateName != status.StateIDLE
+				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
+			})
+
 			By("Waiting for the cluster to reach IDLE state after adding the second region", func() {
 				Eventually(func(g Gomega) bool {
 					g.Expect(testData.K8SClient.Get(testData.Context, types.NamespacedName{
