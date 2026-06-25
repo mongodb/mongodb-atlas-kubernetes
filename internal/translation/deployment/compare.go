@@ -84,13 +84,19 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 				ReadOnlySpecs:       getSpecsChanges(desiredRegionConfig.ReadOnlySpecs, desiredRegionConfig.ProviderName),
 				AnalyticsSpecs:      getSpecsChanges(desiredRegionConfig.AnalyticsSpecs, desiredRegionConfig.ProviderName),
 			}
-			// Only include AutoScaling if it has changed
+			// Always send the desired AutoScaling value for each region. When getAutoScalingChanges
+			// returns nil (unchanged), we still use the desired value rather than nil, because
+			// replicationSpecToAtlas converts nil → {disabled}. A PATCH body mixing {disabled}
+			// for unchanged regions and {enabled} for new regions triggers AUTO_SCALINGS_MUST_MATCH.
 			if autoScalingChanges := getAutoScalingChanges(desiredRegionConfig.AutoScaling, currentRegionConfig); autoScalingChanges != nil {
 				regionConfig.AutoScaling = autoScalingChanges
+			} else {
+				regionConfig.AutoScaling = desiredRegionConfig.AutoScaling
 			}
-			// Only include AnalyticsAutoScaling if it has changed
 			if analyticsAutoScalingChanges := getAnalyticsAutoScalingChanges(desiredRegionConfig.AnalyticsAutoScaling, currentRegionConfig); analyticsAutoScalingChanges != nil {
 				regionConfig.AnalyticsAutoScaling = analyticsAutoScalingChanges
+			} else {
+				regionConfig.AnalyticsAutoScaling = desiredRegionConfig.AnalyticsAutoScaling
 			}
 			changesRegionConfig = append(changesRegionConfig, regionConfig)
 		}
