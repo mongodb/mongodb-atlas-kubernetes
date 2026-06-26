@@ -554,6 +554,129 @@ func TestComputeChanges(t *testing.T) {
 		// Expected: AutoScaling should be nil in changes when unchanged
 		// Actual (buggy): AutoScaling is included with {DiskGB: {Enabled: false}, Compute: {Enabled: false}} even when unchanged
 		// This causes reconciliation loops because we send unnecessary updates to Atlas.
+		// Regression test for AUTO_SCALINGS_MUST_MATCH: when autoscaling is enabled on an
+		// existing region and a new region is added with the same autoscaling, the PATCH body
+		// must send the actual autoscaling value (not nil→disabled) for the existing region.
+		"should propagate autoScaling from unchanged regions when adding a new region": {
+			//nolint:dupl
+			akoCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "cluster0",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: new(false),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     new(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    new(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+									},
+								},
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_2",
+									Priority:     new(0),
+									ReadOnlySpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    new(1),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			atlasCluster: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "cluster0",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: new(false),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     new(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    new(3),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			//nolint:dupl
+			expectedChanges: &Cluster{
+				ProjectID: "project-id",
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:          "cluster0",
+					ClusterType:   "REPLICASET",
+					BackupEnabled: new(false),
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{
+							ZoneName:  "Zone 1",
+							NumShards: 1,
+							RegionConfigs: []*akov2.AdvancedRegionConfig{
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_EAST_1",
+									Priority:     new(7),
+									ElectableSpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    new(3),
+									},
+									// AutoScaling must be passed through (not nil) so all
+									// regions in the PATCH body have consistent values.
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+									},
+								},
+								{
+									ProviderName: "AWS",
+									RegionName:   "US_WEST_2",
+									Priority:     new(0),
+									ReadOnlySpecs: &akov2.Specs{
+										InstanceSize: "M10",
+										NodeCount:    new(1),
+									},
+									AutoScaling: &akov2.AdvancedAutoScalingSpec{
+										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			changed: true,
+		},
 		"BUG_EXPOSURE: should not include AutoScaling in changes when AutoScaling hasn't changed": {
 			akoCluster: &Cluster{
 				ProjectID: "project-id",
@@ -1894,6 +2017,65 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			},
 			autoscalingEnabled: false,
 			expected:           false,
+		},
+		"should return false when analyticsAutoScaling has changed": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           false,
+		},
+		"should return true when analyticsAutoScaling matches": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				ReadOnlySpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(1),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					DiskGB: &akov2.DiskGB{
+						Enabled: new(true),
+					},
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           true,
 		},
 		"should return false when backing provider has changed for tenant instances": {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{

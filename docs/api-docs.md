@@ -3701,6 +3701,14 @@ Every hardware specification must use the same instanceSize.<br/>
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscaling">analyticsAutoScaling</a></b></td>
+        <td>object</td>
+        <td>
+          Options that determine how this cluster handles resource scaling for analytics nodes specifically.
+When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsspecs">analyticsSpecs</a></b></td>
         <td>object</td>
         <td>
@@ -3764,6 +3772,117 @@ The highest priority is 7<br/>
         <td>
           Physical location of your MongoDB deployment.
 The region you choose can affect network latency for clients accessing your databases.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDeployment.spec.deploymentSpec.replicationSpecs[index].regionConfigs[index].analyticsAutoScaling
+<sup><sup>[↩ Parent](#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindex)</sup></sup>
+
+
+
+Options that determine how this cluster handles resource scaling for analytics nodes specifically.
+When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscalingcompute">compute</a></b></td>
+        <td>object</td>
+        <td>
+          Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscalingdiskgb">diskGB</a></b></td>
+        <td>object</td>
+        <td>
+          Flag that indicates whether disk auto-scaling is enabled. The default is true.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDeployment.spec.deploymentSpec.replicationSpecs[index].regionConfigs[index].analyticsAutoScaling.compute
+<sup><sup>[↩ Parent](#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscaling)</sup></sup>
+
+
+
+Collection of settings that configure how a deployment might scale its deployment tier and whether the deployment can scale down.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether deployment tier auto-scaling is enabled. The default is false.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>maxInstanceSize</b></td>
+        <td>string</td>
+        <td>
+          Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minInstanceSize</b></td>
+        <td>string</td>
+        <td>
+          Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>scaleDownEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether the deployment tier may scale down. Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasDeployment.spec.deploymentSpec.replicationSpecs[index].regionConfigs[index].analyticsAutoScaling.diskGB
+<sup><sup>[↩ Parent](#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscaling)</sup></sup>
+
+
+
+Flag that indicates whether disk auto-scaling is enabled. The default is true.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether this cluster enables disk auto-scaling.
+The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

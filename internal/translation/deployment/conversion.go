@@ -745,14 +745,15 @@ func replicationSpecFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) 
 			regionConfigs = append(
 				regionConfigs,
 				&akov2.AdvancedRegionConfig{
-					ProviderName:        regionConfig.GetProviderName(),
-					BackingProviderName: regionConfig.GetBackingProviderName(),
-					RegionName:          regionConfig.GetRegionName(),
-					Priority:            regionConfig.Priority,
-					ElectableSpecs:      hSpecOrDefault(regionConfig.GetElectableSpecs(), regionConfig.GetProviderName()),
-					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.GetReadOnlySpecs()),
-					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.GetAnalyticsSpecs()),
-					AutoScaling:         autoScalingOrDefault(regionConfig.GetAutoScaling()),
+					ProviderName:         regionConfig.GetProviderName(),
+					BackingProviderName:  regionConfig.GetBackingProviderName(),
+					RegionName:           regionConfig.GetRegionName(),
+					Priority:             regionConfig.Priority,
+					ElectableSpecs:       hSpecOrDefault(regionConfig.GetElectableSpecs(), regionConfig.GetProviderName()),
+					ReadOnlySpecs:        dHSpecOrDefault(regionConfig.GetReadOnlySpecs()),
+					AnalyticsSpecs:       dHSpecOrDefault(regionConfig.GetAnalyticsSpecs()),
+					AutoScaling:          autoScalingOrDefault(regionConfig.GetAutoScaling()),
+					AnalyticsAutoScaling: autoScalingOrDefault(regionConfig.GetAnalyticsAutoScaling()),
 				},
 			)
 		}
@@ -934,14 +935,15 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 			regionConfigs = append(
 				regionConfigs,
 				admin.CloudRegionConfig20240805{
-					ProviderName:        pointer.MakePtrOrNil(regionConfig.ProviderName),
-					BackingProviderName: pointer.MakePtrOrNil(regionConfig.BackingProviderName),
-					RegionName:          pointer.MakePtrOrNil(regionConfig.RegionName),
-					Priority:            regionConfig.Priority,
-					ElectableSpecs:      hSpecOrDefault(regionConfig.ElectableSpecs, regionConfig.ProviderName),
-					ReadOnlySpecs:       dHSpecOrDefault(regionConfig.ReadOnlySpecs, regionConfig.ProviderName),
-					AnalyticsSpecs:      dHSpecOrDefault(regionConfig.AnalyticsSpecs, regionConfig.ProviderName),
-					AutoScaling:         autoScalingOrDefault(regionConfig.AutoScaling),
+					ProviderName:         pointer.MakePtrOrNil(regionConfig.ProviderName),
+					BackingProviderName:  pointer.MakePtrOrNil(regionConfig.BackingProviderName),
+					RegionName:           pointer.MakePtrOrNil(regionConfig.RegionName),
+					Priority:             regionConfig.Priority,
+					ElectableSpecs:       hSpecOrDefault(regionConfig.ElectableSpecs, regionConfig.ProviderName),
+					ReadOnlySpecs:        dHSpecOrDefault(regionConfig.ReadOnlySpecs, regionConfig.ProviderName),
+					AnalyticsSpecs:       dHSpecOrDefault(regionConfig.AnalyticsSpecs, regionConfig.ProviderName),
+					AutoScaling:          autoScalingOrDefault(regionConfig.AutoScaling),
+					AnalyticsAutoScaling: autoScalingOrDefault(regionConfig.AnalyticsAutoScaling),
 				},
 			)
 		}

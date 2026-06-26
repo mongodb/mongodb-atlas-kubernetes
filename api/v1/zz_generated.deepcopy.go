@@ -233,6 +233,11 @@ func (in *AdvancedRegionConfig) DeepCopyInto(out *AdvancedRegionConfig) {
 		*out = new(AdvancedAutoScalingSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AnalyticsAutoScaling != nil {
+		in, out := &in.AnalyticsAutoScaling, &out.AnalyticsAutoScaling
+		*out = new(AdvancedAutoScalingSpec)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Priority != nil {
 		in, out := &in.Priority, &out.Priority
 		*out = new(int)
