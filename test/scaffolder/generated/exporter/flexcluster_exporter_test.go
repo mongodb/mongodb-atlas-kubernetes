@@ -20,14 +20,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/crd2go/crapi"
+	"github.com/crd2go/crapi/refs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admin "go.mongodb.org/atlas-sdk/v20250312021/admin"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi/refs"
 )
 
 // mockFlexClustersApi implements admin.FlexClustersApi for testing.

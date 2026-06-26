@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	translatorImportPath = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/crapi"
+	translatorImportPath = "github.com/crd2go/crapi"
 	objectImportPath     = "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

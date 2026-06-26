@@ -22,8 +22,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3
 	github.com/aws/smithy-go v1.27.2
 	github.com/crd2go/constate v0.0.0-20260611090334-e608f57526c8
+	github.com/crd2go/crapi v0.0.0-20260612161710-1703b69b42e4
 	github.com/crd2go/crd2go v0.0.0-20251126083728-1b00be879b92
-	github.com/getkin/kin-openapi v0.140.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-test/deep v1.1.1
 	github.com/google/go-cmp v0.7.0
@@ -35,6 +35,7 @@ require (
 	github.com/sethvargo/go-password v0.3.1
 	github.com/stretchr/testify v1.11.1
 	github.com/yudai/gojsondiff v1.0.0
+	go.mongodb.org/atlas-sdk/v20250312020 v20250312020.1.0
 	go.mongodb.org/atlas-sdk/v20250312021 v20250312021.0.0
 	go.mongodb.org/mongo-driver v1.17.9
 	go.uber.org/zap v1.28.0
@@ -77,6 +78,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
+	github.com/getkin/kin-openapi v0.140.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
