@@ -473,7 +473,6 @@ func GetAtlasRegionByProvider(cloudProvider string) (string, error) {
 			"SA_EAST_1",      // South America - São Paulo
 			"EU_NORTH_1",     // Europe - Stockholm
 			"EU_WEST_3",      // Europe - Paris
-			"ME_SOUTH_1",     // Middle East - Bahrain
 			"AP_SOUTH_2",     // Asia - Hyderabad
 			"AP_NORTHEAST_2", // Asia - Seoul
 			"AP_SOUTHEAST_2", // Oceania - Sydney
@@ -522,7 +521,6 @@ func MapCloudProviderRegion(cloudProvider, atlasRegion string) string {
 			"SA_EAST_1":      "sa-east-1",      // South America - São Paulo
 			"EU_NORTH_1":     "eu-north-1",     // Europe - Stockholm
 			"EU_WEST_3":      "eu-west-3",      // Europe - Paris
-			"ME_SOUTH_1":     "me-south-1",     // Middle East - Bahrain
 			"AP_SOUTH_2":     "ap-south-2",     // Asia - Hyderabad
 			"AP_NORTHEAST_2": "ap-northeast-2", // Asia - Seoul
 			"AP_SOUTHEAST_2": "ap-southeast-2", // Oceania - Sydney
