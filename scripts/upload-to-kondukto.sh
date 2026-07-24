@@ -29,7 +29,7 @@ set -euo pipefail
 ###
 
 # Constants
-registry=artifactory.corp.mongodb.com/release-tools-container-registry-public-local
+registry=901841024863.dkr.ecr.us-east-1.amazonaws.com/release-infrastructure
 silkbomb_img="${registry}/silkbomb:2.0"
 docker_platform="linux/amd64"
 
@@ -47,6 +47,13 @@ arch=$(jq -r < "${sbom_lite_json}" '.components[0].properties[] | select( .name 
 kondukto_branch="${kondukto_branch_prefix}-linux-${arch}"
 
 echo "Computed Kondukto branch: ${kondukto_branch}"
+
+# In CI the workflow already authenticates to ECR via OIDC; locally we log in ourselves.
+if [ "${CI:-}" != "true" ]; then
+  profile="${DEVPROD_PLATFORMS_ECR_AWS_PROFILE:-ECRScopedAccess-901841024863}"
+  aws ecr get-login-password --region us-east-1 --profile "${profile}" |
+    docker login --username AWS --password-stdin 901841024863.dkr.ecr.us-east-1.amazonaws.com
+fi
 
 # Upload
 docker run --platform="${docker_platform}" --rm -v "${PWD}":/pwd \

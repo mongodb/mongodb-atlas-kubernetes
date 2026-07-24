@@ -38,6 +38,13 @@ SIGNING_ENVFILE="${TMPDIR}/signing-envfile"
   echo "COSIGN_REPOSITORY=${SIGNATURE_REPO}";
 }  > "${SIGNING_ENVFILE}"
 
+# In CI the workflow already authenticates to ECR via OIDC; locally we log in ourselves.
+if [ "${CI:-}" != "true" ]; then
+  profile="${DEVPROD_PLATFORMS_ECR_AWS_PROFILE:-ECRScopedAccess-901841024863}"
+  aws ecr get-login-password --region us-east-1 --profile "${profile}" |
+    docker login --username AWS --password-stdin 901841024863.dkr.ecr.us-east-1.amazonaws.com
+fi
+
 docker run \
   --platform linux/amd64 \
   --env-file="${SIGNING_ENVFILE}" \
@@ -45,7 +52,7 @@ docker run \
   --rm \
   -v "$(pwd):$(pwd)" \
   -w "$(pwd)" \
-  artifactory.corp.mongodb.com/release-tools-container-registry-local/garasign-cosign \
+  901841024863.dkr.ecr.us-east-1.amazonaws.com/release-infrastructure/garasign-cosign \
   cosign sign --key "${PKCS11_URI}" \
   --tlog-upload=false --use-signing-config=false --new-bundle-format=false "${img}" && \
   echo "✍️  Signed"
