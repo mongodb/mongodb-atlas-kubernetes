@@ -122,6 +122,10 @@ jobs:
     name: Release images
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     needs:
     - image2commit
     - compute-repo
@@ -175,12 +179,16 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Log in to Artifactory
+      - name: Configure AWS credentials for DevProd Platforms ECR
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEVPROD_PLATFORMS_ECR_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Log in to DevProd Platforms ECR
         uses: docker/login-action@v4
         with:
-          registry: artifactory.corp.mongodb.com
-          username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
-          password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
+          registry: 901841024863.dkr.ecr.us-east-1.amazonaws.com
 
       # Prepare release PR: checkout branch, build artifacts, and create PR
       # This combines: prepare-released-branch + build-release-pr + create-release-pr

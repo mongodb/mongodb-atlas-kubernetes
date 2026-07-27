@@ -56,6 +56,9 @@ jobs:
   build-and-publish-image:
     environment: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     needs:
       - read-versions
     env:
@@ -210,13 +213,17 @@ jobs:
             ${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
-      - name: Login to artifactory.corp.mongodb.com
+      - name: Configure AWS credentials for DevProd Platforms ECR
+        if: steps.check-signing-support.outputs.sign == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEVPROD_PLATFORMS_ECR_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Login to DevProd Platforms ECR
         if: steps.check-signing-support.outputs.sign == 'true'
         uses: docker/login-action@v4
         with:
-          registry: artifactory.corp.mongodb.com
-          username: ${{ secrets.MDB_ARTIFACTORY_USERNAME }}
-          password: ${{ secrets.MDB_ARTIFACTORY_PASSWORD }}
+          registry: 901841024863.dkr.ecr.us-east-1.amazonaws.com
       - name: Sign images (Non Devbox)
         if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'false'
         env:
