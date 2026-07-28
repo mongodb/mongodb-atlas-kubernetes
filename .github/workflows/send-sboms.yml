@@ -30,7 +30,7 @@ jobs:
         enable-cache: 'true'
 
     - name: Configure AWS credentials for DevProd Platforms ECR
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6
       with:
         role-to-assume: ${{ secrets.DEVPROD_PLATFORMS_ECR_ROLE_ARN }}
         aws-region: us-east-1
