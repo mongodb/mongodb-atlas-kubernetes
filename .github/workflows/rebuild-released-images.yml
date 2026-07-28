@@ -116,6 +116,11 @@ jobs:
           else
             echo "sign=false" >> $GITHUB_OUTPUT
           fi
+      - name: Update signing scripts from main
+        if: steps.check-signing-support.outputs.sign == 'true'
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- scripts/sign.sh scripts/sign-multiarch.sh scripts/verify.sh
       - name: Check for devbox
         id: check-devbox
         run: |
