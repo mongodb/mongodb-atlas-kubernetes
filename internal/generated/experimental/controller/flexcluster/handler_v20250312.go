@@ -22,7 +22,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,7 +70,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex create description: %w", err))
 	}
 
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.CreateFlexClusterWithParams(ctx, params).Execute()
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.CreateFlexClusterWithParams(ctx, params).Execute()
 	if v20250312sdk.IsErrorCode(err, "DUPLICATE_CLUSTER_NAME") {
 		// Only recover if a previous reconcile already wrote the Atlas ID to status — confirming we
 		// own this cluster. If status has no ID, the name conflict is either genuine (a pre-existing
@@ -83,7 +83,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 		if translateErr := h.translator.ToAPI(getParams, flexcluster, deps...); translateErr != nil {
 			return result.Error(state.StateInitial, fmt.Errorf("failed to translate get params for existing cluster: %w", translateErr))
 		}
-		atlasFlexCluster, _, err = h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, getParams).Execute()
+		atlasFlexCluster, _, err = h.atlasClient.FlexClustersAPI.GetFlexClusterWithParams(ctx, getParams).Execute()
 		if err != nil {
 			return result.Error(state.StateInitial, fmt.Errorf("failed to get existing flex cluster: %w", err))
 		}
@@ -168,7 +168,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
-	_, err = h.atlasClient.FlexClustersApi.DeleteFlexClusterWithParams(ctx, params).Execute()
+	_, err = h.atlasClient.FlexClustersAPI.DeleteFlexClusterWithParams(ctx, params).Execute()
 
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
@@ -192,7 +192,7 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov
 		return result.Error(state.StateDeleting, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.GetFlexClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
@@ -263,7 +263,7 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 		return result.Error(currentState, fmt.Errorf("failed to translate update flex cluster description: %w", err))
 	}
 
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.UpdateFlexClusterWithParams(ctx, params).Execute()
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.UpdateFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to get update cluster: %w", err))
 	}
@@ -294,7 +294,7 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, flexcluster *akov2ge
 		return nil, fmt.Errorf("failed to translate update flex cluster parameters: %w", err)
 	}
 
-	atlasFlexCluster, _, err := h.atlasClient.FlexClustersApi.GetFlexClusterWithParams(ctx, params).Execute()
+	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.GetFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster: %w", err)
 	}

@@ -65,9 +65,20 @@ type V20250312Entry struct {
 	// carry a risk of data loss if replicated writes (even majority committed writes)
 	// have not been replicated to the new primary node. MongoDB Atlas docs contain
 	// more information. To proceed with an operation which carries that risk, set
-	// **acceptDataRisksAndForceReplicaSetReconfig** to the current date. This
-	// parameter expresses its value in the ISO 8601 timestamp format in UTC.
+	// `acceptDataRisksAndForceReplicaSetReconfig` to the current date. This parameter
+	// expresses its value in the ISO 8601 timestamp format in UTC.
 	AcceptDataRisksAndForceReplicaSetReconfig *string `json:"acceptDataRisksAndForceReplicaSetReconfig,omitempty"`
+
+	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
+	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
+	// Adaptive capacity enables fallback hardware selection when the primary instance
+	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
+	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
+	// cluster receives capacity errors instead of being placed on fallback hardware.
+	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
+	// default when the feature is enabled at the group level. Setting this field for
+	// single-cloud AWS or GCP clusters is a no-op.
+	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
 
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
 	// configuration details.
@@ -88,13 +99,11 @@ type V20250312Entry struct {
 	// ClusterType Configuration of nodes that comprise the cluster.
 	ClusterType *string `json:"clusterType,omitempty"`
 
-	/*
-	   ConfigServerManagementMode Config Server Management Mode for creating or updating a sharded cluster.
-
-	   When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
-
-	   When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
-	*/
+	// ConfigServerManagementMode Config Server Management Mode for creating or
+	// updating a sharded cluster. When configured as `ATLAS_MANAGED`, Atlas may
+	// automatically switch the cluster's config server type for optimal performance
+	// and savings. When configured as `FIXED_TO_DEDICATED`, the cluster will always
+	// use a dedicated config server.
 	ConfigServerManagementMode *string `json:"configServerManagementMode,omitempty"`
 
 	// ConfigServerType Describes a sharded cluster's config server type.
@@ -106,8 +115,8 @@ type V20250312Entry struct {
 	// EncryptionAtRestProvider Cloud service provider that manages your customer keys
 	// to provide an additional layer of encryption at rest for the cluster. To enable
 	// customer key management for encryption at rest, the cluster
-	// **replicationSpecs[n].regionConfigs[m].{type}Specs.instanceSize** setting must
-	// be `M10` or higher and `"backupEnabled" : false` or omitted entirely.
+	// `replicationSpecs[n].regionConfigs[m].{type}Specs.instanceSize` setting must be
+	// `M10` or higher and `"backupEnabled" : false` or omitted entirely.
 	EncryptionAtRestProvider *string `json:"encryptionAtRestProvider,omitempty"`
 
 	/*
@@ -165,11 +174,11 @@ type V20250312Entry struct {
 	/*
 	   ReplicaSetScalingStrategy Set this field to configure the replica set scaling mode for your cluster.
 
-	   By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+	   By default, Atlas scales under `WORKLOAD_TYPE`. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
 
-	   When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+	   When configured as `SEQUENTIAL`, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
 
-	   When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+	   When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
 	*/
 	ReplicaSetScalingStrategy *string `json:"replicaSetScalingStrategy,omitempty"`
 
@@ -201,17 +210,19 @@ type V20250312Entry struct {
 	UseAwsTimeBasedSnapshotCopyForFastInitialSync *bool `json:"useAwsTimeBasedSnapshotCopyForFastInitialSync,omitempty"`
 
 	// VersionReleaseSystem Method by which the cluster maintains the MongoDB versions.
-	// If value is `CONTINUOUS`, you must not specify **mongoDBMajorVersion**.
+	// If value is `CONTINUOUS`, you must not specify `mongoDBMajorVersion`.
 	VersionReleaseSystem *string `json:"versionReleaseSystem,omitempty"`
 }
 
 type AdvancedConfiguration struct {
 	// CustomOpensslCipherConfigTls12 The custom OpenSSL cipher suite list for TLS 1.2.
-	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	// Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is
+	// omitted, supplying a non-empty list infers `CUSTOM`.
 	CustomOpensslCipherConfigTls12 *[]string `json:"customOpensslCipherConfigTls12,omitempty"`
 
 	// CustomOpensslCipherConfigTls13 The custom OpenSSL cipher suite list for TLS 1.3.
-	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	// Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is
+	// omitted, supplying a non-empty list infers `CUSTOM`.
 	CustomOpensslCipherConfigTls13 *[]string `json:"customOpensslCipherConfigTls13,omitempty"`
 
 	// MinimumEnabledTlsProtocol Minimum Transport Layer Security (TLS) version that
@@ -266,11 +277,11 @@ type Links struct {
 
 type ReplicationSpecs struct {
 	/*
-	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
 
 	   **Example:**
 
-	   If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+	   If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
 	*/
 	RegionConfigs *[]RegionConfigs `json:"regionConfigs,omitempty"`
 
@@ -279,8 +290,8 @@ type ReplicationSpecs struct {
 	ZoneId *string `json:"zoneId,omitempty"`
 
 	// ZoneName Human-readable label that describes the zone this shard belongs to in a
-	// Global Cluster. Provide this value only if "clusterType" : "GEOSHARDED" but not
-	// "selfManagedSharding" : true.
+	// Global Cluster. Provide this value only if `clusterType` : `GEOSHARDED` but not
+	// `selfManagedSharding` : `true`.
 	ZoneName *string `json:"zoneName,omitempty"`
 }
 
@@ -297,9 +308,9 @@ type RegionConfigs struct {
 	AutoScaling *AnalyticsAutoScaling `json:"autoScaling,omitempty"`
 
 	/*
-	   BackingProviderName Cloud service provider on which MongoDB Cloud provisioned the multi-tenant cluster. The resource returns this parameter when **providerName** is `TENANT` and **electableSpecs.instanceSize** is `M0`, `M2` or `M5`.
+	   BackingProviderName Cloud service provider on which MongoDB Cloud provisioned the multi-tenant cluster. The resource returns this parameter when `providerName` is `TENANT` and `electableSpecs.instanceSize` is `M0`, `M2` or `M5`.
 
-	   Please note that  using an instanceSize of M2 or M5 will create a Flex cluster instead. Support for the instanceSize of M2 or M5 will be discontinued in January 2026. We recommend using the createFlexCluster API for such configurations moving forward.
+	   Please note that  using an `instanceSize` of `M2` or `M5` will create a Flex cluster instead. Support for the `instanceSize` of `M2` or `M5` will be discontinued in January 2026. We recommend using the Create Flex Cluster API for such configurations moving forward.
 	*/
 	BackingProviderName *string `json:"backingProviderName,omitempty"`
 
@@ -310,7 +321,7 @@ type RegionConfigs struct {
 	ElectableSpecs *ElectableSpecs `json:"electableSpecs,omitempty"`
 
 	/*
-	   Priority Precedence is given to this region when a primary election occurs. If your **regionConfigs** has only **readOnlySpecs**, **analyticsSpecs**, or both, set this value to `0`. If you have multiple **regionConfigs** objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
+	   Priority Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
 
 	   **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
 	*/
@@ -351,7 +362,7 @@ type Compute struct {
 	/*
 	   Enabled Flag that indicates whether instance size reactive auto-scaling is enabled.
 
-	   - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for **replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize**.
+	   - Set to `true` to enable instance size reactive auto-scaling. If enabled, you must specify a value for `replicationSpecs[n].regionConfigs[m].autoScaling.compute.maxInstanceSize`.
 	   - Set to `false` to disable instance size reactive auto-scaling.
 	*/
 	Enabled *bool `json:"enabled,omitempty"`
@@ -366,9 +377,9 @@ type Compute struct {
 
 	// ScaleDownEnabled Flag that indicates whether the instance size may scale down
 	// via reactive auto-scaling. MongoDB Cloud requires this parameter if
-	// **replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled** is `true`.
-	// If you enable this option, specify a value for
-	// **replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize**.
+	// `replicationSpecs[n].regionConfigs[m].autoScaling.compute.enabled` is `true`. If
+	// you enable this option, specify a value for
+	// `replicationSpecs[n].regionConfigs[m].autoScaling.compute.minInstanceSize`.
 	ScaleDownEnabled *bool `json:"scaleDownEnabled,omitempty"`
 }
 
@@ -383,10 +394,10 @@ type AnalyticsSpecs struct {
 	/*
 	   DiskIOPS Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+	   - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+	   - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-	   The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+	   The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
 	   This parameter defaults to the cluster tier's standard IOPS value.
 	   Changing this value impacts cluster cost.
 	*/
@@ -399,7 +410,7 @@ type AnalyticsSpecs struct {
 
 	    This value is not configurable on M0/M2/M5 clusters.
 
-	    MongoDB Cloud requires this parameter if you set **replicationSpecs**.
+	    MongoDB Cloud requires this parameter if you set `replicationSpecs`.
 
 	    If you specify a disk size below the minimum (10 GB), this parameter defaults to the minimum disk size value.
 
@@ -409,12 +420,20 @@ type AnalyticsSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
+	// DiskThroughput Target throughput desired for storage attached to this hardware.
+	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	DiskThroughput *int `json:"diskThroughput,omitempty"`
+
 	/*
 	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
 
 	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
 
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
+	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+	   - `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+	   NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.
 	*/
 	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
 
@@ -435,10 +454,10 @@ type ElectableSpecs struct {
 	/*
 	   DiskIOPS Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
 
-	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "Azure"`.
-	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : "M40"` or greater not including `Mxx_NVME` tiers.
+	   - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
+	   - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
 
-	   The maximum input/output operations per second (IOPS) depend on the selected **.instanceSize** and **.diskSizeGB**.
+	   The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
 	   This parameter defaults to the cluster tier's standard IOPS value.
 	   Changing this value impacts cluster cost.
 	*/
@@ -451,7 +470,7 @@ type ElectableSpecs struct {
 
 	    This value is not configurable on M0/M2/M5 clusters.
 
-	    MongoDB Cloud requires this parameter if you set **replicationSpecs**.
+	    MongoDB Cloud requires this parameter if you set `replicationSpecs`.
 
 	    If you specify a disk size below the minimum (10 GB), this parameter defaults to the minimum disk size value.
 
@@ -461,12 +480,20 @@ type ElectableSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
+	// DiskThroughput Target throughput desired for storage attached to this hardware.
+	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	DiskThroughput *int `json:"diskThroughput,omitempty"`
+
 	/*
 	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
 
 	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
 
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
+	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+	   - `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+	   NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.
 	*/
 	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
 
@@ -494,17 +521,26 @@ type ClusterStatus struct {
 }
 
 type ClusterStatusV20250312 struct {
+	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
+	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
+	// Adaptive capacity enables fallback hardware selection when the primary instance
+	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
+	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
+	// cluster receives capacity errors instead of being placed on fallback hardware.
+	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
+	// default when the feature is enabled at the group level. Setting this field for
+	// single-cloud AWS or GCP clusters is a no-op.
+	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
+
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
 	// configuration details.
 	AdvancedConfiguration *AdvancedConfiguration `json:"advancedConfiguration,omitempty"`
 
-	/*
-	   ConfigServerManagementMode Config Server Management Mode for creating or updating a sharded cluster.
-
-	   When configured as ATLAS_MANAGED, atlas may automatically switch the cluster's config server type for optimal performance and savings.
-
-	   When configured as FIXED_TO_DEDICATED, the cluster will always use a dedicated config server.
-	*/
+	// ConfigServerManagementMode Config Server Management Mode for creating or
+	// updating a sharded cluster. When configured as `ATLAS_MANAGED`, Atlas may
+	// automatically switch the cluster's config server type for optimal performance
+	// and savings. When configured as `FIXED_TO_DEDICATED`, the cluster will always
+	// use a dedicated config server.
 	ConfigServerManagementMode *string `json:"configServerManagementMode,omitempty"`
 
 	// ConfigServerType Describes a sharded cluster's config server type.
@@ -517,6 +553,12 @@ type ClusterStatusV20250312 struct {
 	// CreateDate Date and time when MongoDB Cloud created this cluster. This parameter
 	// expresses its value in ISO 8601 format in UTC.
 	CreateDate *string `json:"createDate,omitempty"`
+
+	// EffectiveReplicationSpecs List of settings that represent the actual cluster
+	// state. This is read-only and always returned in the response. It reflects the
+	// current cluster configuration, which may differ from `replicationSpecs` due to
+	// system-managed changes.
+	EffectiveReplicationSpecs *[]EffectiveReplicationSpecs `json:"effectiveReplicationSpecs,omitempty"`
 
 	// FeatureCompatibilityVersion Feature compatibility version of the cluster. This
 	// will always appear regardless of whether FCV is pinned.
@@ -545,8 +587,8 @@ type ClusterStatusV20250312 struct {
 	Id *string `json:"id,omitempty"`
 
 	// InternalClusterRole Internal classification of the cluster's role. Possible
-	// values: NONE (regular user cluster), SYSTEM_CLUSTER (system cluster for backup),
-	// INTERNAL_SHADOW_CLUSTER (internal use shadow cluster for testing).
+	// values: `NONE` (regular user cluster), `SYSTEM_CLUSTER` (system cluster for
+	// backup), `INTERNAL_SHADOW_CLUSTER` (internal use shadow cluster for testing).
 	InternalClusterRole *string `json:"internalClusterRole,omitempty"`
 
 	// MongoDBEmployeeAccessGrant MongoDB employee granted access level and expiration
@@ -570,18 +612,13 @@ type ClusterStatusV20250312 struct {
 	/*
 	   ReplicaSetScalingStrategy Set this field to configure the replica set scaling mode for your cluster.
 
-	   By default, Atlas scales under WORKLOAD_TYPE. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
+	   By default, Atlas scales under `WORKLOAD_TYPE`. This mode allows Atlas to scale your analytics nodes in parallel to your operational nodes.
 
-	   When configured as SEQUENTIAL, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
+	   When configured as `SEQUENTIAL`, Atlas scales all nodes sequentially. This mode is intended for steady-state workloads and applications performing latency-sensitive secondary reads.
 
-	   When configured as NODE_TYPE, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
+	   When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel with your read-only and analytics nodes. This mode is intended for large, dynamic workloads requiring frequent and timely cluster tier scaling. This is the fastest scaling strategy, but it might impact latency of workloads when performing extensive secondary reads.
 	*/
 	ReplicaSetScalingStrategy *string `json:"replicaSetScalingStrategy,omitempty"`
-
-	// ReplicationSpecs List of settings that configure your cluster regions. This
-	// array has one object per shard representing node configurations in each shard.
-	// For replica sets there is only one object representing node configurations.
-	ReplicationSpecs *[]V20250312ReplicationSpecs `json:"replicationSpecs,omitempty"`
 
 	// RetainBackups Flag that indicates whether the cluster retains backups.
 	RetainBackups *bool `json:"retainBackups,omitempty"`
@@ -625,9 +662,9 @@ type ConnectionStrings struct {
 	// Name System (DNS). This list synchronizes with the nodes in a cluster. If the
 	// connection string uses this Uniform Resource Identifier (URI) format, you don't
 	// need to append the seed list or change the URI if the nodes change. Use this URI
-	// format if your driver supports it. If it doesn't, use connectionStrings.private.
-	// For Amazon Web Services (AWS) clusters, this resource returns this parameter
-	// only if you enable custom DNS.
+	// format if your driver supports it. If it doesn't, use
+	// `connectionStrings.private`. For Amazon Web Services (AWS) clusters, this
+	// resource returns this parameter only if you enable custom DNS.
 	Private *string `json:"private,omitempty"`
 
 	// PrivateEndpoint List of private endpoint-aware connection strings that you can
@@ -666,8 +703,8 @@ type PrivateEndpoint struct {
 
 	// Endpoints List that contains the private endpoints through which you connect to
 	// MongoDB Cloud when you use
-	// **connectionStrings.privateEndpoint[n].connectionString** or
-	// **connectionStrings.privateEndpoint[n].srvConnectionString**.
+	// `connectionStrings.privateEndpoint[n].connectionString` or
+	// `connectionStrings.privateEndpoint[n].srvConnectionString`.
 	Endpoints *[]Endpoints `json:"endpoints,omitempty"`
 
 	// SrvConnectionString Private endpoint-aware connection string that uses the
@@ -678,7 +715,7 @@ type PrivateEndpoint struct {
 	// (URI) format, you don't need to append the seed list or change the Uniform
 	// Resource Identifier (URI) if the nodes change. Use this Uniform Resource
 	// Identifier (URI) format if your application supports it. If it doesn't, use
-	// connectionStrings.privateEndpoint[n].connectionString.
+	// `connectionStrings.privateEndpoint[n].connectionString`.
 	SrvConnectionString *string `json:"srvConnectionString,omitempty"`
 
 	// SrvShardOptimizedConnectionString Private endpoint-aware connection string
@@ -688,7 +725,7 @@ type PrivateEndpoint struct {
 	// Uniform Resource Identifier (URI) if the nodes change. Use this Uniform Resource
 	// Identifier (URI) format if your application and Atlas cluster supports it. If it
 	// doesn't, use and consult the documentation for
-	// connectionStrings.privateEndpoint[n].srvConnectionString.
+	// `connectionStrings.privateEndpoint[n].srvConnectionString`.
 	SrvShardOptimizedConnectionString *string `json:"srvShardOptimizedConnectionString,omitempty"`
 
 	// Type MongoDB process type to which your application connects. Use `MONGOD` for
@@ -708,7 +745,7 @@ type Endpoints struct {
 	Region *string `json:"region,omitempty"`
 }
 
-type V20250312ReplicationSpecs struct {
+type EffectiveReplicationSpecs struct {
 	// Id Unique 24-hexadecimal digit string that identifies the replication object for
 	// a shard in a Cluster. If you include existing shard replication configurations
 	// in the request, you must specify this parameter. If you add a new shard to an
@@ -718,20 +755,43 @@ type V20250312ReplicationSpecs struct {
 	Id *string `json:"id,omitempty"`
 
 	/*
-	   RegionConfigs Hardware specifications for nodes set for a given region. Each **regionConfigs** object must be unique by region and cloud provider within the **replicationSpec**. Each **regionConfigs** object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each **regionConfigs** object must have either an **analyticsSpecs** object, **electableSpecs** object, or **readOnlySpecs** object. Tenant clusters only require **electableSpecs. Dedicated** clusters can specify any of these specifications, but must have at least one **electableSpecs** object within a **replicationSpec**.
+	   RegionConfigs Hardware specifications for nodes set for a given region. Each `regionConfigs` object must be unique by region and cloud provider within the `replicationSpec`. Each `regionConfigs` object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region. Each `regionConfigs` object must have either an `analyticsSpecs` object, `electableSpecs` object, or `readOnlySpecs` object. Tenant clusters only require `electableSpecs`. Dedicated clusters can specify any of these specifications, but must have at least one `electableSpecs` object within a `replicationSpec`.
 
 	   **Example:**
 
-	   If you set `"replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize" : "M30"`, set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize" : `"M30"` if you have electable nodes and `"replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize" : `"M30"` if you have read-only nodes.
+	   If you set `replicationSpecs[n].regionConfigs[m].analyticsSpecs.instanceSize` : `M30`, set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M30` if you have electable nodes and `replicationSpecs[n].regionConfigs[m].readOnlySpecs.instanceSize` : `M30` if you have read-only nodes.
 	*/
-	RegionConfigs *[]ReplicationSpecsRegionConfigs `json:"regionConfigs,omitempty"`
+	RegionConfigs *[]EffectiveReplicationSpecsRegionConfigs `json:"regionConfigs,omitempty"`
 
 	// ZoneId Unique 24-hexadecimal digit string that identifies the zone in a Global
 	// Cluster. This value can be used to configure Global Cluster backup policies.
 	ZoneId *string `json:"zoneId,omitempty"`
+
+	// ZoneName Human-readable label that describes the zone this shard belongs to in a
+	// Global Cluster. Provide this value only if `clusterType` : `GEOSHARDED` but not
+	// `selfManagedSharding` : `true`.
+	ZoneName *string `json:"zoneName,omitempty"`
 }
 
-type ReplicationSpecsRegionConfigs struct {
+type EffectiveReplicationSpecsRegionConfigs struct {
+	// AnalyticsAutoScaling Options that determine how this cluster handles resource
+	// scaling.
+	AnalyticsAutoScaling *AnalyticsAutoScaling `json:"analyticsAutoScaling,omitempty"`
+
+	// AnalyticsSpecs The current hardware specifications for read only nodes in the
+	// region.
+	AnalyticsSpecs *AnalyticsSpecs `json:"analyticsSpecs,omitempty"`
+
+	// AutoScaling Options that determine how this cluster handles resource scaling.
+	AutoScaling *AnalyticsAutoScaling `json:"autoScaling,omitempty"`
+
+	/*
+	   BackingProviderName Cloud service provider on which MongoDB Cloud provisioned the multi-tenant cluster. The resource returns this parameter when `providerName` is `TENANT` and `electableSpecs.instanceSize` is `M0`, `M2` or `M5`.
+
+	   Please note that  using an `instanceSize` of `M2` or `M5` will create a Flex cluster instead. Support for the `instanceSize` of `M2` or `M5` will be discontinued in January 2026. We recommend using the Create Flex Cluster API for such configurations moving forward.
+	*/
+	BackingProviderName *string `json:"backingProviderName,omitempty"`
+
 	// EffectiveAnalyticsSpecs The current hardware specifications for read only nodes
 	// in the region.
 	EffectiveAnalyticsSpecs *AnalyticsSpecs `json:"effectiveAnalyticsSpecs,omitempty"`
@@ -743,6 +803,41 @@ type ReplicationSpecsRegionConfigs struct {
 	// EffectiveReadOnlySpecs The current hardware specifications for read only nodes
 	// in the region.
 	EffectiveReadOnlySpecs *AnalyticsSpecs `json:"effectiveReadOnlySpecs,omitempty"`
+
+	// ElectableSpecs Hardware specifications for all electable nodes deployed in the
+	// region. Electable nodes can become the primary and can enable local reads. If
+	// you don't specify this option, MongoDB Cloud deploys no electable nodes to the
+	// region.
+	ElectableSpecs *ElectableSpecs `json:"electableSpecs,omitempty"`
+
+	/*
+	   Priority Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
+
+	   **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
+	*/
+	Priority *int `json:"priority,omitempty"`
+
+	// ProviderName Cloud service provider on which MongoDB Cloud provisions the hosts.
+	// Set dedicated clusters to `AWS`, `GCP`, `AZURE` or `TENANT`.
+	ProviderName *string `json:"providerName,omitempty"`
+
+	// ReadOnlySpecs The current hardware specifications for read only nodes in the
+	// region.
+	ReadOnlySpecs *AnalyticsSpecs `json:"readOnlySpecs,omitempty"`
+
+	// RegionName Physical location of your MongoDB cluster nodes. The region you
+	// choose can affect network latency for clients accessing your databases. The
+	// region name is only returned in the response for single-region clusters. When
+	// MongoDB Cloud deploys a dedicated cluster, it checks if a VPC or VPC connection
+	// exists for that provider and region. If not, MongoDB Cloud creates them as part
+	// of the deployment. It assigns the VPC a Classless Inter-Domain Routing (CIDR)
+	// block. To limit a new VPC peering connection to one Classless Inter-Domain
+	// Routing (CIDR) block and region, create the connection first. Deploy the cluster
+	// after the connection starts. GCP Clusters and Multi-region clusters require one
+	// VPC peering connection for each region. MongoDB nodes can use only the peering
+	// connection that resides in the same region as the nodes to communicate with the
+	// peered VPC.
+	RegionName *string `json:"regionName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

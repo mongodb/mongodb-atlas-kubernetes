@@ -76,7 +76,7 @@ type Entry struct {
 	Tags *[]Tags `json:"tags,omitempty"`
 
 	// WithDefaultAlertsSettings Flag that indicates whether to create the project with
-	// default alert settings. This setting cannot be updated after project creation.
+	// default alert settings.
 	WithDefaultAlertsSettings *bool `json:"withDefaultAlertsSettings,omitempty"`
 }
 
