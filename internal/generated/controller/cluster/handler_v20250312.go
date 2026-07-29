@@ -21,7 +21,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -81,7 +81,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
 	}
 
-	response, _, err := h.atlasClient.ClustersApi.CreateClusterWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ClustersAPI.CreateClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create cluster: %w", err))
 	}
@@ -116,7 +116,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *a
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	response, _, err := h.atlasClient.ClustersApi.GetClusterWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Cluster with id %s: %w", id, err))
 	}
@@ -151,7 +151,7 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	atlasCluster, _, err := h.atlasClient.ClustersApi.GetClusterWithParams(ctx, params).Execute()
+	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateCreating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
@@ -181,7 +181,7 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	atlasCluster, _, err := h.atlasClient.ClustersApi.GetClusterWithParams(ctx, params).Execute()
+	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateUpdating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
@@ -217,7 +217,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster 
 		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	_, err = h.atlasClient.ClustersApi.DeleteClusterWithParams(ctx, params).Execute()
+	_, err = h.atlasClient.ClustersAPI.DeleteClusterWithParams(ctx, params).Execute()
 	if v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
 		return result.NextState(state.StateDeleted, "Cluster deleted.")
 	}
@@ -245,7 +245,7 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	atlasCluster, _, err := h.atlasClient.ClustersApi.GetClusterWithParams(ctx, params).Execute()
+	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
@@ -288,7 +288,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		return result.Error(currentState, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
 	}
 
-	response, _, err := h.atlasClient.ClustersApi.UpdateClusterWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ClustersAPI.UpdateClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		if v20250312sdk.IsErrorCode(err, SharedImmutableError) {
 			return result.NextState(currentState, "Shared Cluster is immutable. No update performed.")

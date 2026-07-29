@@ -9,8 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312018/admin
-  creationTimestamp: null
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
   name: groups.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -113,8 +112,7 @@ spec:
                         type: array
                       withDefaultAlertsSettings:
                         description: Flag that indicates whether to create the project
-                          with default alert settings. This setting cannot be updated
-                          after project creation.
+                          with default alert settings.
                         type: boolean
                     required:
                     - name
@@ -229,8 +227,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312018/admin
-  creationTimestamp: null
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
   name: clusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -298,21 +295,36 @@ spec:
                           to the current date. This parameter expresses its value
                           in the ISO 8601 timestamp format in UTC.
                         type: string
+                      adaptiveCapacity:
+                        description: Governs adaptive capacity behavior of Azure nodes
+                          in single-cloud Azure clusters or multi-cloud clusters that
+                          include Azure nodes. Adaptive capacity enables fallback
+                          hardware selection when the primary instance family is unavailable.
+                          ``ENABLED`` means the cluster explicitly opts in to adaptive
+                          capacity. ``DISABLED`` means the cluster explicitly opts
+                          out; the cluster receives capacity errors instead of being
+                          placed on fallback hardware. ``null`` means the field is
+                          unset; Azure clusters use adaptive capacity by default when
+                          the feature is enabled at the group level. Setting this
+                          field for single-cloud AWS or GCP clusters is a no-op.
+                        type: string
                       advancedConfiguration:
                         description: Group of settings that configures a subset of
                           the advanced configuration details.
                         properties:
                           customOpensslCipherConfigTls12:
                             description: The custom OpenSSL cipher suite list for
-                              TLS 1.2. This field is only valid when `tlsCipherConfigMode`
-                              is set to `CUSTOM`.
+                              TLS 1.2. Requires `tlsCipherConfigMode` = `CUSTOM`;
+                              when `tlsCipherConfigMode` is omitted, supplying a non-empty
+                              list infers `CUSTOM`.
                             items:
                               type: string
                             type: array
                           customOpensslCipherConfigTls13:
                             description: The custom OpenSSL cipher suite list for
-                              TLS 1.3. This field is only valid when `tlsCipherConfigMode`
-                              is set to `CUSTOM`.
+                              TLS 1.3. Requires `tlsCipherConfigMode` = `CUSTOM`;
+                              when `tlsCipherConfigMode` is omitted, supplying a non-empty
+                              list infers `CUSTOM`.
                             items:
                               type: string
                             type: array
@@ -598,6 +610,12 @@ spec:
                                           space, consider upgrading your cluster to
                                           a higher tier."
                                         type: number
+                                      diskThroughput:
+                                        description: Target throughput desired for
+                                          storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes with Standard
+                                          (GP3) volume type.
+                                        type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -606,8 +624,11 @@ spec:
                                           (IOPS) rate for the selected volume size.
                                           \n\n- `PROVISIONED` volume types must fall
                                           within the allowable IOPS range for the
-                                          selected volume size. You must set this
-                                          value to (`PROVISIONED`) for NVMe clusters."
+                                          selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                          volume types use IO2 EBS volumes and must
+                                          fall within the allowable IOPS range for
+                                          the selected volume size.\n\nNVMe clusters
+                                          require either `PROVISIONED` or `HIGH_PERFORMANCE`."
                                         type: string
                                       instanceSize:
                                         description: Hardware specification for the
@@ -727,6 +748,12 @@ spec:
                                           space, consider upgrading your cluster to
                                           a higher tier."
                                         type: number
+                                      diskThroughput:
+                                        description: Target throughput desired for
+                                          storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes with Standard
+                                          (GP3) volume type.
+                                        type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -735,8 +762,11 @@ spec:
                                           (IOPS) rate for the selected volume size.
                                           \n\n- `PROVISIONED` volume types must fall
                                           within the allowable IOPS range for the
-                                          selected volume size. You must set this
-                                          value to (`PROVISIONED`) for NVMe clusters."
+                                          selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                          volume types use IO2 EBS volumes and must
+                                          fall within the allowable IOPS range for
+                                          the selected volume size.\n\nNVMe clusters
+                                          require either `PROVISIONED` or `HIGH_PERFORMANCE`."
                                         type: string
                                       effectiveInstanceSize:
                                         description: The true tenant instance size.
@@ -800,6 +830,12 @@ spec:
                                           space, consider upgrading your cluster to
                                           a higher tier."
                                         type: number
+                                      diskThroughput:
+                                        description: Target throughput desired for
+                                          storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes with Standard
+                                          (GP3) volume type.
+                                        type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
                                           attach to your AWS-provisioned cluster.\n\n-
@@ -808,8 +844,11 @@ spec:
                                           (IOPS) rate for the selected volume size.
                                           \n\n- `PROVISIONED` volume types must fall
                                           within the allowable IOPS range for the
-                                          selected volume size. You must set this
-                                          value to (`PROVISIONED`) for NVMe clusters."
+                                          selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                          volume types use IO2 EBS volumes and must
+                                          fall within the allowable IOPS range for
+                                          the selected volume size.\n\nNVMe clusters
+                                          require either `PROVISIONED` or `HIGH_PERFORMANCE`."
                                         type: string
                                       instanceSize:
                                         description: Hardware specification for the
@@ -998,21 +1037,34 @@ spec:
                 description: The last observed Atlas state of the cluster resource
                   for version v20250312.
                 properties:
+                  adaptiveCapacity:
+                    description: Governs adaptive capacity behavior of Azure nodes
+                      in single-cloud Azure clusters or multi-cloud clusters that
+                      include Azure nodes. Adaptive capacity enables fallback hardware
+                      selection when the primary instance family is unavailable. ``ENABLED``
+                      means the cluster explicitly opts in to adaptive capacity. ``DISABLED``
+                      means the cluster explicitly opts out; the cluster receives
+                      capacity errors instead of being placed on fallback hardware.
+                      ``null`` means the field is unset; Azure clusters use adaptive
+                      capacity by default when the feature is enabled at the group
+                      level. Setting this field for single-cloud AWS or GCP clusters
+                      is a no-op.
+                    type: string
                   advancedConfiguration:
                     description: Group of settings that configures a subset of the
                       advanced configuration details.
                     properties:
                       customOpensslCipherConfigTls12:
                         description: The custom OpenSSL cipher suite list for TLS
-                          1.2. This field is only valid when `tlsCipherConfigMode`
-                          is set to `CUSTOM`.
+                          1.2. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode`
+                          is omitted, supplying a non-empty list infers `CUSTOM`.
                         items:
                           type: string
                         type: array
                       customOpensslCipherConfigTls13:
                         description: The custom OpenSSL cipher suite list for TLS
-                          1.3. This field is only valid when `tlsCipherConfigMode`
-                          is set to `CUSTOM`.
+                          1.3. Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode`
+                          is omitted, supplying a non-empty list infers `CUSTOM`.
                         items:
                           type: string
                         type: array
@@ -1319,6 +1371,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1326,8 +1384,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   instanceSize:
                                     description: Hardware specification for the instance
@@ -1437,6 +1498,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1444,8 +1511,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   instanceSize:
                                     description: Hardware specification for the instance
@@ -1497,6 +1567,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1504,8 +1580,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   instanceSize:
                                     description: Hardware specification for the instance
@@ -1557,6 +1636,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1564,8 +1649,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   instanceSize:
                                     description: Hardware specification for the instance
@@ -1620,6 +1708,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1627,8 +1721,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   effectiveInstanceSize:
                                     description: The true tenant instance size. This
@@ -1689,6 +1786,12 @@ spec:
                                       If you require more storage space, consider
                                       upgrading your cluster to a higher tier."
                                     type: number
+                                  diskThroughput:
+                                    description: Target throughput desired for storage
+                                      attached to this hardware. Only returned for
+                                      Gen 2 instance sizes with Standard (GP3) volume
+                                      type.
+                                    type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
                                       to your AWS-provisioned cluster.\n\n- `STANDARD`
@@ -1696,8 +1799,11 @@ spec:
                                       operations per second (IOPS) rate for the selected
                                       volume size. \n\n- `PROVISIONED` volume types
                                       must fall within the allowable IOPS range for
-                                      the selected volume size. You must set this
-                                      value to (`PROVISIONED`) for NVMe clusters."
+                                      the selected volume size.\n\n- `HIGH_PERFORMANCE`
+                                      volume types use IO2 EBS volumes and must fall
+                                      within the allowable IOPS range for the selected
+                                      volume size.\n\nNVMe clusters require either
+                                      `PROVISIONED` or `HIGH_PERFORMANCE`."
                                     type: string
                                   instanceSize:
                                     description: Hardware specification for the instance
@@ -1913,8 +2019,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312018/admin
-  creationTimestamp: null
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
   name: databaseusers.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2270,8 +2375,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312018/admin
-  creationTimestamp: null
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
   name: flexclusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2591,8 +2695,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312018/admin
-  creationTimestamp: null
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
   name: ipaccesslistentries.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com

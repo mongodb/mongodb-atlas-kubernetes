@@ -69,6 +69,17 @@ type V20250312Entry struct {
 	// expresses its value in the ISO 8601 timestamp format in UTC.
 	AcceptDataRisksAndForceReplicaSetReconfig *string `json:"acceptDataRisksAndForceReplicaSetReconfig,omitempty"`
 
+	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
+	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
+	// Adaptive capacity enables fallback hardware selection when the primary instance
+	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
+	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
+	// cluster receives capacity errors instead of being placed on fallback hardware.
+	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
+	// default when the feature is enabled at the group level. Setting this field for
+	// single-cloud AWS or GCP clusters is a no-op.
+	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
+
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
 	// configuration details.
 	AdvancedConfiguration *AdvancedConfiguration `json:"advancedConfiguration,omitempty"`
@@ -205,11 +216,13 @@ type V20250312Entry struct {
 
 type AdvancedConfiguration struct {
 	// CustomOpensslCipherConfigTls12 The custom OpenSSL cipher suite list for TLS 1.2.
-	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	// Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is
+	// omitted, supplying a non-empty list infers `CUSTOM`.
 	CustomOpensslCipherConfigTls12 *[]string `json:"customOpensslCipherConfigTls12,omitempty"`
 
 	// CustomOpensslCipherConfigTls13 The custom OpenSSL cipher suite list for TLS 1.3.
-	// This field is only valid when `tlsCipherConfigMode` is set to `CUSTOM`.
+	// Requires `tlsCipherConfigMode` = `CUSTOM`; when `tlsCipherConfigMode` is
+	// omitted, supplying a non-empty list infers `CUSTOM`.
 	CustomOpensslCipherConfigTls13 *[]string `json:"customOpensslCipherConfigTls13,omitempty"`
 
 	// MinimumEnabledTlsProtocol Minimum Transport Layer Security (TLS) version that
@@ -407,12 +420,20 @@ type AnalyticsSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
+	// DiskThroughput Target throughput desired for storage attached to this hardware.
+	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	DiskThroughput *int `json:"diskThroughput,omitempty"`
+
 	/*
 	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
 
 	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
 
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
+	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+	   - `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+	   NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.
 	*/
 	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
 
@@ -459,12 +480,20 @@ type ElectableSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
+	// DiskThroughput Target throughput desired for storage attached to this hardware.
+	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	DiskThroughput *int `json:"diskThroughput,omitempty"`
+
 	/*
 	   EbsVolumeType Type of storage you want to attach to your AWS-provisioned cluster.
 
 	   - `STANDARD` volume types can't exceed the default input/output operations per second (IOPS) rate for the selected volume size.
 
-	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size. You must set this value to (`PROVISIONED`) for NVMe clusters.
+	   - `PROVISIONED` volume types must fall within the allowable IOPS range for the selected volume size.
+
+	   - `HIGH_PERFORMANCE` volume types use IO2 EBS volumes and must fall within the allowable IOPS range for the selected volume size.
+
+	   NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.
 	*/
 	EbsVolumeType *string `json:"ebsVolumeType,omitempty"`
 
@@ -492,6 +521,17 @@ type ClusterStatus struct {
 }
 
 type ClusterStatusV20250312 struct {
+	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
+	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
+	// Adaptive capacity enables fallback hardware selection when the primary instance
+	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
+	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
+	// cluster receives capacity errors instead of being placed on fallback hardware.
+	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
+	// default when the feature is enabled at the group level. Setting this field for
+	// single-cloud AWS or GCP clusters is a no-op.
+	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
+
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
 	// configuration details.
 	AdvancedConfiguration *AdvancedConfiguration `json:"advancedConfiguration,omitempty"`

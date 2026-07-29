@@ -21,7 +21,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,7 +60,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2genera
 	}
 
 	params := &v20250312sdk.CreateGroupApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
-	response, _, err := h.atlasClient.ProjectsApi.CreateGroupWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ProjectsAPI.CreateGroupWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create group: %w", err))
 	}
@@ -85,7 +85,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *ako
 		return result.Error(state.StateImportRequested, err)
 	}
 
-	response, _, err := h.atlasClient.ProjectsApi.GetGroup(ctx, id).Execute()
+	response, _, err := h.atlasClient.ProjectsAPI.GetGroup(ctx, id).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
 	}
@@ -141,7 +141,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *a
 		return result.NextState(state.StateDeleted, "Group deleted.")
 	}
 
-	_, err := h.atlasClient.ProjectsApi.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
+	_, err := h.atlasClient.ProjectsAPI.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
 	if v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
 		return result.NextState(state.StateDeleted, "Group deleted.")
 	}
@@ -154,7 +154,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *a
 
 // HandleDeleting handles the deleting state for version v20250312
 func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	_, _, err := h.atlasClient.ProjectsApi.GetGroup(ctx, *group.Status.V20250312.Id).Execute()
+	_, _, err := h.atlasClient.ProjectsAPI.GetGroup(ctx, *group.Status.V20250312.Id).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND"):
 		return result.NextState(state.StateDeleted, "Deleted")
@@ -196,7 +196,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		GroupUpdate: atlasGroupUpdate,
 	}
 
-	response, _, err := h.atlasClient.ProjectsApi.UpdateGroupWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.ProjectsAPI.UpdateGroupWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(currentState, err)
 	}
