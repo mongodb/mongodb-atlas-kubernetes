@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -85,7 +85,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 
 		if !manualDeletion {
 			By("Removing Atlas DataFederation "+testDataFederationName, func() {
-				_, err := atlasClient.DataFederationApi.
+				_, err := atlasClient.DataFederationAPI.
 					DeleteDataFederation(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 					Execute()
 				Expect(err).To(BeNil())
@@ -93,7 +93,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 		}
 
 		By("Removing Atlas Project "+testProject.Status.ID, func() {
-			_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), testProject.ID()).Execute()
+			_, err := atlasClient.ProjectsAPI.DeleteGroup(context.Background(), testProject.ID()).Execute()
 			Expect(err).To(BeNil())
 		})
 
@@ -112,7 +112,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 				Expect(k8sClient.Create(context.Background(), testDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					df, _, err := atlasClient.DataFederationApi.
+					df, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ShouldNot(HaveOccurred())
@@ -126,7 +126,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederationApi.
+					dataFederation, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).To(BeNil())
@@ -141,12 +141,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 					Name: &testDataFederationName,
 				}
 
-				_, _, err := atlasClient.DataFederationApi.
+				_, _, err := atlasClient.DataFederationAPI.
 					CreateDataFederation(context.Background(), testProject.ID(), df).
 					Execute()
 				Expect(err).To(BeNil())
 				Eventually(func(g Gomega) {
-					atlasDataFederation, _, err := atlasClient.DataFederationApi.
+					atlasDataFederation, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), testProject.ID(), testDataFederationName).
 						Execute()
 					g.Expect(err).To(BeNil())
@@ -170,7 +170,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederationApi.
+					dataFederation, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).To(BeNil())
@@ -196,7 +196,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasDataFederation", "focus-prot
 
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testDataFederation), testDataFederation, &client.GetOptions{})).ToNot(Succeed())
-					dataFederation, _, err := atlasClient.DataFederationApi.
+					dataFederation, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), testProject.ID(), testDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ToNot(BeNil())

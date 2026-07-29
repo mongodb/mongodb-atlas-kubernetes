@@ -18,7 +18,7 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 // WaitForAtlasDeploymentStateToNotBeReached periodically checks the given atlas deployment for a given condition. The function
@@ -29,7 +29,7 @@ func WaitForAtlasDeploymentStateToNotBeReached(ctx context.Context, atlasClient 
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDeployment, _, err := atlasClient.ClustersApi.GetCluster(ctx, projectName, deploymentName).Execute()
+			atlasDeployment, _, err := atlasClient.ClustersAPI.GetCluster(ctx, projectName, deploymentName).Execute()
 			if err != nil {
 				return false
 			}
@@ -56,7 +56,7 @@ func WaitForAtlasDatabaseUserStateToNotBeReached(ctx context.Context, atlasClien
 		case <-ctx.Done():
 			return true
 		default:
-			atlasDatabaseUser, _, err := atlasClient.DatabaseUsersApi.
+			atlasDatabaseUser, _, err := atlasClient.DatabaseUsersAPI.
 				GetDatabaseUser(ctx, groupId, authDb, userName).
 				Execute()
 			if err != nil {

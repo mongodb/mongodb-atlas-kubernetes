@@ -25,7 +25,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -108,7 +108,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 				}
 				dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), roles, dbUserName3)
 				dbUser.SetPassword("mypass")
-				_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
+				_, _, err := atlasClient.DatabaseUsersAPI.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 				Expect(err).To(BeNil())
 			})
 
@@ -201,7 +201,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 					Eventually(checkAtlasDatabaseUserRemoved(testProject.ID(), *testDBUser2)).
 						WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeFalse())
 
-					_, err := atlasClient.DatabaseUsersApi.
+					_, err := atlasClient.DatabaseUsersAPI.
 						DeleteDatabaseUser(context.Background(), testProject.ID(), "admin", dbUserName2).
 						Execute()
 					Expect(err).To(BeNil())
@@ -353,7 +353,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 				Expect(k8sClient.Delete(context.Background(), secondDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					_, r, err := atlasClient.FlexClustersApi.
+					_, r, err := atlasClient.FlexClustersAPI.
 						GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 						Execute()
 					if err != nil {
@@ -518,7 +518,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 					return resources.CheckCondition(k8sClient, testDBUser1, api.TrueCondition(api.ReadyType))
 				}).WithTimeout(databaseUserTimeout).WithPolling(PollingInterval).Should(BeTrue())
 
-				_, _, err = atlasClient.DatabaseUsersApi.
+				_, _, err = atlasClient.DatabaseUsersAPI.
 					GetDatabaseUser(context.Background(), testProject.ID(), testDBUser1.Spec.DatabaseName, oldName).
 					Execute()
 				Expect(err).To(HaveOccurred())
@@ -584,7 +584,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 				Expect(k8sClient.Delete(context.Background(), secondTestDeployment)).To(Succeed())
 
 				Eventually(func() bool {
-					_, r, err := atlasClient.FlexClustersApi.
+					_, r, err := atlasClient.FlexClustersAPI.
 						GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 						Execute()
 					if err != nil {
@@ -617,7 +617,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 
 				checkNumberOfConnectionSecrets(k8sClient, *testProject, testNamespace.Name, 0)
 
-				_, _, err := atlasClient.DatabaseUsersApi.
+				_, _, err := atlasClient.DatabaseUsersAPI.
 					GetDatabaseUser(context.Background(), testProject.ID(), testDBUser1.Spec.DatabaseName, testDBUser1.Spec.Username).
 					Execute()
 				Expect(err).To(HaveOccurred())
@@ -717,7 +717,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.FlexClustersApi.
+				_, r, err := atlasClient.FlexClustersAPI.
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
@@ -735,7 +735,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+				_, r, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
 					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
@@ -778,7 +778,7 @@ func validateSecret(k8sClient client.Client, project akov2.AtlasProject, deploym
 	password, err := user.ReadPassword(context.Background(), k8sClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	c, _, err := atlasClient.FlexClustersApi.
+	c, _, err := atlasClient.FlexClustersAPI.
 		GetFlexCluster(context.Background(), project.ID(), deployment.GetDeploymentName()).
 		Execute()
 	Expect(err).NotTo(HaveOccurred())
@@ -830,7 +830,7 @@ func buildConnectionURL(connURL, userName, password string) string {
 func mongoClient(projectID string, deployment akov2.AtlasDeployment, user akov2.AtlasDatabaseUser) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	c, _, err := atlasClient.FlexClustersApi.
+	c, _, err := atlasClient.FlexClustersAPI.
 		GetFlexCluster(context.Background(), projectID, deployment.GetDeploymentName()).
 		Execute()
 	Expect(err).NotTo(HaveOccurred())
@@ -898,7 +898,7 @@ func tryWrite(projectID string, deployment akov2.AtlasDeployment, user akov2.Atl
 
 func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUser) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.DatabaseUsersApi.
+		_, r, err := atlasClient.DatabaseUsersAPI.
 			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
 			Execute()
 		if err != nil {
@@ -927,7 +927,7 @@ func checkSecretsDontExist(namespace string, secretNames []string) func() bool {
 
 func checkUserInAtlas(projectID string, user akov2.AtlasDatabaseUser) {
 	By("Verifying Database User state in Atlas", func() {
-		atlasDBUser, _, err := atlasClient.DatabaseUsersApi.
+		atlasDBUser, _, err := atlasClient.DatabaseUsersAPI.
 			GetDatabaseUser(context.Background(), projectID, user.Spec.DatabaseName, user.Spec.Username).
 			Execute()
 		Expect(err).ToNot(HaveOccurred())

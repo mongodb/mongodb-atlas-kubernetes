@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -131,7 +131,7 @@ var _ = Describe("Flex", Label("flex"), func() {
 		By("Checking the Flex cluster is ready in Atlas", func() {
 
 			Eventually(func(g Gomega) {
-				flex, _, err := apiClient.FlexClustersApi.GetFlexCluster(testData.Context, testData.Project.ID(), name).Execute()
+				flex, _, err := apiClient.FlexClustersAPI.GetFlexCluster(testData.Context, testData.Project.ID(), name).Execute()
 				g.Expect(err).To(BeNil())
 				g.Expect(flex.GetStateName()).To(Equal("IDLE"))
 			}).WithTimeout(1 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
@@ -156,7 +156,7 @@ var _ = Describe("Flex", Label("flex"), func() {
 		})
 		By("Checking the Flex cluster is deleted in Atlas", func() {
 			Eventually(func(g Gomega) {
-				_, resp, err := apiClient.FlexClustersApi.GetFlexCluster(testData.Context, testData.Project.ID(), name).Execute()
+				_, resp, err := apiClient.FlexClustersAPI.GetFlexCluster(testData.Context, testData.Project.ID(), name).Execute()
 				g.Expect(err).ToNot(BeNil())
 				g.Expect(httputil.StatusCode(resp)).Should(Equal(404))
 			}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())

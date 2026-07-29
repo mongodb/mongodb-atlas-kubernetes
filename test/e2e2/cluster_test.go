@@ -21,7 +21,7 @@ import (
 	"github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -178,7 +178,7 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 				g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, cluster)).To(Succeed())
 			}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
-			atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, *group.Status.V20250312.Id, clusterName).Execute()
+			atlasCluster, _, err := atlasClient.ClustersAPI.GetCluster(ctx, *group.Status.V20250312.Id, clusterName).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasCluster).NotTo(BeNil())
 		})
@@ -206,7 +206,7 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 				g.Expect(resources.CheckResourceDeleted(ctx, kubeClient, cluster)).To(Succeed())
 			}).WithContext(ctx).WithTimeout(clusterDeleteTimeout).WithPolling(clusterPollingInterval).Should(Succeed())
 
-			atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, *group.Status.V20250312.Id, clusterName).Execute()
+			atlasCluster, _, err := atlasClient.ClustersAPI.GetCluster(ctx, *group.Status.V20250312.Id, clusterName).Execute()
 			Expect(err).To(HaveOccurred())
 			Expect(atlasCluster).To(BeNil())
 		})

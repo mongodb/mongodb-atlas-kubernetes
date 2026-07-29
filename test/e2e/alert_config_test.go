@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -209,7 +209,7 @@ func alertConfigFlow(userData *model.TestDataProvider, alertConfigs []akov2.Aler
 
 	By("Check alert configurations have no errors and match configured configs", func() {
 		var err error
-		alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsApi.
+		alertConfigurations, _, err := atlasClient.Client.AlertConfigurationsAPI.
 			ListAlertConfigs(userData.Context, userData.Project.ID()).
 			Execute()
 		By("No errors listing alert configs", func() {
@@ -354,7 +354,7 @@ var _ = Describe("Alert configuration with secrets test", Label("alert-config", 
 		By("Verifying the Datadog config in Atlas", func() {
 			atlasClient := atlas.GetClientOrFail()
 			Eventually(func(g Gomega) {
-				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurationsApi.
+				atlasAlertConfigs, _, err := atlasClient.Client.AlertConfigurationsAPI.
 					ListAlertConfigs(testData.Context, testData.Project.ID()).
 					Execute()
 				g.Expect(err).NotTo(HaveOccurred())

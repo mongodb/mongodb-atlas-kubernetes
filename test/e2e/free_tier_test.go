@@ -19,7 +19,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
@@ -73,7 +73,7 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 		aClient := atlas.GetClientOrFail()
 		Expect(userData.InitialDeployments).Should(HaveLen(1))
 		name := userData.InitialDeployments[0].GetDeploymentName()
-		_, _, err := aClient.Client.ClustersApi.
+		_, _, err := aClient.Client.ClustersAPI.
 			CreateCluster(
 				userData.Context,
 				userData.Project.ID(),

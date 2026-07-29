@@ -175,7 +175,7 @@ func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 
 func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUser) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.DatabaseUsersApi.
+		_, r, err := atlasClient.DatabaseUsersAPI.
 			GetDatabaseUser(context.Background(), user.Spec.DatabaseName, projectID, user.Spec.Username).
 			Execute()
 		if err != nil {
@@ -190,7 +190,7 @@ func checkAtlasDatabaseUserRemoved(projectID string, user akov2.AtlasDatabaseUse
 
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ClustersApi.
+		_, r, err := atlasClient.ClustersAPI.
 			GetCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
@@ -205,7 +205,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+		_, r, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 		if err != nil {
 			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true

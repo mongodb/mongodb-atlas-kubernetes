@@ -23,7 +23,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,7 +78,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	})
 
 	checkIPAccessListInAtlas := func() {
-		list, _, err := atlasClient.ProjectIPAccessListApi.
+		list, _, err := atlasClient.ProjectIPAccessListAPI.
 			ListAccessListEntries(context.Background(), createdProject.ID()).
 			Execute()
 		Expect(err).NotTo(HaveOccurred())
@@ -96,7 +96,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 	}
 
 	checkMaintenanceWindowInAtlas := func() {
-		window, _, err := atlasClient.MaintenanceWindowsApi.
+		window, _, err := atlasClient.MaintenanceWindowsAPI.
 			GetMaintenanceWindow(context.Background(), createdProject.ID()).
 			Execute()
 		Expect(err).NotTo(HaveOccurred())
@@ -127,7 +127,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			checkAtlasProjectIsReady()
 
 			// Atlas
-			atlasProject, _, err := atlasClient.ProjectsApi.
+			atlasProject, _, err := atlasClient.ProjectsAPI.
 				GetGroup(context.Background(), createdProject.Status.ID).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -247,7 +247,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			events.EventExists(k8sClient, createdProject, "Warning", string(workflow.AtlasAPIAccessNotConfigured), "Secret .* not found")
 
 			// Atlas
-			_, _, err := atlasClient.ProjectsApi.
+			_, _, err := atlasClient.ProjectsAPI.
 				GetGroupByName(context.Background(), expectedProject.Spec.Name).
 				Execute()
 
@@ -273,7 +273,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 				Expect(checkAtlasProjectRemoved(createdProject.Status.ID)()).Should(BeFalse())
 			})
 			By("Manually deleting the project from Atlas", func() {
-				_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), createdProject.ID()).Execute()
+				_, err := atlasClient.ProjectsAPI.DeleteGroup(context.Background(), createdProject.ID()).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				createdProject = nil
 			})
@@ -385,7 +385,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			Expect(createdProject.Status.Conditions).To(ContainElement(conditions.MatchCondition(api.TrueCondition(api.ProjectReadyType))))
 
 			// Atlas
-			atlasProject, _, err := atlasClient.ProjectsApi.GetGroup(context.Background(), createdProject.ID()).Execute()
+			atlasProject, _, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), createdProject.ID()).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(atlasProject.Name).To(Equal(expectedProject.Spec.Name))
 		})
@@ -507,7 +507,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			checkExpiredAccessLists([]project.IPAccessList{expiredList})
 
 			// Atlas
-			list, _, err := atlasClient.ProjectIPAccessListApi.
+			list, _, err := atlasClient.ProjectIPAccessListAPI.
 				ListAccessListEntries(context.Background(), createdProject.ID()).
 				Execute()
 			Expect(err).NotTo(HaveOccurred())
@@ -731,7 +731,7 @@ func buildConnectionSecret(name string) corev1.Secret {
 // checkAtlasProjectRemoved returns true if the Atlas Project is removed from Atlas.
 func checkAtlasProjectRemoved(projectID string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+		_, r, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 		if err != nil {
 			statusCode := httputil.StatusCode(r)
 			if statusCode == http.StatusNotFound || statusCode == http.StatusUnauthorized {

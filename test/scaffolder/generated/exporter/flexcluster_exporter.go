@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	crapi "github.com/crd2go/crapi"
-	admin "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
@@ -38,7 +38,7 @@ type FlexClusterExporter struct {
 func (e *FlexClusterExporter) Export(ctx context.Context, referencedObjects []client.Object) ([]client.Object, error) {
 	var atlasResources []any
 	for pageNum := 1; ; pageNum++ {
-		resp, _, err := e.client.FlexClustersApi.ListFlexClusters(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
+		resp, _, err := e.client.FlexClustersAPI.ListFlexClusters(ctx, e.identifiers[0]).PageNum(pageNum).Execute()
 		if err != nil {
 			return nil, fmt.Errorf("failed to list FlexClusters from Atlas: %w", err)
 		}
