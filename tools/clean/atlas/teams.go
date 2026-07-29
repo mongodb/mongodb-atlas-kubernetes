@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 func (c *Cleaner) listTeamsByOrg(ctx context.Context, orgID string) []admin.TeamResponse {
-	teamsList, _, err := c.client.TeamsApi.
+	teamsList, _, err := c.client.TeamsAPI.
 		ListOrgTeams(ctx, orgID).
 		Execute()
 	if err != nil {
@@ -38,11 +38,11 @@ func (c *Cleaner) listTeamsByOrg(ctx context.Context, orgID string) []admin.Team
 		return nil
 	}
 
-	return *teamsList.Results
+	return teamsList.Results
 }
 
 func (c *Cleaner) deleteTeam(ctx context.Context, orgID string, team *admin.TeamResponse) {
-	_, err := c.client.TeamsApi.DeleteOrgTeam(ctx, orgID, team.GetId()).Execute()
+	_, err := c.client.TeamsAPI.DeleteOrgTeam(ctx, orgID, team.GetId()).Execute()
 	if err != nil {
 		fmt.Println(text.FgRed.Sprintf("\tFailed to request deletion of team %s(%s): %s", team.GetName(), team.GetId(), err))
 

@@ -21,9 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
 	"tools/clean/provider"
+
+	"github.com/jedib0t/go-pretty/v6/text"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 const (
