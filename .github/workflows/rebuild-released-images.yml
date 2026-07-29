@@ -108,73 +108,20 @@ jobs:
             patch Dockerfile docker.patch
             echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
           fi
-      - name: Check signing supported
-        id: check-signing-support
-        run: |
-          if test -f "./scripts/sign-multiarch.sh"; then
-            echo "sign=true" >> $GITHUB_OUTPUT
-          else
-            echo "sign=false" >> $GITHUB_OUTPUT
-          fi
       - name: Update signing scripts from main
-        if: steps.check-signing-support.outputs.sign == 'true'
         run: |
           git fetch origin main --depth=1
           git checkout origin/main -- scripts/sign.sh scripts/sign-multiarch.sh scripts/verify.sh
-      - name: Check for devbox
-        id: check-devbox
-        run: |
-          if test -f "devbox.json"; then
-            echo "devbox-build=true" >> $GITHUB_OUTPUT
-          else
-            echo "devbox-build=false" >> $GITHUB_OUTPUT
-          fi
-      - name: Set up Go (Non Devbox)
-        uses: actions/setup-go@v7
-        if: steps.check-devbox.outputs.devbox-build == 'false'
-        with:
-          go-version-file: "${{ github.workspace }}/go.mod"
-          cache: false
-
-      - name: Setup cache (Non Devbox)
-        uses: actions/cache@v6
-        if: steps.check-devbox.outputs.devbox-build == 'false'
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
-      - name: Download go build dependencies (Non Devbox)
-        if: steps.check-devbox.outputs.devbox-build == 'false'
-        shell: bash
-        run: |
-          go mod download
-
-      - name: Build all platforms & check version (Non Devbox)
-        if: steps.pick-dockerfile.outputs.dockerfile == 'fast.Dockerfile' && steps.check-devbox.outputs.devbox-build == 'false'
-        run: |
-          make all-platforms VERSION=${{ matrix.version }}
-          # not all versions Makefiles support the version check
-          if make |grep -q check-version; then
-            echo "Checking version..."
-            make check-version VERSION=${{ matrix.version }}
-          else
-            echo "Skipped version check"
-          fi
-
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.15.0
         with:
           enable-cache: 'true'
-        if: steps.check-devbox.outputs.devbox-build == 'true'
 
-      - name: Download Go build dependencies (Devbox)
+      - name: Download Go build dependencies
         run: devbox run -- 'go mod download'
-        if: steps.check-devbox.outputs.devbox-build == 'true'
         shell: bash
 
-      - name: Build all platforms & check version (Devbox)
+      - name: Build all platforms & check version
         run: | 
           devbox run -- '
             make all-platforms VERSION=${{ matrix.version }}
@@ -185,7 +132,6 @@ jobs:
             else
               echo "Skipped version check"
             fi'
-        if: steps.check-devbox.outputs.devbox-build == 'true'
         shell: bash
       - name: "Set up Docker Buildx"
         uses: docker/setup-buildx-action@v4
@@ -219,40 +165,15 @@ jobs:
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}
             quay.io/${{ env.IMAGE_REPOSITORY }}:${{ matrix.version }}
       - name: Configure AWS credentials for DevProd Platforms ECR
-        if: steps.check-signing-support.outputs.sign == 'true'
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6
         with:
           role-to-assume: ${{ secrets.DEVPROD_PLATFORMS_ECR_ROLE_ARN }}
           aws-region: us-east-1
       - name: Login to DevProd Platforms ECR
-        if: steps.check-signing-support.outputs.sign == 'true'
         uses: docker/login-action@v4
         with:
           registry: 901841024863.dkr.ecr.us-east-1.amazonaws.com
-      - name: Sign images (Non Devbox)
-        if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'false'
-        env:
-          PKCS11_URI: ${{ secrets.PKCS11_URI }}
-          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
-          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
-        run: |
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO="quay.io/${{ env.IMAGE_REPOSITORY }}"
-          make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
-
-      - name: Self-verify images (Non Devbox)
-        if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'false'
-        env:
-          PKCS11_URI: ${{ secrets.PKCS11_URI }}
-          GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
-          GRS_PASSWORD:  ${{ secrets.GRS_PASSWORD }}
-        run: |
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=${{ env.IMAGE_REPOSITORY }}
-          make verify IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO="quay.io/${{ env.IMAGE_REPOSITORY }}"
-          make verify IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures
-      
-      - name: Sign images (Devbox)
-        if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'true'
+      - name: Sign images
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
@@ -262,8 +183,7 @@ jobs:
           devbox run -- 'make sign IMG="quay.io/${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO="quay.io/${{ env.IMAGE_REPOSITORY }}"'
           devbox run -- 'make sign IMG="${{ env.IMAGE_REPOSITORY }}:${{ steps.daily-tag.outputs.daily-tag }}" SIGNATURE_REPO=mongodb/signatures'
           
-      - name: Self-verify images (Devbox)
-        if: steps.check-signing-support.outputs.sign == 'true' && steps.check-devbox.outputs.devbox-build == 'true'
+      - name: Self-verify images
         env:
           PKCS11_URI: ${{ secrets.PKCS11_URI }}
           GRS_USERNAME:  ${{ secrets.GRS_USERNAME }}
