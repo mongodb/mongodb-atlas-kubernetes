@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
@@ -38,10 +38,10 @@ type AtlasSearchIdxService interface {
 }
 
 type SearchIndexes struct {
-	searchAPI admin.AtlasSearchApi
+	searchAPI admin.AtlasSearchAPI
 }
 
-func NewSearchIndexes(api admin.AtlasSearchApi) *SearchIndexes {
+func NewSearchIndexes(api admin.AtlasSearchAPI) *SearchIndexes {
 	return &SearchIndexes{searchAPI: api}
 }
 

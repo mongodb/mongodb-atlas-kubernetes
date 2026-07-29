@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -383,19 +383,19 @@ func TestHandleIPAccessList(t *testing.T) {
 	tests := map[string]struct {
 		ipAccessList       []project.IPAccessList
 		annotations        map[string]string
-		expectedCalls      func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
+		expectedCalls      func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI
 		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
 		"should fail getting last applied configuration": {
 			annotations: map[string]string{customresource.AnnotationLastAppliedConfiguration: "{wrong}"},
-			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				return apiMock
 			},
 			expectedResult: workflow.Terminate(workflow.Internal, errors.New("failed to get last applied configuration: error reading AtlasProject Spec from annotation [mongodb.com/last-applied-configuration]: invalid character 'w' looking for beginning of object key string")),
 		},
 		"should successfully handle ip access list reconciliation": {
-			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().ListAccessListEntries(context.Background(), "project-id").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -447,7 +447,7 @@ func TestHandleIPAccessList(t *testing.T) {
 			},
 		},
 		"should fail to handle ip access list reconciliation": {
-			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			expectedCalls: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().ListAccessListEntries(context.Background(), "project-id").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -480,7 +480,7 @@ func TestHandleIPAccessList(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						ProjectIPAccessListApi: tt.expectedCalls(mockadmin.NewProjectIPAccessListApi(t)),
+						ProjectIPAccessListAPI: tt.expectedCalls(mockadmin.NewProjectIPAccessListAPI(t)),
 					},
 				},
 			}
@@ -587,7 +587,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 			lastPrj := newIPAccessListTestProject(tc.lastAppliedIPAccessList)
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
-			ipAccessAPI := mockadmin.NewProjectIPAccessListApi(t)
+			ipAccessAPI := mockadmin.NewProjectIPAccessListAPI(t)
 			ipAccessAPI.EXPECT().ListAccessListEntries(mock.Anything, mock.Anything).
 				Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessAPI}).Once()
 			ipAccessAPI.EXPECT().ListAccessListEntriesExecute(
@@ -629,7 +629,7 @@ func TestIPAccessListNonGreedyBehaviour(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						ProjectIPAccessListApi: ipAccessAPI,
+						ProjectIPAccessListAPI: ipAccessAPI,
 					},
 				},
 			}

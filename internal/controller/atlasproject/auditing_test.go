@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -187,7 +187,7 @@ func TestAuditController_reconcile(t *testing.T) {
 func TestHandleAudit(t *testing.T) {
 	tests := map[string]struct {
 		audit              *akov2.Auditing
-		expectedCalls      func(api *mockadmin.AuditingApi) admin.AuditingApi
+		expectedCalls      func(api *mockadmin.AuditingAPI) admin.AuditingAPI
 		expectedResult     workflow.DeprecatedResult
 		expectedConditions []api.Condition
 	}{
@@ -196,7 +196,7 @@ func TestHandleAudit(t *testing.T) {
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 			},
-			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
+			expectedCalls: func(api *mockadmin.AuditingAPI) admin.AuditingAPI {
 				api.EXPECT().GetGroupAuditLog(context.Background(), "project-id").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: api})
 				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
@@ -234,7 +234,7 @@ func TestHandleAudit(t *testing.T) {
 				Enabled:                   true,
 				AuditAuthorizationSuccess: true,
 			},
-			expectedCalls: func(api *mockadmin.AuditingApi) admin.AuditingApi {
+			expectedCalls: func(api *mockadmin.AuditingAPI) admin.AuditingAPI {
 				api.EXPECT().GetGroupAuditLog(context.Background(), "project-id").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: api})
 				api.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
@@ -274,7 +274,7 @@ func TestHandleAudit(t *testing.T) {
 				Log:     zaptest.NewLogger(t).Sugar(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						AuditingApi: tt.expectedCalls(mockadmin.NewAuditingApi(t)),
+						AuditingAPI: tt.expectedCalls(mockadmin.NewAuditingAPI(t)),
 					},
 				},
 			}

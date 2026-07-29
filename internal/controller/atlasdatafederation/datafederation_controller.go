@@ -126,8 +126,8 @@ func (r *AtlasDataFederationReconciler) Reconcile(context context.Context, req c
 		ctx.SetConditionFromResult(api.DatabaseUserReadyType, result)
 		return result.ReconcileResult()
 	}
-	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20250312.DataFederationApi)
-	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312.DataFederationApi)
+	endpointService := datafederation.NewDatafederationPrivateEndpoint(clientSet.SdkClient20250312.DataFederationAPI)
+	dataFederationService := datafederation.NewAtlasDataFederation(clientSet.SdkClient20250312.DataFederationAPI)
 
 	if result = r.ensureDataFederation(ctx, project, dataFederation, dataFederationService); !result.IsOk() {
 		ctx.SetConditionFromResult(api.DataFederationReadyType, result)

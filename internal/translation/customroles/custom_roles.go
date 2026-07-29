@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
@@ -33,10 +33,10 @@ type CustomRoleService interface {
 }
 
 type CustomRoles struct {
-	roleAPI admin.CustomDatabaseRolesApi
+	roleAPI admin.CustomDatabaseRolesAPI
 }
 
-func NewCustomRoles(api admin.CustomDatabaseRolesApi) *CustomRoles {
+func NewCustomRoles(api admin.CustomDatabaseRolesAPI) *CustomRoles {
 	return &CustomRoles{roleAPI: api}
 }
 

@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -187,7 +187,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			Status: status.AtlasDeploymentStatus{},
 		}
 
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 		mockSearchAPI.EXPECT().
 			CreateClusterSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.CreateClusterSearchIndexApiRequest{ApiService: mockSearchAPI})
@@ -244,7 +244,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			},
 			Status: status.AtlasDeploymentStatus{},
 		}
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		reconciler := &searchIndexReconcileRequest{
@@ -592,7 +592,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 	})
 
 	t.Run("update: must terminate if API call returned an empty index", func(t *testing.T) {
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 		mockSearchAPI.EXPECT().
 			UpdateClusterSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.UpdateClusterSearchIndexApiRequest{ApiService: mockSearchAPI})
@@ -658,7 +658,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 	})
 
 	t.Run("update: must terminate if index equality can not be confirmed", func(t *testing.T) {
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
@@ -716,7 +716,7 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 	})
 
 	t.Run("drop: must clear if the index disappeared from Atlas", func(t *testing.T) {
-		mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 		for _, tc := range []struct {
 			title          string

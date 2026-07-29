@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
@@ -37,10 +37,10 @@ type AtlasUsersService interface {
 }
 
 type AtlasUsers struct {
-	usersAPI admin.DatabaseUsersApi
+	usersAPI admin.DatabaseUsersAPI
 }
 
-func NewAtlasUsers(api admin.DatabaseUsersApi) *AtlasUsers {
+func NewAtlasUsers(api admin.DatabaseUsersAPI) *AtlasUsers {
 	return &AtlasUsers{usersAPI: api}
 }
 

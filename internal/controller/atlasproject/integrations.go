@@ -270,7 +270,7 @@ func NewIntegrationReconciler(
 		project:                     project,
 		integrationsInAKO:           mapIntegrationsPerType(integrations),
 		lasAppliedIntegrationsTypes: lastAppliedIntegrationsTypes,
-		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312.ThirdPartyIntegrationsApi),
+		service:                     integration.NewThirdPartyIntegrationService(ctx.SdkClientSet.SdkClient20250312.ThirdPartyIntegrationsAPI),
 	}
 }
 

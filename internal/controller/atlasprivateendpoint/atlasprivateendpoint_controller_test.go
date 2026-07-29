@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -345,12 +345,12 @@ func TestEnsureCustomResource(t *testing.T) {
 					return true
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					projectAPI := mockadmin.NewProjectsApi(t)
+					projectAPI := mockadmin.NewProjectsAPI(t)
 					projectAPI.EXPECT().GetGroup(mock.Anything, projectID).Return(admin.GetGroupApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupExecute(mock.AnythingOfType("admin.GetGroupApiRequest")).
 						Return(&admin.Group{Id: &projectID}, nil, nil)
 
-					peAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+					peAPI := mockadmin.NewPrivateEndpointServicesAPI(t)
 					peAPI.EXPECT().GetPrivateEndpointService(mock.Anything, projectID, "AWS", "pe-service-id").
 						Return(admin.GetPrivateEndpointServiceApiRequest{ApiService: peAPI})
 					peAPI.EXPECT().GetPrivateEndpointServiceExecute(mock.AnythingOfType("admin.GetPrivateEndpointServiceApiRequest")).
@@ -366,7 +366,7 @@ func TestEnsureCustomResource(t *testing.T) {
 						)
 
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{ProjectsApi: projectAPI, PrivateEndpointServicesApi: peAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsAPI: projectAPI, PrivateEndpointServicesAPI: peAPI},
 					}, nil
 				},
 			},

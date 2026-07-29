@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -104,7 +104,7 @@ func TestReconcile(t *testing.T) {
 			Build()
 
 		logger := zaptest.NewLogger(t).Sugar()
-		fedAuthAPI := mockadmin.NewFederatedAuthenticationApi(t)
+		fedAuthAPI := mockadmin.NewFederatedAuthenticationAPI(t)
 		fedAuthAPI.EXPECT().GetFederationSettings(mock.Anything, orgID).
 			Return(admin.GetFederationSettingsApiRequest{ApiService: fedAuthAPI})
 		fedAuthAPI.EXPECT().GetFederationSettingsExecute(mock.Anything).
@@ -149,7 +149,7 @@ func TestReconcile(t *testing.T) {
 				&http.Response{},
 				nil,
 			)
-		groupAPI := mockadmin.NewProjectsApi(t)
+		groupAPI := mockadmin.NewProjectsAPI(t)
 		groupAPI.EXPECT().ListGroups(mock.Anything).
 			Return(admin.ListGroupsApiRequest{ApiService: groupAPI})
 		groupAPI.EXPECT().ListGroupsExecute(mock.Anything).
@@ -170,8 +170,8 @@ func TestReconcile(t *testing.T) {
 			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 				return &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						ProjectsApi:                groupAPI,
-						FederatedAuthenticationApi: fedAuthAPI,
+						ProjectsAPI:                groupAPI,
+						FederatedAuthenticationAPI: fedAuthAPI,
 					},
 				}, nil
 			},

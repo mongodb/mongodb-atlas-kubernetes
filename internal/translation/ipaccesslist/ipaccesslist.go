@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
@@ -32,7 +32,7 @@ type IPAccessListService interface {
 }
 
 type IPAccessList struct {
-	ipAccessListAPI admin.ProjectIPAccessListApi
+	ipAccessListAPI admin.ProjectIPAccessListAPI
 }
 
 func (i *IPAccessList) List(ctx context.Context, projectID string) (IPAccessEntries, error) {
@@ -73,7 +73,7 @@ func (i *IPAccessList) Status(ctx context.Context, projectID string, entry *IPAc
 	return result.GetSTATUS(), nil
 }
 
-func NewIPAccessList(api admin.ProjectIPAccessListApi) *IPAccessList {
+func NewIPAccessList(api admin.ProjectIPAccessListAPI) *IPAccessList {
 	return &IPAccessList{
 		ipAccessListAPI: api,
 	}

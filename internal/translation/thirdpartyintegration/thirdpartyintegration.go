@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 )
@@ -38,15 +38,15 @@ type ThirdPartyIntegrationService interface {
 }
 
 func NewThirdPartyIntegrationServiceFromClientSet(clientSet *atlas.ClientSet) ThirdPartyIntegrationService {
-	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312.ThirdPartyIntegrationsApi)
+	return NewThirdPartyIntegrationService(clientSet.SdkClient20250312.ThirdPartyIntegrationsAPI)
 }
 
-func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsApi) ThirdPartyIntegrationService {
+func NewThirdPartyIntegrationService(integrationsAPI admin.ThirdPartyIntegrationsAPI) ThirdPartyIntegrationService {
 	return &thirdPartyIntegration{integrationsAPI: integrationsAPI}
 }
 
 type thirdPartyIntegration struct {
-	integrationsAPI admin.ThirdPartyIntegrationsApi
+	integrationsAPI admin.ThirdPartyIntegrationsAPI
 }
 
 func (tpi *thirdPartyIntegration) List(ctx context.Context, projectID string) ([]*ThirdPartyIntegration, error) {

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 type MaintenanceWindowService interface {
@@ -30,10 +30,10 @@ type MaintenanceWindowService interface {
 }
 
 type MaintenanceWindowAPI struct {
-	maintenanceAPI admin.MaintenanceWindowsApi
+	maintenanceAPI admin.MaintenanceWindowsAPI
 }
 
-func NewMaintenanceWindowAPIService(api admin.MaintenanceWindowsApi) *MaintenanceWindowAPI {
+func NewMaintenanceWindowAPIService(api admin.MaintenanceWindowsAPI) *MaintenanceWindowAPI {
 	return &MaintenanceWindowAPI{maintenanceAPI: api}
 }
 

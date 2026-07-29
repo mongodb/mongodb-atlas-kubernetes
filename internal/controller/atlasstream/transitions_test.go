@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,7 +99,7 @@ func TestCreate(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			CreateStreamWorkspace(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
 			Return(admin.CreateStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -132,7 +132,7 @@ func TestCreate(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -205,7 +205,7 @@ func TestCreate(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			CreateStreamWorkspace(context.Background(), "my-project-id", mock.AnythingOfType("*admin.StreamsTenant")).
 			Return(admin.CreateStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -220,7 +220,7 @@ func TestCreate(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -300,7 +300,7 @@ func TestDelete(t *testing.T) {
 				Client: k8sClient,
 				Log:    zaptest.NewLogger(t).Sugar(),
 			}
-			streamsAPI := mockadmin.NewStreamsApi(t)
+			streamsAPI := mockadmin.NewStreamsAPI(t)
 			streamsAPI.EXPECT().
 				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
 				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -314,7 +314,7 @@ func TestDelete(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						StreamsApi: streamsAPI,
+						StreamsAPI: streamsAPI,
 					},
 				},
 			}
@@ -464,7 +464,7 @@ func TestDelete(t *testing.T) {
 				Client: k8sClient,
 				Log:    zaptest.NewLogger(t).Sugar(),
 			}
-			streamsAPI := mockadmin.NewStreamsApi(t)
+			streamsAPI := mockadmin.NewStreamsAPI(t)
 			streamsAPI.EXPECT().
 				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
 				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -478,7 +478,7 @@ func TestDelete(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						StreamsApi: streamsAPI,
+						StreamsAPI: streamsAPI,
 					},
 				},
 			}
@@ -562,7 +562,7 @@ func TestDelete(t *testing.T) {
 				Log:                      zaptest.NewLogger(t).Sugar(),
 				ObjectDeletionProtection: true,
 			}
-			streamsAPI := mockadmin.NewStreamsApi(t)
+			streamsAPI := mockadmin.NewStreamsAPI(t)
 			streamsAPI.EXPECT().
 				DeleteStreamWorkspace(context.Background(), "my-project-id", "instance-0").
 				Return(admin.DeleteStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -576,7 +576,7 @@ func TestDelete(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						StreamsApi: streamsAPI,
+						StreamsAPI: streamsAPI,
 					},
 				},
 			}
@@ -808,7 +808,7 @@ func TestUpdate(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -841,7 +841,7 @@ func TestUpdate(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -917,7 +917,7 @@ func TestUpdate(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			UpdateStreamWorkspace(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsTenantUpdateRequest")).
 			Return(admin.UpdateStreamWorkspaceApiRequest{ApiService: streamsAPI})
@@ -932,7 +932,7 @@ func TestUpdate(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -949,7 +949,7 @@ func TestUpdate(t *testing.T) {
 
 func TestCreateConnections(t *testing.T) {
 	t.Run("should add an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -967,7 +967,7 @@ func TestCreateConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -1034,7 +1034,7 @@ func TestCreateConnections(t *testing.T) {
 	})
 
 	t.Run("should return error when fail adding an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -1045,7 +1045,7 @@ func TestCreateConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -1175,7 +1175,7 @@ func TestCreateConnections(t *testing.T) {
 
 func TestUpdateConnections(t *testing.T) {
 	t.Run("should update an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			UpdateStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.UpdateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -1193,7 +1193,7 @@ func TestUpdateConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -1260,7 +1260,7 @@ func TestUpdateConnections(t *testing.T) {
 	})
 
 	t.Run("should return error when fail updating an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			UpdateStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.UpdateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -1271,7 +1271,7 @@ func TestUpdateConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -1401,7 +1401,7 @@ func TestUpdateConnections(t *testing.T) {
 
 func TestDeleteConnections(t *testing.T) {
 	t.Run("should delete an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			DeleteStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection").
 			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -1415,7 +1415,7 @@ func TestDeleteConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -1471,7 +1471,7 @@ func TestDeleteConnections(t *testing.T) {
 	})
 
 	t.Run("should return error when fail deleting an instance connection", func(t *testing.T) {
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			DeleteStreamConnection(context.Background(), "my-project-id", "instance-0", "sample-connection").
 			Return(admin.DeleteStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -1482,7 +1482,7 @@ func TestDeleteConnections(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}

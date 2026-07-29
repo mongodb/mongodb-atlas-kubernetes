@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 )
 
 func TestIPAccessList_List(t *testing.T) {
@@ -33,12 +33,12 @@ func TestIPAccessList_List(t *testing.T) {
 	apiErr := admin.GenericOpenAPIError{}
 	apiErr.SetError("failed to list")
 	tests := map[string]struct {
-		service  func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
+		service  func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI
 		expected IPAccessEntries
 		err      error
 	}{
 		"should return empty when atlas is also empty": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -49,7 +49,7 @@ func TestIPAccessList_List(t *testing.T) {
 			expected: IPAccessEntries{},
 		},
 		"should return converted entries from atlas result": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -92,7 +92,7 @@ func TestIPAccessList_List(t *testing.T) {
 			},
 		},
 		"should return error when request fails": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().ListAccessListEntries(context.Background(), projectID).
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -107,7 +107,7 @@ func TestIPAccessList_List(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			i := &IPAccessList{
-				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListApi(t)),
+				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListAPI(t)),
 			}
 
 			entries, err := i.List(context.Background(), projectID)
@@ -123,12 +123,12 @@ func TestIPAccessList_Add(t *testing.T) {
 	apiErr := admin.GenericOpenAPIError{}
 	apiErr.SetError("failed to create")
 	tests := map[string]struct {
-		service func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
+		service func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI
 		entries IPAccessEntries
 		err     error
 	}{
 		"should add ip access list": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().CreateAccessListEntry(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
 					Return(admin.CreateAccessListEntryApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
@@ -171,7 +171,7 @@ func TestIPAccessList_Add(t *testing.T) {
 			},
 		},
 		"should return error when request fails": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().CreateAccessListEntry(context.Background(), projectID, mock.AnythingOfType("*[]admin.NetworkPermissionEntry")).
 					Return(admin.CreateAccessListEntryApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().CreateAccessListEntryExecute(mock.AnythingOfType("admin.CreateAccessListEntryApiRequest")).
@@ -199,7 +199,7 @@ func TestIPAccessList_Add(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			i := &IPAccessList{
-				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListApi(t)),
+				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListAPI(t)),
 			}
 
 			err := i.Add(context.Background(), projectID, tt.entries)
@@ -213,12 +213,12 @@ func TestIPAccessList_Delete(t *testing.T) {
 	apiErr := admin.GenericOpenAPIError{}
 	apiErr.SetError("failed to delete")
 	tests := map[string]struct {
-		service func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
+		service func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI
 		entry   *IPAccessEntry
 		err     error
 	}{
 		"should delete ip access list": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().DeleteAccessListEntry(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.DeleteAccessListEntryApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteAccessListEntryExecute(mock.AnythingOfType("admin.DeleteAccessListEntryApiRequest")).
@@ -234,7 +234,7 @@ func TestIPAccessList_Delete(t *testing.T) {
 			},
 		},
 		"should return error when request fails": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().DeleteAccessListEntry(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.DeleteAccessListEntryApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteAccessListEntryExecute(mock.AnythingOfType("admin.DeleteAccessListEntryApiRequest")).
@@ -252,7 +252,7 @@ func TestIPAccessList_Delete(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			i := &IPAccessList{
-				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListApi(t)),
+				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListAPI(t)),
 			}
 
 			err := i.Delete(context.Background(), projectID, tt.entry)
@@ -266,13 +266,13 @@ func TestIPAccessList_Status(t *testing.T) {
 	apiErr := admin.GenericOpenAPIError{}
 	apiErr.SetError("failed to get status")
 	tests := map[string]struct {
-		service  func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi
+		service  func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI
 		entry    *IPAccessEntry
 		expected string
 		err      error
 	}{
 		"should get status of ip access list": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().GetAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.GetAccessListStatusApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
@@ -292,7 +292,7 @@ func TestIPAccessList_Status(t *testing.T) {
 			expected: "ACTIVE",
 		},
 		"should return error when request fails": {
-			service: func(apiMock *mockadmin.ProjectIPAccessListApi) admin.ProjectIPAccessListApi {
+			service: func(apiMock *mockadmin.ProjectIPAccessListAPI) admin.ProjectIPAccessListAPI {
 				apiMock.EXPECT().GetAccessListStatus(context.Background(), projectID, "192.168.100.150/32").
 					Return(admin.GetAccessListStatusApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().GetAccessListStatusExecute(mock.AnythingOfType("admin.GetAccessListStatusApiRequest")).
@@ -310,7 +310,7 @@ func TestIPAccessList_Status(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			i := &IPAccessList{
-				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListApi(t)),
+				ipAccessListAPI: tt.service(mockadmin.NewProjectIPAccessListAPI(t)),
 			}
 
 			stat, err := i.Status(context.Background(), projectID, tt.entry)

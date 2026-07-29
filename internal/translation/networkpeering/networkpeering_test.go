@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -62,7 +62,7 @@ func TestNetworkPeeringCreate(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
 		cfg           *akov2.AtlasNetworkPeeringConfig
-		api           admin.NetworkPeeringApi
+		api           admin.NetworkPeeringAPI
 		expectedPeer  *networkpeering.NetworkPeer
 		expectedError error
 	}{
@@ -179,7 +179,7 @@ func TestNetworkPeeringCreate(t *testing.T) {
 func TestNetworkPeeringGet(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		api           admin.NetworkPeeringApi
+		api           admin.NetworkPeeringAPI
 		expectedPeer  *networkpeering.NetworkPeer
 		expectedError error
 	}{
@@ -265,7 +265,7 @@ func TestNetworkPeeringUpdate(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
 		cfg           *akov2.AtlasNetworkPeeringConfig
-		api           admin.NetworkPeeringApi
+		api           admin.NetworkPeeringAPI
 		expectedPeer  *networkpeering.NetworkPeer
 		expectedError error
 	}{
@@ -368,7 +368,7 @@ func TestNetworkPeeringUpdate(t *testing.T) {
 func TestNetworkPeeringDelete(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		api           admin.NetworkPeeringApi
+		api           admin.NetworkPeeringAPI
 		expectedError error
 	}{
 		{
@@ -404,8 +404,8 @@ func TestNetworkPeeringDelete(t *testing.T) {
 	}
 }
 
-func testCreateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testCreateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().CreateGroupPeer(
 		mock.Anything, testProjectID, mock.Anything,
@@ -417,8 +417,8 @@ func testCreateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionS
 	return &apiMock
 }
 
-func testGetNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testGetNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().GetGroupPeer(
 		mock.Anything, testProjectID, testPeerID,
@@ -430,8 +430,8 @@ func testGetNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSett
 	return &apiMock
 }
 
-func testUpdateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testUpdateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionSettings, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().UpdateGroupPeer(
 		mock.Anything, testProjectID, testPeerID, mock.Anything,
@@ -443,8 +443,8 @@ func testUpdateNetworkPeeringAPI(apiPeering *admin.BaseNetworkPeeringConnectionS
 	return &apiMock
 }
 
-func testDeleteNetworkPeeringAPI(err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testDeleteNetworkPeeringAPI(err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().DeleteGroupPeer(
 		mock.Anything, testProjectID, testPeerID,

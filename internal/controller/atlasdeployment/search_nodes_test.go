@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -39,7 +39,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("get search nodes request errors", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -52,7 +52,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -68,7 +68,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in AKO and atlas (update)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -108,7 +108,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -124,7 +124,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in AKO and atlas, but are not IDLE", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -146,7 +146,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -162,7 +162,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in AKO and atlas but update errors", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 4)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -193,7 +193,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -211,7 +211,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		mockError := makeMockError()
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -244,7 +244,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -262,7 +262,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		mockError := makeMockError()
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -286,7 +286,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -302,7 +302,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in Atlas but not in AKO (delete)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -331,7 +331,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -347,7 +347,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are in Atlas but not in AKO but delete errors", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -376,7 +376,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -394,7 +394,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		mockError := makeMockError()
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -410,7 +410,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -426,7 +426,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are still creating in Atlas, AKO is waiting (handle upserting)", func(t *testing.T) { //nolint:dupl
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -448,7 +448,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -465,7 +465,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are created in Atlas, AKO is waiting (handle upserting)", func(t *testing.T) { //nolint:dupl
 		deployment := akov2.DefaultAWSDeployment("default", projectName).WithSearchNodes("S80_LOWCPU_NVME", 3)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -487,7 +487,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -504,7 +504,7 @@ func TestHandleSearchNodes(t *testing.T) {
 	t.Run("search nodes are deleting in Atlas, AKO is waiting (handle deleting)", func(t *testing.T) {
 		deployment := akov2.DefaultAWSDeployment("default", projectName)
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -526,7 +526,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),
@@ -545,7 +545,7 @@ func TestHandleSearchNodes(t *testing.T) {
 
 		mockError := makeMockError()
 
-		searchAPI := mockadmin.NewAtlasSearchApi(t)
+		searchAPI := mockadmin.NewAtlasSearchAPI(t)
 		searchAPI.EXPECT().GetClusterSearchDeployment(context.Background(), projectID, deployment.Spec.DeploymentSpec.Name).
 			Return(admin.GetClusterSearchDeploymentApiRequest{ApiService: searchAPI})
 		searchAPI.EXPECT().GetClusterSearchDeploymentExecute(mock.Anything).
@@ -561,7 +561,7 @@ func TestHandleSearchNodes(t *testing.T) {
 		ctx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					AtlasSearchApi: searchAPI,
+					AtlasSearchAPI: searchAPI,
 				},
 			},
 			Context: context.Background(),

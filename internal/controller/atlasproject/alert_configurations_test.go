@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -454,7 +454,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 		groupID              string
 		alertSpecs           []akov2.AlertConfiguration
 		existingAlertConfigs []admin.GroupAlertsConfig
-		mockAlertConfigsAPI  func() *mockadmin.AlertConfigurationsApi
+		mockAlertConfigsAPI  func() *mockadmin.AlertConfigurationsAPI
 		expectOKResult       bool
 		expectedCreateCount  int
 		expectedDeleteCount  int
@@ -464,8 +464,8 @@ func TestSyncAlertConfigurations(t *testing.T) {
 			groupID:              "test-group-id",
 			alertSpecs:           []akov2.AlertConfiguration{},
 			existingAlertConfigs: []admin.GroupAlertsConfig{},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 				apiMock.EXPECT().ListAlertConfigs(mock.Anything, "test-group-id").
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
@@ -494,8 +494,8 @@ func TestSyncAlertConfigurations(t *testing.T) {
 				},
 			},
 			existingAlertConfigs: []admin.GroupAlertsConfig{},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 				apiMock.EXPECT().ListAlertConfigs(mock.Anything, "test-group-id").
 					Return(admin.ListAlertConfigsApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().ListAlertConfigsExecute(mock.Anything).
@@ -529,7 +529,7 @@ func TestSyncAlertConfigurations(t *testing.T) {
 
 			mockAPIClient := &admin.APIClient{}
 			if tt.mockAlertConfigsAPI != nil {
-				mockAPIClient.AlertConfigurationsApi = tt.mockAlertConfigsAPI()
+				mockAPIClient.AlertConfigurationsAPI = tt.mockAlertConfigsAPI()
 			}
 
 			atlasClientSet := &atlas.ClientSet{
@@ -612,15 +612,15 @@ func TestDeleteAlertConfigs(t *testing.T) {
 		name                string
 		groupID             string
 		alertConfigIDs      []string
-		mockAlertConfigsAPI func() *mockadmin.AlertConfigurationsApi
+		mockAlertConfigsAPI func() *mockadmin.AlertConfigurationsAPI
 		expectError         bool
 	}{
 		{
 			name:           "No alert configurations to delete",
 			groupID:        "test-group-id",
 			alertConfigIDs: []string{},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				return mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				return mockadmin.NewAlertConfigurationsAPI(t)
 			},
 			expectError: false,
 		},
@@ -628,8 +628,8 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			name:           "Successfully delete alert configurations",
 			groupID:        "test-group-id",
 			alertConfigIDs: []string{"config-1", "config-2"},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 				apiMock.EXPECT().DeleteAlertConfig(mock.Anything, "test-group-id", "config-1").
 					Return(admin.DeleteAlertConfigApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteAlertConfigExecute(mock.Anything).
@@ -646,8 +646,8 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			name:           "Error deleting alert configuration",
 			groupID:        "test-group-id",
 			alertConfigIDs: []string{"config-1"},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 				apiMock.EXPECT().DeleteAlertConfig(mock.Anything, "test-group-id", "config-1").
 					Return(admin.DeleteAlertConfigApiRequest{ApiService: apiMock})
 				apiMock.EXPECT().DeleteAlertConfigExecute(mock.Anything).
@@ -664,7 +664,7 @@ func TestDeleteAlertConfigs(t *testing.T) {
 			ctx := context.Background()
 
 			mockAPIClient := &admin.APIClient{
-				AlertConfigurationsApi: tt.mockAlertConfigsAPI(),
+				AlertConfigurationsAPI: tt.mockAlertConfigsAPI(),
 			}
 
 			atlasClientSet := &atlas.ClientSet{
@@ -693,15 +693,15 @@ func TestCreateAlertConfigs(t *testing.T) {
 		name                string
 		groupID             string
 		alertSpecs          []akov2.AlertConfiguration
-		mockAlertConfigsAPI func() *mockadmin.AlertConfigurationsApi
+		mockAlertConfigsAPI func() *mockadmin.AlertConfigurationsAPI
 		expectedStatusCount int
 	}{
 		{
 			name:       "No alert configurations to create",
 			groupID:    "test-group-id",
 			alertSpecs: []akov2.AlertConfiguration{},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				return mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				return mockadmin.NewAlertConfigurationsAPI(t)
 			},
 			expectedStatusCount: 0,
 		},
@@ -720,8 +720,8 @@ func TestCreateAlertConfigs(t *testing.T) {
 					},
 				},
 			},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 
 				createdConfig := admin.GroupAlertsConfig{
 					Id:            new("new-alert-id"),
@@ -747,8 +747,8 @@ func TestCreateAlertConfigs(t *testing.T) {
 					Enabled:       true,
 				},
 			},
-			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsApi {
-				apiMock := mockadmin.NewAlertConfigurationsApi(t)
+			mockAlertConfigsAPI: func() *mockadmin.AlertConfigurationsAPI {
+				apiMock := mockadmin.NewAlertConfigurationsAPI(t)
 
 				apiMock.EXPECT().CreateAlertConfig(mock.Anything, "test-group-id", mock.Anything).
 					Return(admin.CreateAlertConfigApiRequest{ApiService: apiMock})
@@ -767,7 +767,7 @@ func TestCreateAlertConfigs(t *testing.T) {
 			ctx := context.Background()
 
 			mockAPIClient := &admin.APIClient{
-				AlertConfigurationsApi: tt.mockAlertConfigsAPI(),
+				AlertConfigurationsAPI: tt.mockAlertConfigsAPI(),
 			}
 
 			atlasClientSet := &atlas.ClientSet{

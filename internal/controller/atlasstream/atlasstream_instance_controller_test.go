@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -474,7 +474,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
 			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.Anything).
@@ -490,7 +490,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312: &admin.APIClient{StreamsAPI: streamsAPI},
 					}, nil
 				},
 			},
@@ -579,7 +579,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
 			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.Anything).
@@ -622,7 +622,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312: &admin.APIClient{StreamsAPI: streamsAPI},
 					}, nil
 				},
 			},
@@ -707,7 +707,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
 			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		notFound := admin.ApiError{}
@@ -752,7 +752,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312: &admin.APIClient{StreamsAPI: streamsAPI},
 					}, nil
 				},
 			},
@@ -845,7 +845,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
 			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
@@ -884,7 +884,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312: &admin.APIClient{StreamsAPI: streamsAPI},
 					}, nil
 				},
 			},
@@ -963,7 +963,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			WithStatusSubresource(streamInstance).
 			Build()
 
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().GetStreamWorkspace(mock.Anything, "my-project-id", "instance-0").
 			Return(admin.GetStreamWorkspaceApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().GetStreamWorkspaceExecute(mock.AnythingOfType("admin.GetStreamWorkspaceApiRequest")).
@@ -1015,7 +1015,7 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{StreamsApi: streamsAPI},
+						SdkClient20250312: &admin.APIClient{StreamsAPI: streamsAPI},
 					}, nil
 				},
 			},

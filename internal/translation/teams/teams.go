@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
@@ -53,11 +53,11 @@ type TeamUsersService interface { // manages Team's Members (Users)
 }
 
 type TeamsAPI struct {
-	teamsAPI     admin.TeamsApi
-	teamUsersAPI admin.MongoDBCloudUsersApi
+	teamsAPI     admin.TeamsAPI
+	teamUsersAPI admin.MongoDBCloudUsersAPI
 }
 
-func NewTeamsAPIService(teamAPI admin.TeamsApi, userAPI admin.MongoDBCloudUsersApi) *TeamsAPI {
+func NewTeamsAPIService(teamAPI admin.TeamsAPI, userAPI admin.MongoDBCloudUsersAPI) *TeamsAPI {
 	return &TeamsAPI{
 		teamsAPI:     teamAPI,
 		teamUsersAPI: userAPI,

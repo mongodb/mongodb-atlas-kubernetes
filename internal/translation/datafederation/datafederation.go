@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
@@ -37,10 +37,10 @@ type DataFederationService interface {
 }
 
 type AtlasDataFederationService struct {
-	api admin.DataFederationApi
+	api admin.DataFederationAPI
 }
 
-func NewAtlasDataFederation(api admin.DataFederationApi) *AtlasDataFederationService {
+func NewAtlasDataFederation(api admin.DataFederationAPI) *AtlasDataFederationService {
 	return &AtlasDataFederationService{api: api}
 }
 

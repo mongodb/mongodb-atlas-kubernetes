@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"golang.org/x/exp/slices"
 )
 
@@ -40,7 +40,7 @@ type PrivateEndpointService interface {
 }
 
 type PrivateEndpoint struct {
-	api admin.PrivateEndpointServicesApi
+	api admin.PrivateEndpointServicesAPI
 }
 
 func (pe *PrivateEndpoint) ListPrivateEndpoints(ctx context.Context, projectID, provider string) ([]EndpointService, error) {
@@ -205,7 +205,7 @@ func getInterfacesIDs(peService *admin.EndpointService) []string {
 	return nil
 }
 
-func NewPrivateEndpointAPI(api admin.PrivateEndpointServicesApi) PrivateEndpointService {
+func NewPrivateEndpointAPI(api admin.PrivateEndpointServicesAPI) PrivateEndpointService {
 	return &PrivateEndpoint{
 		api: api,
 	}

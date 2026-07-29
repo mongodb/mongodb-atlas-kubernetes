@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -54,7 +54,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
 		cfg               *networkcontainer.NetworkContainerConfig
-		api               admin.NetworkPeeringApi
+		api               admin.NetworkPeeringAPI
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
@@ -246,7 +246,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 func TestNetworkContainerGet(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
-		api               admin.NetworkPeeringApi
+		api               admin.NetworkPeeringAPI
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
@@ -302,7 +302,7 @@ func TestNetworkContainerFind(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
 		cfg               *networkcontainer.NetworkContainerConfig
-		api               admin.NetworkPeeringApi
+		api               admin.NetworkPeeringAPI
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
@@ -474,7 +474,7 @@ func TestNetworkContainerUpdate(t *testing.T) {
 	for _, tc := range []struct {
 		title             string
 		cfg               *networkcontainer.NetworkContainerConfig
-		api               admin.NetworkPeeringApi
+		api               admin.NetworkPeeringAPI
 		expectedContainer *networkcontainer.NetworkContainer
 		expectedError     error
 	}{
@@ -530,7 +530,7 @@ func TestNetworkContainerUpdate(t *testing.T) {
 func TestNetworkContainerDelete(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		api           admin.NetworkPeeringApi
+		api           admin.NetworkPeeringAPI
 		expectedError error
 	}{
 		{
@@ -573,8 +573,8 @@ func testContainerConfig() akov2.AtlasNetworkContainerConfig {
 	}
 }
 
-func testCreateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testCreateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().CreateGroupContainer(
 		mock.Anything, testProjectID, mock.Anything,
@@ -586,8 +586,8 @@ func testCreateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, e
 	return &apiMock
 }
 
-func testGetNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testGetNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().GetGroupContainer(
 		mock.Anything, testProjectID, mock.Anything,
@@ -599,8 +599,8 @@ func testGetNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err 
 	return &apiMock
 }
 
-func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testFindNetworkContainerAPI(apiContainers []admin.CloudProviderContainer, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().ListGroupContainers(mock.Anything, testProjectID).Return(
 		admin.ListGroupContainersApiRequest{ApiService: &apiMock},
@@ -623,8 +623,8 @@ func testAPIError(code string) error {
 	return err
 }
 
-func testUpdateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testUpdateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().UpdateGroupContainer(
 		mock.Anything, testProjectID, testContainerID, mock.Anything,
@@ -636,8 +636,8 @@ func testUpdateNetworkContainerAPI(apiContainer *admin.CloudProviderContainer, e
 	return &apiMock
 }
 
-func testDeleteNetworkContainerAPI(err error) admin.NetworkPeeringApi {
-	var apiMock mockadmin.NetworkPeeringApi
+func testDeleteNetworkContainerAPI(err error) admin.NetworkPeeringAPI {
+	var apiMock mockadmin.NetworkPeeringAPI
 
 	apiMock.EXPECT().DeleteGroupContainer(
 		mock.Anything, testProjectID, testContainerID,
