@@ -86,7 +86,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas manually to let project get removed
-				_, err := atlasClient.ClustersApi.
+				_, err := atlasClient.ClustersAPI.
 					DeleteCluster(context.Background(), createdProject.ID(), createdDataFederation.Name).
 					Execute()
 				Expect(err).NotTo(HaveOccurred())
@@ -120,7 +120,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 				Expect(k8sClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					df, _, err := atlasClient.DataFederationApi.
+					df, _, err := atlasClient.DataFederationAPI.
 						GetDataFederation(context.Background(), createdProject.ID(), createdDataFederation.Spec.Name).
 						Execute()
 					g.Expect(err).ShouldNot(HaveOccurred())
@@ -184,7 +184,7 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 })
 
 func deleteAtlasDataFederation(projectID, dataFederationName string) error {
-	_, err := atlasClient.DataFederationApi.
+	_, err := atlasClient.DataFederationAPI.
 		DeleteDataFederation(context.Background(), projectID, dataFederationName).
 		Execute()
 
@@ -193,7 +193,7 @@ func deleteAtlasDataFederation(projectID, dataFederationName string) error {
 
 func checkAtlasDataFederationRemoved(projectID, dataFederation string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.DataFederationApi.
+		_, r, err := atlasClient.DataFederationAPI.
 			GetDataFederation(context.Background(), projectID, dataFederation).
 			Execute()
 		if err != nil {

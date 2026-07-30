@@ -106,7 +106,7 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 			results = append(results, searchNodeResult)
 		}
 
-		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi)
+		searchService := searchindex.NewSearchIndexes(ctx.SdkClientSet.SdkClient20250312.AtlasSearchAPI)
 		result := handleSearchIndexes(ctx, r.Client, searchService, akoCluster.GetCustomResource(), akoCluster.GetProjectID())
 		results = append(results, result)
 

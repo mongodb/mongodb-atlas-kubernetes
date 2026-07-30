@@ -23,7 +23,7 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -144,7 +144,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 				Expect(meta.IsStatusConditionTrue(testIAL.GetConditions(), "Ready")).To(BeTrue())
 
 				groupID := *testGroup.Status.V20250312.Id
-				atlasEntry, _, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+				atlasEntry, _, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasEntry.GetCidrBlock()).To(Equal(testCIDR))
 				Expect(atlasEntry.GetComment()).To(Equal("e2e test entry"))
@@ -160,7 +160,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				groupID := *testGroup.Status.V20250312.Id
-				atlasEntry, _, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+				atlasEntry, _, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasEntry.GetComment()).To(Equal("updated comment"))
 			})
@@ -177,7 +177,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+					_, r, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
@@ -243,13 +243,13 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					atlasEntry, _, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+					atlasEntry, _, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasEntry).ToNot(BeNil())
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				groupID2 := *testGroup.Status.V20250312.Id
-				_, err := atlasClient.ProjectIPAccessListApi.DeleteAccessListEntry(ctx, groupID2, testCIDR).Execute()
+				_, err := atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID2, testCIDR).Execute()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -320,7 +320,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 
 			By("Verify entry no longer exists in Atlas", func() {
 				groupID := *testIAL.Status.V20250312.GroupId
-				_, r, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+				_, r, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 				Expect(err).To(HaveOccurred())
 				Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 			})
@@ -498,7 +498,7 @@ var _ = Describe("IPAccessList with Deletion Protection", Ordered, Label("ipacce
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					atlasEntry, _, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+					atlasEntry, _, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasEntry).NotTo(BeNil())
 					g.Expect(atlasEntry.GetCidrBlock()).To(Equal(testCIDR))
@@ -507,11 +507,11 @@ var _ = Describe("IPAccessList with Deletion Protection", Ordered, Label("ipacce
 
 			By("Clean up Atlas entry manually", func() {
 				groupID := *testGroup.Status.V20250312.Id
-				_, err := atlasClient.ProjectIPAccessListApi.DeleteAccessListEntry(ctx, groupID, testCIDR).Execute()
+				_, err := atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID, testCIDR).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
+					_, r, err := atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, testCIDR).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())

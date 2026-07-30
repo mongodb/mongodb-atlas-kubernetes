@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -72,7 +72,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 		conditionStatus workflow.ConditionReason
 		bcp             *akov2.AtlasBackupCompliancePolicy
 
-		backupAPI *mockadmin.CloudBackupsApi
+		backupAPI *mockadmin.CloudBackupsAPI
 
 		isOK      bool
 		isWarning bool
@@ -85,8 +85,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP GET request errors",
 			project: akov2.DefaultProject("test-namespace", "test-connection"),
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -106,8 +106,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP is in AKO, but not Atlas (create)",
 			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:     testBCP,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -126,8 +126,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP is in AKO, but not Atlas, create errors",
 			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:     testBCP,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -147,8 +147,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP are still creating in Atlas, AKO is waiting",
 			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:     testBCP,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -191,8 +191,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:             testBCP,
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -235,8 +235,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			project:         akov2.DefaultProject("test-namespace", "test-connection"),
 			bcp:             testBCP,
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -258,8 +258,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			project:         akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:             testBCP,
 			conditionStatus: workflow.ProjectBackupCompliancePolicyUpdating,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -300,8 +300,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP is in AKO, but not Atlas, and BCP is not met",
 			project: akov2.DefaultProject("test-namespace", "test-connection").WithBackupCompliancePolicy("test-bcp"),
 			bcp:     testBCP,
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -328,8 +328,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP is in Atlas but not AKO (attempted delete)",
 			project: akov2.DefaultProject("test-namespace", "test-connection"),
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -371,8 +371,8 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			name:    "BCP is not in AKO nor Atlas (unmanage)",
 			project: akov2.DefaultProject("test-namespace", "test-connection"),
 			bcp:     &akov2.AtlasBackupCompliancePolicy{},
-			backupAPI: func() *mockadmin.CloudBackupsApi {
-				backupAPI := mockadmin.NewCloudBackupsApi(t)
+			backupAPI: func() *mockadmin.CloudBackupsAPI {
+				backupAPI := mockadmin.NewCloudBackupsAPI(t)
 				backupAPI.EXPECT().GetCompliancePolicy(context.Background(), "").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backupAPI})
 				backupAPI.EXPECT().GetCompliancePolicyExecute(mock.Anything).
@@ -392,7 +392,7 @@ func TestEnsureBackupCompliance(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						CloudBackupsApi: tc.backupAPI,
+						CloudBackupsAPI: tc.backupAPI,
 					},
 				},
 				Context: context.Background(),

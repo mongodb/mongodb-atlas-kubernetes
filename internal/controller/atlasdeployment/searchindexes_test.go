@@ -682,7 +682,7 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			},
 		}
 
-		// mockSearchAPI := mockadmin.NewAtlasSearchApi(t)
+		// mockSearchAPI := mockadmin.NewAtlasSearchAPI(t)
 
 		// mockSearchAPI.EXPECT().
 		// 	GetAtlasSearchIndex(context.Background(), mock.Anything, mock.Anything, mock.Anything).

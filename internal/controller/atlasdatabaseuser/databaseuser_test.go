@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -182,13 +182,13 @@ func TestHandleDatabaseUser(t *testing.T) {
 					return false
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					projectAPI := mockadmin.NewProjectsApi(t)
+					projectAPI := mockadmin.NewProjectsAPI(t)
 					projectAPI.EXPECT().GetGroup(context.Background(), "project-id").
 						Return(admin.GetGroupApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupExecute(mock.Anything).
 						Return(&admin.Group{Id: new("project-id")}, nil, nil)
 
-					userAPI := mockadmin.NewDatabaseUsersApi(t)
+					userAPI := mockadmin.NewDatabaseUsersAPI(t)
 					userAPI.EXPECT().GetDatabaseUser(context.Background(), "project-id", "admin", "user1").
 						Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
 					userAPI.EXPECT().GetDatabaseUserExecute(mock.Anything).
@@ -198,10 +198,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 					userAPI.EXPECT().CreateDatabaseUserExecute(mock.Anything).
 						Return(&admin.CloudDatabaseUser{}, nil, nil)
 
-					clusterAPI := mockadmin.NewClustersApi(t)
+					clusterAPI := mockadmin.NewClustersAPI(t)
 
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{ProjectsApi: projectAPI, ClustersApi: clusterAPI, DatabaseUsersApi: userAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsAPI: projectAPI, ClustersAPI: clusterAPI, DatabaseUsersAPI: userAPI},
 					}, nil
 				},
 			},
@@ -2298,7 +2298,7 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 			return false
 		},
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-			userAPI := mockadmin.NewDatabaseUsersApi(t)
+			userAPI := mockadmin.NewDatabaseUsersAPI(t)
 			userAPI.EXPECT().GetDatabaseUser(context.Background(), "my-project", "admin", "user1").
 				Return(admin.GetDatabaseUserApiRequest{ApiService: userAPI})
 			userAPI.EXPECT().GetDatabaseUserExecute(mock.AnythingOfType("admin.GetDatabaseUserApiRequest")).
@@ -2308,9 +2308,9 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 			userAPI.EXPECT().CreateDatabaseUserExecute(mock.AnythingOfType("admin.CreateDatabaseUserApiRequest")).
 				Return(&admin.CloudDatabaseUser{}, nil, nil)
 
-			clusterAPI := mockadmin.NewClustersApi(t)
+			clusterAPI := mockadmin.NewClustersAPI(t)
 
-			projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI := mockadmin.NewProjectsAPI(t)
 			projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 				Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 			projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
@@ -2318,9 +2318,9 @@ func DefaultTestProvider(t *testing.T) *atlasmock.TestProvider {
 
 			return &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					ProjectsApi:      projectAPI,
-					ClustersApi:      clusterAPI,
-					DatabaseUsersApi: userAPI,
+					ProjectsAPI:      projectAPI,
+					ClustersAPI:      clusterAPI,
+					DatabaseUsersAPI: userAPI,
 				},
 			}, nil
 		},

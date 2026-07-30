@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 type EncryptionAtRestService interface {
@@ -27,10 +27,10 @@ type EncryptionAtRestService interface {
 }
 
 type EncryptionAtRestAPI struct {
-	encryptionAtRestAPI admin.EncryptionAtRestUsingCustomerKeyManagementApi
+	encryptionAtRestAPI admin.EncryptionAtRestUsingCustomerKeyManagementAPI
 }
 
-func NewEncryptionAtRestAPI(api admin.EncryptionAtRestUsingCustomerKeyManagementApi) *EncryptionAtRestAPI {
+func NewEncryptionAtRestAPI(api admin.EncryptionAtRestUsingCustomerKeyManagementAPI) *EncryptionAtRestAPI {
 	return &EncryptionAtRestAPI{encryptionAtRestAPI: api}
 }
 

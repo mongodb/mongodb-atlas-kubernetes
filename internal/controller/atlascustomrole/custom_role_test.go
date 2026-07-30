@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -757,8 +757,8 @@ func Test_handleCustomRole(t *testing.T) {
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
-								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							CustomDatabaseRolesAPI: func() admin.CustomDatabaseRolesAPI {
+								cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
 								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
 									Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
 								cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
@@ -826,8 +826,8 @@ func Test_handleCustomRole(t *testing.T) {
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
-								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							CustomDatabaseRolesAPI: func() admin.CustomDatabaseRolesAPI {
+								cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
 								cdrAPI.EXPECT().GetCustomDbRole(context.Background(), "testProjectID", "testRole").
 									Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
 								cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
@@ -839,8 +839,8 @@ func Test_handleCustomRole(t *testing.T) {
 									Return(nil, nil, nil)
 								return cdrAPI
 							}(),
-							ProjectsApi: func() admin.ProjectsApi {
-								projectAPI := mockadmin.NewProjectsApi(t)
+							ProjectsAPI: func() admin.ProjectsAPI {
+								projectAPI := mockadmin.NewProjectsAPI(t)
 								projectAPI.EXPECT().GetGroupByName(mock.Anything, "testProject").
 									Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 								projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
@@ -916,15 +916,15 @@ func Test_handleCustomRole(t *testing.T) {
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
-								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							CustomDatabaseRolesAPI: func() admin.CustomDatabaseRolesAPI {
+								cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
 								return cdrAPI
 							}(),
-							ProjectsApi: func() admin.ProjectsApi {
+							ProjectsAPI: func() admin.ProjectsAPI {
 								notFound := &admin.GenericOpenAPIError{}
 								notFound.SetModel(admin.ApiError{ErrorCode: "RESOURCE_NOT_FOUND"})
 
-								projectAPI := mockadmin.NewProjectsApi(t)
+								projectAPI := mockadmin.NewProjectsAPI(t)
 								projectAPI.EXPECT().GetGroupByName(mock.Anything, "testProject").
 									Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 								projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
@@ -976,8 +976,8 @@ func Test_handleCustomRole(t *testing.T) {
 					OrgID: "",
 					SdkClientSet: &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							CustomDatabaseRolesApi: func() admin.CustomDatabaseRolesApi {
-								cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							CustomDatabaseRolesAPI: func() admin.CustomDatabaseRolesAPI {
+								cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
 								return cdrAPI
 							}(),
 						},
@@ -1013,7 +1013,7 @@ func Test_handleCustomRole(t *testing.T) {
 				WithScheme(testScheme).
 				WithObjects(tt.args.k8sObjects...).
 				Build()
-			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312.CustomDatabaseRolesApi)
+			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312.CustomDatabaseRolesAPI)
 			r := AtlasCustomRoleReconciler{
 				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
 			}

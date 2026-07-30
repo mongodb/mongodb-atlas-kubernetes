@@ -22,7 +22,7 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -120,7 +120,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				Expect(meta.IsStatusConditionTrue(testGroup.GetConditions(), "State")).To(BeTrue())
 
 				// Verify in Atlas
-				atlasGroup, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
+				atlasGroup, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasGroup.Name).To(Equal(groupName))
 			})
@@ -140,7 +140,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				// Verify in Atlas
 				Expect(testGroup.Status.V20250312).NotTo(BeNil())
 				Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
-				atlasGroup, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
+				atlasGroup, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				atlasTags := atlasGroup.GetTags()
 				Expect(len(atlasTags)).To(Equal(2))
@@ -165,7 +165,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				}).WithContext(ctx).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
+					_, r, err := atlasClient.ProjectsAPI.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
@@ -251,12 +251,12 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 					// Verify it still exists in Atlas
 					time.Sleep(10 * time.Second)
-					atlasGroup, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
+					atlasGroup, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, *groupID).Execute()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(atlasGroup).ToNot(BeNil())
 
 					// Clean up manually
-					_, err = atlasClient.ProjectsApi.DeleteGroup(ctx, *groupID).Execute()
+					_, err = atlasClient.ProjectsAPI.DeleteGroup(ctx, *groupID).Execute()
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
@@ -307,7 +307,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 					Name:                      groupName,
 					WithDefaultAlertsSettings: new(true),
 				}
-				createdGroup, _, err := atlasClient.ProjectsApi.CreateGroup(ctx, &atlasGroup).Execute()
+				createdGroup, _, err := atlasClient.ProjectsAPI.CreateGroup(ctx, &atlasGroup).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				atlasGroupID = createdGroup.GetId()
 				Expect(atlasGroupID).NotTo(BeEmpty())
@@ -334,7 +334,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 				Expect(testGroup.Status.V20250312.Id).NotTo(BeNil())
 
 				// Verify in Atlas
-				atlasGroup, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
+				atlasGroup, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, *testGroup.Status.V20250312.Id).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasGroup.Name).To(Equal(groupName))
 
@@ -450,7 +450,7 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 
 				// Verify Group still exists in Atlas (deletion protection prevented deletion)
 				Eventually(func(g Gomega) {
-					atlasGroup, _, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
+					atlasGroup, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasGroup).NotTo(BeNil())
 					g.Expect(atlasGroup.GetId()).To(Equal(*groupID))
@@ -460,12 +460,12 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 			By("Clean up Atlas resource manually", func() {
 				groupID := testGroup.Status.V20250312.Id
 				Expect(groupID).NotTo(BeNil())
-				_, err := atlasClient.ProjectsApi.DeleteGroup(ctx, *groupID).Execute()
+				_, err := atlasClient.ProjectsAPI.DeleteGroup(ctx, *groupID).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
 				// Verify it's deleted from Atlas
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetGroup(ctx, *groupID).Execute()
+					_, r, err := atlasClient.ProjectsAPI.GetGroup(ctx, *groupID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())

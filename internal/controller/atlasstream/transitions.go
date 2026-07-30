@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -45,7 +45,7 @@ func (r *AtlasStreamsInstanceReconciler) create(
 		GroupId: new(project.ID()),
 	}
 
-	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 		CreateStreamWorkspace(ctx.Context, project.ID(), &streamTenant).
 		Execute()
 
@@ -62,7 +62,7 @@ func (r *AtlasStreamsInstanceReconciler) update(ctx *workflow.Context, project *
 		Region:        &streamInstance.Spec.Config.Region,
 	}
 
-	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+	atlasStreamInstance, _, err := ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 		UpdateStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name, &updateRequest).
 		Execute()
 
@@ -89,7 +89,7 @@ func (r *AtlasStreamsInstanceReconciler) delete(ctx *workflow.Context, project *
 }
 
 func deleteStreamInstance(ctx *workflow.Context, project *akov2.AtlasProject, streamInstance *akov2.AtlasStreamInstance) error {
-	_, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+	_, err := ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 		DeleteStreamWorkspace(ctx.Context, project.ID(), streamInstance.Spec.Name).
 		Execute()
 
@@ -113,7 +113,7 @@ func createConnections(
 			return err
 		}
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 			CreateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, connection).
 			Execute()
 
@@ -148,7 +148,7 @@ func updateConnections(
 			return err
 		}
 
-		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+		_, _, err = ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 			UpdateStreamConnection(ctx.Context, project.ID(), akoStreamInstance.Spec.Name, akoStreamConnection.Spec.Name, connection).
 			Execute()
 
@@ -177,7 +177,7 @@ func deleteConnections(
 	atlasStreamConnections []*admin.StreamsConnection,
 ) error {
 	for _, atlasStreamConnection := range atlasStreamConnections {
-		_, err := ctx.SdkClientSet.SdkClient20250312.StreamsApi.
+		_, err := ctx.SdkClientSet.SdkClient20250312.StreamsAPI.
 			DeleteStreamConnection(ctx.Context, project.ID(), streamInstance.Spec.Name, atlasStreamConnection.GetName()).
 			Execute()
 

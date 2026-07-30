@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 // AuditLogService is the interface exposed by this translation layer over
@@ -30,11 +30,11 @@ type AuditLogService interface {
 
 // AuditLog is the default implementation of the AuditLogService using the Atlas SDK
 type AuditLog struct {
-	auditAPI admin.AuditingApi
+	auditAPI admin.AuditingAPI
 }
 
-// NewAuditLog wraps the SDK AuditingApi as an AuditLog
-func NewAuditLog(api admin.AuditingApi) *AuditLog {
+// NewAuditLog wraps the SDK AuditingAPI as an AuditLog
+func NewAuditLog(api admin.AuditingAPI) *AuditLog {
 	return &AuditLog{auditAPI: api}
 }
 

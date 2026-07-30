@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -57,7 +57,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
 		settings   *akov2.ProjectSettings
-		projectAPI *mockadmin.ProjectsApi
+		projectAPI *mockadmin.ProjectsAPI
 
 		isOK      bool
 		isWarning bool
@@ -68,8 +68,8 @@ func TestEnsureProjectSettings(t *testing.T) {
 		{
 			name:     "Project Settings unset in AKO & Atlas",
 			settings: nil,
-			projectAPI: func() *mockadmin.ProjectsApi {
-				projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI: func() *mockadmin.ProjectsAPI {
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
@@ -95,8 +95,8 @@ func TestEnsureProjectSettings(t *testing.T) {
 		{
 			name:     "GET Atlas Project Settings errors",
 			settings: nil,
-			projectAPI: func() *mockadmin.ProjectsApi {
-				projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI: func() *mockadmin.ProjectsAPI {
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
@@ -122,8 +122,8 @@ func TestEnsureProjectSettings(t *testing.T) {
 				IsRealtimePerformancePanelEnabled:           new(false),
 				IsSchemaAdvisorEnabled:                      new(false),
 			},
-			projectAPI: func() *mockadmin.ProjectsApi {
-				projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI: func() *mockadmin.ProjectsAPI {
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
@@ -157,8 +157,8 @@ func TestEnsureProjectSettings(t *testing.T) {
 				IsRealtimePerformancePanelEnabled:           new(true),
 				IsSchemaAdvisorEnabled:                      new(false),
 			},
-			projectAPI: func() *mockadmin.ProjectsApi {
-				projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI: func() *mockadmin.ProjectsAPI {
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
@@ -197,8 +197,8 @@ func TestEnsureProjectSettings(t *testing.T) {
 				IsRealtimePerformancePanelEnabled:           new(true),
 				IsSchemaAdvisorEnabled:                      new(false),
 			},
-			projectAPI: func() *mockadmin.ProjectsApi {
-				projectAPI := mockadmin.NewProjectsApi(t)
+			projectAPI: func() *mockadmin.ProjectsAPI {
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.Anything).
@@ -232,7 +232,7 @@ func TestEnsureProjectSettings(t *testing.T) {
 			ctx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						ProjectsApi: tc.projectAPI,
+						ProjectsAPI: tc.projectAPI,
 					},
 				},
 				Context: context.Background(),

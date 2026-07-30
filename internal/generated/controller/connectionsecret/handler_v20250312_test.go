@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -909,7 +909,7 @@ func newTestCredentialsSecret(name, namespace string) *corev1.Secret {
 
 //nolint:unparam
 func newMockAtlasProvider(t *testing.T, projectID, projectName string) atlas.Provider {
-	projectsAPI := mockadmin.NewProjectsApi(t)
+	projectsAPI := mockadmin.NewProjectsAPI(t)
 	projectsAPI.EXPECT().GetGroup(mock.Anything, projectID).
 		Return(admin.GetGroupApiRequest{ApiService: projectsAPI}).Maybe()
 	projectsAPI.EXPECT().GetGroupExecute(mock.Anything).
@@ -924,7 +924,7 @@ func newMockAtlasProvider(t *testing.T, projectID, projectName string) atlas.Pro
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			return &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					ProjectsApi: projectsAPI,
+					ProjectsAPI: projectsAPI,
 				},
 			}, nil
 		},

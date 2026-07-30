@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -36,7 +36,7 @@ import (
 
 func TestSyncCloudProviderIntegration(t *testing.T) {
 	t.Run("should fail when atlas is unavailable", func(t *testing.T) {
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			ListCloudProviderAccess(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
@@ -44,7 +44,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 			ListCloudProviderAccessExecute(mock.Anything).
 			Return(nil, nil, errors.New("service unavailable"))
 		atlasClient := admin.APIClient{
-			CloudProviderAccessApi: cpa,
+			CloudProviderAccessAPI: cpa,
 		}
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
@@ -98,7 +98,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     new("role-4"),
 			},
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			ListCloudProviderAccess(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
@@ -150,7 +150,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Context: context.Background(),
@@ -191,7 +191,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     new("role-2"),
 			},
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			ListCloudProviderAccess(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
@@ -221,7 +221,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Context: context.Background(),
@@ -262,7 +262,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 				RoleId:                     new("role-2"),
 			},
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			ListCloudProviderAccess(mock.Anything, mock.Anything).
 			Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpa})
@@ -278,7 +278,7 @@ func TestSyncCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -844,7 +844,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			IamAssumedRoleArn: "aws:arn/my_role-1",
 			Status:            status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			CreateCloudProviderAccess(mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.CreateCloudProviderAccessApiRequest{ApiService: cpa})
@@ -864,7 +864,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Context: context.Background(),
@@ -885,7 +885,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 			IamAssumedRoleArn: "aws:arn/my_role-1",
 			Status:            status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			CreateCloudProviderAccess(mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.CreateCloudProviderAccessApiRequest{ApiService: cpa})
@@ -895,7 +895,7 @@ func TestCreateCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -930,7 +930,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			RoleID:                     "role-1",
 			Status:                     status.CloudProviderIntegrationStatusNew,
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
@@ -951,7 +951,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Context: context.Background(),
@@ -980,7 +980,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 			RoleID:                     "role-1",
 			Status:                     status.CloudProviderIntegrationStatusCreated,
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			AuthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.AuthorizeProviderAccessRoleApiRequest{ApiService: cpa})
@@ -990,7 +990,7 @@ func TestAuthorizeCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Log:     zaptest.NewLogger(t).Sugar(),
@@ -1014,7 +1014,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			DeauthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.DeauthorizeProviderAccessRoleApiRequest{ApiService: cpa})
@@ -1024,7 +1024,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Context: context.Background(),
@@ -1044,7 +1044,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 			Status:                     status.CloudProviderIntegrationStatusFailedToDeAuthorize,
 			ErrorMessage:               "",
 		}
-		cpa := mockadmin.NewCloudProviderAccessApi(t)
+		cpa := mockadmin.NewCloudProviderAccessAPI(t)
 		cpa.EXPECT().
 			DeauthorizeProviderAccessRole(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(admin.DeauthorizeProviderAccessRoleApiRequest{ApiService: cpa})
@@ -1054,7 +1054,7 @@ func TestDeleteCloudProviderIntegration(t *testing.T) {
 		workflowCtx := &workflow.Context{
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					CloudProviderAccessApi: cpa,
+					CloudProviderAccessAPI: cpa,
 				},
 			},
 			Log:     zaptest.NewLogger(t).Sugar(),

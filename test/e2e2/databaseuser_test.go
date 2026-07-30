@@ -23,7 +23,7 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -151,7 +151,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 				Expect(meta.IsStatusConditionTrue(testDBUser.GetConditions(), "Ready")).To(BeTrue())
 
 				groupID := *testGroup.Status.V20250312.Id
-				atlasUser, _, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, "admin", username).Execute()
+				atlasUser, _, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, "admin", username).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasUser.GetUsername()).To(Equal(username))
 			})
@@ -168,7 +168,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 				}).WithContext(ctx).WithTimeout(10 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				groupID := *testGroup.Status.V20250312.Id
-				atlasUser, _, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, "admin", username).Execute()
+				atlasUser, _, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, "admin", username).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				atlasRoles := atlasUser.GetRoles()
 				Expect(len(atlasRoles)).To(Equal(1))
@@ -188,7 +188,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 				}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+					_, r, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())
@@ -436,12 +436,12 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					atlasUser, _, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+					atlasUser, _, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasUser).ToNot(BeNil())
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
-				_, err := atlasClient.DatabaseUsersApi.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
+				_, err := atlasClient.DatabaseUsersAPI.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -494,7 +494,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 						{RoleName: "readAnyDatabase", DatabaseName: "admin"},
 					},
 				}
-				_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(ctx, atlasGroupID, atlasDBUser).Execute()
+				_, _, err := atlasClient.DatabaseUsersAPI.CreateDatabaseUser(ctx, atlasGroupID, atlasDBUser).Execute()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -519,7 +519,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 				Expect(testDBUser.Status.V20250312.GroupId).To(Equal(atlasGroupID))
 				Expect(testDBUser.Status.V20250312.Username).To(Equal(username))
 
-				atlasUser, _, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, atlasGroupID, "admin", username).Execute()
+				atlasUser, _, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, atlasGroupID, "admin", username).Execute()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(atlasUser.GetUsername()).To(Equal(username))
 
@@ -665,7 +665,7 @@ var _ = Describe("DatabaseUser with Deletion Protection", Ordered, Label("databa
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					atlasUser, _, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+					atlasUser, _, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(atlasUser).NotTo(BeNil())
 					g.Expect(atlasUser.GetUsername()).To(Equal(username))
@@ -675,11 +675,11 @@ var _ = Describe("DatabaseUser with Deletion Protection", Ordered, Label("databa
 			By("Clean up Atlas user manually", func() {
 				groupID := testDBUser.Status.V20250312.GroupId
 				databaseName := testDBUser.Status.V20250312.DatabaseName
-				_, err := atlasClient.DatabaseUsersApi.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
+				_, err := atlasClient.DatabaseUsersAPI.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+					_, r, err := atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(5 * time.Second).Should(Succeed())

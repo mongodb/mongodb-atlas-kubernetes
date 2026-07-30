@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"github.com/jedib0t/go-pretty/v6/text"
-	"go.mongodb.org/atlas-sdk/v20250312013/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 )
 
 func (c *Cleaner) getEncryptionAtRest(ctx context.Context, projectID string) *admin.EncryptionAtRest {
-	ear, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementApi.
+	ear, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementAPI.
 		GetEncryptionAtRest(ctx, projectID).
 		Execute()
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *Cleaner) deleteEncryptionAtRest(ctx context.Context, projectID string, 
 	}
 
 	disabled := false
-	_, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementApi.
+	_, _, err := c.client.EncryptionAtRestUsingCustomerKeyManagementAPI.
 		UpdateEncryptionAtRest(
 			ctx,
 			projectID,

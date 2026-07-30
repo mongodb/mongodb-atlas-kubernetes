@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,7 +32,7 @@ var (
 )
 
 func (r *AtlasReconciler) ResolveProject(ctx context.Context, sdkClient *admin.APIClient, pro project.ProjectReferrerObject) (*project.Project, error) {
-	projectsService := project.NewProjectAPIService(sdkClient.ProjectsApi)
+	projectsService := project.NewProjectAPIService(sdkClient.ProjectsAPI)
 	ref := pro.ProjectDualRef()
 	if ref.ProjectRef != nil {
 		project, err := r.projectFromKube(ctx, pro, projectsService)

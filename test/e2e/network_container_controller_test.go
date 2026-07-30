@@ -242,7 +242,7 @@ func networkContainerReady(container *akov2.AtlasNetworkContainer) bool {
 }
 
 func createTestContainer(ctx context.Context, atlasClient atlas.Atlas, projectID string, container *akov2.AtlasNetworkContainerSpec) (string, error) {
-	service := networkcontainer.NewNetworkContainerService(atlasClient.Client.NetworkPeeringApi)
+	service := networkcontainer.NewNetworkContainerService(atlasClient.Client.NetworkPeeringAPI)
 	cfg := networkcontainer.NewNetworkContainerConfig(container.Provider, &container.AtlasNetworkContainerConfig)
 	createdContainer, err := service.Create(ctx, projectID, cfg)
 	if err != nil {

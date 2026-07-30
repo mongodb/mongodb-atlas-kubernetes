@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,7 +49,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 
 	BeforeEach(func() {
 		By("Checking if Federation Settings enabled for the org", func() {
-			federationSettings, _, err := atlasClient.FederatedAuthenticationApi.GetFederationSettings(ctx, orgID).Execute()
+			federationSettings, _, err := atlasClient.FederatedAuthenticationAPI.GetFederationSettings(ctx, orgID).Execute()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(federationSettings).ShouldNot(BeNil())
 
@@ -57,7 +57,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 		})
 
 		By("Getting original IDP", func() {
-			identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, originalFederationSettings.GetId()).Execute()
+			identityProviders, _, err := atlasClient.FederatedAuthenticationAPI.ListIdentityProviders(ctx, originalFederationSettings.GetId()).Execute()
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, identityProvider := range identityProviders.GetResults() {
@@ -71,7 +71,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 		})
 
 		By("Getting existing org config", func() {
-			connectedOrgConfig, _, err := atlasClient.FederatedAuthenticationApi.
+			connectedOrgConfig, _, err := atlasClient.FederatedAuthenticationAPI.
 				GetConnectedOrgConfig(ctx, originalFederationSettings.GetId(), orgID).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -122,7 +122,7 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 					}
 
 					if groupId := atlasRS.GetGroupId(); groupId != "" {
-						project, _, err := atlasClient.ProjectsApi.GetGroup(ctx, atlasRS.GetGroupId()).Execute()
+						project, _, err := atlasClient.ProjectsAPI.GetGroup(ctx, atlasRS.GetGroupId()).Execute()
 						Expect(err).NotTo(HaveOccurred())
 						Expect(project).NotTo(BeNil())
 						newRS.ProjectName = project.GetName()

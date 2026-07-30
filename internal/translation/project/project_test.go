@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -33,14 +33,14 @@ func TestGetProjectByName(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
 	notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
 	tests := map[string]struct {
-		api      func() admin.ProjectsApi
+		api      func() admin.ProjectsAPI
 		name     string
 		expected *Project
 		err      string
 	}{
 		"should fail to retrieve project from atlas": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().GetGroupByName(context.Background(), "my-project").
 					Return(admin.GetGroupByNameApiRequest{ApiService: sdk})
 				sdk.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
@@ -52,8 +52,8 @@ func TestGetProjectByName(t *testing.T) {
 			err:  "fail to retrieve project from atlas",
 		},
 		"should return error when project was not found": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().GetGroupByName(context.Background(), "my-project").
 					Return(admin.GetGroupByNameApiRequest{ApiService: sdk})
 				sdk.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
@@ -65,8 +65,8 @@ func TestGetProjectByName(t *testing.T) {
 			err:  "not found\n",
 		},
 		"should return project": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().GetGroupByName(context.Background(), "my-project").
 					Return(admin.GetGroupByNameApiRequest{ApiService: sdk})
 				sdk.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
@@ -125,14 +125,14 @@ func TestGetProjectByName(t *testing.T) {
 
 func TestCreateProject(t *testing.T) {
 	tests := map[string]struct {
-		api      func() admin.ProjectsApi
+		api      func() admin.ProjectsAPI
 		project  *Project
 		expected *Project
 		err      error
 	}{
 		"should fail to create project": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().CreateGroup(context.Background(), mock.AnythingOfType("*admin.Group")).
 					Return(admin.CreateGroupApiRequest{ApiService: sdk})
 				sdk.EXPECT().CreateGroupExecute(mock.AnythingOfType("admin.CreateGroupApiRequest")).
@@ -146,8 +146,8 @@ func TestCreateProject(t *testing.T) {
 			err: errors.New("fail to create project"),
 		},
 		"should create project": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().CreateGroup(context.Background(), mock.AnythingOfType("*admin.Group")).
 					Return(admin.CreateGroupApiRequest{ApiService: sdk})
 				sdk.EXPECT().CreateGroupExecute(mock.AnythingOfType("admin.CreateGroupApiRequest")).
@@ -213,13 +213,13 @@ func TestDeleteProject(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
 	notFoundErr.SetModel(admin.ApiError{ErrorCode: "GROUP_NOT_FOUND"})
 	tests := map[string]struct {
-		api     func() admin.ProjectsApi
+		api     func() admin.ProjectsAPI
 		project *Project
 		err     error
 	}{
 		"should fail to delete project": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().DeleteGroup(context.Background(), "my-project-id").
 					Return(admin.DeleteGroupApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteGroupExecute(mock.AnythingOfType("admin.DeleteGroupApiRequest")).
@@ -233,8 +233,8 @@ func TestDeleteProject(t *testing.T) {
 			err: errors.New("fail to delete project"),
 		},
 		"should succeed when project doesn't exist": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().DeleteGroup(context.Background(), "my-project-id").
 					Return(admin.DeleteGroupApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteGroupExecute(mock.AnythingOfType("admin.DeleteGroupApiRequest")).
@@ -247,8 +247,8 @@ func TestDeleteProject(t *testing.T) {
 			},
 		},
 		"should delete project": {
-			api: func() admin.ProjectsApi {
-				sdk := mockadmin.NewProjectsApi(t)
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
 				sdk.EXPECT().DeleteGroup(context.Background(), "my-project-id").
 					Return(admin.DeleteGroupApiRequest{ApiService: sdk})
 				sdk.EXPECT().DeleteGroupExecute(mock.AnythingOfType("admin.DeleteGroupApiRequest")).

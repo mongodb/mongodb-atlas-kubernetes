@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -372,7 +372,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							if tt.sdkShouldError {
 								return nil, fmt.Errorf("failed to create sdk")
 							}
-							cdrAPI := mockadmin.NewCustomDatabaseRolesApi(t)
+							cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
 							cdrAPI.EXPECT().GetCustomDbRole(mock.Anything, "testProjectID", "TestRoleName").
 								Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
 							cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
@@ -383,7 +383,7 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 							cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
 								Return(nil, nil, nil)
 
-							pAPI := mockadmin.NewProjectsApi(t)
+							pAPI := mockadmin.NewProjectsAPI(t)
 							if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
 								grp := &admin.Group{
 									Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
@@ -395,8 +395,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 									Return(grp, nil, nil)
 							}
 							return &atlas.ClientSet{SdkClient20250312: &admin.APIClient{
-								CustomDatabaseRolesApi: cdrAPI,
-								ProjectsApi:            pAPI,
+								CustomDatabaseRolesAPI: cdrAPI,
+								ProjectsAPI:            pAPI,
 							}}, nil
 						},
 						IsCloudGovFunc: func() bool {

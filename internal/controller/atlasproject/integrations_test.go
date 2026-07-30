@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -270,15 +270,15 @@ func TestEnsureIntegration(t *testing.T) {
 	tests := map[string]struct {
 		integrations           []project.Integration
 		lastAppliedIntegration string
-		apiMock                func() admin.ThirdPartyIntegrationsApi
+		apiMock                func() admin.ThirdPartyIntegrationsAPI
 		wantOk                 bool
 		wantConditions         []api.Condition
 	}{
 		"empty integrations, condition unset": {
 			integrations:           []project.Integration{},
 			lastAppliedIntegration: "{}",
-			apiMock: func() admin.ThirdPartyIntegrationsApi {
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+			apiMock: func() admin.ThirdPartyIntegrationsAPI {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
@@ -298,8 +298,8 @@ func TestEnsureIntegration(t *testing.T) {
 				},
 			},
 			lastAppliedIntegration: "{}",
-			apiMock: func() admin.ThirdPartyIntegrationsApi {
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+			apiMock: func() admin.ThirdPartyIntegrationsAPI {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 
 				return integrationsApi
 			},
@@ -319,8 +319,8 @@ func TestEnsureIntegration(t *testing.T) {
 				},
 			},
 			lastAppliedIntegration: "{aaaa",
-			apiMock: func() admin.ThirdPartyIntegrationsApi {
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+			apiMock: func() admin.ThirdPartyIntegrationsAPI {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 
 				return integrationsApi
 			},
@@ -340,8 +340,8 @@ func TestEnsureIntegration(t *testing.T) {
 				},
 			},
 			lastAppliedIntegration: "{}",
-			apiMock: func() admin.ThirdPartyIntegrationsApi {
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+			apiMock: func() admin.ThirdPartyIntegrationsAPI {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
@@ -370,8 +370,8 @@ func TestEnsureIntegration(t *testing.T) {
 				},
 			},
 			lastAppliedIntegration: "{}",
-			apiMock: func() admin.ThirdPartyIntegrationsApi {
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+			apiMock: func() admin.ThirdPartyIntegrationsAPI {
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "0123456789").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
@@ -545,7 +545,7 @@ func TestEnsureIntegration(t *testing.T) {
 					SdkClient20250312: admin.NewAPIClient(&admin.Configuration{Host: "cloud-qa.mongodb.com"}),
 				},
 			}
-			workflowCtx.SdkClientSet.SdkClient20250312.ThirdPartyIntegrationsApi = tt.apiMock()
+			workflowCtx.SdkClientSet.SdkClient20250312.ThirdPartyIntegrationsAPI = tt.apiMock()
 			reconciler := &AtlasProjectReconciler{
 				Client: fake.NewClientBuilder().
 					WithScheme(testScheme).

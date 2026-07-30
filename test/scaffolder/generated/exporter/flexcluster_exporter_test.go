@@ -24,25 +24,25 @@ import (
 	"github.com/crd2go/crapi/refs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// mockFlexClustersApi implements admin.FlexClustersApi for testing.
-type mockFlexClustersApi struct {
-	admin.FlexClustersApi
+// mockFlexClustersAPI implements admin.FlexClustersAPI for testing.
+type mockFlexClustersAPI struct {
+	admin.FlexClustersAPI
 	listResponse *admin.PaginatedFlexClusters20241113
 	listErr      error
 	// For pagination testing: map pageNum to response
 	paginatedResponses map[int]*admin.PaginatedFlexClusters20241113
 }
 
-func (m *mockFlexClustersApi) ListFlexClusters(ctx context.Context, groupId string) admin.ListFlexClustersApiRequest {
+func (m *mockFlexClustersAPI) ListFlexClusters(ctx context.Context, groupId string) admin.ListFlexClustersApiRequest {
 	return admin.ListFlexClustersApiRequest{ApiService: m}
 }
 
-func (m *mockFlexClustersApi) ListFlexClustersExecute(r admin.ListFlexClustersApiRequest) (*admin.PaginatedFlexClusters20241113, *http.Response, error) {
+func (m *mockFlexClustersAPI) ListFlexClustersExecute(r admin.ListFlexClustersApiRequest) (*admin.PaginatedFlexClusters20241113, *http.Response, error) {
 	if m.listErr != nil {
 		return nil, nil, m.listErr
 	}
@@ -103,7 +103,7 @@ func (m *mockClientObject) GetName() string {
 func TestExport(t *testing.T) {
 	tests := []struct {
 		name              string
-		mockApi           *mockFlexClustersApi
+		mockApi           *mockFlexClustersAPI
 		translator        *mockTranslator
 		identifiers       []string
 		referencedObjects []client.Object
@@ -113,7 +113,7 @@ func TestExport(t *testing.T) {
 	}{
 		{
 			name: "exports single cluster successfully",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
 						{Name: new("cluster-1")},
@@ -132,7 +132,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "exports multiple clusters successfully",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
 						{Name: new("cluster-1")},
@@ -153,7 +153,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "returns empty when no clusters exist",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results:    []admin.FlexClusterDescription20241113{},
 					TotalCount: new(0),
@@ -166,7 +166,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "returns error when API call fails",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listErr: errors.New("API connection failed"),
 			},
 			translator:      &mockTranslator{},
@@ -176,7 +176,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "returns error when API returns nil response",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: nil,
 			},
 			translator:      &mockTranslator{},
@@ -186,7 +186,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "returns error when translator fails",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
 						{Name: new("cluster-1")},
@@ -203,7 +203,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "translator returns multiple objects per resource",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
 						{Name: new("cluster-1")},
@@ -226,7 +226,7 @@ func TestExport(t *testing.T) {
 		},
 		{
 			name: "passes referenced objects to translator",
-			mockApi: &mockFlexClustersApi{
+			mockApi: &mockFlexClustersAPI{
 				listResponse: &admin.PaginatedFlexClusters20241113{
 					Results: []admin.FlexClusterDescription20241113{
 						{Name: new("cluster-1")},
@@ -257,7 +257,7 @@ func TestExport(t *testing.T) {
 
 			// Create API client with mock
 			apiClient := &admin.APIClient{
-				FlexClustersApi: tc.mockApi,
+				FlexClustersAPI: tc.mockApi,
 			}
 
 			exporter := NewFlexClusterExporter(apiClient, tc.translator, tc.identifiers)

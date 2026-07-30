@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -106,19 +106,19 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	logger := workflowCtx.Log
 	mongoClient := workflowCtx.SdkClientSet.SdkClient20250312
 	logger.Debugf("syncing network peers for project %v", groupID)
-	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID)
+	list, err := GetAllExistedNetworkPeer(workflowCtx.Context, mongoClient.NetworkPeeringAPI, groupID)
 	if err != nil {
 		logger.Errorf("failed to get all network peers: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas, errors.New("failed to get all network peers")),
 			api.NetworkPeerReadyType
 	}
 
-	diff := sortPeers(workflowCtx.Context, list, lastAppliedPeers, peerSpecs, logger, mongoClient.NetworkPeeringApi, groupID)
+	diff := sortPeers(workflowCtx.Context, list, lastAppliedPeers, peerSpecs, logger, mongoClient.NetworkPeeringAPI, groupID)
 	logger.Debugf("peers to create %d, peers to update %d, peers to delete %d",
 		len(diff.PeersToCreate), len(diff.PeersToUpdate), len(diff.PeersToDelete))
 
 	for _, peerToDelete := range diff.PeersToDelete {
-		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, peerToDelete, logger)
+		errDelete := deletePeerByID(workflowCtx.Context, mongoClient.NetworkPeeringAPI, groupID, peerToDelete, logger)
 		if errDelete != nil {
 			logger.Errorf("failed to delete network peer %s: %v", peerToDelete, errDelete)
 			return workflow.Terminate(
@@ -130,14 +130,14 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	}
 
 	peerStatuses = createNetworkPeers(workflowCtx.Context, mongoClient, groupID, diff.PeersToCreate, logger)
-	peerStatuses, err = UpdateStatuses(workflowCtx.Context, mongoClient.NetworkPeeringApi, peerStatuses, diff.PeersToUpdate, groupID, logger)
+	peerStatuses, err = UpdateStatuses(workflowCtx.Context, mongoClient.NetworkPeeringAPI, peerStatuses, diff.PeersToUpdate, groupID, logger)
 	if err != nil {
 		logger.Errorf("failed to update network peer statuses: %v", err)
 		return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
 			errors.New("failed to update network peer statuses")), api.NetworkPeerReadyType
 	}
 	if len(lastAppliedPeers) > 0 {
-		err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringApi, groupID, getPeerIDs(peerStatuses))
+		err = deleteUnusedContainers(workflowCtx.Context, mongoClient.NetworkPeeringAPI, groupID, getPeerIDs(peerStatuses))
 		if err != nil {
 			logger.Errorf("failed to delete unused containers: %v", err)
 			return workflow.Terminate(workflow.ProjectNetworkPeerIsNotReadyInAtlas,
@@ -147,7 +147,7 @@ func SyncNetworkPeer(workflowCtx *workflow.Context, groupID string, peerStatuses
 	return ensurePeerStatus(peerStatuses, len(peerSpecs), logger), api.NetworkPeerReadyType
 }
 
-func UpdateStatuses(context context.Context, containerService admin.NetworkPeeringApi,
+func UpdateStatuses(context context.Context, containerService admin.NetworkPeeringAPI,
 	peerStatuses []status.AtlasNetworkPeer, peersToUpdate []admin.BaseNetworkPeeringConnectionSettings, groupID string, logger *zap.SugaredLogger) ([]status.AtlasNetworkPeer, error) {
 	for _, peerToUpdate := range peersToUpdate {
 		vpc := formVPC(peerToUpdate)
@@ -175,7 +175,7 @@ func getPeerIDs(statuses []status.AtlasNetworkPeer) []string {
 	return ids
 }
 
-func deleteUnusedContainers(context context.Context, containerService admin.NetworkPeeringApi, groupID string, doNotDelete []string) error {
+func deleteUnusedContainers(context context.Context, containerService admin.NetworkPeeringAPI, groupID string, doNotDelete []string) error {
 	containers, _, err := containerService.ListGroupContainerAll(context, groupID).Execute()
 	if err != nil {
 		return err
@@ -195,7 +195,7 @@ func deleteUnusedContainers(context context.Context, containerService admin.Netw
 	return nil
 }
 
-func getContainer(context context.Context, containerService admin.NetworkPeeringApi,
+func getContainer(context context.Context, containerService admin.NetworkPeeringAPI,
 	peerToUpdate admin.BaseNetworkPeeringConnectionSettings, groupID string, logger *zap.SugaredLogger) (admin.CloudProviderContainer, error) {
 	var container admin.CloudProviderContainer
 
@@ -266,7 +266,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 			continue
 		}
 		if peer.ContainerID == "" {
-			containerID, errCreate := createContainer(context, mongoClient.NetworkPeeringApi, groupID, peer, logger)
+			containerID, errCreate := createContainer(context, mongoClient.NetworkPeeringAPI, groupID, peer, logger)
 			if errCreate != nil {
 				newPeerStatuses = append(newPeerStatuses,
 					failedPeerStatus(fmt.Errorf("failed to create container for network peer %w", errCreate).Error(), peer))
@@ -276,7 +276,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 			peer.ContainerID = containerID
 		}
 
-		atlasPeer, err := createNetworkPeer(context, groupID, mongoClient.NetworkPeeringApi, peer, logger)
+		atlasPeer, err := createNetworkPeer(context, groupID, mongoClient.NetworkPeeringAPI, peer, logger)
 		if err != nil {
 			logger.Errorf("failed to create network peer: %v", err)
 			newPeerStatuses = append(newPeerStatuses,
@@ -290,7 +290,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 			case provider.ProviderGCP, provider.ProviderAzure:
 				var container admin.CloudProviderContainer
 
-				atlasContainer, _, err := mongoClient.NetworkPeeringApi.GetGroupContainer(context, groupID, peer.ContainerID).Execute()
+				atlasContainer, _, err := mongoClient.NetworkPeeringAPI.GetGroupContainer(context, groupID, peer.ContainerID).Execute()
 				if err != nil {
 					logger.Errorf("failed to get container for gcp status %s: %v", peer.ContainerID, err)
 					newPeerStatuses = append(newPeerStatuses,
@@ -312,7 +312,7 @@ func createNetworkPeers(context context.Context, mongoClient *admin.APIClient, g
 	return newPeerStatuses
 }
 
-func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string) ([]admin.BaseNetworkPeeringConnectionSettings, error) {
+func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeeringAPI, groupID string) ([]admin.BaseNetworkPeeringConnectionSettings, error) {
 	var peersList []admin.BaseNetworkPeeringConnectionSettings
 	listAWS, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.BaseNetworkPeeringConnectionSettings], *http.Response, error) {
 		return peerService.ListGroupPeersWithParams(ctx, &admin.ListGroupPeersApiParams{
@@ -349,7 +349,7 @@ func GetAllExistedNetworkPeer(ctx context.Context, peerService admin.NetworkPeer
 	return peersList, nil
 }
 
-func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, lastApplied, expectedPeers []akov2.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringApi, groupID string) *networkPeerDiff {
+func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConnectionSettings, lastApplied, expectedPeers []akov2.NetworkPeer, logger *zap.SugaredLogger, containerService admin.NetworkPeeringAPI, groupID string) *networkPeerDiff {
 	var diff networkPeerDiff
 	var peersToUpdate []akov2.NetworkPeer
 	for _, existedPeer := range existedPeers {
@@ -387,7 +387,7 @@ func sortPeers(ctx context.Context, existedPeers []admin.BaseNetworkPeeringConne
 	return &diff
 }
 
-func isAtlasPeerManaged(ctx context.Context, lastApplied []akov2.NetworkPeer, atlasPeer admin.BaseNetworkPeeringConnectionSettings, containerService admin.NetworkPeeringApi, groupID string) bool {
+func isAtlasPeerManaged(ctx context.Context, lastApplied []akov2.NetworkPeer, atlasPeer admin.BaseNetworkPeeringConnectionSettings, containerService admin.NetworkPeeringAPI, groupID string) bool {
 	for _, lastAppliedPeer := range lastApplied {
 		if comparePeersPair(ctx, *akov2.NewNetworkPeerFromAtlas(atlasPeer), lastAppliedPeer, containerService, groupID) {
 			return true
@@ -400,7 +400,7 @@ func isPeerDeleting(peer admin.BaseNetworkPeeringConnectionSettings) bool {
 	return peer.GetStatus() == StatusDeleting || peer.GetStatusName() == StatusDeleting || peer.GetStatusName() == StatusTerminating
 }
 
-func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.NetworkPeer, containerService admin.NetworkPeeringApi, groupID string) bool {
+func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.NetworkPeer, containerService admin.NetworkPeeringAPI, groupID string) bool {
 	if expectedPeer.ProviderName == "" {
 		expectedPeer.ProviderName = provider.ProviderAWS
 	}
@@ -461,7 +461,7 @@ func comparePeersPair(ctx context.Context, existedPeer, expectedPeer akov2.Netwo
 	}
 }
 
-func deletePeerByID(ctx context.Context, peerService admin.NetworkPeeringApi, groupID string, containerID string, logger *zap.SugaredLogger) error {
+func deletePeerByID(ctx context.Context, peerService admin.NetworkPeeringAPI, groupID string, containerID string, logger *zap.SugaredLogger) error {
 	_, response, err := peerService.DeleteGroupPeer(ctx, groupID, containerID).Execute()
 	if err != nil {
 		if httputil.StatusCode(response) == http.StatusNotFound {
@@ -498,7 +498,7 @@ func awsRegionMatcher(regionName string) string {
 	return strings.ToUpper(result)
 }
 
-func createContainer(ctx context.Context, containerService admin.NetworkPeeringApi, groupID string, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (string, error) {
+func createContainer(ctx context.Context, containerService admin.NetworkPeeringAPI, groupID string, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (string, error) {
 	container := &admin.CloudProviderContainer{
 		AtlasCidrBlock: pointer.SetOrNil(peer.AtlasCIDRBlock, ""),
 		ProviderName:   pointer.SetOrNil(string(peer.ProviderName), ""),
@@ -543,7 +543,7 @@ func createContainer(ctx context.Context, containerService admin.NetworkPeeringA
 	return create.GetId(), nil
 }
 
-func createNetworkPeer(ctx context.Context, groupID string, service admin.NetworkPeeringApi, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (*admin.BaseNetworkPeeringConnectionSettings, error) {
+func createNetworkPeer(ctx context.Context, groupID string, service admin.NetworkPeeringAPI, peer akov2.NetworkPeer, logger *zap.SugaredLogger) (*admin.BaseNetworkPeeringConnectionSettings, error) {
 	p, _, err := service.CreateGroupPeer(ctx, groupID, peer.ToAtlasPeer()).Execute()
 	if err != nil {
 		logger.Errorf("failed to create network peer %v: %v", peer, err)
@@ -603,7 +603,7 @@ func validateInitNetworkPeer(peer akov2.NetworkPeer) error {
 	return fmt.Errorf("unsupported provider: %s", peer.ProviderName)
 }
 
-func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringApi, logger *zap.SugaredLogger) workflow.DeprecatedResult {
+func DeleteOwnedNetworkPeers(ctx context.Context, project *akov2.AtlasProject, service admin.NetworkPeeringAPI, logger *zap.SugaredLogger) workflow.DeprecatedResult {
 	for _, peerStatus := range project.Status.NetworkPeers {
 		errDelete := deletePeerByID(ctx, service, project.ID(), peerStatus.ID, logger)
 		if errDelete != nil && !errors.Is(errDelete, errNortFound) {

@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -283,7 +283,7 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					ialAPI := mockadmin.NewProjectIPAccessListApi(t)
+					ialAPI := mockadmin.NewProjectIPAccessListAPI(t)
 					ialAPI.EXPECT().ListAccessListEntries(mock.Anything, "123").
 						Return(admin.ListAccessListEntriesApiRequest{ApiService: ialAPI})
 					ialAPI.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
@@ -307,7 +307,7 @@ func TestHandleCustomResource(t *testing.T) {
 							nil,
 						)
 
-					projectAPI := mockadmin.NewProjectsApi(t)
+					projectAPI := mockadmin.NewProjectsAPI(t)
 					projectAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 						Return(admin.GetGroupByNameApiRequest{ApiService: projectAPI})
 					projectAPI.EXPECT().GetGroupByNameExecute(mock.Anything).
@@ -315,8 +315,8 @@ func TestHandleCustomResource(t *testing.T) {
 
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							ProjectIPAccessListApi: ialAPI,
-							ProjectsApi:            projectAPI,
+							ProjectIPAccessListAPI: ialAPI,
+							ProjectsAPI:            projectAPI,
 						},
 					}, nil
 				},

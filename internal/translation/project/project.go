@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -39,7 +39,7 @@ type ProjectService interface {
 }
 
 type ProjectAPI struct {
-	projectAPI admin.ProjectsApi
+	projectAPI admin.ProjectsAPI
 }
 
 func (a *ProjectAPI) GetProjectByName(ctx context.Context, name string) (*Project, error) {
@@ -82,7 +82,7 @@ func (a *ProjectAPI) DeleteProject(ctx context.Context, project *Project) error 
 	return nil
 }
 
-func NewProjectAPIService(sdk admin.ProjectsApi) *ProjectAPI {
+func NewProjectAPIService(sdk admin.ProjectsAPI) *ProjectAPI {
 	return &ProjectAPI{
 		projectAPI: sdk,
 	}

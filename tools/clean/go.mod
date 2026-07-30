@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.55.0
 	github.com/aws/smithy-go v1.27.5
 	github.com/jedib0t/go-pretty/v6 v6.8.3
-	go.mongodb.org/atlas-sdk/v20250312013 v20250312013.2.0
+	go.mongodb.org/atlas-sdk/v20250312022 v20250312022.0.0
 	google.golang.org/api v0.290.0
 )
 

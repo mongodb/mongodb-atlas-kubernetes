@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -185,7 +185,7 @@ func (s *searchNodeController) handleDeleting() workflow.DeprecatedResult {
 // - terminated: when an error occurred.
 func (s *searchNodeController) create() workflow.DeprecatedResult {
 	s.ctx.Log.Debugf("creating search nodes %v", s.deployment.Spec.DeploymentSpec.SearchNodes)
-	resp, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.CreateClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
+	resp, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchAPI.CreateClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 		Specs: s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 	}).Execute()
 	if err != nil {
@@ -208,7 +208,7 @@ func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentRespo
 	currentAkoNodesAsAtlas := s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas()
 	// We can deepequal without normalization here because there is only ever 1 spec in the array
 	if !searchDeploymentSpecsEqual(currentAkoNodesAsAtlas, atlasNodes.GetSpecs()) {
-		updateResponse, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.UpdateClusterSearchDeployment(
+		updateResponse, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchAPI.UpdateClusterSearchDeployment(
 			s.ctx.Context, s.projectID, s.deployment.GetDeploymentName(), &admin.ApiSearchDeploymentRequest{
 				Specs: s.deployment.Spec.DeploymentSpec.SearchNodesToAtlas(),
 			}).Execute()
@@ -243,7 +243,7 @@ func (s *searchNodeController) update(atlasNodes *admin.ApiSearchDeploymentRespo
 // - terminated: when an error occurred.
 func (s *searchNodeController) delete() workflow.DeprecatedResult {
 	s.ctx.Log.Debug("deleting search nodes")
-	_, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.DeleteClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName()).Execute()
+	_, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchAPI.DeleteClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName()).Execute()
 	if err != nil {
 		return s.terminate(workflow.ErrorSearchNodesNotDeletedInAtlas, err)
 	}
@@ -304,7 +304,7 @@ func searchDeploymentSpecsEqual(req []admin.ApiSearchDeploymentRequestSpec, resp
 }
 
 func (s *searchNodeController) getAtlasSearchDeployment() (*admin.ApiSearchDeploymentResponse, bool, error) {
-	atlasNodes, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchApi.GetClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName()).Execute()
+	atlasNodes, _, err := s.ctx.SdkClientSet.SdkClient20250312.AtlasSearchAPI.GetClusterSearchDeployment(s.ctx.Context, s.projectID, s.deployment.GetDeploymentName()).Execute()
 	if err != nil {
 		apiError, ok := admin.AsError(err)
 		// TODO: Currently 400, should be be 404: CLOUDP-239015

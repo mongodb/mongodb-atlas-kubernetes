@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,7 +87,7 @@ func createSuccessfulProvider() atlas.Provider {
 	return &atlasmock.TestProvider{
 		SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 			return &atlas.ClientSet{
-				SdkClient20250312: &admin.APIClient{OrganizationsApi: &admin.OrganizationsApiService{}},
+				SdkClient20250312: &admin.APIClient{OrganizationsAPI: &admin.OrganizationsAPIService{}},
 			}, nil
 		},
 	}

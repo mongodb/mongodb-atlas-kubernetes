@@ -19,7 +19,7 @@ import (
 	"io"
 	"sort"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -53,7 +53,7 @@ func EnsureNoDuplicates(client *admin.APIClient, logger *zap.SugaredLogger, proj
 }
 
 func listProjectsByName(client *admin.APIClient, projectName string) ([]admin.Group, error) {
-	projects, _, err := client.ProjectsApi.ListGroups(context.Background()).Execute()
+	projects, _, err := client.ProjectsAPI.ListGroups(context.Background()).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func selectProject(projects []admin.Group) (admin.Group, []admin.Group) {
 
 func removeProjects(client *admin.APIClient, projects []admin.Group) error {
 	for _, project := range projects {
-		_, err := client.ProjectsApi.DeleteGroup(context.Background(), project.GetId()).Execute()
+		_, err := client.ProjectsAPI.DeleteGroup(context.Background(), project.GetId()).Execute()
 		if err != nil {
 			return err
 		}

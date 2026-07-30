@@ -20,7 +20,7 @@ import (
 	k8s "github.com/crd2go/crd2go/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -261,20 +261,20 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 					return
 				}
 				atlasClient, _ := newTestAtlasClient()
-				_, err := atlasClient.FlexClustersApi.DeleteFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
+				_, err := atlasClient.FlexClustersAPI.DeleteFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
 				if !admin.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
 					Expect(err).NotTo(HaveOccurred())
 				}
 				deadline := time.Now().Add(3 * time.Minute)
 				for time.Now().Before(deadline) {
 					time.Sleep(10 * time.Second)
-					_, _, err = atlasClient.FlexClustersApi.GetFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
+					_, _, err = atlasClient.FlexClustersAPI.GetFlexCluster(ctx, atlasCleanupGroupID, atlasCleanupClusterName).Execute()
 					if admin.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
 						break
 					}
 				}
 				if atlasDeleteProject {
-					if _, err := atlasClient.ProjectsApi.DeleteGroup(ctx, atlasCleanupGroupID).Execute(); err != nil {
+					if _, err := atlasClient.ProjectsAPI.DeleteGroup(ctx, atlasCleanupGroupID).Execute(); err != nil {
 						GinkgoWriter.Printf("WARNING: failed to delete Atlas project %s: %v\n", atlasCleanupGroupID, err)
 					}
 				}

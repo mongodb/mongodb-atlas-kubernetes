@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +79,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
+		deploymentService = deployment.NewAtlasDeployments(atlasClient.ClustersAPI, atlasClient.GlobalClustersAPI, atlasClient.FlexClustersAPI, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -95,7 +95,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas to let project get removed
-				_, err := atlasClient.ClustersApi.
+				_, err := atlasClient.ClustersAPI.
 					DeleteCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
 					Execute()
 				Expect(err).NotTo(HaveOccurred())
@@ -121,7 +121,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 
 	checkAtlasState := func(additionalChecks ...func(c *admin.ClusterDescription20240805)) {
 		By("Verifying Deployment state in Atlas", func() {
-			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
+			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersAPI.
 				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -187,7 +187,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				Eventually(func(g Gomega) {
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
-					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+					aCluster, _, err := atlasClient.ClustersAPI.GetCluster(ctx, createdProject.ID(),
 						deploymentName).Execute()
 					g.Expect(err).NotTo(HaveOccurred())
 					Expect(aCluster.GetName()).Should(BeEquivalentTo(deploymentName))
@@ -197,12 +197,12 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 			By("Disabling Termination protection", func() {
 				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancelF()
-				aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+				aCluster, _, err := atlasClient.ClustersAPI.GetCluster(ctx, createdProject.ID(),
 					deploymentName).Execute()
 				Expect(err).NotTo(HaveOccurred())
 				aCluster.TerminationProtectionEnabled = new(false)
 				aCluster.ConnectionStrings = nil
-				_, _, err = atlasClient.ClustersApi.UpdateCluster(ctx, createdProject.ID(), deploymentName, aCluster).Execute()
+				_, _, err = atlasClient.ClustersAPI.UpdateCluster(ctx, createdProject.ID(), deploymentName, aCluster).Execute()
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -210,7 +210,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				Eventually(func(g Gomega) {
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
-					aCluster, _, err := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+					aCluster, _, err := atlasClient.ClustersAPI.GetCluster(ctx, createdProject.ID(),
 						deploymentName).Execute()
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(aCluster.TerminationProtectionEnabled).NotTo(BeNil())
@@ -221,7 +221,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 			By("Manually deleting the cluster", func() {
 				ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancelF()
-				_, err := atlasClient.ClustersApi.DeleteCluster(ctx, createdProject.ID(),
+				_, err := atlasClient.ClustersAPI.DeleteCluster(ctx, createdProject.ID(),
 					deploymentName).Execute()
 				Expect(err).NotTo(HaveOccurred())
 				createdDeployment = nil
@@ -231,7 +231,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				Eventually(func(g Gomega) {
 					ctx, cancelF := context.WithTimeout(context.Background(), 20*time.Second)
 					defer cancelF()
-					_, resp, _ := atlasClient.ClustersApi.GetCluster(ctx, createdProject.ID(),
+					_, resp, _ := atlasClient.ClustersAPI.GetCluster(ctx, createdProject.ID(),
 						deploymentName).Execute()
 					g.Expect(httputil.StatusCode(resp)).To(Equal(http.StatusNotFound))
 				}).WithTimeout(10 * time.Minute).WithPolling(20 * time.Second).Should(Succeed())
@@ -1115,7 +1115,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 
 					Eventually(func(g Gomega) bool {
 						GinkgoWriter.Println("ProjectID", createdProject.ID(), "DeploymentName", createdDeployment.GetDeploymentName())
-						current, _, err := atlasClient.ClustersApi.
+						current, _, err := atlasClient.ClustersAPI.
 							GetCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
 							Execute()
 						g.Expect(err).NotTo(HaveOccurred())
@@ -1238,7 +1238,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 				// Do not use Gomega function here like func(g Gomega) as it seems to hang when tests run in parallel
 				Eventually(
 					func() error {
-						deployment, _, err := atlasClient.ClustersApi.
+						deployment, _, err := atlasClient.ClustersAPI.
 							GetCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
 							Execute()
 						if err != nil {
@@ -1252,7 +1252,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 					}).WithTimeout(40 * time.Minute).WithPolling(15 * time.Second).Should(Not(HaveOccurred()))
 
 				Eventually(func() error {
-					actualPolicy, _, err := atlasClient.CloudBackupsApi.
+					actualPolicy, _, err := atlasClient.CloudBackupsAPI.
 						GetBackupSchedule(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
 						Execute()
 					if err != nil {
@@ -1298,7 +1298,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 				Expect(k8sClient.Create(context.Background(), createdDeployment)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.ClustersApi.
+					deployment, _, err := atlasClient.ClustersAPI.
 						GetCluster(context.Background(), createdProject.ID(), createdDeployment.Spec.DeploymentSpec.Name).
 						Execute()
 					g.Expect(err).Should(BeNil())
@@ -1395,7 +1395,7 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 				Expect(k8sClient.Create(context.Background(), secondDeployment)).Should(Succeed())
 
 				Eventually(func(g Gomega) {
-					deployment, _, err := atlasClient.ClustersApi.
+					deployment, _, err := atlasClient.ClustersAPI.
 						GetCluster(context.Background(), createdProject.ID(), secondDeployment.Spec.DeploymentSpec.Name).
 						Execute()
 					g.Expect(err).Should(BeNil())
@@ -1437,7 +1437,7 @@ var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentShardin
 	BeforeEach(func() {
 		prepareControllers(false)
 
-		deployment.NewAtlasDeployments(atlasClient.ClustersApi, atlasClient.GlobalClustersApi, atlasClient.FlexClustersApi, false)
+		deployment.NewAtlasDeployments(atlasClient.ClustersAPI, atlasClient.GlobalClustersAPI, atlasClient.FlexClustersAPI, false)
 		createdDeployment = &akov2.AtlasDeployment{}
 
 		manualDeletion = false
@@ -1453,7 +1453,7 @@ var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentShardin
 		if manualDeletion && createdProject != nil {
 			By("Deleting the deployment in Atlas manually", func() {
 				// We need to remove the deployment in Atlas to let project get removed
-				_, err := atlasClient.ClustersApi.
+				_, err := atlasClient.ClustersAPI.
 					DeleteCluster(context.Background(), createdProject.ID(), createdDeployment.GetDeploymentName()).
 					Execute()
 				Expect(err).NotTo(HaveOccurred())
@@ -1479,7 +1479,7 @@ var _ = Describe("AtlasDeploymentSharding", Label("int", "AtlasDeploymentShardin
 
 	checkAtlasState := func(additionalChecks ...func(c *admin.ClusterDescription20240805)) {
 		By("Verifying Deployment state in Atlas", func() {
-			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersApi.
+			atlasDeploymentAsAtlas, _, err := atlasClient.ClustersAPI.
 				GetCluster(context.Background(), createdProject.Status.ID, createdDeployment.GetDeploymentName()).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -1556,7 +1556,7 @@ func doDeploymentStatusChecksFor(createdProject *akov2.AtlasProject, createdDepl
 	deploymentName := createdDeployment.GetDeploymentName()
 	Expect(deploymentName).ToNot(BeEmpty())
 
-	atlasDeployment, _, err := atlasClient.ClustersApi.
+	atlasDeployment, _, err := atlasClient.ClustersAPI.
 		GetCluster(context.Background(), createdProject.Status.ID, deploymentName).
 		Execute()
 	Expect(err).ToNot(HaveOccurred())
@@ -1624,7 +1624,7 @@ func validateDeploymentUpdatingFunc(g Gomega) func(a api.AtlasCustomResource) {
 }
 
 func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentName string, copySettings []admin.DiskBackupCopySetting20240805) {
-	atlasCluster, _, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
+	atlasCluster, _, err := atlasClient.ClustersAPI.GetCluster(context.Background(), projectID, deploymentName).Execute()
 	g.Expect(err).Should(BeNil())
 	g.Expect(atlasCluster.GetStateName()).Should(Equal("IDLE"))
 	g.Expect(atlasCluster.GetBackupEnabled()).Should(BeTrue())
@@ -1633,7 +1633,7 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 		copySettings[i].SetZoneId(atlasCluster.GetReplicationSpecs()[0].GetZoneId())
 	}
 
-	atlasBSchedule, _, err := atlasClient.CloudBackupsApi.
+	atlasBSchedule, _, err := atlasClient.CloudBackupsAPI.
 		GetBackupSchedule(context.Background(), projectID, deploymentName).
 		Execute()
 	g.Expect(err).Should(BeNil())
@@ -1646,7 +1646,7 @@ func validateDeploymentWithSnapshotDistribution(g Gomega, projectID, deploymentN
 // deployment is terminated from UI (in this case GET request succeeds while the deployment is being terminated)
 func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.ClustersApi.GetCluster(context.Background(), projectID, deploymentName).Execute()
+		_, r, err := atlasClient.ClustersAPI.GetCluster(context.Background(), projectID, deploymentName).Execute()
 		if err != nil {
 			if httputil.StatusCode(r) == http.StatusNotFound {
 				return true
@@ -1659,7 +1659,7 @@ func checkAtlasDeploymentRemoved(projectID string, deploymentName string) func()
 
 func checkAtlasFlexInstanceRemoved(projectID string, deploymentName string) func() bool {
 	return func() bool {
-		_, r, err := atlasClient.FlexClustersApi.
+		_, r, err := atlasClient.FlexClustersAPI.
 			GetFlexCluster(context.Background(), projectID, deploymentName).
 			Execute()
 		if err != nil {
@@ -1673,12 +1673,12 @@ func checkAtlasFlexInstanceRemoved(projectID string, deploymentName string) func
 }
 
 func deleteAtlasDeployment(projectID string, deploymentName string) error {
-	_, err := atlasClient.ClustersApi.DeleteCluster(context.Background(), projectID, deploymentName).Execute()
+	_, err := atlasClient.ClustersAPI.DeleteCluster(context.Background(), projectID, deploymentName).Execute()
 	return err
 }
 
 func deleteFlexInstance(projectID string, deploymentName string) error {
-	_, err := atlasClient.FlexClustersApi.
+	_, err := atlasClient.FlexClustersAPI.
 		DeleteFlexCluster(context.Background(), projectID, deploymentName).
 		Execute()
 	return err

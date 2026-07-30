@@ -195,7 +195,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 		By("Configuring a Team", func() {
 			Expect(testData.K8SClient.Get(ctx, client.ObjectKeyFromObject(testData.Project), testData.Project)).To(Succeed())
 
-			users, _, err := atlasClient.Client.MongoDBCloudUsersApi.
+			users, _, err := atlasClient.Client.MongoDBCloudUsersAPI.
 				ListGroupUsers(ctx, testData.Project.ID()).
 				Execute()
 			Expect(err).ToNot(HaveOccurred())
@@ -769,7 +769,7 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err == nil || !k8serrors.IsNotFound(err)).To(BeTrue())
 
 			Eventually(func(g Gomega) {
-				_, _, err := atlasClient.Client.ClustersApi.GetCluster(ctx, testData.Project.ID(), clusterName).Execute()
+				_, _, err := atlasClient.Client.ClustersAPI.GetCluster(ctx, testData.Project.ID(), clusterName).Execute()
 				g.Expect(err).To(HaveOccurred())
 			}).WithTimeout(time.Minute * 30).WithPolling(time.Second * 20).Should(Succeed())
 

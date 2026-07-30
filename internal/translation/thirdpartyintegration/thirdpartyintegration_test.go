@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	integration "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
@@ -60,7 +60,7 @@ func TestIntegrationsCreate(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
 		integration   *integration.ThirdPartyIntegration
-		api           admin.ThirdPartyIntegrationsApi
+		api           admin.ThirdPartyIntegrationsAPI
 		expected      *integration.ThirdPartyIntegration
 		expectedError error
 	}{
@@ -284,7 +284,7 @@ func TestIntegrationsCreate(t *testing.T) {
 func TestIntegrationsgGet(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		api           admin.ThirdPartyIntegrationsApi
+		api           admin.ThirdPartyIntegrationsAPI
 		expected      *integration.ThirdPartyIntegration
 		expectedError error
 	}{
@@ -355,7 +355,7 @@ func TestIntegrationsUpdate(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
 		integration   *integration.ThirdPartyIntegration
-		api           admin.ThirdPartyIntegrationsApi
+		api           admin.ThirdPartyIntegrationsAPI
 		expected      *integration.ThirdPartyIntegration
 		expectedError error
 	}{
@@ -481,7 +481,7 @@ func TestIntegrationsUpdate(t *testing.T) {
 func TestIntegrationDelete(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
-		api           admin.ThirdPartyIntegrationsApi
+		api           admin.ThirdPartyIntegrationsAPI
 		expectedError error
 	}{
 		{
@@ -505,8 +505,8 @@ func TestIntegrationDelete(t *testing.T) {
 	}
 }
 
-func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
-	var apiMock mockadmin.ThirdPartyIntegrationsApi
+func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsAPI {
+	var apiMock mockadmin.ThirdPartyIntegrationsAPI
 
 	apiMock.EXPECT().CreateGroupIntegration(
 		mock.Anything, mock.Anything, testProjectID, mock.Anything,
@@ -520,8 +520,8 @@ func testCreateIntegrationAPI(integrations []admin.ThirdPartyIntegration, err er
 	return &apiMock
 }
 
-func testGetIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
-	var apiMock mockadmin.ThirdPartyIntegrationsApi
+func testGetIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsAPI {
+	var apiMock mockadmin.ThirdPartyIntegrationsAPI
 
 	apiMock.EXPECT().GetGroupIntegration(
 		mock.Anything, testProjectID, testIntegrationType,
@@ -533,8 +533,8 @@ func testGetIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) 
 	return &apiMock
 }
 
-func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsApi {
-	var apiMock mockadmin.ThirdPartyIntegrationsApi
+func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err error) admin.ThirdPartyIntegrationsAPI {
+	var apiMock mockadmin.ThirdPartyIntegrationsAPI
 
 	apiMock.EXPECT().UpdateGroupIntegration(
 		mock.Anything, mock.Anything, testProjectID, mock.Anything,
@@ -552,8 +552,8 @@ func testUpdateIntegrationAPI(integration *admin.ThirdPartyIntegration, err erro
 	return &apiMock
 }
 
-func testDeleteIntegrationAPI(err error) admin.ThirdPartyIntegrationsApi {
-	var apiMock mockadmin.ThirdPartyIntegrationsApi
+func testDeleteIntegrationAPI(err error) admin.ThirdPartyIntegrationsAPI {
+	var apiMock mockadmin.ThirdPartyIntegrationsAPI
 
 	apiMock.EXPECT().DeleteGroupIntegration(
 		mock.Anything, testIntegrationType, testProjectID,

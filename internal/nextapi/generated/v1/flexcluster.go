@@ -147,7 +147,7 @@ type FlexClusterStatusV20250312 struct {
 
 type V20250312ConnectionStrings struct {
 	// Standard Public connection string that you can use to connect to this cluster.
-	// This connection string uses the mongodb:// protocol.
+	// This connection string uses the `mongodb://` protocol.
 	Standard *string `json:"standard,omitempty"`
 
 	// StandardSrv Public connection string that you can use to connect to this flex

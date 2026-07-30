@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -57,13 +57,13 @@ type GlobalClusterService interface {
 }
 
 type ProductionAtlasDeployments struct {
-	clustersAPI      admin.ClustersApi
-	flexAPI          admin.FlexClustersApi
-	globalClusterAPI admin.GlobalClustersApi
+	clustersAPI      admin.ClustersAPI
+	flexAPI          admin.FlexClustersAPI
+	globalClusterAPI admin.GlobalClustersAPI
 	isGov            bool
 }
 
-func NewAtlasDeployments(clusterService admin.ClustersApi, globalClusterAPI admin.GlobalClustersApi, flexAPI admin.FlexClustersApi, isGov bool) *ProductionAtlasDeployments {
+func NewAtlasDeployments(clusterService admin.ClustersAPI, globalClusterAPI admin.GlobalClustersAPI, flexAPI admin.FlexClustersAPI, isGov bool) *ProductionAtlasDeployments {
 	return &ProductionAtlasDeployments{clustersAPI: clusterService, globalClusterAPI: globalClusterAPI, flexAPI: flexAPI, isGov: isGov}
 }
 

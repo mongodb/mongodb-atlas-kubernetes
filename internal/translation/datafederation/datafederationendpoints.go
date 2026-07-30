@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
 )
@@ -31,10 +31,10 @@ type DatafederationPrivateEndpointService interface {
 }
 
 type DatafederationPrivateEndpoints struct {
-	api admin.DataFederationApi
+	api admin.DataFederationAPI
 }
 
-func NewDatafederationPrivateEndpoint(api admin.DataFederationApi) *DatafederationPrivateEndpoints {
+func NewDatafederationPrivateEndpoint(api admin.DataFederationAPI) *DatafederationPrivateEndpoints {
 	return &DatafederationPrivateEndpoints{api: api}
 }
 

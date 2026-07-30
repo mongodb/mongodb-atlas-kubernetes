@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,7 +116,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 		reconciler := &AtlasStreamsInstanceReconciler{
 			Client: k8sClient,
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().
 			CreateStreamConnection(context.Background(), "my-project-id", "instance-0", mock.AnythingOfType("*admin.StreamsConnection")).
 			Return(admin.CreateStreamConnectionApiRequest{ApiService: streamsAPI})
@@ -185,7 +185,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -240,7 +240,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
 			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
@@ -270,7 +270,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -334,7 +334,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
 			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
@@ -356,7 +356,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -421,7 +421,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
 			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
@@ -453,7 +453,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}
@@ -501,7 +501,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Client: k8sClient,
 			Log:    zaptest.NewLogger(t).Sugar(),
 		}
-		streamsAPI := mockadmin.NewStreamsApi(t)
+		streamsAPI := mockadmin.NewStreamsAPI(t)
 		streamsAPI.EXPECT().ListStreamConnections(context.Background(), "my-project-id", "instance-0").
 			Return(admin.ListStreamConnectionsApiRequest{ApiService: streamsAPI})
 		streamsAPI.EXPECT().ListStreamConnectionsExecute(mock.AnythingOfType("admin.ListStreamConnectionsApiRequest")).
@@ -533,7 +533,7 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			Context: context.Background(),
 			SdkClientSet: &atlas.ClientSet{
 				SdkClient20250312: &admin.APIClient{
-					StreamsApi: streamsAPI,
+					StreamsAPI: streamsAPI,
 				},
 			},
 		}

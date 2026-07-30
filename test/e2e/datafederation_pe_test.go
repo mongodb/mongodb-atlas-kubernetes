@@ -121,7 +121,7 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			Expect(testData.K8SClient.Create(context.Background(), createdDataFederation)).ShouldNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				df, _, err := atlasClient.Client.DataFederationApi.
+				df, _, err := atlasClient.Client.DataFederationAPI.
 					GetDataFederation(context.Background(), testData.Project.ID(), createdDataFederation.Spec.Name).
 					Execute()
 				g.Expect(err).ShouldNot(HaveOccurred())
@@ -247,7 +247,7 @@ var _ = Describe("DataFederation Private Endpoint", Label("datafederation"), Fla
 			// for some reason, requesting deletion successfully just once doesn't work
 			// TODO: revisit and cleanup once CLOUDP-280905 is fixed
 			Eventually(func(g Gomega) {
-				resp, err := atlasClient.Client.DataFederationApi.
+				resp, err := atlasClient.Client.DataFederationAPI.
 					DeletePrivateEndpointId(testData.Context, testData.Project.ID(), secondPE.ID).
 					Execute()
 				g.Expect(err).To(BeNil(), fmt.Sprintf("deletion of private endpoint failed with error %v", err))

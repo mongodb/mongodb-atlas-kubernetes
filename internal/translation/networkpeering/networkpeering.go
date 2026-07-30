@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -38,14 +38,14 @@ type NetworkPeeringService interface {
 }
 
 type networkPeeringService struct {
-	peeringAPI admin.NetworkPeeringApi
+	peeringAPI admin.NetworkPeeringAPI
 }
 
 func NewNetworkPeeringServiceFromClientSet(clientSet *atlas.ClientSet) NetworkPeeringService {
-	return NewNetworkPeeringService(clientSet.SdkClient20250312.NetworkPeeringApi)
+	return NewNetworkPeeringService(clientSet.SdkClient20250312.NetworkPeeringAPI)
 }
 
-func NewNetworkPeeringService(peeringAPI admin.NetworkPeeringApi) NetworkPeeringService {
+func NewNetworkPeeringService(peeringAPI admin.NetworkPeeringAPI) NetworkPeeringService {
 	return &networkPeeringService{peeringAPI: peeringAPI}
 }
 

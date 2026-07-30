@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -313,7 +313,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 			lastPrj := newTestPEProject(tc.lastAppliedPEids)
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
-			privateEndpointsAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointsAPI := mockadmin.NewPrivateEndpointServicesAPI(t)
 			privateEndpointsAPI.EXPECT().ListPrivateEndpointService(mock.Anything, mock.Anything, "AWS").
 				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpointsAPI}).Once()
 			privateEndpointsAPI.EXPECT().ListPrivateEndpointServiceExecute(
@@ -354,7 +354,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						PrivateEndpointServicesApi: privateEndpointsAPI,
+						PrivateEndpointServicesAPI: privateEndpointsAPI,
 					},
 				},
 			}

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )
@@ -29,10 +29,10 @@ type AtlasOrgSettingsService interface {
 }
 
 type AtlasOrgSettingsServiceImpl struct {
-	orgSettingsAPI admin.OrganizationsApi
+	orgSettingsAPI admin.OrganizationsAPI
 }
 
-func NewAtlasOrgSettingsService(api admin.OrganizationsApi) AtlasOrgSettingsService {
+func NewAtlasOrgSettingsService(api admin.OrganizationsAPI) AtlasOrgSettingsService {
 	return &AtlasOrgSettingsServiceImpl{
 		orgSettingsAPI: api,
 	}

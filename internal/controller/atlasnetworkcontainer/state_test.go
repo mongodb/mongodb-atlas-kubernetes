@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -259,9 +259,9 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					pAPI := mockadmin.NewProjectsApi(t)
+					pAPI := mockadmin.NewProjectsAPI(t)
 					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{ProjectsApi: pAPI},
+						SdkClient20250312: &admin.APIClient{ProjectsAPI: pAPI},
 					}, nil
 				},
 			},
@@ -306,7 +306,7 @@ func TestHandleCustomResource(t *testing.T) {
 					return true
 				},
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					ncAPI := mockadmin.NewNetworkPeeringApi(t)
+					ncAPI := mockadmin.NewNetworkPeeringAPI(t)
 					ncAPI.EXPECT().ListGroupContainers(mock.Anything, mock.Anything).Return(
 						admin.ListGroupContainersApiRequest{ApiService: ncAPI},
 					)
@@ -315,7 +315,7 @@ func TestHandleCustomResource(t *testing.T) {
 							Results: []admin.CloudProviderContainer{},
 						}, nil, nil,
 					)
-					pAPI := mockadmin.NewProjectsApi(t)
+					pAPI := mockadmin.NewProjectsAPI(t)
 					pAPI.EXPECT().GetGroupByName(mock.Anything, mock.Anything).Return(
 						admin.GetGroupByNameApiRequest{ApiService: pAPI},
 					)
@@ -326,8 +326,8 @@ func TestHandleCustomResource(t *testing.T) {
 					)
 					return &atlas.ClientSet{
 						SdkClient20250312: &admin.APIClient{
-							NetworkPeeringApi: ncAPI,
-							ProjectsApi:       pAPI,
+							NetworkPeeringAPI: ncAPI,
+							ProjectsAPI:       pAPI,
 						},
 					}, nil
 				},

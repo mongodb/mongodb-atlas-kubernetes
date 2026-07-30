@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -74,12 +74,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetGroupByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsAPI.GetGroupByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsAPI.DeleteGroup(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -94,7 +94,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-
 					Name:                      projectName,
 					WithDefaultAlertsSettings: new(true),
 				}
-				_, _, err := atlasClient.ProjectsApi.CreateGroup(context.Background(), &atlasProject).Execute()
+				_, _, err := atlasClient.ProjectsAPI.CreateGroup(context.Background(), &atlasProject).Execute()
 				Expect(err).To(BeNil())
 			})
 
@@ -116,12 +116,12 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-
 				Eventually(func(g Gomega) {
 					g.Expect(k8sClient.Get(context.Background(), client.ObjectKeyFromObject(testProject), testProject, &client.GetOptions{})).ToNot(Succeed())
 
-					atlasProject, _, err := atlasClient.ProjectsApi.GetGroupByName(context.Background(), projectName).Execute()
+					atlasProject, _, err := atlasClient.ProjectsAPI.GetGroupByName(context.Background(), projectName).Execute()
 					g.Expect(err).To(BeNil())
 					g.Expect(atlasProject).ToNot(BeNil())
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())
 
-				_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
+				_, err := atlasClient.ProjectsAPI.DeleteGroup(context.Background(), projectID).Execute()
 				Expect(err).To(BeNil())
 			})
 		})
@@ -147,7 +147,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject", "focus-protection-
 				Expect(k8sClient.Delete(context.Background(), testProject, &client.DeleteOptions{})).To(Succeed())
 
 				Eventually(func(g Gomega) {
-					_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+					_, r, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 					g.Expect(err).ToNot(BeNil())
 					g.Expect(httputil.StatusCode(r)).To(Equal(http.StatusNotFound))
 				}).WithTimeout(5 * time.Minute).WithPolling(PollingInterval).Should(Succeed())

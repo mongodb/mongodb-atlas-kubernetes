@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -141,7 +141,7 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should delete project": {
 			atlasSDKMocker: func() *admin.APIClient {
-				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesAPI(t)
 				mockPrivateEndpointAPI.EXPECT().
 					ListPrivateEndpointService(mock.Anything, mock.Anything, mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: mockPrivateEndpointAPI})
@@ -150,7 +150,7 @@ func TestHandleProject(t *testing.T) {
 					Return([]admin.EndpointService{}, nil, nil)
 
 				return &admin.APIClient{
-					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
+					PrivateEndpointServicesAPI: mockPrivateEndpointAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -257,12 +257,12 @@ func TestHandleProject(t *testing.T) {
 		"should fail to configure authentication modes": {
 			wantErr: true,
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
-				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
+				ipAccessList := mockadmin.NewProjectIPAccessListAPI(t)
 				ipAccessList.EXPECT().ListAccessListEntries(context.Background(), "projectID").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessList})
 				ipAccessList.EXPECT().ListAccessListEntriesExecute(mock.Anything).
 					Return(nil, nil, nil)
-				privateEndpoints := mockadmin.NewPrivateEndpointServicesApi(t)
+				privateEndpoints := mockadmin.NewPrivateEndpointServicesAPI(t)
 				privateEndpoints.EXPECT().ListPrivateEndpointService(context.Background(), "projectID", mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
@@ -272,46 +272,46 @@ func TestHandleProject(t *testing.T) {
 				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
 
-				networkPeering := mockadmin.NewNetworkPeeringApi(t)
+				networkPeering := mockadmin.NewNetworkPeeringAPI(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.AnythingOfType("*admin.ListGroupPeersApiParams")).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.AnythingOfType("admin.ListGroupPeersApiRequest")).
 					Return(nil, nil, nil)
-				audit := mockadmin.NewAuditingApi(t)
+				audit := mockadmin.NewAuditingAPI(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: audit})
 				audit.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(nil, nil, nil)
-				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles := mockadmin.NewCustomDatabaseRolesAPI(t)
 				customRoles.EXPECT().ListCustomDbRoles(context.Background(), "projectID").
 					Return(admin.ListCustomDbRolesApiRequest{ApiService: customRoles})
 				customRoles.EXPECT().ListCustomDbRolesExecute(mock.AnythingOfType("admin.ListCustomDbRolesApiRequest")).
 					Return(nil, nil, nil)
-				projectAPI := mockadmin.NewProjectsApi(t)
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "projectID").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.AnythingOfType("admin.GetGroupSettingsApiRequest")).
 					Return(admin.NewGroupSettings(), nil, nil)
-				backup := mockadmin.NewCloudBackupsApi(t)
+				backup := mockadmin.NewCloudBackupsAPI(t)
 				backup.EXPECT().GetCompliancePolicy(context.Background(), "projectID").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backup})
 				backup.EXPECT().GetCompliancePolicyExecute(mock.AnythingOfType("admin.GetCompliancePolicyApiRequest")).
 					Return(nil, nil, nil)
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "projectID").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-					ThirdPartyIntegrationsApi:  integrationsApi,
+					ProjectIPAccessListAPI:     ipAccessList,
+					PrivateEndpointServicesAPI: privateEndpoints,
+					NetworkPeeringAPI:          networkPeering,
+					AuditingAPI:                audit,
+					CustomDatabaseRolesAPI:     customRoles,
+					ProjectsAPI:                projectAPI,
+					CloudBackupsAPI:            backup,
+					ThirdPartyIntegrationsAPI:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -354,12 +354,12 @@ func TestHandleProject(t *testing.T) {
 		},
 		"should configure project resources": {
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
-				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
+				ipAccessList := mockadmin.NewProjectIPAccessListAPI(t)
 				ipAccessList.EXPECT().ListAccessListEntries(context.Background(), "projectID").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessList})
 				ipAccessList.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(nil, nil, nil)
-				privateEndpoints := mockadmin.NewPrivateEndpointServicesApi(t)
+				privateEndpoints := mockadmin.NewPrivateEndpointServicesAPI(t)
 				privateEndpoints.EXPECT().ListPrivateEndpointService(context.Background(), "projectID", mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
@@ -368,7 +368,7 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
-				networkPeering := mockadmin.NewNetworkPeeringApi(t)
+				networkPeering := mockadmin.NewNetworkPeeringAPI(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.Anything).
@@ -377,41 +377,41 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
-				audit := mockadmin.NewAuditingApi(t)
+				audit := mockadmin.NewAuditingAPI(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: audit})
 				audit.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(nil, nil, nil)
-				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles := mockadmin.NewCustomDatabaseRolesAPI(t)
 				customRoles.EXPECT().ListCustomDbRoles(context.Background(), "projectID").
 					Return(admin.ListCustomDbRolesApiRequest{ApiService: customRoles})
 				customRoles.EXPECT().ListCustomDbRolesExecute(mock.AnythingOfType("admin.ListCustomDbRolesApiRequest")).
 					Return(nil, nil, nil)
-				projectAPI := mockadmin.NewProjectsApi(t)
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "projectID").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.AnythingOfType("admin.GetGroupSettingsApiRequest")).
 					Return(admin.NewGroupSettings(), nil, nil)
-				backup := mockadmin.NewCloudBackupsApi(t)
+				backup := mockadmin.NewCloudBackupsAPI(t)
 				backup.EXPECT().GetCompliancePolicy(context.Background(), "projectID").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backup})
 				backup.EXPECT().GetCompliancePolicyExecute(mock.AnythingOfType("admin.GetCompliancePolicyApiRequest")).
 					Return(nil, nil, nil)
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "projectID").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-					ThirdPartyIntegrationsApi:  integrationsApi,
+					ProjectIPAccessListAPI:     ipAccessList,
+					PrivateEndpointServicesAPI: privateEndpoints,
+					NetworkPeeringAPI:          networkPeering,
+					AuditingAPI:                audit,
+					CustomDatabaseRolesAPI:     customRoles,
+					ProjectsAPI:                projectAPI,
+					CloudBackupsAPI:            backup,
+					ThirdPartyIntegrationsAPI:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -463,12 +463,12 @@ func TestHandleProject(t *testing.T) {
 		"should fail to configure project resources": {
 			wantErr: true,
 			atlasSDKMocker: func() *admin.APIClient {
-				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
+				ipAccessList := mockadmin.NewProjectIPAccessListAPI(t)
 				ipAccessList.EXPECT().ListAccessListEntries(context.Background(), "projectID").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessList})
 				ipAccessList.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(nil, nil, errors.New("failed to list IP Access List"))
-				privateEndpoints := mockadmin.NewPrivateEndpointServicesApi(t)
+				privateEndpoints := mockadmin.NewPrivateEndpointServicesAPI(t)
 				privateEndpoints.EXPECT().ListPrivateEndpointService(context.Background(), "projectID", mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
@@ -477,7 +477,7 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
-				networkPeering := mockadmin.NewNetworkPeeringApi(t)
+				networkPeering := mockadmin.NewNetworkPeeringAPI(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.Anything).
@@ -486,41 +486,41 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
-				audit := mockadmin.NewAuditingApi(t)
+				audit := mockadmin.NewAuditingAPI(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: audit})
 				audit.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(nil, nil, nil)
-				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles := mockadmin.NewCustomDatabaseRolesAPI(t)
 				customRoles.EXPECT().ListCustomDbRoles(context.Background(), "projectID").
 					Return(admin.ListCustomDbRolesApiRequest{ApiService: customRoles})
 				customRoles.EXPECT().ListCustomDbRolesExecute(mock.AnythingOfType("admin.ListCustomDbRolesApiRequest")).
 					Return(nil, nil, nil)
-				projectAPI := mockadmin.NewProjectsApi(t)
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "projectID").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.AnythingOfType("admin.GetGroupSettingsApiRequest")).
 					Return(admin.NewGroupSettings(), nil, nil)
-				backup := mockadmin.NewCloudBackupsApi(t)
+				backup := mockadmin.NewCloudBackupsAPI(t)
 				backup.EXPECT().GetCompliancePolicy(context.Background(), "projectID").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backup})
 				backup.EXPECT().GetCompliancePolicyExecute(mock.AnythingOfType("admin.GetCompliancePolicyApiRequest")).
 					Return(nil, nil, nil)
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "projectID").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-					ThirdPartyIntegrationsApi:  integrationsApi,
+					ProjectIPAccessListAPI:     ipAccessList,
+					PrivateEndpointServicesAPI: privateEndpoints,
+					NetworkPeeringAPI:          networkPeering,
+					AuditingAPI:                audit,
+					CustomDatabaseRolesAPI:     customRoles,
+					ProjectsAPI:                projectAPI,
+					CloudBackupsAPI:            backup,
+					ThirdPartyIntegrationsAPI:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -573,12 +573,12 @@ func TestHandleProject(t *testing.T) {
 		"should fail to save last applied config": {
 			wantErr: true,
 			atlasSDKMocker: func() *admin.APIClient { //nolint:dupl
-				ipAccessList := mockadmin.NewProjectIPAccessListApi(t)
+				ipAccessList := mockadmin.NewProjectIPAccessListAPI(t)
 				ipAccessList.EXPECT().ListAccessListEntries(context.Background(), "projectID").
 					Return(admin.ListAccessListEntriesApiRequest{ApiService: ipAccessList})
 				ipAccessList.EXPECT().ListAccessListEntriesExecute(mock.AnythingOfType("admin.ListAccessListEntriesApiRequest")).
 					Return(nil, nil, nil)
-				privateEndpoints := mockadmin.NewPrivateEndpointServicesApi(t)
+				privateEndpoints := mockadmin.NewPrivateEndpointServicesAPI(t)
 				privateEndpoints.EXPECT().ListPrivateEndpointService(context.Background(), "projectID", mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
@@ -587,7 +587,7 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: privateEndpoints})
 				privateEndpoints.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
 					Return(&admin.ProjectSettingItem{Enabled: false}, &http.Response{}, nil)
-				networkPeering := mockadmin.NewNetworkPeeringApi(t)
+				networkPeering := mockadmin.NewNetworkPeeringAPI(t)
 				networkPeering.EXPECT().ListGroupPeersWithParams(context.Background(), mock.Anything).
 					Return(admin.ListGroupPeersApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupPeersExecute(mock.AnythingOfType("admin.ListGroupPeersApiRequest")).
@@ -596,41 +596,41 @@ func TestHandleProject(t *testing.T) {
 					Return(admin.ListGroupContainerAllApiRequest{ApiService: networkPeering})
 				networkPeering.EXPECT().ListGroupContainerAllExecute(mock.Anything).
 					Return(nil, nil, nil)
-				audit := mockadmin.NewAuditingApi(t)
+				audit := mockadmin.NewAuditingAPI(t)
 				audit.EXPECT().GetGroupAuditLog(context.Background(), "projectID").
 					Return(admin.GetGroupAuditLogApiRequest{ApiService: audit})
 				audit.EXPECT().GetGroupAuditLogExecute(mock.AnythingOfType("admin.GetGroupAuditLogApiRequest")).
 					Return(nil, nil, nil)
-				customRoles := mockadmin.NewCustomDatabaseRolesApi(t)
+				customRoles := mockadmin.NewCustomDatabaseRolesAPI(t)
 				customRoles.EXPECT().ListCustomDbRoles(context.Background(), "projectID").
 					Return(admin.ListCustomDbRolesApiRequest{ApiService: customRoles})
 				customRoles.EXPECT().ListCustomDbRolesExecute(mock.AnythingOfType("admin.ListCustomDbRolesApiRequest")).
 					Return(nil, nil, nil)
-				projectAPI := mockadmin.NewProjectsApi(t)
+				projectAPI := mockadmin.NewProjectsAPI(t)
 				projectAPI.EXPECT().GetGroupSettings(context.Background(), "projectID").
 					Return(admin.GetGroupSettingsApiRequest{ApiService: projectAPI})
 				projectAPI.EXPECT().GetGroupSettingsExecute(mock.AnythingOfType("admin.GetGroupSettingsApiRequest")).
 					Return(admin.NewGroupSettings(), nil, nil)
-				backup := mockadmin.NewCloudBackupsApi(t)
+				backup := mockadmin.NewCloudBackupsAPI(t)
 				backup.EXPECT().GetCompliancePolicy(context.Background(), "projectID").
 					Return(admin.GetCompliancePolicyApiRequest{ApiService: backup})
 				backup.EXPECT().GetCompliancePolicyExecute(mock.AnythingOfType("admin.GetCompliancePolicyApiRequest")).
 					Return(nil, nil, nil)
-				integrationsApi := mockadmin.NewThirdPartyIntegrationsApi(t)
+				integrationsApi := mockadmin.NewThirdPartyIntegrationsAPI(t)
 				integrationsApi.EXPECT().ListGroupIntegrations(context.Background(), "projectID").
 					Return(admin.ListGroupIntegrationsApiRequest{ApiService: integrationsApi})
 				integrationsApi.EXPECT().ListGroupIntegrationsExecute(mock.AnythingOfType("admin.ListGroupIntegrationsApiRequest")).
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
-					ProjectIPAccessListApi:     ipAccessList,
-					PrivateEndpointServicesApi: privateEndpoints,
-					NetworkPeeringApi:          networkPeering,
-					AuditingApi:                audit,
-					CustomDatabaseRolesApi:     customRoles,
-					ProjectsApi:                projectAPI,
-					CloudBackupsApi:            backup,
-					ThirdPartyIntegrationsApi:  integrationsApi,
+					ProjectIPAccessListAPI:     ipAccessList,
+					PrivateEndpointServicesAPI: privateEndpoints,
+					NetworkPeeringAPI:          networkPeering,
+					AuditingAPI:                audit,
+					CustomDatabaseRolesAPI:     customRoles,
+					ProjectsAPI:                projectAPI,
+					CloudBackupsAPI:            backup,
+					ThirdPartyIntegrationsAPI:  integrationsApi,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {
@@ -1049,7 +1049,7 @@ func TestDelete(t *testing.T) {
 		},
 		"should update team status when project is deleted": {
 			atlasSDKMocker: func() *admin.APIClient {
-				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+				mockPrivateEndpointAPI := mockadmin.NewPrivateEndpointServicesAPI(t)
 				mockPrivateEndpointAPI.EXPECT().
 					ListPrivateEndpointService(mock.Anything, mock.Anything, mock.Anything).
 					Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: mockPrivateEndpointAPI})
@@ -1058,7 +1058,7 @@ func TestDelete(t *testing.T) {
 					Return([]admin.EndpointService{}, nil, nil)
 
 				return &admin.APIClient{
-					PrivateEndpointServicesApi: mockPrivateEndpointAPI,
+					PrivateEndpointServicesAPI: mockPrivateEndpointAPI,
 				}
 			},
 			projectServiceMocker: func() project.ProjectService {

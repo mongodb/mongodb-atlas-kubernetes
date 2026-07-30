@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -74,7 +74,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 			lastPrj := newNetworkPeeringTestProject(tc.lastAppliedNetworkPeers)
 			prj.Annotations[customresource.AnnotationLastAppliedConfiguration] = jsonize(t, lastPrj.Spec)
 
-			peeringAPI := mockadmin.NewNetworkPeeringApi(t)
+			peeringAPI := mockadmin.NewNetworkPeeringAPI(t)
 			peeringAPI.EXPECT().ListGroupPeersWithParams(mock.Anything, mock.Anything).
 				Return(admin.ListGroupPeersApiRequest{ApiService: peeringAPI}).Once()
 			peeringAPI.EXPECT().ListGroupPeersExecute(
@@ -111,7 +111,7 @@ func TestNetworkPeeringsNonGreedyBehaviour(t *testing.T) {
 				Context: context.Background(),
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						NetworkPeeringApi: peeringAPI,
+						NetworkPeeringAPI: peeringAPI,
 					},
 				},
 			}

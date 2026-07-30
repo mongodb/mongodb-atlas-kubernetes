@@ -31,9 +31,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -207,7 +207,7 @@ func TestHandleInitial(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.interceptorFuncs)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasCreateFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasCreateFlexClusterFunc()
 				req := admin.CreateFlexClusterApiRequest{ApiService: flexAPI}
@@ -303,7 +303,7 @@ func TestHandleImportRequested(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasGetFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasGetFlexClusterFunc()
 				req := admin.GetFlexClusterApiRequest{ApiService: flexAPI}
@@ -372,7 +372,7 @@ func TestHandleCreating(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasGetFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasGetFlexClusterFunc()
 				req := admin.GetFlexClusterApiRequest{ApiService: flexAPI}
@@ -435,7 +435,7 @@ func TestHandleUpdating(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasGetFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasGetFlexClusterFunc()
 				req := admin.GetFlexClusterApiRequest{ApiService: flexAPI}
@@ -608,7 +608,7 @@ func TestHandleCreated(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, tc.interceptorFuncs)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasUpdateFlexClusterFunc()
 				req := admin.UpdateFlexClusterApiRequest{ApiService: flexAPI}
@@ -677,7 +677,7 @@ func TestHandleImported(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasUpdateFlexClusterFunc()
 				req := admin.UpdateFlexClusterApiRequest{ApiService: flexAPI}
@@ -746,7 +746,7 @@ func TestHandleUpdated(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasUpdateFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasUpdateFlexClusterFunc()
 				req := admin.UpdateFlexClusterApiRequest{ApiService: flexAPI}
@@ -887,7 +887,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasDeleteFlexClusterFunc != nil {
 				rsp, err := tc.atlasDeleteFlexClusterFunc()
 				req := admin.DeleteFlexClusterApiRequest{ApiService: flexAPI}
@@ -994,7 +994,7 @@ func TestHandleDeleting(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := fixture.buildFakeClient(tc.flexCluster, tc.kubeObjects, nil)
 
-			flexAPI := mockadmin.NewFlexClustersApi(t)
+			flexAPI := mockadmin.NewFlexClustersAPI(t)
 			if tc.atlasGetFlexClusterFunc != nil {
 				cluster, rsp, err := tc.atlasGetFlexClusterFunc()
 				req := admin.GetFlexClusterApiRequest{ApiService: flexAPI}
@@ -1065,9 +1065,9 @@ func (f *testFixture) buildHandler(fakeClient client.Client, atlasClient *v20250
 }
 
 // buildAtlasClient creates an Atlas API client with the given mock API
-func buildAtlasClient(flexAPI *mockadmin.FlexClustersApi) *v20250312sdk.APIClient {
+func buildAtlasClient(flexAPI *mockadmin.FlexClustersAPI) *v20250312sdk.APIClient {
 	return &v20250312sdk.APIClient{
-		FlexClustersApi: flexAPI,
+		FlexClustersAPI: flexAPI,
 	}
 }
 

@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -40,13 +40,13 @@ func TestAtlasUsersGet(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		setupMock    func(mockUsersAPI *mockadmin.DatabaseUsersApi)
+		setupMock    func(mockUsersAPI *mockadmin.DatabaseUsersAPI)
 		expectedUser *User
 		expectedErr  error
 	}{
 		{
 			name: "User found",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				expectedUser := &admin.CloudDatabaseUser{DatabaseName: db, GroupId: projectID, Username: username}
 				mockUsersAPI.EXPECT().GetDatabaseUser(ctx, projectID, db, username).Return(
 					admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI})
@@ -66,7 +66,7 @@ func TestAtlasUsersGet(t *testing.T) {
 		},
 		{
 			name: "User not found",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				mockUsersAPI.EXPECT().GetDatabaseUser(ctx, projectID, db, username).Return(
 					admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI})
 				mockUsersAPI.EXPECT().GetDatabaseUserExecute(admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI}).Return(
@@ -77,7 +77,7 @@ func TestAtlasUsersGet(t *testing.T) {
 		},
 		{
 			name: "API error",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				mockUsersAPI.EXPECT().GetDatabaseUser(ctx, projectID, db, username).Return(
 					admin.GetDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
@@ -93,7 +93,7 @@ func TestAtlasUsersGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUsersAPI := mockadmin.NewDatabaseUsersApi(t)
+			mockUsersAPI := mockadmin.NewDatabaseUsersAPI(t)
 			tt.setupMock(mockUsersAPI)
 
 			dus := &AtlasUsers{
@@ -114,12 +114,12 @@ func TestAtlasUsersDelete(t *testing.T) {
 	notFoundErr.SetModel(admin.ApiError{ErrorCode: "USER_NOT_FOUND"})
 	tests := []struct {
 		name        string
-		setupMock   func(mockUsersAPI *mockadmin.DatabaseUsersApi)
+		setupMock   func(mockUsersAPI *mockadmin.DatabaseUsersAPI)
 		expectedErr error
 	}{
 		{
 			name: "User successfully deleted",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 				mockUsersAPI.EXPECT().DeleteDatabaseUserExecute(admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI}).
@@ -129,7 +129,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 		},
 		{
 			name: "User not found",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
@@ -140,7 +140,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 		},
 		{
 			name: "API error",
-			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersApi) {
+			setupMock: func(mockUsersAPI *mockadmin.DatabaseUsersAPI) {
 				mockUsersAPI.EXPECT().DeleteDatabaseUser(ctx, projectID, db, username).Return(
 					admin.DeleteDatabaseUserApiRequest{ApiService: mockUsersAPI})
 
@@ -155,7 +155,7 @@ func TestAtlasUsersDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUsersAPI := mockadmin.NewDatabaseUsersApi(t)
+			mockUsersAPI := mockadmin.NewDatabaseUsersAPI(t)
 			tt.setupMock(mockUsersAPI)
 			dus := &AtlasUsers{
 				usersAPI: mockUsersAPI,

@@ -90,7 +90,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 		})
 
 		By("Loading sample dataset into a cluster", func() {
-			sampleDataSet, _, err := atlasClient.Client.ClustersApi.RequestSampleDatasetLoad(testData.Context,
+			sampleDataSet, _, err := atlasClient.Client.ClustersAPI.RequestSampleDatasetLoad(testData.Context,
 				testData.Project.ID(),
 				testData.InitialDeployments[0].GetDeploymentName()).Execute()
 			Expect(err).NotTo(HaveOccurred())
@@ -98,7 +98,7 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 			Expect(sampleDataSet.Id).NotTo(BeNil())
 
 			Eventually(func(g Gomega) {
-				sampleDataStatus, _, err := atlasClient.Client.ClustersApi.GetSampleDatasetLoad(testData.Context,
+				sampleDataStatus, _, err := atlasClient.Client.ClustersAPI.GetSampleDatasetLoad(testData.Context,
 					testData.Project.ID(),
 					*sampleDataSet.Id).Execute()
 				g.Expect(err).NotTo(HaveOccurred())

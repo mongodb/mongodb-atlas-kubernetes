@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -38,7 +38,7 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 	for _, tc := range []struct {
 		name               string
 		spec               *project.RegionalizedPrivateEndpoint
-		privateEndpointAPI *mockadmin.PrivateEndpointServicesApi
+		privateEndpointAPI *mockadmin.PrivateEndpointServicesAPI
 
 		isOK      bool
 		isWarning bool
@@ -50,8 +50,8 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		{
 			name: "nil spec should unset condition and return OK",
 			spec: nil,
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesAPI {
+				api := mockadmin.NewPrivateEndpointServicesAPI(t)
 				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
 				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
@@ -76,8 +76,8 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		{
 			name: "enabled in spec and enabled in atlas should not toggle",
 			spec: &project.RegionalizedPrivateEndpoint{Enabled: true},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesAPI {
+				api := mockadmin.NewPrivateEndpointServicesAPI(t)
 				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
 				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
@@ -103,8 +103,8 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		{
 			name: "disabled in spec and disabled in atlas should not toggle",
 			spec: &project.RegionalizedPrivateEndpoint{Enabled: false},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesAPI {
+				api := mockadmin.NewPrivateEndpointServicesAPI(t)
 				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
 				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
@@ -120,8 +120,8 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		{
 			name: "get current mode fails should terminate",
 			spec: &project.RegionalizedPrivateEndpoint{Enabled: true},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesAPI {
+				api := mockadmin.NewPrivateEndpointServicesAPI(t)
 				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
 				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
@@ -136,8 +136,8 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 		{
 			name: "toggle fails should terminate",
 			spec: &project.RegionalizedPrivateEndpoint{Enabled: true},
-			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesApi {
-				api := mockadmin.NewPrivateEndpointServicesApi(t)
+			privateEndpointAPI: func() *mockadmin.PrivateEndpointServicesAPI {
+				api := mockadmin.NewPrivateEndpointServicesAPI(t)
 				api.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 					Return(admin.GetRegionalEndpointModeApiRequest{ApiService: api})
 				api.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).
@@ -158,7 +158,7 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 			workflowCtx := &workflow.Context{
 				SdkClientSet: &atlas.ClientSet{
 					SdkClient20250312: &admin.APIClient{
-						PrivateEndpointServicesApi: tc.privateEndpointAPI,
+						PrivateEndpointServicesAPI: tc.privateEndpointAPI,
 					},
 				},
 				Context: context.Background(),
@@ -190,9 +190,9 @@ func TestEnsureRegionalizedPrivateEndpointMode(t *testing.T) {
 	}
 }
 
-func mockAPIWithToggle(t *testing.T, currentMode, afterToggle bool) *mockadmin.PrivateEndpointServicesApi {
+func mockAPIWithToggle(t *testing.T, currentMode, afterToggle bool) *mockadmin.PrivateEndpointServicesAPI {
 	t.Helper()
-	peAPI := mockadmin.NewPrivateEndpointServicesApi(t)
+	peAPI := mockadmin.NewPrivateEndpointServicesAPI(t)
 	peAPI.EXPECT().GetRegionalEndpointMode(context.Background(), "testProjectID").
 		Return(admin.GetRegionalEndpointModeApiRequest{ApiService: peAPI})
 	peAPI.EXPECT().GetRegionalEndpointModeExecute(mock.Anything).

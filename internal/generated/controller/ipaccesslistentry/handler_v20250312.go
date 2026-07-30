@@ -25,7 +25,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -70,7 +70,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, ipaccesslistentry 
 	}
 
 	entry := buildNetworkPermissionEntry(ipaccesslistentry)
-	_, _, err = h.atlasClient.ProjectIPAccessListApi.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
+	_, _, err = h.atlasClient.ProjectIPAccessListAPI.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create IP access list entry %q: %w", entryValue, err))
 	}
@@ -95,7 +95,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, ipaccessli
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to resolve groupId: %w", err))
 	}
 
-	_, _, err = h.atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, entryValue).Execute()
+	_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get IP access list entry %q in group %q: %w", entryValue, groupID, err))
 	}
@@ -222,7 +222,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, ipaccess
 		return result.Error(state.StateDeletionRequested, err)
 	}
 
-	_, err = h.atlasClient.ProjectIPAccessListApi.DeleteAccessListEntry(ctx, groupID, entryValue).Execute()
+	_, err = h.atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID, entryValue).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) || v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
 		return result.NextState(state.StateDeleted, "IP access list entry deleted.")
 	}
@@ -240,7 +240,7 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, ipaccesslistentry
 		return result.Error(state.StateDeleting, err)
 	}
 
-	_, _, err = h.atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, entryValue).Execute()
+	_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) || v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
 		return result.NextState(state.StateDeleted, "IP access list entry deleted.")
 	}
@@ -275,7 +275,7 @@ func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState s
 			return result.Error(currentState, err)
 		}
 		// Check if the entry exists in Atlas
-		_, _, err = h.atlasClient.ProjectIPAccessListApi.GetAccessListEntry(ctx, groupID, entryValue).Execute()
+		_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
 		if v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) || v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
 			// Atlas deleted the entry (deleteAfterDate elapsed).
 			return expiredResult(currentState), nil
@@ -315,14 +315,14 @@ func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState s
 
 	// Delete the old one if the entry value changed (e.g. CIDR, IP, AWS Security Group were modified).
 	if oldEntryValue != "" && oldEntryValue != newEntryValue {
-		_, err = h.atlasClient.ProjectIPAccessListApi.DeleteAccessListEntry(ctx, groupID, oldEntryValue).Execute()
+		_, err = h.atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID, oldEntryValue).Execute()
 		if err != nil && !v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) && !v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
 			return result.Error(currentState, fmt.Errorf("failed to delete old IP access list entry %q: %w", oldEntryValue, err))
 		}
 	}
 
 	entry := buildNetworkPermissionEntry(ipaccesslistentry)
-	_, _, err = h.atlasClient.ProjectIPAccessListApi.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
+	_, _, err = h.atlasClient.ProjectIPAccessListAPI.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to create IP access list entry %q: %w", newEntryValue, err))
 	}
@@ -443,7 +443,7 @@ func (h *Handlerv20250312) persistIdentity(ctx context.Context, ipaccesslistentr
 
 // getEntryStatus returns the Atlas activation status for the entry.
 func (h *Handlerv20250312) getEntryStatus(ctx context.Context, groupID, entryValue string) (string, error) {
-	resp, _, err := h.atlasClient.ProjectIPAccessListApi.GetAccessListStatus(ctx, groupID, entryValue).Execute()
+	resp, _, err := h.atlasClient.ProjectIPAccessListAPI.GetAccessListStatus(ctx, groupID, entryValue).Execute()
 	if err != nil {
 		return "", err
 	}

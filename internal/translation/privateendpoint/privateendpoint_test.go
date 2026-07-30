@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 )
 
 func TestListPrivateEndpoints(t *testing.T) {
@@ -122,7 +122,7 @@ func TestListPrivateEndpoints(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().ListPrivateEndpointService(ctx, projectID, tt.provider).
 				Return(admin.ListPrivateEndpointServiceApiRequest{ApiService: api})
 			api.EXPECT().ListPrivateEndpointServiceExecute(mock.AnythingOfType("admin.ListPrivateEndpointServiceApiRequest")).
@@ -304,7 +304,7 @@ func TestGetPrivateEndpoint(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().GetPrivateEndpointService(ctx, projectID, tt.provider, "pe-service-ID").
 				Return(admin.GetPrivateEndpointServiceApiRequest{ApiService: api})
 			api.EXPECT().GetPrivateEndpointServiceExecute(mock.AnythingOfType("admin.GetPrivateEndpointServiceApiRequest")).
@@ -374,7 +374,7 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().CreatePrivateEndpointService(ctx, projectID, mock.AnythingOfType("*admin.CloudProviderEndpointServiceRequest")).
 				Return(admin.CreatePrivateEndpointServiceApiRequest{ApiService: api})
 			api.EXPECT().CreatePrivateEndpointServiceExecute(mock.AnythingOfType("admin.CreatePrivateEndpointServiceApiRequest")).
@@ -412,7 +412,7 @@ func TestDeletePrivateEndpointService(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().DeletePrivateEndpointService(ctx, projectID, "AWS", "pe-service-ID").
 				Return(admin.DeletePrivateEndpointServiceApiRequest{ApiService: api})
 			api.EXPECT().DeletePrivateEndpointServiceExecute(mock.AnythingOfType("admin.DeletePrivateEndpointServiceApiRequest")).
@@ -573,7 +573,7 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
 			serviceID := "pe-service-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().CreatePrivateEndpoint(ctx, projectID, tt.provider, serviceID, mock.AnythingOfType("*admin.CreateEndpointRequest")).
 				Return(admin.CreatePrivateEndpointApiRequest{ApiService: api})
 			api.EXPECT().CreatePrivateEndpointExecute(mock.AnythingOfType("admin.CreatePrivateEndpointApiRequest")).
@@ -611,7 +611,7 @@ func TestDeletePrivateEndpointInterface(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().DeletePrivateEndpoint(ctx, projectID, "AWS", "endpoint-ID", "pe-service-ID").
 				Return(admin.DeletePrivateEndpointApiRequest{ApiService: api})
 			api.EXPECT().DeletePrivateEndpointExecute(mock.AnythingOfType("admin.DeletePrivateEndpointApiRequest")).
@@ -679,7 +679,7 @@ func TestUpdatePrivateEndpointService(t *testing.T) {
 			ctx := context.Background()
 			projectID := "project-ID"
 			serviceID := "pe-service-ID"
-			api := mockadmin.NewPrivateEndpointServicesApi(t)
+			api := mockadmin.NewPrivateEndpointServicesAPI(t)
 			api.EXPECT().UpdatePrivateEndpointService(ctx, projectID, serviceID, mock.AnythingOfType("*admin.ApiAtlasModifyEndpointServiceRequest")).
 				Return(admin.UpdatePrivateEndpointServiceApiRequest{ApiService: api})
 			api.EXPECT().UpdatePrivateEndpointServiceExecute(mock.AnythingOfType("admin.UpdatePrivateEndpointServiceApiRequest")).

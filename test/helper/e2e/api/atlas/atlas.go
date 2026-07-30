@@ -23,7 +23,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/paging"
@@ -73,7 +73,7 @@ func (a *Atlas) IsDeploymentExist(projectID string, name string) bool {
 }
 
 func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
-	project, _, err := a.Client.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+	project, _, err := a.Client.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 	if admin.IsErrorCode(err, "GROUP_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
 		return false
 	}
@@ -85,14 +85,14 @@ func (a *Atlas) IsProjectExists(g Gomega, projectID string) bool {
 func (a *Atlas) GetDeploymentNames(projectID string) []string {
 	ctx := context.Background()
 
-	clusters, _, err := a.Client.ClustersApi.ListClusters(ctx, projectID).Execute()
+	clusters, _, err := a.Client.ClustersAPI.ListClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(clusters.GetResults(), "listing legacy deployments in project %s", projectID)
 	names := []string{}
 	for _, cluster := range clusters.GetResults() {
 		names = append(names, cluster.GetName())
 	}
-	flex, _, err := a.Client.FlexClustersApi.ListFlexClusters(ctx, projectID).Execute()
+	flex, _, err := a.Client.FlexClustersAPI.ListFlexClusters(ctx, projectID).Execute()
 	Expect(err).NotTo(HaveOccurred())
 	ginkgoPrettyPrintf(flex.GetResults(), "listing flex deployments in project %s", projectID)
 	for _, cluster := range flex.GetResults() {
@@ -102,7 +102,7 @@ func (a *Atlas) GetDeploymentNames(projectID string) []string {
 }
 
 func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterDescription20240805, error) {
-	advancedDeployment, _, err := a.Client.ClustersApi.
+	advancedDeployment, _, err := a.Client.ClustersAPI.
 		GetCluster(context.Background(), projectId, deploymentName).
 		Execute()
 
@@ -112,7 +112,7 @@ func (a *Atlas) GetDeployment(projectId, deploymentName string) (*admin.ClusterD
 }
 
 func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*admin.FlexClusterDescription20241113, error) {
-	flexInstance, _, err := a.Client.FlexClustersApi.
+	flexInstance, _, err := a.Client.FlexClustersAPI.
 		GetFlexCluster(context.Background(), projectId, deploymentName).
 		Execute()
 
@@ -122,7 +122,7 @@ func (a *Atlas) GetFlexInstance(projectId, deploymentName string) (*admin.FlexCl
 }
 
 func (a *Atlas) GetDBUser(database, userName, projectID string) (*admin.CloudDatabaseUser, error) {
-	user, _, err := a.Client.DatabaseUsersApi.
+	user, _, err := a.Client.DatabaseUsersAPI.
 		GetDatabaseUser(context.Background(), projectID, database, userName).
 		Execute()
 	if admin.IsErrorCode(err, "USERNAME_NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") || admin.IsErrorCode(err, "USER_NOT_IN_GROUP") {
@@ -139,7 +139,7 @@ func ginkgoPrettyPrintf(obj any, msg string, formatArgs ...any) {
 }
 
 func (a *Atlas) GetIntegrationByType(projectId, iType string) (*admin.ThirdPartyIntegration, error) {
-	integration, _, err := a.Client.ThirdPartyIntegrationsApi.
+	integration, _, err := a.Client.ThirdPartyIntegrationsAPI.
 		GetGroupIntegration(context.Background(), projectId, iType).
 		Execute()
 
@@ -147,7 +147,7 @@ func (a *Atlas) GetIntegrationByType(projectId, iType string) (*admin.ThirdParty
 }
 
 func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.CloudDatabaseUser, error) {
-	dbUser, _, err := a.Client.DatabaseUsersApi.
+	dbUser, _, err := a.Client.DatabaseUsersAPI.
 		GetDatabaseUser(context.Background(), projectID, database, username).
 		Execute()
 	if err != nil {
@@ -158,13 +158,13 @@ func (a *Atlas) GetUserByName(database, projectID, username string) (*admin.Clou
 }
 
 func (a *Atlas) DeleteGlobalKey(key admin.ApiKeyUserDetails) error {
-	_, err := a.Client.ProgrammaticAPIKeysApi.DeleteOrgApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
+	_, err := a.Client.ProgrammaticAPIKeysAPI.DeleteOrgApiKey(context.Background(), a.OrgID, key.GetId()).Execute()
 
 	return err
 }
 
 func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, error) {
-	encryptionAtRest, _, err := a.Client.EncryptionAtRestUsingCustomerKeyManagementApi.
+	encryptionAtRest, _, err := a.Client.EncryptionAtRestUsingCustomerKeyManagementAPI.
 		GetEncryptionAtRest(context.Background(), projectID).
 		Execute()
 
@@ -173,13 +173,13 @@ func (a *Atlas) GetEncryptionAtRest(projectID string) (*admin.EncryptionAtRest, 
 
 func (a *Atlas) GetOrgUsers() ([]admin.OrgUserResponse, error) {
 	users, err := paging.ListAll(context.Background(), func(ctx context.Context, pageNum int) (paging.Response[admin.OrgUserResponse], *http.Response, error) {
-		return a.Client.MongoDBCloudUsersApi.ListOrgUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
+		return a.Client.MongoDBCloudUsersAPI.ListOrgUsers(ctx, a.OrgID).PageNum(pageNum).Execute()
 	})
 	return users, err
 }
 
 func (a *Atlas) CreateExportBucket(projectID, bucketName, roleID string) (*admin.DiskBackupSnapshotExportBucketResponse, error) {
-	r, _, err := a.Client.CloudBackupsApi.
+	r, _, err := a.Client.CloudBackupsAPI.
 		CreateExportBucket(
 			context.Background(),
 			projectID,

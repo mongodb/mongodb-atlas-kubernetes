@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -65,7 +65,7 @@ func TestRenconcile(t *testing.T) {
 			atlasSDKMocker: func() *admin.APIClient {
 				notFoundErr := &admin.GenericOpenAPIError{}
 				notFoundErr.SetModel(admin.ApiError{ErrorCode: "NOT_IN_GROUP"})
-				projectsAPI := mockadmin.NewProjectsApi(t)
+				projectsAPI := mockadmin.NewProjectsAPI(t)
 				projectsAPI.EXPECT().GetGroupByName(mock.Anything, "my-project").
 					Return(admin.GetGroupByNameApiRequest{ApiService: projectsAPI})
 				projectsAPI.EXPECT().GetGroupByNameExecute(mock.AnythingOfType("admin.GetGroupByNameApiRequest")).
@@ -97,7 +97,7 @@ func TestRenconcile(t *testing.T) {
 					)
 
 				return &admin.APIClient{
-					ProjectsApi: projectsAPI,
+					ProjectsAPI: projectsAPI,
 				}
 			},
 			project: &akov2.AtlasProject{

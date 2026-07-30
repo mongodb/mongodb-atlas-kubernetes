@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
-	"go.mongodb.org/atlas-sdk/v20250312021/mockadmin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/mockadmin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
@@ -38,7 +38,7 @@ var (
 )
 
 func TestNewAtlasOrgSettingsService(t *testing.T) {
-	mockAPI := &mockadmin.OrganizationsApi{}
+	mockAPI := &mockadmin.OrganizationsAPI{}
 
 	service := NewAtlasOrgSettingsService(mockAPI)
 
@@ -50,7 +50,7 @@ func TestAtlasOrgSettingsService_Get(t *testing.T) {
 	for _, tc := range []struct {
 		title         string
 		orgID         string
-		api           admin.OrganizationsApi
+		api           admin.OrganizationsAPI
 		expected      *AtlasOrgSettings
 		expectedError error
 	}{
@@ -180,7 +180,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 		title         string
 		orgID         string
 		settings      *AtlasOrgSettings
-		api           admin.OrganizationsApi
+		api           admin.OrganizationsAPI
 		expected      *AtlasOrgSettings
 		expectedError error
 	} {
@@ -188,7 +188,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 			title         string
 			orgID         string
 			settings      *AtlasOrgSettings
-			api           admin.OrganizationsApi
+			api           admin.OrganizationsAPI
 			expected      *AtlasOrgSettings
 			expectedError error
 		}{
@@ -237,7 +237,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 		title         string
 		orgID         string
 		settings      *AtlasOrgSettings
-		api           admin.OrganizationsApi
+		api           admin.OrganizationsAPI
 		expected      *AtlasOrgSettings
 		expectedError error
 	}{
@@ -267,7 +267,7 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 			title:         "nil settings returns nil",
 			orgID:         testOrgID,
 			settings:      nil,
-			api:           &mockadmin.OrganizationsApi{}, // No expectations set since it shouldn't be called
+			api:           &mockadmin.OrganizationsAPI{}, // No expectations set since it shouldn't be called
 			expected:      nil,
 			expectedError: nil,
 		},
@@ -359,8 +359,8 @@ func TestAtlasOrgSettingsService_Update(t *testing.T) {
 	}
 }
 
-func testGetOrgSettingsAPI(response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsApi {
-	mockAPI := &mockadmin.OrganizationsApi{}
+func testGetOrgSettingsAPI(response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsAPI {
+	mockAPI := &mockadmin.OrganizationsAPI{}
 
 	request := admin.GetOrgSettingsApiRequest{ApiService: mockAPI}
 	mockAPI.EXPECT().GetOrgSettings(mock.Anything, testOrgID).Return(request)
@@ -369,8 +369,8 @@ func testGetOrgSettingsAPI(response *admin.OrganizationSettings, statusCode int,
 	return mockAPI
 }
 
-func testUpdateOrgSettingsAPI(input *admin.OrganizationSettings, response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsApi {
-	mockAPI := &mockadmin.OrganizationsApi{}
+func testUpdateOrgSettingsAPI(input *admin.OrganizationSettings, response *admin.OrganizationSettings, statusCode int, err error) admin.OrganizationsAPI {
+	mockAPI := &mockadmin.OrganizationsAPI{}
 
 	request := admin.UpdateOrgSettingsApiRequest{ApiService: mockAPI}
 

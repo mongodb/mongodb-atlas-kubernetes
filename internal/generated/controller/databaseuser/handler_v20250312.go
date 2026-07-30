@@ -23,7 +23,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312021/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312022/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,7 +64,7 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, databaseuser *akov
 		return result.Error(state.StateInitial, fmt.Errorf("failed to translate DatabaseUser to Atlas: %w", err))
 	}
 
-	response, _, err := h.atlasClient.DatabaseUsersApi.CreateDatabaseUser(ctx, atlasDBUser.GroupId, atlasDBUser).Execute()
+	response, _, err := h.atlasClient.DatabaseUsersAPI.CreateDatabaseUser(ctx, atlasDBUser.GroupId, atlasDBUser).Execute()
 	if err != nil {
 		return result.Error(state.StateInitial, fmt.Errorf("failed to create DatabaseUser: %w", err))
 	}
@@ -108,7 +108,7 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseus
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
-	response, _, err := h.atlasClient.DatabaseUsersApi.GetDatabaseUserWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.DatabaseUsersAPI.GetDatabaseUserWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get DatabaseUser %q: %w", externalID, err))
 	}
@@ -207,7 +207,7 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, database
 		return result.Error(state.StateDeletionRequested, err)
 	}
 
-	_, err = h.atlasClient.DatabaseUsersApi.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
+	_, err = h.atlasClient.DatabaseUsersAPI.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasapi.UserNotfound) || v20250312sdk.IsErrorCode(err, atlasapi.UsernameNotFound) {
 		return result.NextState(state.StateDeleted, "DatabaseUser deleted.")
 	}
@@ -225,7 +225,7 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, databaseuser *ako
 		return result.Error(state.StateDeleting, err)
 	}
 
-	_, _, err = h.atlasClient.DatabaseUsersApi.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
+	_, _, err = h.atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, atlasapi.UserNotfound) || v20250312sdk.IsErrorCode(err, atlasapi.UsernameNotFound):
 		return result.NextState(state.StateDeleted, "DatabaseUser deleted.")
@@ -275,7 +275,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 		CloudDatabaseUser: atlasDBUser,
 	}
 
-	response, _, err := h.atlasClient.DatabaseUsersApi.UpdateDatabaseUserWithParams(ctx, params).Execute()
+	response, _, err := h.atlasClient.DatabaseUsersAPI.UpdateDatabaseUserWithParams(ctx, params).Execute()
 	if err != nil {
 		return result.Error(currentState, fmt.Errorf("failed to update DatabaseUser: %w", err))
 	}
@@ -298,7 +298,7 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 func (h *Handlerv20250312) deploymentsReady(ctx context.Context, groupID string, scopedClusters []string) (bool, error) {
 	if len(scopedClusters) > 0 {
 		for _, name := range scopedClusters {
-			clusterStatus, _, err := h.atlasClient.ClustersApi.GetClusterStatus(ctx, groupID, name).Execute()
+			clusterStatus, _, err := h.atlasClient.ClustersAPI.GetClusterStatus(ctx, groupID, name).Execute()
 			if err != nil {
 				return false, fmt.Errorf("failed to get cluster %q status: %w", name, err)
 			}
@@ -312,7 +312,7 @@ func (h *Handlerv20250312) deploymentsReady(ctx context.Context, groupID string,
 	}
 
 	// No scopes specified: the user has access to all clusters, so check them all.
-	clusters, _, err := h.atlasClient.ClustersApi.ListClusters(ctx, groupID).Execute()
+	clusters, _, err := h.atlasClient.ClustersAPI.ListClusters(ctx, groupID).Execute()
 	if err != nil {
 		return false, fmt.Errorf("failed to list clusters for group %q: %w", groupID, err)
 	}
@@ -323,7 +323,7 @@ func (h *Handlerv20250312) deploymentsReady(ctx context.Context, groupID string,
 			continue
 		}
 
-		clusterStatus, _, err := h.atlasClient.ClustersApi.GetClusterStatus(ctx, groupID, name).Execute()
+		clusterStatus, _, err := h.atlasClient.ClustersAPI.GetClusterStatus(ctx, groupID, name).Execute()
 		if err != nil {
 			return false, fmt.Errorf("failed to get cluster %q status: %w", name, err)
 		}

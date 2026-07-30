@@ -25,7 +25,7 @@ import (
 // ensureRegionalizedPrivateEndpointMode ensures that if the AtlasProject spec
 // defines a regionalized private endpoint setting, it is reflected in Atlas.
 func (r *AtlasProjectReconciler) ensureRegionalizedPrivateEndpointMode(workflowCtx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
-	peApi := privateendpoint.NewPrivateEndpointAPI(workflowCtx.SdkClientSet.SdkClient20250312.PrivateEndpointServicesApi)
+	peApi := privateendpoint.NewPrivateEndpointAPI(workflowCtx.SdkClientSet.SdkClient20250312.PrivateEndpointServicesAPI)
 	currentMode, err := peApi.GetRegionalizedPrivateEndpointMode(workflowCtx.Context, atlasProject.ID())
 	if err != nil {
 		result := workflow.Terminate(workflow.ProjectRegionalizedEndpointModeIsNotReadyInAtlas, err)

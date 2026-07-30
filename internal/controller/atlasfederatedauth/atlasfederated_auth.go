@@ -21,7 +21,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-cmp/cmp"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -35,7 +35,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	}
 
 	// Get current IDP for the ORG
-	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationApi.
+	atlasFedSettings, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationAPI.
 		GetFederationSettings(service.Context, service.OrgID).
 		Execute()
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 	}
 
 	// Get current Org config
-	orgConfig, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationApi.
+	orgConfig, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationAPI.
 		GetConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID).
 		Execute()
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *AtlasFederatedAuthReconciler) ensureFederatedAuth(service *workflow.Con
 		return workflow.OK()
 	}
 
-	updatedSettings, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationApi.
+	updatedSettings, _, err := service.SdkClientSet.SdkClient20250312.FederatedAuthenticationAPI.
 		UpdateConnectedOrgConfig(service.Context, atlasFedSettings.GetId(), service.OrgID, operatorConf).
 		Execute()
 	if err != nil {
@@ -99,7 +99,7 @@ func prepareProjectList(ctx context.Context, client *admin.APIClient) (map[strin
 	}
 
 	projects, err := paging.ListAll(ctx, func(ctx context.Context, pageNum int) (paging.Response[admin.Group], *http.Response, error) {
-		return client.ProjectsApi.ListGroups(ctx).PageNum(pageNum).Execute()
+		return client.ProjectsAPI.ListGroups(ctx).PageNum(pageNum).Execute()
 	})
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (r *AtlasFederatedAuthReconciler) ensureIDPSettings(ctx context.Context, fe
 			SsoUrl:          idp.SsoUrl,
 			SsoDebugEnabled: fedauth.Spec.SSODebugEnabled,
 		}
-		_, _, err := client.FederatedAuthenticationApi.UpdateIdentityProvider(ctx, federationSettingsID, idp.GetId(), &idpUpdate).Execute()
+		_, _, err := client.FederatedAuthenticationAPI.UpdateIdentityProvider(ctx, federationSettingsID, idp.GetId(), &idpUpdate).Execute()
 		if err != nil {
 			return workflow.Terminate(workflow.Internal, err)
 		}
@@ -142,7 +142,7 @@ func federatedSettingsAreEqual(operator, atlas *admin.ConnectedOrgConfig) bool {
 }
 
 func GetIdentityProviderForFederatedSettings(ctx context.Context, atlasClient *admin.APIClient, fedSettings *admin.OrgFederationSettings) (*admin.FederationIdentityProvider, error) {
-	identityProviders, _, err := atlasClient.FederatedAuthenticationApi.ListIdentityProviders(ctx, fedSettings.GetId()).Execute()
+	identityProviders, _, err := atlasClient.FederatedAuthenticationAPI.ListIdentityProviders(ctx, fedSettings.GetId()).Execute()
 	if err != nil {
 		return nil, err
 	}

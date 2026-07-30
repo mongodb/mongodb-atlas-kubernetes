@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.mongodb.org/atlas-sdk/v20250312021/admin"
+	"go.mongodb.org/atlas-sdk/v20250312022/admin"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -88,7 +88,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			}
 			dbUser := admin.NewCloudDatabaseUser("admin", testProject.ID(), roles, dbUserName3)
 			dbUser.SetPassword("mypass")
-			_, _, err := atlasClient.DatabaseUsersApi.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
+			_, _, err := atlasClient.DatabaseUsersAPI.CreateDatabaseUser(context.Background(), testProject.ID(), dbUser).Execute()
 			Expect(err).To(BeNil())
 		})
 	})
@@ -315,7 +315,7 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.FlexClustersApi.
+				_, r, err := atlasClient.FlexClustersAPI.
 					GetFlexCluster(context.Background(), testProject.ID(), deploymentName).
 					Execute()
 				if err != nil {
@@ -332,11 +332,11 @@ var _ = Describe("Atlas Database User", Label("int", "AtlasDatabaseUser", "focus
 			projectID := testProject.ID()
 			Expect(k8sClient.Delete(context.Background(), testProject)).To(Succeed())
 
-			_, err := atlasClient.ProjectsApi.DeleteGroup(context.Background(), projectID).Execute()
+			_, err := atlasClient.ProjectsAPI.DeleteGroup(context.Background(), projectID).Execute()
 			Expect(err).To(BeNil())
 
 			Eventually(func() bool {
-				_, r, err := atlasClient.ProjectsApi.GetGroup(context.Background(), projectID).Execute()
+				_, r, err := atlasClient.ProjectsAPI.GetGroup(context.Background(), projectID).Execute()
 				if err != nil {
 					if httputil.StatusCode(r) == http.StatusNotFound {
 						return true
