@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  update-devbox:
+  update-sdk:
     runs-on: ubuntu-latest
     environment: release
     steps:
@@ -66,8 +66,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create --head=${{ steps.generate_branch.outputs.BRANCH_NAME }} --title "Atlas SDK Dependency Update" \
-          --body "This PR contains the new updates to the Atlas Go SDK.
-
-If this PR does not merge cleanly (build/test failures) or the bump touches public API behavior, follow the runbook: https://github.com/mongodb/mongodb-atlas-kubernetes/blob/main/docs/dev/atlas-sdk-breaking-changes.md" \
+          --body $'This PR contains the new updates to the Atlas Go SDK.\n\nIf this PR does not merge cleanly (build/test failures) or the bump touches public API behavior, follow the runbook: https://github.com/mongodb/mongodb-atlas-kubernetes/blob/main/docs/dev/atlas-sdk-breaking-changes.md' \
           && echo "Pull request created"
 
