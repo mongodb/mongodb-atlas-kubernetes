@@ -16,8 +16,9 @@
 
 set -euo pipefail
 
-CURRENT_SDK_TAG=$(go list -m all | grep go.mongodb.org/atlas-sdk | awk -F '/| ' '{print $4}')
-CURRENT_SDK_RELEASE=$(echo "${CURRENT_SDK_TAG}" | cut -d '.' -f 1)
+CURRENT_SDK_LINE=$(grep -E '^\s*go\.mongodb\.org/atlas-sdk/v[0-9]+ v[0-9.]+$' go.mod)
+CURRENT_SDK_TAG=$(awk '{print $2}' <<< "${CURRENT_SDK_LINE}")
+CURRENT_SDK_RELEASE=$(awk '{print $1}' <<< "${CURRENT_SDK_LINE}" | awk -F/ '{print $NF}')
 echo "CURRENT_SDK_TAG: $CURRENT_SDK_TAG"
 echo "CURRENT_SDK_RELEASE: $CURRENT_SDK_RELEASE"
 
@@ -39,7 +40,7 @@ CRD_CONFIGS_TO_UPDATE=(
 )
 for file in "${CRD_CONFIGS_TO_UPDATE[@]}"; do
 	echo "==> Updating ${file}..."
-	sed -i -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" "${file}"
+	sed -i.bak -e "s/${CURRENT_SDK_RELEASE}/${LATEST_SDK_RELEASE}/g" "${file}" && rm -f "${file}.bak"
 done
 
 echo "Done"
