@@ -56,6 +56,10 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 		atlasProject.Status.ID = projectInAtlas.ID
 	}
 
+	if err = r.syncProjectTags(ctx, orgID, atlasProject, projectInAtlas, services.projectService); err != nil {
+		return r.terminate(ctx, workflow.ProjectNotUpdatedInAtlas, err)
+	}
+
 	ctx.SetConditionTrue(api.ProjectReadyType)
 	r.EventRecorder.Event(atlasProject, "Normal", string(api.ProjectReadyType), "")
 
@@ -73,6 +77,47 @@ func (r *AtlasProjectReconciler) handleProject(ctx *workflow.Context, orgID stri
 	}
 
 	return r.ready(ctx, projectInAtlas.ID)
+}
+
+// syncProjectTags reconciles the project tags in Atlas with the ones in the spec. An unset spec.tags means the operator
+// does not manage tags at all, so tags configured outside of Kubernetes are left untouched. An empty (but present) list
+// clears them.
+func (r *AtlasProjectReconciler) syncProjectTags(
+	ctx *workflow.Context,
+	orgID string,
+	atlasProject *akov2.AtlasProject,
+	projectInAtlas *project.Project,
+	projectService project.ProjectService,
+) error {
+	if atlasProject.Spec.Tags == nil || tagsInSync(atlasProject.Spec.Tags, projectInAtlas.Tags) {
+		return nil
+	}
+
+	projectInAKO := project.NewProject(atlasProject, orgID)
+	projectInAKO.ID = projectInAtlas.ID
+
+	return projectService.UpdateProject(ctx.Context, projectInAKO)
+}
+
+// tagsInSync compares two tag lists ignoring ordering, as Atlas does not guarantee the order tags are returned in.
+func tagsInSync(desired, actual []*akov2.TagSpec) bool {
+	if len(desired) != len(actual) {
+		return false
+	}
+
+	actualByKey := make(map[string]string, len(actual))
+	for _, t := range actual {
+		actualByKey[t.Key] = t.Value
+	}
+
+	for _, t := range desired {
+		value, ok := actualByKey[t.Key]
+		if !ok || value != t.Value {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (r *AtlasProjectReconciler) create(ctx *workflow.Context, orgID string, atlasProject *akov2.AtlasProject, projectService project.ProjectService) (ctrl.Result, error) {

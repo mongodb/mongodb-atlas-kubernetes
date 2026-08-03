@@ -160,6 +160,14 @@ type AtlasProjectSpec struct {
 	// BackupCompliancePolicyRef is a reference to the backup compliance custom resource.
 	// +optional
 	BackupCompliancePolicyRef *common.ResourceRefNamespaced `json:"backupCompliancePolicyRef,omitempty"`
+
+	// Tags is a list of key-value pairs used to tag and categorize the project. See more at
+	// https://www.mongodb.com/docs/atlas/tags/
+	// If you omit this setting, Atlas Kubernetes Operator doesn't alter the project's tags. Set it to an empty list
+	// to remove all tags from the project.
+	// +kubebuilder:validation:MaxItems=50
+	// +optional
+	Tags []*TagSpec `json:"tags,omitempty"`
 }
 
 const hiddenField = "*** redacted ***"

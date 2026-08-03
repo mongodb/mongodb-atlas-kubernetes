@@ -37,6 +37,7 @@ func NewProject(project *akov2.AtlasProject, orgID string) *Project {
 		Name:                      project.Spec.Name,
 		RegionUsageRestrictions:   project.Spec.RegionUsageRestrictions,
 		WithDefaultAlertsSettings: project.Spec.WithDefaultAlertsSettings,
+		Tags:                      project.Spec.Tags,
 	}
 }
 

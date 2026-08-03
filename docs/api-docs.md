@@ -4484,7 +4484,7 @@ See https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-
 
 
 
-TagSpec holds a key-value pair for resource tagging on this deployment.
+TagSpec holds a key-value pair for resource tagging on this resource.
 
 <table>
     <thead>
@@ -4637,7 +4637,7 @@ The region you choose can affect network latency for clients accessing your data
 
 
 
-TagSpec holds a key-value pair for resource tagging on this deployment.
+TagSpec holds a key-value pair for resource tagging on this resource.
 
 <table>
     <thead>
@@ -5138,7 +5138,7 @@ DEPRECATED: Serverless private endpoints are deprecated. See https://dochub.mong
 
 
 
-TagSpec holds a key-value pair for resource tagging on this deployment.
+TagSpec holds a key-value pair for resource tagging on this resource.
 
 <table>
     <thead>
@@ -8616,6 +8616,16 @@ https://www.mongodb.com/docs/atlas/security-private-endpoint/<br/>
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#atlasprojectspectagsindex">tags</a></b></td>
+        <td>[]object</td>
+        <td>
+          Tags is a list of key-value pairs used to tag and categorize the project. See more at
+https://www.mongodb.com/docs/atlas/tags/
+If you omit this setting, Atlas Kubernetes Operator doesn't alter the project's tags. Set it to an empty list
+to remove all tags from the project.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#atlasprojectspecteamsindex">teams</a></b></td>
         <td>[]object</td>
         <td>
@@ -10794,6 +10804,40 @@ Settings allows the configuration of the Project Settings.
           Flag that indicates whether to enable the Schema Advisor for the specified project.<br/>
         </td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### AtlasProject.spec.tags[index]
+<sup><sup>[↩ Parent](#atlasprojectspec)</sup></sup>
+
+
+
+TagSpec holds a key-value pair for resource tagging on this resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          Constant that defines the set of the tag.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          Variable that belongs to the set of the tag.<br/>
+        </td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

@@ -209,6 +209,84 @@ func TestCreateProject(t *testing.T) {
 	}
 }
 
+func TestUpdateProject(t *testing.T) {
+	tests := map[string]struct {
+		api     func() admin.ProjectsAPI
+		project *Project
+		err     error
+	}{
+		"should fail to update project": {
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
+				sdk.EXPECT().UpdateGroup(context.Background(), "my-project-id", mock.AnythingOfType("*admin.GroupUpdate")).
+					Return(admin.UpdateGroupApiRequest{ApiService: sdk})
+				sdk.EXPECT().UpdateGroupExecute(mock.AnythingOfType("admin.UpdateGroupApiRequest")).
+					Return(nil, &http.Response{}, errors.New("fail to update project"))
+
+				return sdk
+			},
+			project: &Project{
+				ID: "my-project-id",
+			},
+			err: errors.New("fail to update project"),
+		},
+		"should update project tags": {
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
+				sdk.EXPECT().UpdateGroup(
+					context.Background(),
+					"my-project-id",
+					&admin.GroupUpdate{
+						Tags: &[]admin.ResourceTag{{Key: "test", Value: "AKO"}},
+					},
+				).Return(admin.UpdateGroupApiRequest{ApiService: sdk})
+				sdk.EXPECT().UpdateGroupExecute(mock.AnythingOfType("admin.UpdateGroupApiRequest")).
+					Return(&admin.Group{}, &http.Response{}, nil)
+
+				return sdk
+			},
+			project: &Project{
+				ID:   "my-project-id",
+				Name: "my-project",
+				Tags: []*akov2.TagSpec{
+					{
+						Key:   "test",
+						Value: "AKO",
+					},
+				},
+			},
+		},
+		"should clear project tags": {
+			api: func() admin.ProjectsAPI {
+				sdk := mockadmin.NewProjectsAPI(t)
+				sdk.EXPECT().UpdateGroup(
+					context.Background(),
+					"my-project-id",
+					&admin.GroupUpdate{Tags: &[]admin.ResourceTag{}},
+				).Return(admin.UpdateGroupApiRequest{ApiService: sdk})
+				sdk.EXPECT().UpdateGroupExecute(mock.AnythingOfType("admin.UpdateGroupApiRequest")).
+					Return(&admin.Group{}, &http.Response{}, nil)
+
+				return sdk
+			},
+			project: &Project{
+				ID:   "my-project-id",
+				Name: "my-project",
+				Tags: []*akov2.TagSpec{},
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			service := &ProjectAPI{
+				projectAPI: tt.api(),
+			}
+			err := service.UpdateProject(context.Background(), tt.project)
+			require.Equal(t, tt.err, err)
+		})
+	}
+}
+
 func TestDeleteProject(t *testing.T) {
 	notFoundErr := &admin.GenericOpenAPIError{}
 	notFoundErr.SetModel(admin.ApiError{ErrorCode: "GROUP_NOT_FOUND"})
