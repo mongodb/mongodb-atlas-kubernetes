@@ -79,3 +79,63 @@ func projectSettingsFlow(userData *model.TestDataProvider, settings *akov2.Proje
 		actions.CheckProjectConditionsNotSet(userData, api.ProjectSettingsReadyType)
 	})
 }
+
+var _ = Describe("Project Tags", Label("project-tags"), func() {
+	var testData *model.TestDataProvider
+
+	_ = AfterEach(func() {
+		GinkgoWriter.Write([]byte("\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		GinkgoWriter.Write([]byte("Project Tags Test\n"))
+		GinkgoWriter.Write([]byte("Operator namespace: " + testData.Resources.Namespace + "\n"))
+		GinkgoWriter.Write([]byte("===============================================\n"))
+		if CurrentSpecReport().Failed() {
+			Expect(actions.SaveProjectsToFile(testData.Context, testData.K8SClient, testData.Resources.Namespace)).Should(Succeed())
+		}
+		By("Delete Resources", func() {
+			actions.DeleteTestDataProject(testData)
+			actions.AfterEachFinalCleanup([]model.TestDataProvider{*testData})
+		})
+	})
+
+	DescribeTable("Namespaced operators working only with its own namespace with different configuration",
+		func(ctx SpecContext, test func(context.Context) *model.TestDataProvider, initialTags, updatedTags []*akov2.TagSpec) {
+			testData = test(ctx)
+			actions.ProjectCreationFlow(testData)
+			projectTagsFlow(testData, initialTags, updatedTags)
+		},
+		Entry("Test[project-tags]: User has project to which Tags were added and later updated", Label("focus-project-tags"),
+			func(ctx context.Context) *model.TestDataProvider {
+				return model.DataProvider(ctx, "project-tags", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
+			},
+			[]*akov2.TagSpec{
+				{Key: "environment", Value: "e2e-test"},
+				{Key: "team", Value: "atlas-kubernetes"},
+			},
+			[]*akov2.TagSpec{
+				{Key: "environment", Value: "e2e-test-updated"},
+				{Key: "owner", Value: "ako"},
+			},
+		),
+	)
+})
+
+func projectTagsFlow(userData *model.TestDataProvider, initialTags, updatedTags []*akov2.TagSpec) {
+	By("Add Tags to the project", func() {
+		userData.Project.Spec.Tags = initialTags
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectReadyType, api.ReadyType)
+	})
+
+	By("Update Tags on the project", func() {
+		userData.Project.Spec.Tags = updatedTags
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectReadyType, api.ReadyType)
+	})
+
+	By("Remove Tags from the project", func() {
+		userData.Project.Spec.Tags = nil
+		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
+		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectReadyType, api.ReadyType)
+	})
+}
