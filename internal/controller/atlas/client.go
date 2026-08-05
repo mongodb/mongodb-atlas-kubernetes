@@ -14,7 +14,7 @@
 
 package atlas
 
-import "go.mongodb.org/atlas-sdk/v20250312022/admin"
+import "go.mongodb.org/atlas-sdk/v20250312023/admin"
 
 func NewClient(domain, publicKey, privateKey string) (*admin.APIClient, error) {
 	return admin.NewClient(
