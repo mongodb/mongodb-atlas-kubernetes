@@ -23,6 +23,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/tag"
 )
 
 // ProjectReferrerObject is a Kube client object that includes references to Atlas projects.
@@ -35,6 +36,7 @@ type ProjectService interface {
 	GetProjectByName(ctx context.Context, name string) (*Project, error)
 	GetProject(ctx context.Context, ID string) (*Project, error)
 	CreateProject(ctx context.Context, project *Project) error
+	UpdateProject(ctx context.Context, project *Project) error
 	DeleteProject(ctx context.Context, project *Project) error
 }
 
@@ -68,6 +70,17 @@ func (a *ProjectAPI) CreateProject(ctx context.Context, project *Project) error 
 
 	project.OrgID = group.GetOrgId()
 	project.ID = group.GetId()
+
+	return nil
+}
+
+// UpdateProject patches the mutable parts of the project document in Atlas. Only tags are updated: the project name is
+// immutable on the AtlasProject CRD and withDefaultAlertsSettings has no effect on existing projects.
+func (a *ProjectAPI) UpdateProject(ctx context.Context, project *Project) error {
+	update := &admin.GroupUpdate{Tags: tag.ToAtlas(project.Tags)}
+	if _, _, err := a.projectAPI.UpdateGroup(ctx, project.ID, update).Execute(); err != nil {
+		return translateError(err)
+	}
 
 	return nil
 }

@@ -103,6 +103,47 @@ func TestHandleProject(t *testing.T) {
 					WithMessageRegexp("failed to get project"),
 			},
 		},
+		"should fail to sync project tags": {
+			wantErr: true,
+			atlasSDKMocker: func() *admin.APIClient {
+				return nil
+			},
+			projectServiceMocker: func() project.ProjectService {
+				service := translation.NewProjectServiceMock(t)
+				service.EXPECT().GetProjectByName(context.Background(), "my-project").
+					Return(&project.Project{ID: "projectID", Name: "my-project"}, nil)
+				service.EXPECT().UpdateProject(context.Background(), mock.AnythingOfType("*project.Project")).
+					Return(errors.New("failed to update project tags"))
+
+				return service
+			},
+			teamServiceMocker: func() teams.TeamsService {
+				return nil
+			},
+			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
+				return nil
+			},
+			project: &akov2.AtlasProject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "my-project",
+					Namespace:  "default",
+					Finalizers: []string{customresource.FinalizerLabel},
+				},
+				Spec: akov2.AtlasProjectSpec{
+					Name: "my-project",
+					Tags: []*akov2.TagSpec{{Key: "env", Value: "dev"}},
+				},
+				Status: status.AtlasProjectStatus{
+					ID: "projectID",
+				},
+			},
+			conditions: []api.Condition{
+				api.FalseCondition(api.ProjectReadyType).
+					WithReason(string(workflow.ProjectNotUpdatedInAtlas)).
+					WithMessageRegexp("failed to update project tags"),
+			},
+			finalizers: []string{customresource.FinalizerLabel},
+		},
 		"should create project": {
 			atlasSDKMocker: func() *admin.APIClient {
 				return nil

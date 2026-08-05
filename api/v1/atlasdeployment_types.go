@@ -222,7 +222,7 @@ type BiConnector struct {
 	ReadPreference string `json:"readPreference,omitempty"`
 }
 
-// TagSpec holds a key-value pair for resource tagging on this deployment.
+// TagSpec holds a key-value pair for resource tagging on this resource.
 type TagSpec struct {
 	// Constant that defines the set of the tag.
 	// +kubebuilder:validation:MaxLength:=255
