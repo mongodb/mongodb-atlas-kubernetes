@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312022/auth/clientcredentials"
+	"go.mongodb.org/atlas-sdk/v20250312023/auth/clientcredentials"
 	"golang.org/x/oauth2"
 )
 
