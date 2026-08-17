@@ -21,8 +21,6 @@
 #
 # Environment:
 #   TEST_BUMP_DRY_RUN=1   Print what would happen without touching git or gh.
-#   GIT_AUTHOR_NAME       Override committer name  (default: github-actions[bot])
-#   GIT_AUTHOR_EMAIL      Override committer email (default: github-actions[bot] noreply)
 
 set -euo pipefail
 
@@ -46,16 +44,13 @@ command -v gh >/dev/null 2>&1 || {
   exit 1
 }
 
-git config user.name  "${GIT_AUTHOR_NAME:-github-actions[bot]}"
-git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
-
 git checkout -b "${branch}"
 git add -A
-git commit -m "${title}"
-# Force-push: the auto/bump-go-* namespace is owned by this automation.
-# A stale remote branch can linger if a prior PR was closed without merging;
-# overwriting it is safe and lets retries succeed.
-git push --force origin "${branch}"
+
+# Create a signed commit via the GitHub API (auto-signs with the token identity).
+# The branch is force-updated remotely via the API; a stale remote branch in the
+# auto/bump-go-* namespace is safe to overwrite.
+BRANCH="${branch}" COMMIT_MESSAGE="${title}" "$(dirname "$0")/create-signed-commit.sh"
 
 gh pr create \
   --title "${title}" \
