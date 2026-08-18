@@ -205,7 +205,7 @@ func specAreEqual(desired, current *Cluster) bool {
 		return false
 	}
 
-	if desired.DiskSizeGB != nil && !areEqual(desired.DiskSizeGB, current.DiskSizeGB) {
+	if !desired.diskAutoscalingEnabled && desired.DiskSizeGB != nil && !areEqual(desired.DiskSizeGB, current.DiskSizeGB) {
 		return false
 	}
 
