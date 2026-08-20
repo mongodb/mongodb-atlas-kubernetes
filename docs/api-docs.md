@@ -882,7 +882,7 @@ Export policy for automatically exporting cloud backup snapshots to AWS bucket.
         <td>
           Human-readable label that indicates the rate at which the export policy item occurs.<br/>
           <br/>
-            <i>Enum</i>: monthly<br/>
+            <i>Enum</i>: monthly, yearly<br/>
             <i>Default</i>: monthly<br/>
         </td>
         <td>true</td>
