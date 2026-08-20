@@ -204,7 +204,7 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		backupSchedule.Spec.AutoExportEnabled = true
 		backupSchedule.Spec.Export = &akov2.AtlasBackupExportSpec{
 			ExportBucketID: exportBucket.GetId(),
-			FrequencyType:  "monthly",
+			FrequencyType:  "yearly",
 		}
 		Expect(data.K8SClient.Update(data.Context, backupSchedule)).To(Succeed())
 
