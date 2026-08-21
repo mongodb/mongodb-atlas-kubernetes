@@ -71,6 +71,36 @@ func TestNewFromInstanceSizeName(t *testing.T) {
 			is,
 		)
 	})
+
+	t.Run("should parse generations", func(t *testing.T) {
+		for name, expected := range map[string]InstanceSize{
+			"M30":            {Family: "M", Size: 30, Generation: Generation1},
+			"M30_GEN_2":      {Family: "M", Size: 30, Generation: Generation2},
+			"R40_GEN_2":      {Family: "R", Size: 40, Generation: Generation2},
+			"M40_NVME":       {Family: "M", Size: 40, IsNVME: true, Generation: Generation1},
+			"M40_NVME_GEN_2": {Family: "M", Size: 40, IsNVME: true, Generation: Generation2},
+			// M10 and M20 are offered on every generation.
+			"M10": {Family: "M", Size: 10, Generation: GenerationAny},
+			"M20": {Family: "M", Size: 20, Generation: GenerationAny},
+		} {
+			is, err := NewFromInstanceSizeName(name)
+
+			assert.NoError(t, err, name)
+			assert.Equal(t, expected, is, name)
+			assert.Equal(t, name, is.String(), name)
+		}
+	})
+}
+
+func TestGenerationCompatibleWith(t *testing.T) {
+	t.Run("should only be compatible within a generation or with the agnostic sizes", func(t *testing.T) {
+		assert.True(t, Generation2.CompatibleWith(Generation2))
+		assert.True(t, Generation1.CompatibleWith(Generation1))
+		assert.True(t, Generation2.CompatibleWith(GenerationAny))
+		assert.True(t, GenerationAny.CompatibleWith(Generation1))
+		assert.False(t, Generation1.CompatibleWith(Generation2))
+		assert.False(t, Generation2.CompatibleWith(Generation1))
+	})
 }
 
 func TestCompareInstanceSizes(t *testing.T) {
@@ -176,6 +206,17 @@ func TestCompareInstanceSizes(t *testing.T) {
 				},
 			),
 		)
+	})
+
+	t.Run("should order a Gen2 NVME size above its non-NVME counterpart", func(t *testing.T) {
+		nvme, err := NewFromInstanceSizeName("M40_NVME_GEN_2")
+		assert.NoError(t, err)
+
+		plain, err := NewFromInstanceSizeName("M40_GEN_2")
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, CompareInstanceSizes(nvme, plain))
+		assert.Equal(t, -1, CompareInstanceSizes(plain, nvme))
 	})
 
 	t.Run("should return 0 when instance 1 and 2 are equal", func(t *testing.T) {

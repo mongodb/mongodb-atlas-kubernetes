@@ -622,6 +622,71 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		"Gen2 instance size with Gen1 minimum": {
+			regionConfig: &akov2.AdvancedRegionConfig{
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M30",
+						MaxInstanceSize: "M60_GEN_2",
+					},
+				},
+				ElectableSpecs: &akov2.Specs{InstanceSize: "M30_GEN_2"},
+			},
+			expectedError: "min instance size M30 has a hardware generation incompatible with instance size M30_GEN_2",
+		},
+		"Gen2 instance size with Gen1 maximum": {
+			regionConfig: &akov2.AdvancedRegionConfig{
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M30_GEN_2",
+						MaxInstanceSize: "M60",
+					},
+				},
+				ElectableSpecs: &akov2.Specs{InstanceSize: "M30_GEN_2"},
+			},
+			expectedError: "max instance size M60 has a hardware generation incompatible with instance size M30_GEN_2",
+		},
+		"Gen2 specs within a Gen2 range": {
+			regionConfig: &akov2.AdvancedRegionConfig{
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M30_GEN_2",
+						MaxInstanceSize: "M60_GEN_2",
+					},
+				},
+				ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2"},
+			},
+			expectedError: "",
+		},
+		"Gen2 instance size below a Gen2 minimum": {
+			regionConfig: &akov2.AdvancedRegionConfig{
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M40_GEN_2",
+						MaxInstanceSize: "M60_GEN_2",
+					},
+				},
+				ElectableSpecs: &akov2.Specs{InstanceSize: "M30_GEN_2"},
+			},
+			expectedError: "the instance size is below the minimum autoscaling configuration",
+		},
+		"Gen2 instance size with a generation agnostic minimum": {
+			regionConfig: &akov2.AdvancedRegionConfig{
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M10",
+						MaxInstanceSize: "M60_GEN_2",
+					},
+				},
+				ElectableSpecs: &akov2.Specs{InstanceSize: "M30_GEN_2"},
+			},
+			expectedError: "",
+		},
 	}
 
 	for name, tt := range tests {

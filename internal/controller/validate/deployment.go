@@ -214,6 +214,16 @@ func advancedInstanceSizeInRange(currentInstanceSize, minInstanceSize, maxInstan
 		return err
 	}
 
+	if !currentSize.Generation.CompatibleWith(minSize.Generation) {
+		return fmt.Errorf("min instance size %s has a hardware generation incompatible with instance size %s",
+			minInstanceSize, currentInstanceSize)
+	}
+
+	if !currentSize.Generation.CompatibleWith(maxSize.Generation) {
+		return fmt.Errorf("max instance size %s has a hardware generation incompatible with instance size %s",
+			maxInstanceSize, currentInstanceSize)
+	}
+
 	if CompareInstanceSizes(currentSize, minSize) == -1 {
 		return errors.New("the instance size is below the minimum autoscaling configuration")
 	}
