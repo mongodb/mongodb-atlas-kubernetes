@@ -21,18 +21,44 @@ import (
 	"strings"
 )
 
+const gen2Suffix = "_GEN_2"
+
+// Generation is the hardware generation an instance size belongs to. Sizes of different
+// generations are not interchangeable, but they are not ordered relative to each other
+// either, so generation is a compatibility dimension rather than a comparable one.
+type Generation int
+
+const (
+	// GenerationAny covers the sizes offered on every generation, so it is compatible
+	// with all of them. Atlas treats M10 and M20 this way.
+	GenerationAny Generation = iota
+	Generation1
+	Generation2
+)
+
+func (g Generation) CompatibleWith(other Generation) bool {
+	return g == GenerationAny || other == GenerationAny || g == other
+}
+
 type InstanceSize struct {
-	Family string
-	Size   int
-	IsNVME bool
+	Family     string
+	Size       int
+	IsNVME     bool
+	Generation Generation
 }
 
 func (i *InstanceSize) String() string {
+	name := fmt.Sprintf("%s%d", i.Family, i.Size)
+
 	if i.IsNVME {
-		return fmt.Sprintf("%s%d_NVME", i.Family, i.Size)
+		name += "_NVME"
 	}
 
-	return fmt.Sprintf("%s%d", i.Family, i.Size)
+	if i.Generation == Generation2 {
+		name += gen2Suffix
+	}
+
+	return name
 }
 
 func CompareInstanceSizes(is1 InstanceSize, is2 InstanceSize) int {
@@ -68,7 +94,17 @@ func NewFromInstanceSizeName(instanceSizeName string) (InstanceSize, error) {
 		return InstanceSize{}, errors.New("instance size is invalid")
 	}
 
-	pieces := strings.Split(instanceSizeName, "_")
+	// The generation suffix is stripped first because NVMe sizes carry both suffixes,
+	// as in M40_NVME_GEN_2.
+	generation := Generation1
+	base := instanceSizeName
+
+	if strings.HasSuffix(base, gen2Suffix) {
+		generation = Generation2
+		base = strings.TrimSuffix(base, gen2Suffix)
+	}
+
+	pieces := strings.Split(base, "_")
 
 	if pieces[0][0] != 'M' && pieces[0][0] != 'R' {
 		return InstanceSize{}, errors.New("instance size is invalid. instance family should be M or R")
@@ -79,9 +115,14 @@ func NewFromInstanceSizeName(instanceSizeName string) (InstanceSize, error) {
 		return InstanceSize{}, fmt.Errorf("instance size is invalid. %w", err)
 	}
 
+	if generation == Generation1 && pieces[0][0] == 'M' && (number == 10 || number == 20) {
+		generation = GenerationAny
+	}
+
 	return InstanceSize{
-		Family: string(pieces[0][0]),
-		Size:   number,
-		IsNVME: len(pieces) == 2 && pieces[1] == "NVME",
+		Family:     string(pieces[0][0]),
+		Size:       number,
+		IsNVME:     len(pieces) == 2 && pieces[1] == "NVME",
+		Generation: generation,
 	}, nil
 }
