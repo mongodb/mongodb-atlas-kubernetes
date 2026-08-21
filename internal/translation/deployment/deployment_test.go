@@ -1326,6 +1326,7 @@ func expectedGeoShardedCluster() *Cluster {
 			},
 		},
 		computeAutoscalingEnabled: true,
+		diskAutoscalingEnabled:    true,
 		instanceSizeOverride:      "M30",
 	}
 }

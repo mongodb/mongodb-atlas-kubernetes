@@ -1505,6 +1505,82 @@ func TestSpecAreEqual(t *testing.T) {
 			},
 			expected: true,
 		},
+		"BUG_REPRODUCTION (issue #3464): should return true when disk size has grown via Atlas disk autoscaling": {
+			// Atlas disk autoscaling grew storage from the spec value (40) with no user
+			// action. specAreEqual has no disk-autoscaling guard on DiskSizeGB (unlike the
+			// existing compute guard on InstanceSize above), so this currently fails.
+			ako: &akov2.AtlasDeployment{
+				Spec: akov2.AtlasDeploymentSpec{
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:                         "cluster0",
+						ClusterType:                  "REPLICASET",
+						BackupEnabled:                new(true),
+						DiskSizeGB:                   new(40),
+						MongoDBMajorVersion:          "7.0",
+						PitEnabled:                   new(true),
+						RootCertType:                 "ISRGROOTX1",
+						VersionReleaseSystem:         "LTS",
+						TerminationProtectionEnabled: false,
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								NumShards: 1,
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_EAST_1",
+										Priority:     new(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M30",
+											NodeCount:    new(3),
+										},
+										AutoScaling: &akov2.AdvancedAutoScalingSpec{
+											DiskGB: &akov2.DiskGB{
+												Enabled: new(true),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			atlas: &admin.ClusterDescription20240805{
+				Name:                         new("cluster0"),
+				ClusterType:                  new("REPLICASET"),
+				BackupEnabled:                new(true),
+				EncryptionAtRestProvider:     new("NONE"),
+				Paused:                       new(false),
+				MongoDBMajorVersion:          new("7.0"),
+				MongoDBVersion:               new("7.1.5"),
+				PitEnabled:                   new(true),
+				RootCertType:                 new("ISRGROOTX1"),
+				VersionReleaseSystem:         new("LTS"),
+				TerminationProtectionEnabled: new(false),
+				ReplicationSpecs: &[]admin.ReplicationSpec20240805{
+					{
+						RegionConfigs: &[]admin.CloudRegionConfig20240805{
+							{
+								ProviderName: new("AWS"),
+								RegionName:   new("US_EAST_1"),
+								Priority:     new(7),
+								ElectableSpecs: &admin.HardwareSpec20240805{
+									InstanceSize: new("M30"),
+									NodeCount:    new(3),
+									DiskSizeGB:   new(80.0), // Atlas grew this via disk autoscaling
+								},
+								AutoScaling: &admin.AdvancedAutoScalingSettings{
+									DiskGB: &admin.DiskGBAutoScaling{
+										Enabled: new(true),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: true,
+		},
 		"should return true when cluster are the same with a unordered region": {
 			ako: &akov2.AtlasDeployment{
 				Spec: akov2.AtlasDeploymentSpec{

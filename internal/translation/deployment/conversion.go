@@ -60,6 +60,7 @@ type Cluster struct {
 
 	customResource            *akov2.AtlasDeployment
 	computeAutoscalingEnabled bool
+	diskAutoscalingEnabled    bool
 	instanceSizeOverride      string
 	isTenant                  bool
 
@@ -302,8 +303,9 @@ func normalizeFlexDeployment(flex *Flex) {
 }
 
 func normalizeClusterDeployment(cluster *Cluster) {
-	isTenant, computeAutoscalingEnabled, instanceSizeOverride := getAutoscalingOverride(cluster.ReplicationSpecs)
+	isTenant, computeAutoscalingEnabled, diskAutoscalingEnabled, instanceSizeOverride := getAutoscalingOverride(cluster.ReplicationSpecs)
 	cluster.computeAutoscalingEnabled = computeAutoscalingEnabled
+	cluster.diskAutoscalingEnabled = diskAutoscalingEnabled
 	cluster.instanceSizeOverride = instanceSizeOverride
 	cluster.isTenant = isTenant
 
@@ -467,9 +469,8 @@ func normalizeProcessArgs(args *akov2.ProcessArgs) {
 	args.FailIndexKeyTooLong = nil
 }
 
-func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool, bool, string) {
+func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (isTenant, computeAutoscalingEnabled, diskAutoscalingEnabled bool, instanceSizeOverride string) {
 	var instanceSize string
-	var isTenant bool
 	for _, replica := range replications {
 		if replica == nil {
 			continue
@@ -492,16 +493,22 @@ func getAutoscalingOverride(replications []*akov2.AdvancedReplicationSpec) (bool
 				instanceSize = region.AnalyticsSpecs.InstanceSize
 			}
 
-			if region.AutoScaling != nil &&
-				region.AutoScaling.Compute != nil &&
-				region.AutoScaling.Compute.Enabled != nil &&
-				*region.AutoScaling.Compute.Enabled {
-				return isTenant, true, instanceSize
+			if region.AutoScaling == nil {
+				continue
+			}
+
+			if region.AutoScaling.Compute != nil && region.AutoScaling.Compute.Enabled != nil && *region.AutoScaling.Compute.Enabled {
+				computeAutoscalingEnabled = true
+				instanceSizeOverride = instanceSize
+			}
+
+			if region.AutoScaling.DiskGB != nil && region.AutoScaling.DiskGB.Enabled != nil && *region.AutoScaling.DiskGB.Enabled {
+				diskAutoscalingEnabled = true
 			}
 		}
 	}
 
-	return isTenant, false, ""
+	return isTenant, computeAutoscalingEnabled, diskAutoscalingEnabled, instanceSizeOverride
 }
 
 func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
