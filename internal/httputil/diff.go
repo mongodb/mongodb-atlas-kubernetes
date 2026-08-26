@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/yudai/gojsondiff"
-	"github.com/yudai/gojsondiff/formatter"
 	"go.uber.org/zap"
 )
 
@@ -112,15 +115,110 @@ func (t *TransportWithDiff) tryCalculateDiff(req *http.Request, cleanupFuncs ...
 		return "", fmt.Errorf("failed to compare JSON payloads: %w", err)
 	}
 
-	fmtr := formatter.NewAsciiFormatter(payloadFromGetParsed, formatter.AsciiFormatterConfig{
-		ShowArrayIndex: true,
-		Coloring:       false,
-	})
+	return formatChangedPaths(diff), nil
+}
 
-	diffString, err := fmtr.Format(diff)
-	if err != nil {
-		return "", fmt.Errorf("failed to format diff: %w", err)
+func formatChangedPaths(diff gojsondiff.Diff) string {
+	if !diff.Modified() {
+		return "no changes"
 	}
 
-	return diffString, nil
+	paths := collectChangedPaths(nil, diff.Deltas())
+	sort.Strings(paths)
+
+	return strings.Join(paths, "\n")
+}
+
+func collectChangedPaths(prefix []string, deltas []gojsondiff.Delta) []string {
+	var paths []string
+
+	for _, delta := range deltas {
+		switch d := delta.(type) {
+		case *gojsondiff.Object:
+			paths = append(paths, collectChangedPaths(appendPath(prefix, d.PostPosition()), d.Deltas)...)
+		case *gojsondiff.Array:
+			paths = append(paths, collectChangedPaths(appendPath(prefix, d.PostPosition()), d.Deltas)...)
+		case *gojsondiff.Added:
+			paths = append(paths, expandValuePaths("added", appendPath(prefix, d.PostPosition()), d.Value)...)
+		case *gojsondiff.Modified:
+			paths = append(paths, describePath("modified", prefix, d.PostPosition()))
+		case *gojsondiff.TextDiff:
+			paths = append(paths, describePath("modified", prefix, d.PostPosition()))
+		case *gojsondiff.Deleted:
+			paths = append(paths, expandValuePaths("deleted", appendPath(prefix, d.PrePosition()), d.Value)...)
+		case *gojsondiff.Moved:
+			paths = append(paths, fmt.Sprintf("moved: %s -> %s",
+				renderPath(appendPath(prefix, d.PrePosition())),
+				renderPath(appendPath(prefix, d.PostPosition()))))
+		default:
+			paths = append(paths, fmt.Sprintf("changed: %s", renderPath(prefix)))
+		}
+	}
+
+	return paths
+}
+
+func expandValuePaths(kind string, path []string, value any) []string {
+	switch v := value.(type) {
+	case map[string]any:
+		if len(v) == 0 {
+			return []string{fmt.Sprintf("%s: %s", kind, renderPath(path))}
+		}
+
+		var paths []string
+		for key, child := range v {
+			paths = append(paths, expandValuePaths(kind, append(slices.Clone(path), key), child)...)
+		}
+		return paths
+
+	case []any:
+		if len(v) == 0 {
+			return []string{fmt.Sprintf("%s: %s", kind, renderPath(path))}
+		}
+
+		var paths []string
+		for i, child := range v {
+			paths = append(paths, expandValuePaths(kind, append(slices.Clone(path), "["+strconv.Itoa(i)+"]"), child)...)
+		}
+		return paths
+
+	default:
+		return []string{fmt.Sprintf("%s: %s", kind, renderPath(path))}
+	}
+}
+
+func describePath(kind string, prefix []string, position gojsondiff.Position) string {
+	return fmt.Sprintf("%s: %s", kind, renderPath(appendPath(prefix, position)))
+}
+
+func appendPath(prefix []string, position gojsondiff.Position) []string {
+	path := make([]string, 0, len(prefix)+1)
+	path = append(path, prefix...)
+
+	switch p := position.(type) {
+	case gojsondiff.Index:
+		return append(path, "["+strconv.Itoa(int(p))+"]")
+	default:
+		return append(path, position.String())
+	}
+}
+
+func renderPath(path []string) string {
+	if len(path) == 0 {
+		return "."
+	}
+
+	var sb strings.Builder
+	for _, segment := range path {
+		if strings.HasPrefix(segment, "[") {
+			sb.WriteString(segment)
+			continue
+		}
+		if sb.Len() > 0 {
+			sb.WriteString(".")
+		}
+		sb.WriteString(segment)
+	}
+
+	return sb.String()
 }
