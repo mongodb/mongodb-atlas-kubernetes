@@ -266,6 +266,7 @@ func NewFailedParseAlertConfigStatus(errorMessage string, jsonSpec string) Alert
 	return result
 }
 
+// NewIncorrectAlertConfigStatus builds a status entry for an alert configuration without credentials
 func NewIncorrectAlertConfigStatus(errorMessage string, alertConfig *admin.GroupAlertsConfig, logger *zap.SugaredLogger) AlertConfiguration {
 	if alertConfig == nil {
 		return AlertConfiguration{
@@ -273,6 +274,19 @@ func NewIncorrectAlertConfigStatus(errorMessage string, alertConfig *admin.Group
 		}
 	}
 	result := ParseAlertConfiguration(*alertConfig, logger)
+	for i := range result.Notifications {
+		result.Notifications[i].redactCredentials()
+	}
 	result.ErrorMessage = errorMessage
 	return result
+}
+
+func (in *Notification) redactCredentials() {
+	in.APIToken = ""
+	in.DatadogAPIKey = ""
+	in.FlowdockAPIToken = ""
+	in.OpsGenieAPIKey = ""
+	in.ServiceKey = ""
+	in.VictorOpsAPIKey = ""
+	in.VictorOpsRoutingKey = ""
 }
