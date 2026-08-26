@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"go.mongodb.org/atlas-sdk/v20250312023/admin"
+	"go.mongodb.org/atlas-sdk/v20250312024/admin"
 )
 
 type ProjectSettings struct {
