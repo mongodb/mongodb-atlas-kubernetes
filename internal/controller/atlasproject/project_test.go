@@ -55,6 +55,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
 )
 
+// ldapAPIWithoutX509 mocks the user-security read that ensureX509 performs to
+// learn whether Atlas currently trusts a customer CA. It reports "not
+// configured", which is the state of every project in these tests.
+func ldapAPIWithoutX509(t *testing.T) *mockadmin.LDAPConfigurationAPI {
+	t.Helper()
+
+	ldapAPI := mockadmin.NewLDAPConfigurationAPI(t)
+	ldapAPI.EXPECT().GetUserSecurity(mock.Anything, mock.Anything).
+		Return(admin.GetUserSecurityApiRequest{ApiService: ldapAPI}).Maybe()
+	ldapAPI.EXPECT().GetUserSecurityExecute(mock.Anything).
+		Return(&admin.UserSecurity{}, nil, nil).Maybe()
+
+	return ldapAPI
+}
+
 func TestHandleProject(t *testing.T) {
 	deletionTime := metav1.Now()
 
@@ -191,6 +206,7 @@ func TestHandleProject(t *testing.T) {
 					Return([]admin.EndpointService{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					PrivateEndpointServicesAPI: mockPrivateEndpointAPI,
 				}
 			},
@@ -345,6 +361,7 @@ func TestHandleProject(t *testing.T) {
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					ProjectIPAccessListAPI:     ipAccessList,
 					PrivateEndpointServicesAPI: privateEndpoints,
 					NetworkPeeringAPI:          networkPeering,
@@ -445,6 +462,7 @@ func TestHandleProject(t *testing.T) {
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					ProjectIPAccessListAPI:     ipAccessList,
 					PrivateEndpointServicesAPI: privateEndpoints,
 					NetworkPeeringAPI:          networkPeering,
@@ -554,6 +572,7 @@ func TestHandleProject(t *testing.T) {
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					ProjectIPAccessListAPI:     ipAccessList,
 					PrivateEndpointServicesAPI: privateEndpoints,
 					NetworkPeeringAPI:          networkPeering,
@@ -664,6 +683,7 @@ func TestHandleProject(t *testing.T) {
 					Return(&admin.PaginatedIntegration{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					ProjectIPAccessListAPI:     ipAccessList,
 					PrivateEndpointServicesAPI: privateEndpoints,
 					NetworkPeeringAPI:          networkPeering,
@@ -1099,6 +1119,7 @@ func TestDelete(t *testing.T) {
 					Return([]admin.EndpointService{}, nil, nil)
 
 				return &admin.APIClient{
+					LDAPConfigurationAPI:       ldapAPIWithoutX509(t),
 					PrivateEndpointServicesAPI: mockPrivateEndpointAPI,
 				}
 			},

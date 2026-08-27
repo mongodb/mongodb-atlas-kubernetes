@@ -50,18 +50,36 @@ func idleX509() workflow.DeprecatedResult {
 func (r *AtlasProjectReconciler) ensureX509(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
 	atlasProject.Status.AuthModes.AddAuthMode(authmode.Scram)
 
-	hasAuthModesX509 := atlasProject.Status.AuthModes.CheckAuthMode(authmode.X509)
-	hasX509Cert := atlasProject.X509SecretObjectKey() != nil
-
-	switch {
-	case hasX509Cert:
+	if atlasProject.X509SecretObjectKey() != nil {
 		return r.enableX509Authentication(ctx, atlasProject)
-	case !hasX509Cert && hasAuthModesX509:
-		return r.disableX509Authentication(ctx, atlasProject)
-	default:
-		ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(atlasProject.Status.AuthModes))
 	}
+
+	certInAtlas, err := readX509CertFromAtlas(ctx, atlasProject.ID())
+	if err != nil {
+		return terminateX509(ctx, err)
+	}
+
+	if certInAtlas != "" {
+		return r.disableX509Authentication(ctx, atlasProject)
+	}
+
+	// Nothing configured in Atlas: drop a stale X509 entry so the status
+	// converges on the actual state.
+	atlasProject.Status.AuthModes.RemoveAuthMode(authmode.X509)
+	ctx.EnsureStatusOption(status.AtlasProjectAuthModesOption(atlasProject.Status.AuthModes))
+
 	return idleX509()
+}
+
+func readX509CertFromAtlas(ctx *workflow.Context, projectID string) (string, error) {
+	userSecurity, _, err := ctx.SdkClientSet.SdkClient20250312.LDAPConfigurationAPI.GetUserSecurity(ctx.Context, projectID).Execute()
+	if err != nil {
+		return "", fmt.Errorf("failed to read user security settings for project %s: %w", projectID, err)
+	}
+
+	customerX509 := userSecurity.GetCustomerX509()
+
+	return customerX509.GetCas(), nil
 }
 
 func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context, atlasProject *akov2.AtlasProject) workflow.DeprecatedResult {
@@ -70,13 +88,12 @@ func (r *AtlasProjectReconciler) enableX509Authentication(ctx *workflow.Context,
 		return terminateX509(ctx, err)
 	}
 
-	ldapConfig, _, err := ctx.SdkClientSet.SdkClient20250312.LDAPConfigurationAPI.GetUserSecurity(ctx.Context, atlasProject.ID()).Execute()
+	certInAtlas, err := readX509CertFromAtlas(ctx, atlasProject.ID())
 	if err != nil {
 		return terminateX509(ctx, err)
 	}
 
-	customerX509 := ldapConfig.GetCustomerX509()
-	if specCert != customerX509.GetCas() {
+	if specCert != certInAtlas {
 		conf := admin.UserSecurity{
 			CustomerX509: &admin.DBUserTLSX509Settings{
 				Cas: &specCert,
