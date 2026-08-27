@@ -74,8 +74,8 @@ type AtlasBackupExportSpec struct {
 	// Unique Atlas identifier of the AWS bucket which was granted access to export backup snapshot.
 	ExportBucketID string `json:"exportBucketId"`
 	// Human-readable label that indicates the rate at which the export policy item occurs.
-	// +kubebuilder:validation:Enum:=monthly;yearly
-	// +kubebuilder:default:=monthly
+	// See the https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-updategroupclusterbackupschedule#operation-updategroupclusterbackupschedule-body-application-vnd-atlas-2024-08-05-json-export-frequencytype
+	// for available values
 	FrequencyType string `json:"frequencyType"`
 }
 

@@ -878,12 +878,11 @@ Export policy for automatically exporting cloud backup snapshots to AWS bucket.
         <td>true</td>
       </tr><tr>
         <td><b>frequencyType</b></td>
-        <td>enum</td>
+        <td>string</td>
         <td>
-          Human-readable label that indicates the rate at which the export policy item occurs.<br/>
-          <br/>
-            <i>Enum</i>: monthly, yearly<br/>
-            <i>Default</i>: monthly<br/>
+          Human-readable label that indicates the rate at which the export policy item occurs.
+See the https://www.mongodb.com/docs/api/doc/atlas-admin-api-v2/operation/operation-updategroupclusterbackupschedule#operation-updategroupclusterbackupschedule-body-application-vnd-atlas-2024-08-05-json-export-frequencytype
+for available values<br/>
         </td>
         <td>true</td>
       </tr></tbody>
