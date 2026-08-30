@@ -39,7 +39,7 @@ const ConnectionSecretsEnsuredEvent = "ConnectionSecretsEnsured"
 func ReapOrphanConnectionSecrets(ctx context.Context, k8sClient client.Client, projectID, namespace string, projectDeploymentNames []string) ([]string, error) {
 	secretList := &corev1.SecretList{}
 	labelSelector := labels.SelectorFromSet(labels.Set{secretservice.TypeLabelKey: secretservice.CredLabelVal, secretservice.ProjectLabelKey: projectID})
-	err := k8sClient.List(context.Background(), secretList, &client.ListOptions{
+	err := k8sClient.List(ctx, secretList, &client.ListOptions{
 		LabelSelector: labelSelector,
 		Namespace:     namespace,
 	})
