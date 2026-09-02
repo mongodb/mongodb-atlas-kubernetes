@@ -40,6 +40,11 @@ import (
 const FreeTier = "M0"
 
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
+	if akoDeployment.GetCustomResource().Spec.UpgradeToDedicated && atlasDeployment == nil {
+		return r.terminate(ctx, workflow.DedicatedMigrationFailed,
+			errors.New("cannot upgrade to dedicated: the deployment does not exist in Atlas. Remove spec.upgradeToDedicated to let the operator create it first"))
+	}
+
 	if akoDeployment.GetCustomResource().Spec.UpgradeToDedicated && !atlasDeployment.IsDedicated() {
 		if atlasDeployment.GetState() == status.StateUPDATING {
 			return r.inProgress(ctx, akoDeployment.GetCustomResource(), atlasDeployment, workflow.DeploymentUpdating, "deployment is updating")
