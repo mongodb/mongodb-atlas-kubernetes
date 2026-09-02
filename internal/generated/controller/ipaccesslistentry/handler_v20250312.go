@@ -25,7 +25,7 @@ import (
 	ctrlstate "github.com/crd2go/constate"
 	state "github.com/crd2go/constate/state"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312023/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312024/admin"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
