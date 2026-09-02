@@ -948,6 +948,52 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 					WithMessageRegexp("Cluster upgrade to dedicated instance initiated in Atlas. The process may take several minutes"),
 			},
 		},
+		"upgradeToDedicated set while the deployment does not exist in Atlas": {
+			atlasDeployment: &akov2.AtlasDeployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster0",
+					Namespace: "test",
+				},
+				Spec: akov2.AtlasDeploymentSpec{
+					UpgradeToDedicated: true,
+					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+						Name:        "cluster0",
+						ClusterType: "REPLICASET",
+						ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+							{
+								RegionConfigs: []*akov2.AdvancedRegionConfig{
+									{
+										ProviderName: "AWS",
+										RegionName:   "US_WEST_1",
+										Priority:     new(7),
+										ElectableSpecs: &akov2.Specs{
+											InstanceSize: "M20",
+											NodeCount:    new(3),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			deploymentInAtlas: nil,
+			deploymentService: func() deployment.AtlasDeploymentsService {
+				// No calls expected: the reconcile must stop before touching Atlas.
+				return translation.NewAtlasDeploymentsServiceMock(t)
+			},
+			sdkMock: func() *admin.APIClient {
+				return &admin.APIClient{}
+			},
+			expectedResult: workflowRes{
+				err: errors.New("cannot upgrade to dedicated: the deployment does not exist in Atlas. Remove spec.upgradeToDedicated to let the operator create it first"),
+			},
+			expectedConditions: []api.Condition{
+				api.FalseCondition(api.DeploymentReadyType).
+					WithReason(string(workflow.DedicatedMigrationFailed)).
+					WithMessageRegexp("cannot upgrade to dedicated: the deployment does not exist in Atlas. Remove spec.upgradeToDedicated to let the operator create it first"),
+			},
+		},
 	}
 
 	for name, tt := range tests {
