@@ -35,7 +35,7 @@ require (
 	github.com/sethvargo/go-password v0.4.0
 	github.com/stretchr/testify v1.12.1
 	github.com/yudai/gojsondiff v1.0.0
-	go.mongodb.org/atlas-sdk/v20250312023 v20250312023.1.0
+	go.mongodb.org/atlas-sdk/v20250312024 v20250312024.0.0
 	go.mongodb.org/mongo-driver v1.17.9
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.22.0
