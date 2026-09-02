@@ -3658,7 +3658,12 @@ MongoDB Cloud distributes data based on the defined zones and zone ranges for th
           Positive integer that specifies the number of shards to deploy in each specified zone.
 If you set this value to 1 and clusterType is SHARDED, MongoDB Cloud deploys a single-shard sharded cluster.
 Don't create a sharded cluster with a single shard for production environments.
-Single-shard sharded clusters don't provide the same benefits as multi-shard configurations<br/>
+Single-shard sharded clusters don't provide the same benefits as multi-shard configurations
+The upper bound is the hard limit Atlas enforces on shards per cluster. The limit
+effective for a project may be lower (80 by default) and is validated by Atlas.<br/>
+          <br/>
+            <i>Minimum</i>: 0<br/>
+            <i>Maximum</i>: 1000<br/>
         </td>
         <td>false</td>
       </tr><tr>

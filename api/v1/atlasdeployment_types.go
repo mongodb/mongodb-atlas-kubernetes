@@ -312,6 +312,10 @@ type AdvancedReplicationSpec struct {
 	// If you set this value to 1 and clusterType is SHARDED, MongoDB Cloud deploys a single-shard sharded cluster.
 	// Don't create a sharded cluster with a single shard for production environments.
 	// Single-shard sharded clusters don't provide the same benefits as multi-shard configurations
+	// The upper bound is the hard limit Atlas enforces on shards per cluster. The limit
+	// effective for a project may be lower (80 by default) and is validated by Atlas.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=1000
 	NumShards int `json:"numShards,omitempty"`
 	// Human-readable label that identifies the zone in a Global Cluster.
 	ZoneName string `json:"zoneName,omitempty"`
