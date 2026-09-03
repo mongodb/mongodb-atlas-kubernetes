@@ -477,47 +477,8 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 			By("Updating the deployment (multiple operations)", func() {
 				var legacySpec *akov2.AdvancedDeploymentSpec
 				createdDeployment = performUpdate(ctx, DeploymentUpdateTimeout, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs = []*akov2.AdvancedRegionConfig{
-						{
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: new(true),
-								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          new(true),
-									ScaleDownEnabled: new(true),
-									MinInstanceSize:  "M10",
-									MaxInstanceSize:  "M30",
-								},
-							},
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize: "M10",
-								NodeCount:    new(2),
-							},
-							Priority:     new(7),
-							ProviderName: "AWS",
-							RegionName:   "US_EAST_1",
-						},
-						{
-							ElectableSpecs: &akov2.Specs{
-								InstanceSize: "M10",
-								NodeCount:    new(1),
-							},
-							Priority:     new(6),
-							ProviderName: "AWS",
-							RegionName:   "US_WEST_1",
-							AutoScaling: &akov2.AdvancedAutoScalingSpec{
-								DiskGB: &akov2.DiskGB{
-									Enabled: new(true),
-								},
-								Compute: &akov2.ComputeSpec{
-									Enabled:          new(true),
-									ScaleDownEnabled: new(true),
-									MinInstanceSize:  "M10",
-									MaxInstanceSize:  "M30",
-								},
-							},
-						},
+					for _, rc := range deployment.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs {
+						rc.AutoScaling.Compute.MaxInstanceSize = "M30"
 					}
 
 					legacySpec = deployment.Spec.DeploymentSpec
