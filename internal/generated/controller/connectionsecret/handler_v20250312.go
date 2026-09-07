@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret/target"
@@ -33,9 +32,9 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 )
 
-func (r *ConnectionSecretReconciler) handleUpsert(ctx context.Context, ids *ConnectionSecretIdentifiers, user *generatedv1.DatabaseUser, connectionTarget target.ConnectionTargetInstance) (reconcile.Result, error) {
+func (r *ConnectionSecretReconciler) handleUpsert(ctx context.Context, ids *ConnectionSecretIdentifiers, user *generatedv1.DatabaseUser, connectionTarget target.ConnectionTargetInstance) error {
 	if user == nil || user.Spec.V20250312 == nil || user.Spec.V20250312.Entry == nil || user.Spec.V20250312.Entry.PasswordSecretRef == nil {
-		return reconcile.Result{}, nil // nothing to do
+		return nil // nothing to do
 	}
 
 	secret := &corev1.Secret{}
@@ -44,28 +43,28 @@ func (r *ConnectionSecretReconciler) handleUpsert(ctx context.Context, ids *Conn
 		Namespace: user.GetNamespace(),
 	}, secret)
 	if err != nil {
-		return reconcile.Result{}, fmt.Errorf("failed to get password secret: %w", err)
+		return fmt.Errorf("failed to get password secret: %w", err)
 	}
 
 	password, exists := secret.Data[*user.Spec.V20250312.Entry.PasswordSecretRef.Key] // key is defaulted so cannot be nil
 	if !exists {
-		return reconcile.Result{}, fmt.Errorf("secret does not contain key %q", *user.Spec.V20250312.Entry.PasswordSecretRef.Key)
+		return fmt.Errorf("secret does not contain key %q", *user.Spec.V20250312.Entry.PasswordSecretRef.Key)
 	}
 
 	// create the connection data that will populate secret.stringData
 	data := connectionTarget.BuildConnectionData(ctx)
 	if data == nil {
-		return ctrl.Result{}, nil // nothing to do
+		return nil // nothing to do
 	}
 
 	data.DBUserName = user.Spec.V20250312.Entry.Username
 	data.Password = string(password)
 
 	if err := r.ensureSecret(ctx, ids, user, connectionTarget, data); err != nil {
-		return ctrl.Result{}, err
+		return err
 	}
 
-	return ctrl.Result{}, nil
+	return nil
 }
 
 func (r *ConnectionSecretReconciler) handleBatchUpsert(
@@ -140,9 +139,8 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 		}
 
 		// Handle the upsert of the connection secret.
-		result, err := r.handleUpsert(ctx, &connectionSecretIdentifier, user, connectionTarget)
-		if err != nil {
-			return result, err
+		if err := r.handleUpsert(ctx, &connectionSecretIdentifier, user, connectionTarget); err != nil {
+			return ctrl.Result{}, err
 		}
 		activeTargets++
 	}
