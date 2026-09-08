@@ -24,18 +24,33 @@ import (
 // AtlasBackupScheduleStatusOption is the option that is applied to AtlasBackupSchedule Status
 type AtlasBackupScheduleStatusOption func(s *BackupScheduleStatus)
 
-func AtlasBackupScheduleSetDeploymentID(ID string) AtlasBackupScheduleStatusOption {
+// AtlasBackupScheduleSetDeploymentID records a deployment as a user of this
+// backup schedule.
+//
+// staleKeys are keys the same deployment may already be recorded under, written
+// by an operator version that used a different key format. They are dropped
+// here so an existing status converges on the current format the first time the
+// deployment reconciles; without that, garbage collection would never match the
+// old entries and the deletion finalizer would stay on forever.
+func AtlasBackupScheduleSetDeploymentID(key string, staleKeys ...string) AtlasBackupScheduleStatusOption {
 	return func(s *BackupScheduleStatus) {
-		IDs := collection.CopyWithSkip(s.DeploymentIDs, ID)
-		IDs = append(IDs, ID)
+		keys := collection.CopyWithSkip(s.DeploymentIDs, key)
+		for _, staleKey := range staleKeys {
+			keys = collection.CopyWithSkip(keys, staleKey)
+		}
 
-		s.DeploymentIDs = IDs
+		s.DeploymentIDs = append(keys, key)
 	}
 }
 
-func AtlasBackupScheduleUnsetDeploymentID(ID string) AtlasBackupScheduleStatusOption {
+func AtlasBackupScheduleUnsetDeploymentID(keys ...string) AtlasBackupScheduleStatusOption {
 	return func(s *BackupScheduleStatus) {
-		s.DeploymentIDs = collection.CopyWithSkip(s.DeploymentIDs, ID)
+		remaining := s.DeploymentIDs
+		for _, key := range keys {
+			remaining = collection.CopyWithSkip(remaining, key)
+		}
+
+		s.DeploymentIDs = remaining
 	}
 }
 
@@ -43,6 +58,9 @@ func AtlasBackupScheduleUnsetDeploymentID(ID string) AtlasBackupScheduleStatusOp
 type BackupScheduleStatus struct {
 	api.Common `json:",inline"`
 
-	// List of the human-readable names of all deployments utilizing this backup schedule.
+	// List of keys identifying the deployments that use this backup schedule, in
+	// "namespace/name" form. A schedule can be referenced from another namespace,
+	// so the namespace is part of the key.
+	// The json tag is kept for compatibility with statuses written earlier.
 	DeploymentIDs []string `json:"deploymentID,omitempty"`
 }

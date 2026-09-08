@@ -220,7 +220,12 @@ func (r *AtlasDeploymentReconciler) delete(
 func (r *AtlasDeploymentReconciler) cleanupBindings(context context.Context, deployment deployment.Deployment) error {
 	r.Log.Debug("Cleaning up deployment bindings (backup)")
 
-	return r.garbageCollectBackupResource(context, deployment.GetName())
+	customResource := deployment.GetCustomResource()
+
+	return r.garbageCollectBackupResource(context,
+		backupScheduleDeploymentKey(customResource),
+		legacyBackupScheduleDeploymentKey(customResource),
+	)
 }
 
 func isTerminationProtectionEnabled(deployment *akov2.AtlasDeployment) bool {

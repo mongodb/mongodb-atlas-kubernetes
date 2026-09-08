@@ -217,6 +217,96 @@ func TestCleanupBindings(t *testing.T) {
 	})
 }
 
+func TestBackupScheduleDeploymentKeyIsNamespaceQualified(t *testing.T) {
+	r := &AtlasDeploymentReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
+		},
+	}
+	ctx := context.Background()
+
+	policy := testBackupPolicy()
+	require.NoError(t, r.Client.Create(ctx, policy))
+
+	victimSchedule := testBackupSchedule("-victim", policy)
+	victim := testDeployment("-victim", victimSchedule)
+	require.NoError(t, r.Client.Create(ctx, victim))
+	victimSchedule.Status.DeploymentIDs = []string{backupScheduleDeploymentKey(victim)}
+	require.NoError(t, r.Client.Create(ctx, victimSchedule))
+
+	other := testDeployment("-other", nil)
+	other.Namespace = "other-namespace"
+	other.Spec.DeploymentSpec.Name = victim.Spec.DeploymentSpec.Name
+	require.NoError(t, r.Client.Create(ctx, other))
+
+	require.NoError(t, r.cleanupBindings(ctx, deployment.NewDeployment("project-id", other)))
+
+	endSchedule := &akov2.AtlasBackupSchedule{}
+	require.NoError(t, r.Client.Get(ctx, kube.ObjectKeyFromObject(victimSchedule), endSchedule))
+	assert.Equal(t, []string{backupScheduleDeploymentKey(victim)}, endSchedule.Status.DeploymentIDs,
+		"the victim's entry must survive a same-named deployment being deleted elsewhere")
+	assert.NotEmpty(t, endSchedule.Finalizers, "the victim's schedule must keep its finalizer")
+}
+
+func TestBackupScheduleLegacyKeyIsCollected(t *testing.T) {
+	r := &AtlasDeploymentReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
+		},
+	}
+	ctx := context.Background()
+
+	policy := testBackupPolicy()
+	require.NoError(t, r.Client.Create(ctx, policy))
+	schedule := testBackupSchedule("", policy)
+	d := testDeployment("", schedule)
+	require.NoError(t, r.Client.Create(ctx, d))
+	schedule.Status.DeploymentIDs = []string{legacyBackupScheduleDeploymentKey(d)}
+	require.NoError(t, r.Client.Create(ctx, schedule))
+
+	_, err := r.ensureBackupPolicy(&workflow.Context{Context: ctx}, schedule)
+	require.NoError(t, err)
+	require.NoError(t, r.cleanupBindings(ctx, deployment.NewDeployment("project-id", d)))
+
+	endSchedule := &akov2.AtlasBackupSchedule{}
+	require.NoError(t, r.Client.Get(ctx, kube.ObjectKeyFromObject(schedule), endSchedule))
+	assert.Empty(t, endSchedule.Status.DeploymentIDs)
+	assert.Empty(t, endSchedule.Finalizers, "a legacy entry must not pin the finalizer forever")
+}
+
+func TestBackupScheduleLegacyKeyIsMigratedOnReconcile(t *testing.T) {
+	r := &AtlasDeploymentReconciler{
+		AtlasReconciler: reconciler.AtlasReconciler{
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
+		},
+	}
+	ctx := context.Background()
+
+	policy := testBackupPolicy()
+	require.NoError(t, r.Client.Create(ctx, policy))
+	schedule := testBackupSchedule("", policy)
+	d := testDeployment("", schedule)
+	backupEnabled := true
+	d.Spec.DeploymentSpec.BackupEnabled = &backupEnabled
+	require.NoError(t, r.Client.Create(ctx, d))
+	schedule.Status.DeploymentIDs = []string{legacyBackupScheduleDeploymentKey(d)}
+	require.NoError(t, r.Client.Create(ctx, schedule))
+
+	_, err := r.ensureBackupSchedule(&workflow.Context{Context: ctx, Log: testLog(t)}, d)
+	require.NoError(t, err)
+
+	endSchedule := &akov2.AtlasBackupSchedule{}
+	require.NoError(t, r.Client.Get(ctx, kube.ObjectKeyFromObject(schedule), endSchedule))
+	assert.Equal(t, []string{backupScheduleDeploymentKey(d)}, endSchedule.Status.DeploymentIDs,
+		"the legacy bare-name entry must be replaced, not duplicated")
+}
+
 func testK8sClient() client.Client {
 	// Subresources need to be explicitly set now since controller-runtime 1.15
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2362#issuecomment-1698194188

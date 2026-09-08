@@ -56,7 +56,7 @@ const (
 	// Set this to true if you are debugging deployment creation.
 	// This may not help much if there was the update though...
 	DeploymentDevMode       = false
-	DeploymentUpdateTimeout = 40 * time.Minute
+	DeploymentUpdateTimeout = 120 * time.Minute
 	ConnectionSecretName    = "my-atlas-key"
 	PrivateAPIKey           = "privateApiKey"
 	OrgID                   = "orgId"
