@@ -24,7 +24,7 @@ import (
 	"github.com/crd2go/crapi/refs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	admin "go.mongodb.org/atlas-sdk/v20250312023/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312024/admin"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

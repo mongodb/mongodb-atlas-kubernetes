@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	crapi "github.com/crd2go/crapi"
-	admin "go.mongodb.org/atlas-sdk/v20250312023/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312024/admin"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
