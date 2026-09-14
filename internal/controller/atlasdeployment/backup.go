@@ -295,60 +295,60 @@ func (r *AtlasDeploymentReconciler) garbageCollectBackupResource(ctx context.Con
 	for _, bSchedule := range schedules.Items {
 		backupSchedule := bSchedule
 		g.Go(func() error {
-			for _, id := range backupSchedule.Status.DeploymentIDs {
+			usedByDeployment := slices.ContainsFunc(backupSchedule.Status.DeploymentIDs, func(id string) bool {
 				// slices.Contains, rather than a plain comparison, is what accepts
 				// the legacy bare-name key alongside the current one.
-				if !slices.Contains(deploymentKeys, id) {
-					continue
-				}
+				return slices.Contains(deploymentKeys, id)
+			})
+			if !usedByDeployment {
+				return nil
+			}
 
-				backupSchedule.UpdateStatus([]api.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(deploymentKeys...))
+			backupSchedule.UpdateStatus([]api.Condition{}, status.AtlasBackupScheduleUnsetDeploymentID(deploymentKeys...))
 
-				if err = r.Client.Status().Update(ctx, &backupSchedule); err != nil {
-					r.Log.Errorw("failed to update BackupSchedule status", "error", err)
-					return err
-				}
+			if err := r.Client.Status().Update(ctx, &backupSchedule); err != nil {
+				r.Log.Errorw("failed to update BackupSchedule status", "error", err)
+				return err
+			}
 
-				lastScheduleRef := false
-				if len(backupSchedule.Status.DeploymentIDs) == 0 &&
-					customresource.HaveFinalizer(&backupSchedule, customresource.FinalizerLabel) {
-					customresource.UnsetFinalizer(&backupSchedule, customresource.FinalizerLabel)
-					lastScheduleRef = true
-				}
+			lastScheduleRef := false
+			if len(backupSchedule.Status.DeploymentIDs) == 0 &&
+				customresource.HaveFinalizer(&backupSchedule, customresource.FinalizerLabel) {
+				customresource.UnsetFinalizer(&backupSchedule, customresource.FinalizerLabel)
+				lastScheduleRef = true
+			}
 
-				if err = r.Client.Update(ctx, &backupSchedule); err != nil {
-					r.Log.Errorw("failed to update BackupSchedule object", "error", err)
-					return err
-				}
+			if err := r.Client.Update(ctx, &backupSchedule); err != nil {
+				r.Log.Errorw("failed to update BackupSchedule object", "error", err)
+				return err
+			}
 
-				if !lastScheduleRef {
-					continue
-				}
+			if !lastScheduleRef {
+				return nil
+			}
 
-				bPolicy := &akov2.AtlasBackupPolicy{}
-				bPolicyRef := *backupSchedule.Spec.PolicyRef.GetObject(backupSchedule.Namespace)
-				err = r.Client.Get(ctx, bPolicyRef, bPolicy)
-				if err != nil {
-					return fmt.Errorf("failed to retrieve list of backup schedules: %w", err)
-				}
+			bPolicy := &akov2.AtlasBackupPolicy{}
+			bPolicyRef := *backupSchedule.Spec.PolicyRef.GetObject(backupSchedule.Namespace)
+			if err := r.Client.Get(ctx, bPolicyRef, bPolicy); err != nil {
+				return fmt.Errorf("failed to retrieve backup policy %v: %w", bPolicyRef, err)
+			}
 
-				scheduleRef := kube.ObjectKeyFromObject(&backupSchedule).String()
-				bPolicy.UpdateStatus([]api.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
+			scheduleRef := kube.ObjectKeyFromObject(&backupSchedule).String()
+			bPolicy.UpdateStatus([]api.Condition{}, status.AtlasBackupPolicyUnsetScheduleID(scheduleRef))
 
-				if err = r.Client.Status().Update(ctx, bPolicy); err != nil {
-					r.Log.Errorw("failed to update BackupPolicy status", "error", err)
-					return err
-				}
+			if err := r.Client.Status().Update(ctx, bPolicy); err != nil {
+				r.Log.Errorw("failed to update BackupPolicy status", "error", err)
+				return err
+			}
 
-				if len(bPolicy.Status.BackupScheduleIDs) == 0 &&
-					customresource.HaveFinalizer(bPolicy, customresource.FinalizerLabel) {
-					customresource.UnsetFinalizer(bPolicy, customresource.FinalizerLabel)
-				}
+			if len(bPolicy.Status.BackupScheduleIDs) == 0 &&
+				customresource.HaveFinalizer(bPolicy, customresource.FinalizerLabel) {
+				customresource.UnsetFinalizer(bPolicy, customresource.FinalizerLabel)
+			}
 
-				if err = r.Client.Update(ctx, bPolicy); err != nil {
-					r.Log.Errorw("failed to update BackupPolicy object", "error", err)
-					return err
-				}
+			if err := r.Client.Update(ctx, bPolicy); err != nil {
+				r.Log.Errorw("failed to update BackupPolicy object", "error", err)
+				return err
 			}
 
 			return nil
