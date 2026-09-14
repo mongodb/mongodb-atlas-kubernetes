@@ -21,7 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v20250312022 "go.mongodb.org/atlas-sdk/v20250312024/admin"
+	v20250312022 "go.mongodb.org/atlas-sdk/v20250312025/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,7 @@ func createAtlasServiceAccount(ctx context.Context, atlasClient *v20250312022.AP
 			Name:                    saName,
 			Description:             fmt.Sprintf("AKO e2e test service account %s", saName),
 			Roles:                   []string{"ORG_OWNER"},
-			SecretExpiresAfterHours: 8,
+			SecretExpiresAfterHours: v20250312022.PtrInt(8),
 		}).Execute()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred(), "failed to create Atlas service account")
 	ExpectWithOffset(1, sa.ClientId).NotTo(BeNil())

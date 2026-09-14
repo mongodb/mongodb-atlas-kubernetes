@@ -17,7 +17,7 @@ package maintenancewindow
 import (
 	"reflect"
 
-	"go.mongodb.org/atlas-sdk/v20250312024/admin"
+	"go.mongodb.org/atlas-sdk/v20250312025/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/project"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
@@ -51,7 +51,7 @@ func toAtlas(in *MaintenanceWindow) *admin.GroupMaintenanceWindow {
 	}
 	return &admin.GroupMaintenanceWindow{
 		AutoDeferOnceEnabled: pointer.MakePtrOrNil(in.AutoDefer),
-		DayOfWeek:            in.DayOfWeek,
+		DayOfWeek:            pointer.MakePtrOrNil(in.DayOfWeek),
 		HourOfDay:            pointer.MakePtrOrNil(in.HourOfDay),
 		StartASAP:            pointer.MakePtrOrNil(in.StartASAP),
 	}
