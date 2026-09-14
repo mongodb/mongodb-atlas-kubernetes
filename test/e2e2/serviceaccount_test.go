@@ -52,7 +52,7 @@ func createAtlasServiceAccount(ctx context.Context, atlasClient *v20250312022.AP
 			Name:                    saName,
 			Description:             fmt.Sprintf("AKO e2e test service account %s", saName),
 			Roles:                   []string{"ORG_OWNER"},
-			SecretExpiresAfterHours: 8,
+			SecretExpiresAfterHours: v20250312022.PtrInt(8),
 		}).Execute()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred(), "failed to create Atlas service account")
 	ExpectWithOffset(1, sa.ClientId).NotTo(BeNil())

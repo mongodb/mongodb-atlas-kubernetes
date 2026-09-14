@@ -51,7 +51,7 @@ func toAtlas(in *MaintenanceWindow) *admin.GroupMaintenanceWindow {
 	}
 	return &admin.GroupMaintenanceWindow{
 		AutoDeferOnceEnabled: pointer.MakePtrOrNil(in.AutoDefer),
-		DayOfWeek:            in.DayOfWeek,
+		DayOfWeek:            pointer.MakePtrOrNil(in.DayOfWeek),
 		HourOfDay:            pointer.MakePtrOrNil(in.HourOfDay),
 		StartASAP:            pointer.MakePtrOrNil(in.StartASAP),
 	}

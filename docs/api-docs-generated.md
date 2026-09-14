@@ -880,13 +880,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -913,7 +915,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1081,13 +1083,15 @@ Hardware specifications for all electable nodes deployed in the region. Electabl
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -1114,7 +1118,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1177,13 +1181,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -1210,7 +1216,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2089,13 +2095,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2122,7 +2130,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2290,13 +2298,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2323,7 +2333,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2379,13 +2389,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2412,7 +2424,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2468,13 +2480,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2501,7 +2515,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2557,13 +2571,15 @@ Hardware specifications for all electable nodes deployed in the region. Electabl
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2590,7 +2606,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2653,13 +2669,15 @@ The current hardware specifications for read only nodes in the region.
         <td><b>diskIOPS</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-- set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-- set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+ Change this parameter if you:
+
+- set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+- set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-This parameter defaults to the cluster tier's standard IOPS value.
+This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 Changing this value impacts cluster cost.<br/>
         </td>
         <td>false</td>
@@ -2686,7 +2704,7 @@ Changing this value impacts cluster cost.<br/>
         <td><b>diskThroughput</b></td>
         <td>integer</td>
         <td>
-          Target throughput desired for storage attached to this hardware. Only returned for Gen 2 instance sizes with Standard (GP3) volume type.<br/>
+          Throughput (in MiB/s) provisioned for storage attached to this hardware. Only returned for Gen 2 instance sizes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
