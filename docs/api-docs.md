@@ -916,7 +916,10 @@ BackupScheduleStatus defines the observed state of AtlasBackupSchedule.
         <td><b>deploymentID</b></td>
         <td>[]string</td>
         <td>
-          List of the human-readable names of all deployments utilizing this backup schedule.<br/>
+          List of keys identifying the deployments that use this backup schedule, in
+"namespace/name" form. A schedule can be referenced from another namespace,
+so the namespace is part of the key.
+The json tag is kept for compatibility with statuses written earlier.<br/>
         </td>
         <td>false</td>
       </tr><tr>
