@@ -38,4 +38,10 @@ type MaintenanceWindow struct {
 	// Cannot be specified if startASAP is true
 	// +optional
 	Defer bool `json:"defer,omitempty"`
+	// Wave assigned to this project for maintenance sequencing across an organization.
+	// Must be between 1 and 3, inclusive. Cannot be specified if autoDefer is true.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=3
+	WaveAssignment *int `json:"waveAssignment,omitempty"`
 }

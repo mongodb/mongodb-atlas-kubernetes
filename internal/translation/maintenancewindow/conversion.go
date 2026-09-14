@@ -54,6 +54,7 @@ func toAtlas(in *MaintenanceWindow) *admin.GroupMaintenanceWindow {
 		DayOfWeek:            pointer.MakePtrOrNil(in.DayOfWeek),
 		HourOfDay:            pointer.MakePtrOrNil(in.HourOfDay),
 		StartASAP:            pointer.MakePtrOrNil(in.StartASAP),
+		WaveAssignment:       in.WaveAssignment,
 	}
 }
 
@@ -63,10 +64,11 @@ func fromAtlas(in *admin.GroupMaintenanceWindow) *MaintenanceWindow {
 	}
 	return &MaintenanceWindow{
 		MaintenanceWindow: &project.MaintenanceWindow{
-			DayOfWeek: in.GetDayOfWeek(),
-			HourOfDay: in.GetHourOfDay(),
-			AutoDefer: in.GetAutoDeferOnceEnabled(),
-			StartASAP: in.GetStartASAP(),
+			DayOfWeek:      in.GetDayOfWeek(),
+			HourOfDay:      in.GetHourOfDay(),
+			AutoDefer:      in.GetAutoDeferOnceEnabled(),
+			StartASAP:      in.GetStartASAP(),
+			WaveAssignment: in.WaveAssignment,
 		},
 	}
 }

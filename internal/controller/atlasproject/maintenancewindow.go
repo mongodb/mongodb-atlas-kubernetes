@@ -65,7 +65,7 @@ func (r *AtlasProjectReconciler) syncAtlasWithSpec(ctx *workflow.Context, projec
 
 	windowInAKO := maintenancewindow.NewMaintenanceWindow(&windowSpec)
 
-	if daysOrHoursAreDifferent(*windowInAtlas, *windowInAKO) {
+	if daysOrHoursAreDifferent(*windowInAtlas, *windowInAKO) || waveIsDifferent(*windowInAtlas, *windowInAKO) {
 		ctx.Log.Debugw("Creating or updating window")
 		// We set startASAP to false because the operator takes care of calling the API a second time if both
 		// startASAP and the new maintenance time-slots are defined
@@ -108,11 +108,12 @@ func isEmpty(i int) bool {
 }
 
 func isEmptyWindow(window project.MaintenanceWindow) bool {
-	return isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.StartASAP && !window.Defer && !window.AutoDefer
+	return isEmpty(window.DayOfWeek) && isEmpty(window.HourOfDay) && !window.StartASAP && !window.Defer &&
+		!window.AutoDefer && window.WaveAssignment == nil
 }
 
 func windowSpecified(window project.MaintenanceWindow) bool {
-	return !isEmpty(window.DayOfWeek)
+	return !isEmpty(window.DayOfWeek) || window.WaveAssignment != nil
 }
 
 func maxOneFlag(window project.MaintenanceWindow) bool {
@@ -123,14 +124,27 @@ func daysOrHoursAreDifferent(inAtlas, inAKO maintenancewindow.MaintenanceWindow)
 	return inAtlas.DayOfWeek != inAKO.DayOfWeek || inAtlas.HourOfDay != inAKO.HourOfDay
 }
 
+// waveIsDifferent reports drift only when AKO explicitly manages a wave assignment.
+// A nil WaveAssignment in AKO means "unmanaged" and never triggers a correction,
+// since Atlas has no way to distinguish "never set" from "explicitly cleared" for this field.
+func waveIsDifferent(inAtlas, inAKO maintenancewindow.MaintenanceWindow) bool {
+	if inAKO.WaveAssignment == nil {
+		return false
+	}
+	return inAtlas.WaveAssignment == nil || *inAtlas.WaveAssignment != *inAKO.WaveAssignment
+}
+
 // validateMaintenanceWindow performs validation of the Maintenance Window. Note, that we intentionally don't validate
 // that hour of day and day of week are in the bounds - this will be done by Atlas.
 func validateMaintenanceWindow(window project.MaintenanceWindow) error {
+	if window.AutoDefer && window.WaveAssignment != nil {
+		return errors.New("projectMaintenanceWindow must not set both autoDefer and waveAssignment")
+	}
 	if windowSpecified(window) && maxOneFlag(window) {
 		return nil
 	}
 	errorString := "projectMaintenanceWindow must respect the following constraints, or be empty : " +
-		"1) dayOfWeek must be specified (hourOfDay is 0 by default, autoDeferral is false by default) " +
+		"1) dayOfWeek or waveAssignment must be specified (hourOfDay is 0 by default, autoDeferral is false by default) " +
 		"2) only one of (startASAP, defer) is true"
 	return errors.New(errorString)
 }
