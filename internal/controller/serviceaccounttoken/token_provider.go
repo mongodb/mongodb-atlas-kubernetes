@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"time"
 
-	"go.mongodb.org/atlas-sdk/v20250312024/auth/clientcredentials"
+	"go.mongodb.org/atlas-sdk/v20250312025/auth/clientcredentials"
 )
 
 // TokenProvider abstracts the OAuth token acquisition so it can be mocked in tests.
