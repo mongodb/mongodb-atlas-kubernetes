@@ -120,7 +120,18 @@ func maxOneFlag(window project.MaintenanceWindow) bool {
 	return !(window.StartASAP && window.Defer)
 }
 
+// daysOrHoursAreDifferent reports schedule drift only when AKO manages a
+// schedule, which an unset dayOfWeek says it does not (a wave-only window).
+//
+// Without that check a wave-only spec never converges: toAtlas drops the zero
+// dayOfWeek and hourOfDay from the request, so Atlas keeps whatever schedule it
+// had, the comparison reports drift again on the next reconcile, and the
+// operator PATCHes Atlas on every loop without ever changing anything.
 func daysOrHoursAreDifferent(inAtlas, inAKO maintenancewindow.MaintenanceWindow) bool {
+	if isEmpty(inAKO.DayOfWeek) {
+		return false
+	}
+
 	return inAtlas.DayOfWeek != inAKO.DayOfWeek || inAtlas.HourOfDay != inAKO.HourOfDay
 }
 

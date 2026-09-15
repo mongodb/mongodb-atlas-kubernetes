@@ -502,6 +502,32 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 			wantStatus: "True",
 		},
 		{
+			// The spec manages only the wave, and it already matches. Atlas keeps
+			// its own schedule, which AKO must leave alone instead of reporting
+			// drift it cannot correct.
+			name: "wave-only window leaves an existing atlas schedule alone",
+			maintenanceWindow: project.MaintenanceWindow{
+				WaveAssignment: pointer.MakePtr(2),
+			},
+			maintenanceService: func() maintenancewindow.MaintenanceWindowService {
+				service := translation.NewMaintenanceWindowServiceMock(t)
+				service.EXPECT().Get(context.Background(), "testid123").Return(
+					&maintenancewindow.MaintenanceWindow{
+						MaintenanceWindow: &project.MaintenanceWindow{
+							DayOfWeek:      3,
+							HourOfDay:      5,
+							WaveAssignment: pointer.MakePtr(2),
+						},
+					},
+					nil,
+				)
+				// No Update expectation: any call fails the test.
+				return service
+			}(),
+			isOK:       true,
+			wantStatus: "True",
+		},
+		{
 			name: "unmanaged wave assignment does not trigger update",
 			maintenanceWindow: project.MaintenanceWindow{
 				DayOfWeek: 2,
@@ -556,6 +582,43 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestWaveOnlyWindowConvergesAcrossReconciles guards against the PATCH loop the
+// wave-only window used to cause: toAtlas drops the zero dayOfWeek/hourOfDay, so
+// Atlas never adopts them and a naive comparison reports drift forever. Asserting
+// on a single reconcile would not catch it — the first Update looks legitimate.
+func TestWaveOnlyWindowConvergesAcrossReconciles(t *testing.T) {
+	const reconciles = 3
+
+	updates := 0
+	service := translation.NewMaintenanceWindowServiceMock(t)
+	// Atlas keeps its schedule, because the request never carries one.
+	service.EXPECT().Get(context.Background(), "testid123").Return(
+		&maintenancewindow.MaintenanceWindow{
+			MaintenanceWindow: &project.MaintenanceWindow{
+				DayOfWeek:      3,
+				HourOfDay:      5,
+				WaveAssignment: pointer.MakePtr(2),
+			},
+		},
+		nil,
+	).Times(reconciles)
+	service.EXPECT().Update(context.Background(), "testid123", mock.AnythingOfType("*maintenancewindow.MaintenanceWindow")).
+		Run(func(context.Context, string, *maintenancewindow.MaintenanceWindow) { updates++ }).
+		Return(nil).
+		Maybe()
+
+	r := &AtlasProjectReconciler{}
+	windowSpec := project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)}
+
+	for range reconciles {
+		ctx := &workflow.Context{Context: context.Background(), Log: zap.S()}
+		result := r.syncAtlasWithSpec(ctx, "testid123", windowSpec, service)
+		assert.True(t, result.IsOk())
+	}
+
+	assert.Zero(t, updates, "a converged wave-only window must not keep patching Atlas")
 }
 
 func TestWaveIsDifferent(t *testing.T) {
