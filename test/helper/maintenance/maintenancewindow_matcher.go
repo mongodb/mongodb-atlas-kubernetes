@@ -44,14 +44,28 @@ func (m *maintenanceWindowMatcher) Match(actual any) (success bool, err error) {
 		actualType := reflect.TypeOf(actual)
 		return false, errors.New("Expected *mongodbatlas.MaintenanceWindow but received type " + actualType.String())
 	}
-	if c.GetDayOfWeek() != m.ExpectedMaintenanceWindow.DayOfWeek {
-		return false, nil
-	}
-	if c.GetHourOfDay() != m.ExpectedMaintenanceWindow.HourOfDay {
-		return false, nil
+	// An unset dayOfWeek means the spec does not manage the schedule (a wave-only
+	// window), in which case Atlas keeps whatever schedule it had and there is
+	// nothing to compare.
+	if m.ExpectedMaintenanceWindow.DayOfWeek != 0 {
+		if c.GetDayOfWeek() != m.ExpectedMaintenanceWindow.DayOfWeek {
+			return false, nil
+		}
+		if c.GetHourOfDay() != m.ExpectedMaintenanceWindow.HourOfDay {
+			return false, nil
+		}
 	}
 	if c.GetAutoDeferOnceEnabled() != m.ExpectedMaintenanceWindow.AutoDefer {
 		return false, nil
+	}
+	// A nil WaveAssignment means the spec does not manage the wave, so whatever
+	// Atlas holds is acceptable. Compare against the stored assignment rather
+	// than effectiveWaveAssignment: the two differ when the organization's
+	// effectiveWaveAssignmentMode is ENV_TAG_MAPPING.
+	if m.ExpectedMaintenanceWindow.WaveAssignment != nil {
+		if c.GetWaveAssignment() != *m.ExpectedMaintenanceWindow.WaveAssignment {
+			return false, nil
+		}
 	}
 	return true, nil
 }

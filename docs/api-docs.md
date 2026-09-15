@@ -10436,6 +10436,17 @@ This parameter uses the 24-hour clock, where midnight is 0, noon is 12.<br/>
 Cannot be specified if defer is true<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>waveAssignment</b></td>
+        <td>integer</td>
+        <td>
+          Wave assigned to this project for maintenance sequencing across an organization.
+Must be between 1 and 3, inclusive. Cannot be specified if autoDefer is true.<br/>
+          <br/>
+            <i>Minimum</i>: 1<br/>
+            <i>Maximum</i>: 3<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

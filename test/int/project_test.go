@@ -36,6 +36,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/access"
@@ -656,6 +657,67 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 				checkAtlasProjectIsReady()
 				checkMaintenanceWindowInAtlas()
+			})
+			// Requires the organization to have maintenance sequencing enabled and
+			// its effective wave assignment mode set to MANUAL; Atlas rejects the
+			// field otherwise.
+			By("Assigning a maintenance wave", func() {
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.MaintenanceWindow.WaveAssignment = pointer.MakePtr(2)
+				})
+				Expect(err).To(BeNil())
+
+				Eventually(func(g Gomega) bool {
+					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
+				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+				checkAtlasProjectIsReady()
+				checkMaintenanceWindowInAtlas()
+			})
+			By("Changing the assigned maintenance wave", func() {
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.MaintenanceWindow.WaveAssignment = pointer.MakePtr(3)
+				})
+				Expect(err).To(BeNil())
+
+				Eventually(func(g Gomega) bool {
+					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
+				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+				checkAtlasProjectIsReady()
+				checkMaintenanceWindowInAtlas()
+			})
+			// The wave PATCH carries no schedule fields, so it must not disturb the
+			// dayOfWeek/hourOfDay the earlier steps established.
+			By("Keeping the schedule intact after the wave updates", func() {
+				window, _, err := atlasClient.MaintenanceWindowsAPI.
+					GetMaintenanceWindow(context.Background(), createdProject.ID()).
+					Execute()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(window.GetDayOfWeek()).To(Equal(2))
+				Expect(window.GetHourOfDay()).To(Equal(3))
+				Expect(window.GetWaveAssignment()).To(Equal(3))
+			})
+			// Dropping the field leaves the wave in place by design: AKO treats a nil
+			// waveAssignment as unmanaged and never sends a clearing request.
+			By("Leaving the wave in Atlas when the field is removed from the spec", func() {
+				var err error
+				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
+					p.Spec.MaintenanceWindow.WaveAssignment = nil
+				})
+				Expect(err).To(BeNil())
+
+				Eventually(func(g Gomega) bool {
+					return resources.CheckCondition(k8sClient, createdProject, api.TrueCondition(api.ReadyType), validateNoErrorsMaintenanceWindowDuringUpdate(g))
+				}).WithTimeout(ProjectCreationTimeout).WithPolling(interval).Should(BeTrue())
+
+				window, _, err := atlasClient.MaintenanceWindowsAPI.
+					GetMaintenanceWindow(context.Background(), createdProject.ID()).
+					Execute()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(window.GetWaveAssignment()).To(Equal(3))
 			})
 		})
 	})
