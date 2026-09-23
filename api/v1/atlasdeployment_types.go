@@ -99,6 +99,12 @@ type AdvancedDeploymentSpec struct {
 	// +kubebuilder:validation:Enum=REPLICASET;SHARDED;GEOSHARDED
 	// +optional
 	ClusterType string `json:"clusterType,omitempty"`
+	// Type of database topology.
+	// Setting this field to "INFINITE" would create a cluster where compute is detached from storage
+	// +optional
+	// +kubebuilder:validation:Enum=CORE,INFINITE
+	// +kubebuilder:default=CORE
+	DatabaseEdition string `json:"databaseEdition,omitempty"`
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
 	// This value must be a positive integer.
