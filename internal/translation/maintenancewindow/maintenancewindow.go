@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312025/admin"
+	"go.mongodb.org/atlas-sdk/v20250312026/admin"
 )
 
 type MaintenanceWindowService interface {

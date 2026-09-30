@@ -19,7 +19,7 @@ import (
 
 	ctrlstate "github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312025/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
@@ -28,7 +28,7 @@ import (
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
+	handler "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 

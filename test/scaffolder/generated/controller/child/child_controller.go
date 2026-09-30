@@ -19,7 +19,7 @@ import (
 
 	ctrlstate "github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312025/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
@@ -28,7 +28,7 @@ import (
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
+	handler "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 
@@ -42,15 +42,15 @@ var (
 	sdkVersions = []string{"v20250312"}
 )
 
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=test.mongodb.com,resources=childs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=children,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=children/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=test.mongodb.com,resources=children/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=childs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=children,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=children/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=test.mongodb.com,namespace=default,resources=children/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",namespace=default,resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 

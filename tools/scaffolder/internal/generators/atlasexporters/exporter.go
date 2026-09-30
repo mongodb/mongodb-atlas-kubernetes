@@ -94,7 +94,7 @@ func getBlock(resourceName, resourceImportPath string) []jen.Code {
 			Op(":=").
 			Id("e").
 			Dot("client").
-			Dot(resourceName+"sApi").
+			Dot(resourceName+"sAPI").
 			Dot("Get"+resourceName).
 			Call(jen.Id("ctx"), jen.Id("e").Dot("identifiers").Index(jen.Lit(0))).
 			Dot("Execute").
@@ -144,7 +144,7 @@ func listBlock(resourceName, resourceImportPath, sdkImportPath string, reference
 		jen.Var().Id("atlasResources").Index().Any(),
 		jen.For(jen.Id("pageNum").Op(":=").Lit(1).Op(";").Op(";").Id("pageNum").Op("++")).Block(
 			jen.List(jen.Id("resp"), jen.Id("_"), jen.Id("err")).Op(":=").
-				Id("e").Dot("client").Dot(resourceName+"sApi").Dot("List"+resourceName+"s").
+				Id("e").Dot("client").Dot(resourceName+"sAPI").Dot("List"+resourceName+"s").
 				Call(listCallParams(referenceFields)...).Dot("PageNum").Call(jen.Id("pageNum")).Dot("Execute").Call(),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
 				jen.Return(

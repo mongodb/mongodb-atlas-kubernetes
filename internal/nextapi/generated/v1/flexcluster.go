@@ -58,6 +58,10 @@ type FlexClusterSpecV20250312 struct {
 }
 
 type FlexClusterSpecV20250312Entry struct {
+	// DatabaseEdition Available in Public Preview: Optional field that indicates
+	// whether your tenant cluster will be upgraded to Atlas INFINITE or CORE.
+	DatabaseEdition *string `json:"databaseEdition,omitempty"`
+
 	// Name Human-readable label that identifies the instance.
 	Name string `json:"name"`
 
@@ -113,6 +117,10 @@ type FlexClusterStatusV20250312 struct {
 	// CreateDate Date and time when MongoDB Cloud created this instance. This
 	// parameter expresses its value in ISO 8601 format in UTC.
 	CreateDate *string `json:"createDate,omitempty"`
+
+	// DatabaseEdition Available in Public Preview: Optional field that indicates
+	// whether your tenant cluster will be upgraded to Atlas INFINITE or CORE.
+	DatabaseEdition *string `json:"databaseEdition,omitempty"`
 
 	// GroupId Unique 24-hexadecimal character string that identifies the project.
 	GroupId *string `json:"groupId,omitempty"`
