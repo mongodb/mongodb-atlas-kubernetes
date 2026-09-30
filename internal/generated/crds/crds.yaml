@@ -3166,3 +3166,252 @@ status:
   conditions: null
   storedVersions:
   - v1
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    api-mappings: |
+      properties:
+        spec:
+          properties:
+            v20250312:
+              properties:
+                groupRef:
+                  x-kubernetes-mapping:
+                    nameSelector: .name
+                    properties:
+                    - $.status.v20250312.id
+                    type:
+                      group: atlas.generated.mongodb.com
+                      kind: Group
+                      resource: groups
+                      version: v1
+                  x-openapi-mapping:
+                    property: $.groupId
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+  name: networkcontainers.atlas.generated.mongodb.com
+spec:
+  group: atlas.generated.mongodb.com
+  names:
+    categories:
+    - atlas
+    kind: NetworkContainer
+    listKind: NetworkContainerList
+    plural: networkcontainers
+    shortNames:
+    - agnc
+    singular: networkcontainer
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+      name: Reason
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="State")].reason
+      name: State
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: A networkcontainer, managed by the MongoDB Kubernetes Atlas Operator.
+        properties:
+          spec:
+            description: |-
+              Specification of the networkcontainer supporting the following versions:
+
+              - v20250312
+
+              At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              connectionSecretRef:
+                description: |-
+                  SENSITIVE FIELD
+
+                  Reference to a secret containing the credentials to setup the connection to Atlas.
+                properties:
+                  name:
+                    description: Name of the secret containing the Atlas credentials.
+                    type: string
+                type: object
+              v20250312:
+                description: The spec of the networkcontainer resource for version
+                  v20250312.
+                properties:
+                  entry:
+                    description: The entry fields of the networkcontainer resource
+                      spec. These fields can be set for creating and updating networkcontainers.
+                    properties:
+                      atlasCidrBlock:
+                        description: |-
+                          IP addresses expressed in Classless Inter-Domain Routing (CIDR) notation that MongoDB Cloud uses for the network peering containers in your project. MongoDB Cloud assigns all of the project's clusters deployed to this cloud provider an IP address from this range. MongoDB Cloud locks this value if an M10 or greater cluster or a network peering connection exists in this project.
+
+                          These CIDR blocks must fall within the ranges reserved per RFC 1918. AWS and Azure further limit the block to between the `/24` and  `/21` ranges.
+
+                          To modify the CIDR block, the target project cannot have:
+
+                          - Any M10 or greater clusters
+                          - Any other VPC peering connections
+
+                           You can also create a new project and create a network peering connection to set the desired MongoDB Cloud network peering container CIDR block for that project. MongoDB Cloud limits the number of MongoDB nodes per network peering connection based on the CIDR block and the region selected for the project.
+
+                           **Example:** A project in an Amazon Web Services (AWS) region supporting three availability zones and an MongoDB CIDR network peering container block of limit of `/24` equals 27 three-node replica sets.
+                        type: string
+                      providerName:
+                        description: Cloud service provider that serves the requested
+                          network peering containers.
+                        type: string
+                      region:
+                        description: Azure region to which MongoDB Cloud deployed
+                          this network peering container.
+                        type: string
+                      regionName:
+                        description: Geographic area that Amazon Web Services (AWS)
+                          defines to which MongoDB Cloud deployed this network peering
+                          container.
+                        type: string
+                      regions:
+                        description: List of GCP regions to which you want to deploy
+                          this MongoDB Cloud network peering container.  In this MongoDB
+                          Cloud project, you can deploy clusters only to the GCP regions
+                          in this list. To deploy MongoDB Cloud clusters to other
+                          GCP regions, create additional projects.
+                        items:
+                          description: List of GCP regions to which you want to deploy
+                            this MongoDB Cloud network peering container.  In this
+                            MongoDB Cloud project, you can deploy clusters only to
+                            the GCP regions in this list. To deploy MongoDB Cloud
+                            clusters to other GCP regions, create additional projects.
+                          type: string
+                        type: array
+                    type: object
+                  groupId:
+                    description: |-
+                      Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+                      **NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                    x-kubernetes-validations:
+                    - message: groupId cannot be modified after creation
+                      rule: self == oldSelf
+                  groupRef:
+                    description: |-
+                      A reference to a "Group" resource.
+                      The value of "$.status.v20250312.id" will be used to set "groupId".
+                      Mutually exclusive with the "groupId" property.
+                    properties:
+                      name:
+                        description: Name of the "Group" resource.
+                        type: string
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: groupId and groupRef are mutually exclusive; only one of
+                    them can be set
+                  rule: (has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId)
+                    && has(self.groupRef))
+            type: object
+            x-kubernetes-validations:
+            - message: spec.connectionSecretRef must be set if spec.v20250312.groupId
+                is set.
+              rule: (has(self.v20250312.groupId) && has(self.connectionSecretRef))
+                || (!has(self.v20250312.groupId))
+          status:
+            description: 'Most recently observed read-only status of the networkcontainer
+              for the specified resource version. This data may not be up to date
+              and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            properties:
+              conditions:
+                description: Represents the latest available observations of a resource's
+                  current state.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      type: integer
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - type
+                  - status
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              v20250312:
+                description: The last observed Atlas state of the networkcontainer
+                  resource for version v20250312.
+                properties:
+                  azureSubscriptionId:
+                    description: Unique string that identifies the Azure subscription
+                      in which the MongoDB Cloud VNet resides.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  gcpProjectId:
+                    description: Unique string that identifies the GCP project in
+                      which MongoDB Cloud clusters in this network peering container
+                      exist. The response returns **null** if no clusters exist in
+                      this network peering container.
+                    type: string
+                  id:
+                    description: Unique 24-hexadecimal digit string that identifies
+                      the network peering container.
+                    example: 32b6e34b3d91647abb20e7b8
+                    type: string
+                  networkName:
+                    description: Human-readable label that identifies the network
+                      in which MongoDB Cloud clusters in this network peering container
+                      exist. MongoDB Cloud returns **null** if no clusters exist in
+                      this network peering container.
+                    type: string
+                  provisioned:
+                    description: Flag that indicates whether MongoDB Cloud clusters
+                      exist in the specified network peering container.
+                    type: boolean
+                  vnetName:
+                    description: Unique string that identifies the Azure VNet in which
+                      MongoDB Cloud clusters in this network peering container exist.
+                      The response returns **null** if no clusters exist in this network
+                      peering container.
+                    type: string
+                  vpcId:
+                    description: Unique string that identifies the MongoDB Cloud VPC
+                      on AWS.
+                    example: vpc-b555d3b0d9cb783b0
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions:
+  - v1
