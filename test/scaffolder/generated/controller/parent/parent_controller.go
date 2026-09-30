@@ -19,7 +19,7 @@ import (
 
 	ctrlstate "github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
-	integrationssdk "go.mongodb.org/atlas-sdk/v20250312025/admin"
+	integrationssdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	zap "go.uber.org/zap"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	cluster "sigs.k8s.io/controller-runtime/pkg/cluster"
