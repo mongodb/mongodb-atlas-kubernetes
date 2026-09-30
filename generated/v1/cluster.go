@@ -4,6 +4,7 @@ package v1
 
 import (
 	k8s "github.com/crd2go/crd2go/k8s"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -109,8 +110,22 @@ type V20250312Entry struct {
 	// ConfigServerType Describes a sharded cluster's config server type.
 	ConfigServerType *string `json:"configServerType,omitempty"`
 
+	// DatabaseEdition Available in Public Preview: Optional field that indicates
+	// whether your cluster will be Atlas INFINITE or CORE. You can set it only when
+	// you create the cluster, or when you upgrade a Free or Flex cluster to a
+	// dedicated cluster. This value is immutable once the dedicated cluster exists;
+	// attempting to change it on an update request returns an error.
+	DatabaseEdition *string `json:"databaseEdition,omitempty"`
+
 	// DiskWarmingMode Disk warming mode selection.
 	DiskWarmingMode *string `json:"diskWarmingMode,omitempty"`
+
+	// EffectiveDatabaseEdition Available in Public Preview: Field that represents
+	// whether your cluster is Atlas INFINITE or CORE. This is read-only and always
+	// returned in the response. It reflects the actual cluster state. This value
+	// matches `databaseEdition` if it was set, otherwise it reflects the default
+	// database edition assigned to the cluster.
+	EffectiveDatabaseEdition *string `json:"effectiveDatabaseEdition,omitempty"`
 
 	// EncryptionAtRestProvider Cloud service provider that manages your customer keys
 	// to provide an additional layer of encryption at rest for the cluster. To enable
@@ -356,6 +371,14 @@ type AnalyticsAutoScaling struct {
 
 	// DiskGB Setting that enables disk auto-scaling.
 	DiskGB *DiskGB `json:"diskGB,omitempty"`
+
+	// StorageConfig Available in Public Preview: Settings that determine the per-shard
+	// data-size limit for this cluster. Applies only to Atlas INFINITE clusters.
+	// MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on
+	// `analyticsAutoScaling`, including when you send them as `null`. In a request
+	// that includes `replicationSpecs`, omitting `storageConfig` or sending it as
+	// `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
+	StorageConfig *apiextensionsv1.JSON `json:"storageConfig,omitempty"`
 }
 
 type Compute struct {
@@ -392,13 +415,15 @@ type DiskGB struct {
 
 type AnalyticsSpecs struct {
 	/*
-	   DiskIOPS Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+	   DiskIOPS Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-	   - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-	   - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+	    Change this parameter if you:
+
+	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 	   The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-	   This parameter defaults to the cluster tier's standard IOPS value.
+	   This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 	   Changing this value impacts cluster cost.
 	*/
 	DiskIOPS *int `json:"diskIOPS,omitempty"`
@@ -420,8 +445,8 @@ type AnalyticsSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
-	// DiskThroughput Target throughput desired for storage attached to this hardware.
-	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	// DiskThroughput Throughput (in MiB/s) provisioned for storage attached to this
+	// hardware. Only returned for Gen 2 instance sizes.
 	DiskThroughput *int `json:"diskThroughput,omitempty"`
 
 	/*
@@ -452,13 +477,15 @@ type AnalyticsSpecs struct {
 
 type ElectableSpecs struct {
 	/*
-	   DiskIOPS Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+	   DiskIOPS Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-	   - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-	   - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+	    Change this parameter if you:
+
+	   - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+	   - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
 	   The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-	   This parameter defaults to the cluster tier's standard IOPS value.
+	   This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
 	   Changing this value impacts cluster cost.
 	*/
 	DiskIOPS *int `json:"diskIOPS,omitempty"`
@@ -480,8 +507,8 @@ type ElectableSpecs struct {
 	*/
 	DiskSizeGB *float64 `json:"diskSizeGB,omitempty"`
 
-	// DiskThroughput Target throughput desired for storage attached to this hardware.
-	// Only returned for Gen 2 instance sizes with Standard (GP3) volume type.
+	// DiskThroughput Throughput (in MiB/s) provisioned for storage attached to this
+	// hardware. Only returned for Gen 2 instance sizes.
 	DiskThroughput *int `json:"diskThroughput,omitempty"`
 
 	/*
@@ -553,6 +580,20 @@ type ClusterStatusV20250312 struct {
 	// CreateDate Date and time when MongoDB Cloud created this cluster. This parameter
 	// expresses its value in ISO 8601 format in UTC.
 	CreateDate *string `json:"createDate,omitempty"`
+
+	// DatabaseEdition Available in Public Preview: Optional field that indicates
+	// whether your cluster will be Atlas INFINITE or CORE. You can set it only when
+	// you create the cluster, or when you upgrade a Free or Flex cluster to a
+	// dedicated cluster. This value is immutable once the dedicated cluster exists;
+	// attempting to change it on an update request returns an error.
+	DatabaseEdition *string `json:"databaseEdition,omitempty"`
+
+	// EffectiveDatabaseEdition Available in Public Preview: Field that represents
+	// whether your cluster is Atlas INFINITE or CORE. This is read-only and always
+	// returned in the response. It reflects the actual cluster state. This value
+	// matches `databaseEdition` if it was set, otherwise it reflects the default
+	// database edition assigned to the cluster.
+	EffectiveDatabaseEdition *string `json:"effectiveDatabaseEdition,omitempty"`
 
 	// EffectiveReplicationSpecs List of settings that represent the actual cluster
 	// state. This is read-only and always returned in the response. It reflects the

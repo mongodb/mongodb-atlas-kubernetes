@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
   name: groups.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -227,7 +227,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
   name: clusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -383,8 +383,25 @@ spec:
                       configServerType:
                         description: Describes a sharded cluster's config server type.
                         type: string
+                      databaseEdition:
+                        description: 'Available in Public Preview: Optional field
+                          that indicates whether your cluster will be Atlas INFINITE
+                          or CORE. You can set it only when you create the cluster,
+                          or when you upgrade a Free or Flex cluster to a dedicated
+                          cluster. This value is immutable once the dedicated cluster
+                          exists; attempting to change it on an update request returns
+                          an error.'
+                        type: string
                       diskWarmingMode:
                         description: Disk warming mode selection.
+                        type: string
+                      effectiveDatabaseEdition:
+                        description: 'Available in Public Preview: Field that represents
+                          whether your cluster is Atlas INFINITE or CORE. This is
+                          read-only and always returned in the response. It reflects
+                          the actual cluster state. This value matches `databaseEdition`
+                          if it was set, otherwise it reflects the default database
+                          edition assigned to the cluster.'
                         type: string
                       encryptionAtRestProvider:
                         description: 'Cloud service provider that manages your customer
@@ -574,6 +591,53 @@ spec:
                                               limit storage auto-scaling.
                                             type: boolean
                                         type: object
+                                      storageConfig:
+                                        description: 'Available in Public Preview:
+                                          Settings that determine the per-shard data-size
+                                          limit for this cluster. Applies only to
+                                          Atlas INFINITE clusters. MongoDB Cloud accepts
+                                          these settings only on `autoScaling` and
+                                          rejects them on `analyticsAutoScaling`,
+                                          including when you send them as `null`.
+                                          In a request that includes `replicationSpecs`,
+                                          omitting `storageConfig` or sending it as
+                                          `null` or `{}` clears the limit. Omitting
+                                          `replicationSpecs` preserves it.'
+                                        properties:
+                                          shardSizeLimitGB:
+                                            description: 'Available in Public Preview:
+                                              Maximum data size that MongoDB Cloud
+                                              allows each shard of this cluster to
+                                              reach, expressed in gigabytes. MongoDB
+                                              Cloud rejects writes to a shard that
+                                              reaches the limit that it enforces.
+                                              In `replicationSpecs`, this field reports
+                                              the limit that you configured, and MongoDB
+                                              Cloud omits it when you never configured
+                                              one. In `effectiveReplicationSpecs`,
+                                              this field reports the limit that MongoDB
+                                              Cloud enforces: usually the limit that
+                                              you configured, otherwise the default
+                                              limit that MongoDB Cloud assigns when
+                                              it creates or updates the cluster. This
+                                              value may differ from the limit that
+                                              you configured due to system-managed
+                                              changes. This limit applies to every
+                                              shard of the cluster; set the same value
+                                              on each region configuration''s `autoScaling`,
+                                              as MongoDB Cloud rejects requests that
+                                              specify differing values. You can set
+                                              this only on Atlas INFINITE clusters:
+                                              MongoDB Cloud rejects any request that
+                                              names this field, including as `null`,
+                                              for a cluster or node type that doesn''t
+                                              support it. In a request that includes
+                                              `replicationSpecs`, omitting `shardSizeLimitGB`
+                                              or sending it as `null` clears the limit.
+                                              Omitting `replicationSpecs` preserves
+                                              it.'
+                                            type: integer
+                                        type: object
                                     title: Automatic Scaling Settings
                                     type: object
                                   analyticsSpecs:
@@ -582,13 +646,15 @@ spec:
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                           Change this parameter if you:
+
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                           The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                           Changing this value impacts cluster cost.
                                         type: integer
                                       diskSizeGB:
@@ -611,10 +677,9 @@ spec:
                                           a higher tier."
                                         type: number
                                       diskThroughput:
-                                        description: Target throughput desired for
-                                          storage attached to this hardware. Only
-                                          returned for Gen 2 instance sizes with Standard
-                                          (GP3) volume type.
+                                        description: Throughput (in MiB/s) provisioned
+                                          for storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes.
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -648,6 +713,7 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
+                                        example: 3
                                         type: integer
                                     type: object
                                   autoScaling:
@@ -696,6 +762,53 @@ spec:
                                               limit storage auto-scaling.
                                             type: boolean
                                         type: object
+                                      storageConfig:
+                                        description: 'Available in Public Preview:
+                                          Settings that determine the per-shard data-size
+                                          limit for this cluster. Applies only to
+                                          Atlas INFINITE clusters. MongoDB Cloud accepts
+                                          these settings only on `autoScaling` and
+                                          rejects them on `analyticsAutoScaling`,
+                                          including when you send them as `null`.
+                                          In a request that includes `replicationSpecs`,
+                                          omitting `storageConfig` or sending it as
+                                          `null` or `{}` clears the limit. Omitting
+                                          `replicationSpecs` preserves it.'
+                                        properties:
+                                          shardSizeLimitGB:
+                                            description: 'Available in Public Preview:
+                                              Maximum data size that MongoDB Cloud
+                                              allows each shard of this cluster to
+                                              reach, expressed in gigabytes. MongoDB
+                                              Cloud rejects writes to a shard that
+                                              reaches the limit that it enforces.
+                                              In `replicationSpecs`, this field reports
+                                              the limit that you configured, and MongoDB
+                                              Cloud omits it when you never configured
+                                              one. In `effectiveReplicationSpecs`,
+                                              this field reports the limit that MongoDB
+                                              Cloud enforces: usually the limit that
+                                              you configured, otherwise the default
+                                              limit that MongoDB Cloud assigns when
+                                              it creates or updates the cluster. This
+                                              value may differ from the limit that
+                                              you configured due to system-managed
+                                              changes. This limit applies to every
+                                              shard of the cluster; set the same value
+                                              on each region configuration''s `autoScaling`,
+                                              as MongoDB Cloud rejects requests that
+                                              specify differing values. You can set
+                                              this only on Atlas INFINITE clusters:
+                                              MongoDB Cloud rejects any request that
+                                              names this field, including as `null`,
+                                              for a cluster or node type that doesn''t
+                                              support it. In a request that includes
+                                              `replicationSpecs`, omitting `shardSizeLimitGB`
+                                              or sending it as `null` clears the limit.
+                                              Omitting `replicationSpecs` preserves
+                                              it.'
+                                            type: integer
+                                        type: object
                                     title: Automatic Scaling Settings
                                     type: object
                                   backingProviderName:
@@ -720,13 +833,15 @@ spec:
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                           Change this parameter if you:
+
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                           The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                           Changing this value impacts cluster cost.
                                         type: integer
                                       diskSizeGB:
@@ -749,10 +864,9 @@ spec:
                                           a higher tier."
                                         type: number
                                       diskThroughput:
-                                        description: Target throughput desired for
-                                          storage attached to this hardware. Only
-                                          returned for Gen 2 instance sizes with Standard
-                                          (GP3) volume type.
+                                        description: Throughput (in MiB/s) provisioned
+                                          for storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes.
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -783,6 +897,7 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
+                                        example: 3
                                         type: integer
                                     type: object
                                   priority:
@@ -790,6 +905,7 @@ spec:
                                       Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
 
                                       **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
+                                    example: 7
                                     type: integer
                                   providerName:
                                     description: Cloud service provider on which MongoDB
@@ -802,13 +918,15 @@ spec:
                                     properties:
                                       diskIOPS:
                                         description: |-
-                                          Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                          Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                          - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                          - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                           Change this parameter if you:
+
+                                          - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                          - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                           The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                          This parameter defaults to the cluster tier's standard IOPS value.
+                                          This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                           Changing this value impacts cluster cost.
                                         type: integer
                                       diskSizeGB:
@@ -831,10 +949,9 @@ spec:
                                           a higher tier."
                                         type: number
                                       diskThroughput:
-                                        description: Target throughput desired for
-                                          storage attached to this hardware. Only
-                                          returned for Gen 2 instance sizes with Standard
-                                          (GP3) volume type.
+                                        description: Throughput (in MiB/s) provisioned
+                                          for storage attached to this hardware. Only
+                                          returned for Gen 2 instance sizes.
                                         type: integer
                                       ebsVolumeType:
                                         description: "Type of storage you want to
@@ -868,6 +985,7 @@ spec:
                                         description: Number of nodes of the given
                                           type for MongoDB Cloud to deploy to the
                                           region.
+                                        example: 3
                                         type: integer
                                     type: object
                                   regionName:
@@ -1262,6 +1380,22 @@ spec:
                     description: Date and time when MongoDB Cloud created this cluster.
                       This parameter expresses its value in ISO 8601 format in UTC.
                     type: string
+                  databaseEdition:
+                    description: 'Available in Public Preview: Optional field that
+                      indicates whether your cluster will be Atlas INFINITE or CORE.
+                      You can set it only when you create the cluster, or when you
+                      upgrade a Free or Flex cluster to a dedicated cluster. This
+                      value is immutable once the dedicated cluster exists; attempting
+                      to change it on an update request returns an error.'
+                    type: string
+                  effectiveDatabaseEdition:
+                    description: 'Available in Public Preview: Field that represents
+                      whether your cluster is Atlas INFINITE or CORE. This is read-only
+                      and always returned in the response. It reflects the actual
+                      cluster state. This value matches `databaseEdition` if it was
+                      set, otherwise it reflects the default database edition assigned
+                      to the cluster.'
+                    type: string
                   effectiveReplicationSpecs:
                     description: List of settings that represent the actual cluster
                       state. This is read-only and always returned in the response.
@@ -1337,6 +1471,49 @@ spec:
                                           auto-scaling.
                                         type: boolean
                                     type: object
+                                  storageConfig:
+                                    description: 'Available in Public Preview: Settings
+                                      that determine the per-shard data-size limit
+                                      for this cluster. Applies only to Atlas INFINITE
+                                      clusters. MongoDB Cloud accepts these settings
+                                      only on `autoScaling` and rejects them on `analyticsAutoScaling`,
+                                      including when you send them as `null`. In a
+                                      request that includes `replicationSpecs`, omitting
+                                      `storageConfig` or sending it as `null` or `{}`
+                                      clears the limit. Omitting `replicationSpecs`
+                                      preserves it.'
+                                    properties:
+                                      shardSizeLimitGB:
+                                        description: 'Available in Public Preview:
+                                          Maximum data size that MongoDB Cloud allows
+                                          each shard of this cluster to reach, expressed
+                                          in gigabytes. MongoDB Cloud rejects writes
+                                          to a shard that reaches the limit that it
+                                          enforces. In `replicationSpecs`, this field
+                                          reports the limit that you configured, and
+                                          MongoDB Cloud omits it when you never configured
+                                          one. In `effectiveReplicationSpecs`, this
+                                          field reports the limit that MongoDB Cloud
+                                          enforces: usually the limit that you configured,
+                                          otherwise the default limit that MongoDB
+                                          Cloud assigns when it creates or updates
+                                          the cluster. This value may differ from
+                                          the limit that you configured due to system-managed
+                                          changes. This limit applies to every shard
+                                          of the cluster; set the same value on each
+                                          region configuration''s `autoScaling`, as
+                                          MongoDB Cloud rejects requests that specify
+                                          differing values. You can set this only
+                                          on Atlas INFINITE clusters: MongoDB Cloud
+                                          rejects any request that names this field,
+                                          including as `null`, for a cluster or node
+                                          type that doesn''t support it. In a request
+                                          that includes `replicationSpecs`, omitting
+                                          `shardSizeLimitGB` or sending it as `null`
+                                          clears the limit. Omitting `replicationSpecs`
+                                          preserves it.'
+                                        type: integer
+                                    type: object
                                 title: Automatic Scaling Settings
                                 type: object
                               analyticsSpecs:
@@ -1345,13 +1522,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1372,10 +1551,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1406,6 +1584,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               autoScaling:
@@ -1452,6 +1631,49 @@ spec:
                                           auto-scaling.
                                         type: boolean
                                     type: object
+                                  storageConfig:
+                                    description: 'Available in Public Preview: Settings
+                                      that determine the per-shard data-size limit
+                                      for this cluster. Applies only to Atlas INFINITE
+                                      clusters. MongoDB Cloud accepts these settings
+                                      only on `autoScaling` and rejects them on `analyticsAutoScaling`,
+                                      including when you send them as `null`. In a
+                                      request that includes `replicationSpecs`, omitting
+                                      `storageConfig` or sending it as `null` or `{}`
+                                      clears the limit. Omitting `replicationSpecs`
+                                      preserves it.'
+                                    properties:
+                                      shardSizeLimitGB:
+                                        description: 'Available in Public Preview:
+                                          Maximum data size that MongoDB Cloud allows
+                                          each shard of this cluster to reach, expressed
+                                          in gigabytes. MongoDB Cloud rejects writes
+                                          to a shard that reaches the limit that it
+                                          enforces. In `replicationSpecs`, this field
+                                          reports the limit that you configured, and
+                                          MongoDB Cloud omits it when you never configured
+                                          one. In `effectiveReplicationSpecs`, this
+                                          field reports the limit that MongoDB Cloud
+                                          enforces: usually the limit that you configured,
+                                          otherwise the default limit that MongoDB
+                                          Cloud assigns when it creates or updates
+                                          the cluster. This value may differ from
+                                          the limit that you configured due to system-managed
+                                          changes. This limit applies to every shard
+                                          of the cluster; set the same value on each
+                                          region configuration''s `autoScaling`, as
+                                          MongoDB Cloud rejects requests that specify
+                                          differing values. You can set this only
+                                          on Atlas INFINITE clusters: MongoDB Cloud
+                                          rejects any request that names this field,
+                                          including as `null`, for a cluster or node
+                                          type that doesn''t support it. In a request
+                                          that includes `replicationSpecs`, omitting
+                                          `shardSizeLimitGB` or sending it as `null`
+                                          clears the limit. Omitting `replicationSpecs`
+                                          preserves it.'
+                                        type: integer
+                                    type: object
                                 title: Automatic Scaling Settings
                                 type: object
                               backingProviderName:
@@ -1472,13 +1694,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1499,10 +1723,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1533,6 +1756,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               effectiveElectableSpecs:
@@ -1541,13 +1765,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1568,10 +1794,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1602,6 +1827,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               effectiveReadOnlySpecs:
@@ -1610,13 +1836,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1637,10 +1865,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1671,6 +1898,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               electableSpecs:
@@ -1682,13 +1910,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1709,10 +1939,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1741,6 +1970,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               priority:
@@ -1748,6 +1978,7 @@ spec:
                                   Precedence is given to this region when a primary election occurs. If your `regionConfigs` has only `readOnlySpecs`, `analyticsSpecs`, or both, set this value to `0`. If you have multiple `regionConfigs` objects (your cluster is multi-region or multi-cloud), they must have priorities in descending order. The highest priority is `7`.
 
                                   **Example:** If you have three regions, their priorities would be `7`, `6`, and `5` respectively. If you added two more regions for supporting electable nodes, the priorities of those regions would be `4` and `3` respectively.
+                                example: 7
                                 type: integer
                               providerName:
                                 description: Cloud service provider on which MongoDB
@@ -1760,13 +1991,15 @@ spec:
                                 properties:
                                   diskIOPS:
                                     description: |-
-                                      Target throughput desired for storage attached to your Azure-provisioned cluster. Change this parameter if you:
+                                      Target IOPS (Input/Output Operations Per Second) desired for storage attached to this hardware. Only configurable for Gen 2 instance sizes.
 
-                                      - set `replicationSpecs[n].regionConfigs[m].providerName` : `Azure`.
-                                      - set `replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize` : `M40` or greater not including `Mxx_NVME` tiers.
+                                       Change this parameter if you:
+
+                                      - set `"replicationSpecs[n].regionConfigs[m].providerName" : "GCP"`.
+                                      - set `"replicationSpecs[n].regionConfigs[m].electableSpecs.instanceSize"` to a Gen 2 instance size (`"M30_GEN_2"` or greater).
 
                                       The maximum input/output operations per second (IOPS) depend on the selected `.instanceSize` and `.diskSizeGB`.
-                                      This parameter defaults to the cluster tier's standard IOPS value.
+                                      This parameter defaults to the standard IOPS value for the selected `.diskSizeGB`.
                                       Changing this value impacts cluster cost.
                                     type: integer
                                   diskSizeGB:
@@ -1787,10 +2020,9 @@ spec:
                                       upgrading your cluster to a higher tier."
                                     type: number
                                   diskThroughput:
-                                    description: Target throughput desired for storage
-                                      attached to this hardware. Only returned for
-                                      Gen 2 instance sizes with Standard (GP3) volume
-                                      type.
+                                    description: Throughput (in MiB/s) provisioned
+                                      for storage attached to this hardware. Only
+                                      returned for Gen 2 instance sizes.
                                     type: integer
                                   ebsVolumeType:
                                     description: "Type of storage you want to attach
@@ -1821,6 +2053,7 @@ spec:
                                   nodeCount:
                                     description: Number of nodes of the given type
                                       for MongoDB Cloud to deploy to the region.
+                                    example: 3
                                     type: integer
                                 type: object
                               regionName:
@@ -2019,7 +2252,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
   name: databaseusers.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2375,7 +2608,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
   name: flexclusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2430,6 +2663,11 @@ spec:
                     description: The entry fields of the flexcluster resource spec.
                       These fields can be set for creating and updating flexclusters.
                     properties:
+                      databaseEdition:
+                        description: 'Available in Public Preview: Optional field
+                          that indicates whether your tenant cluster will be upgraded
+                          to Atlas INFINITE or CORE.'
+                        type: string
                       name:
                         description: Human-readable label that identifies the instance.
                         type: string
@@ -2599,6 +2837,11 @@ spec:
                     description: Date and time when MongoDB Cloud created this instance.
                       This parameter expresses its value in ISO 8601 format in UTC.
                     type: string
+                  databaseEdition:
+                    description: 'Available in Public Preview: Optional field that
+                      indicates whether your tenant cluster will be upgraded to Atlas
+                      INFINITE or CORE.'
+                    type: string
                   groupId:
                     description: Unique 24-hexadecimal character string that identifies
                       the project.
@@ -2695,7 +2938,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312022/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
   name: ipaccesslistentries.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
