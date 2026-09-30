@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -2767,4 +2768,142 @@ func TestProcessArgsEqual(t *testing.T) {
 			assert.Equal(t, tt.want, ProcessArgsEqual(tt.ako, tt.atlas))
 		})
 	}
+}
+
+func TestSpecAreEqual_DatabaseEdition(t *testing.T) {
+	tests := map[string]struct {
+		desiredEdition string
+		currentEdition string
+		expected       bool
+	}{
+		"equal editions match": {
+			desiredEdition: "INFINITE",
+			currentEdition: "INFINITE",
+			expected:       true,
+		},
+		"a differing edition is a difference": {
+			desiredEdition: "INFINITE",
+			currentEdition: "CORE",
+			expected:       false,
+		},
+		"an unset desired edition takes no opinion": {
+			desiredEdition: "",
+			currentEdition: "CORE",
+			expected:       true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			desired := &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					DatabaseEdition: tc.desiredEdition,
+				},
+			}
+			current := &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					DatabaseEdition: tc.currentEdition,
+				},
+			}
+
+			assert.Equal(t, tc.expected, specAreEqual(desired, current))
+		})
+	}
+}
+
+// Atlas overrides versionReleaseSystem, backupEnabled, pitEnabled and disk auto
+// scaling on an Atlas Infinite cluster, and then rejects any request that tries to
+// set them to anything else. A CR that leaves those fields out must therefore
+// converge on the first reconciliation: otherwise the operator re-issues the same
+// PATCH forever and Atlas refuses every one of them.
+func TestComputeChanges_InfiniteMinimalSpecConverges(t *testing.T) {
+	desired := NewDeployment("project-id", &akov2.AtlasDeployment{
+		Spec: akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:            "cluster0",
+				ClusterType:     "REPLICASET",
+				DatabaseEdition: "INFINITE",
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName:   "AWS",
+								RegionName:     "US_EAST_1",
+								Priority:       pointer.MakePtr(7),
+								ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: pointer.MakePtr(3)},
+							},
+						},
+					},
+				},
+			},
+		},
+	}).(*Cluster)
+
+	// What Atlas reports back for the cluster it just created.
+	current := clusterFromAtlas(&admin.ClusterDescription20240805{
+		GroupId:                      pointer.MakePtr("project-id"),
+		Name:                         pointer.MakePtr("cluster0"),
+		ClusterType:                  pointer.MakePtr("REPLICASET"),
+		StateName:                    pointer.MakePtr("IDLE"),
+		EffectiveDatabaseEdition:     pointer.MakePtr("INFINITE"),
+		VersionReleaseSystem:         pointer.MakePtr("CONTINUOUS"),
+		BackupEnabled:                pointer.MakePtr(true),
+		PitEnabled:                   pointer.MakePtr(true),
+		RootCertType:                 pointer.MakePtr("ISRGROOTX1"),
+		EncryptionAtRestProvider:     pointer.MakePtr("NONE"),
+		TerminationProtectionEnabled: pointer.MakePtr(false),
+		Paused:                       pointer.MakePtr(false),
+		ReplicationSpecs: &[]admin.ReplicationSpec20240805{
+			{
+				ZoneName: pointer.MakePtr("Zone 1"),
+				RegionConfigs: &[]admin.CloudRegionConfig20240805{
+					{
+						ProviderName: pointer.MakePtr("AWS"),
+						RegionName:   pointer.MakePtr("US_EAST_1"),
+						Priority:     pointer.MakePtr(7),
+						ElectableSpecs: &admin.HardwareSpec20240805{
+							InstanceSize: pointer.MakePtr("M40"),
+							NodeCount:    pointer.MakePtr(3),
+							DiskSizeGB:   pointer.MakePtr(40.0),
+						},
+						AutoScaling: &admin.AdvancedAutoScalingSettings{
+							Compute: &admin.AdvancedComputeAutoScaling{Enabled: pointer.MakePtr(false)},
+							DiskGB:  &admin.DiskGBAutoScaling{Enabled: pointer.MakePtr(true)},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	changes, occurred := ComputeChanges(desired, current)
+
+	assert.False(t, occurred, "a minimal Atlas Infinite spec must not diverge from Atlas")
+	assert.Nil(t, changes)
+}
+
+func TestComputeChanges_DatabaseEditionIsSent(t *testing.T) {
+	desired := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			ClusterType:     "REPLICASET",
+			DatabaseEdition: "INFINITE",
+		},
+	}
+	current := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			ClusterType:     "REPLICASET",
+			DatabaseEdition: "CORE",
+		},
+	}
+
+	changes, occurred := ComputeChanges(desired, current)
+
+	require.True(t, occurred)
+	require.NotNil(t, changes)
+	assert.Equal(t, "INFINITE", changes.DatabaseEdition)
 }

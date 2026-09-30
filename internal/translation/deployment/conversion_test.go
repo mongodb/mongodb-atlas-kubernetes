@@ -1473,3 +1473,193 @@ func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
 		assert.Equal(t, true, *rc.AnalyticsAutoScaling.Compute.Enabled)
 	}
 }
+
+func TestDatabaseEditionFromAtlas(t *testing.T) {
+	tests := map[string]struct {
+		clusterDesc *admin.ClusterDescription20240805
+		expected    string
+	}{
+		"prefers the requested edition": {
+			clusterDesc: &admin.ClusterDescription20240805{
+				DatabaseEdition:          pointer.MakePtr("INFINITE"),
+				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+			},
+			expected: "INFINITE",
+		},
+		"falls back to the effective edition when Atlas does not echo the requested one": {
+			clusterDesc: &admin.ClusterDescription20240805{
+				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+			},
+			expected: "INFINITE",
+		},
+		"stays empty when Atlas reports neither": {
+			clusterDesc: &admin.ClusterDescription20240805{},
+			expected:    "",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, databaseEditionFromAtlas(tc.clusterDesc))
+		})
+	}
+}
+
+func TestClusterFromAtlas_DatabaseEdition(t *testing.T) {
+	cluster := clusterFromAtlas(&admin.ClusterDescription20240805{
+		Name:                     pointer.MakePtr("cluster0"),
+		EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+	})
+
+	assert.Equal(t, "INFINITE", cluster.DatabaseEdition)
+	assert.Equal(t, "INFINITE", cluster.EffectiveDatabaseEdition)
+	assert.Equal(t, "INFINITE", cluster.GetDatabaseEdition())
+}
+
+// GetDatabaseEdition feeds the CR status, so for a Cluster built from the custom
+// resource rather than from Atlas it must report the requested edition instead of
+// an empty string.
+func TestGetDatabaseEdition_FallsBackToRequestedEdition(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			DatabaseEdition: "INFINITE",
+		},
+	}
+
+	assert.Equal(t, "INFINITE", cluster.GetDatabaseEdition())
+}
+
+func TestDatabaseEditionToAtlas(t *testing.T) {
+	tests := map[string]struct {
+		edition  string
+		expected *string
+	}{
+		"an explicit edition is sent":  {edition: "INFINITE", expected: pointer.MakePtr("INFINITE")},
+		"an unset edition is not sent": {edition: "", expected: nil},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			cluster := &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					ClusterType:     "REPLICASET",
+					DatabaseEdition: tc.edition,
+				},
+			}
+
+			assert.Equal(t, tc.expected, clusterCreateToAtlas(cluster).DatabaseEdition)
+			assert.Equal(t, tc.expected, clusterUpdateToAtlas(cluster).DatabaseEdition)
+		})
+	}
+}
+
+func TestFlexUpgradeToAtlas_DatabaseEdition(t *testing.T) {
+	cluster := &Cluster{
+		customResource: &akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					ClusterType:     "REPLICASET",
+					DatabaseEdition: "INFINITE",
+				},
+			},
+		},
+	}
+
+	require.NotNil(t, flexUpgradeToAtlas(cluster).DatabaseEdition)
+	assert.Equal(t, "INFINITE", *flexUpgradeToAtlas(cluster).DatabaseEdition)
+}
+
+// Atlas forces a fixed configuration on an Atlas Infinite cluster and rejects any
+// request that contradicts it. Normalization therefore has to default the affected
+// fields to what Atlas mandates, not to what a CORE cluster gets.
+func TestNormalizeClusterDeployment_Infinite(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
+						{
+							ProviderName:   "AWS",
+							RegionName:     "US_EAST_1",
+							Priority:       pointer.MakePtr(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: pointer.MakePtr(3)},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	// Atlas Infinite supports SHARDED too; REPLICASET is only the generic default for an
+	// unset clusterType and is deliberately not forced by the Atlas Infinite branch.
+	assert.Equal(t, "REPLICASET", cluster.ClusterType)
+	assert.Equal(t, "CONTINUOUS", cluster.VersionReleaseSystem,
+		"Atlas reports Atlas Infinite as CONTINUOUS and rejects any other release system")
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.True(t, *cluster.BackupEnabled,
+		"additional backup retention defaults to enabled on Atlas Infinite")
+	require.NotNil(t, cluster.PitEnabled)
+	assert.True(t, *cluster.PitEnabled, "point in time recovery cannot be disabled on Atlas Infinite")
+
+	diskAutoScaling := cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.DiskGB
+	require.NotNil(t, diskAutoScaling)
+	require.NotNil(t, diskAutoScaling.Enabled)
+	assert.True(t, *diskAutoScaling.Enabled, "Atlas keeps disk auto scaling on for Atlas Infinite")
+}
+
+// The CORE defaults must stay untouched, otherwise every existing deployment
+// would start diverging from Atlas.
+func TestNormalizeClusterDeployment_CoreDefaultsUnchanged(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name: "cluster0",
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
+						{
+							ProviderName:   "AWS",
+							RegionName:     "US_EAST_1",
+							Priority:       pointer.MakePtr(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: pointer.MakePtr(3)},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	assert.Equal(t, "LTS", cluster.VersionReleaseSystem)
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.False(t, *cluster.BackupEnabled)
+	require.NotNil(t, cluster.PitEnabled)
+	assert.False(t, *cluster.PitEnabled)
+	assert.False(t, *cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.DiskGB.Enabled)
+}
+
+// On an Atlas Infinite cluster backupEnabled selects Additional Backup Retention
+// rather than whether backups run, so an explicit false is a legitimate choice that
+// must survive normalization instead of being defaulted back to enabled.
+func TestNormalizeClusterDeployment_InfiniteKeepsExplicitBackupChoice(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
+			BackupEnabled:   pointer.MakePtr(false),
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.False(t, *cluster.BackupEnabled)
+	require.NotNil(t, cluster.PitEnabled)
+	assert.True(t, *cluster.PitEnabled, "point in time recovery stays on regardless")
+}

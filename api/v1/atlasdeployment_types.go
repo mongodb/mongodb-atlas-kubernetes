@@ -100,10 +100,17 @@ type AdvancedDeploymentSpec struct {
 	// +optional
 	ClusterType string `json:"clusterType,omitempty"`
 	// Type of database topology.
-	// Setting this field to "INFINITE" would create a cluster where compute is detached from storage
+	// Setting this field to "INFINITE" creates an Atlas Infinite cluster, where compute is detached
+	// from storage. Atlas assigns the edition at creation time and refuses to change it afterwards,
+	// so the field is immutable. Leave it unset to let Atlas pick the default edition.
+	// An Atlas Infinite cluster may be a REPLICASET or SHARDED, but must use exactly one region
+	// and cannot change its topology afterwards. Atlas reports it as CONTINUOUS and manages its
+	// storage, so versionReleaseSystem, pitEnabled, autoScaling.diskGB, diskSizeGB and diskIOPS
+	// are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
+	// Additional Backup Retention, and defaults to enabled: backups always run either way.
 	// +optional
-	// +kubebuilder:validation:Enum=CORE,INFINITE
-	// +kubebuilder:default=CORE
+	// +kubebuilder:validation:Enum=CORE;INFINITE
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="databaseEdition is immutable"
 	DatabaseEdition string `json:"databaseEdition,omitempty"`
 	// Capacity, in gigabytes, of the host's root volume.
 	// Increase this number to add capacity, up to a maximum possible value of 4096 (i.e., 4 TB).
@@ -806,6 +813,11 @@ func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
 func (c *AtlasDeployment) WithInstanceSize(name string) *AtlasDeployment {
 	addReplicaIfNotAdded(c)
 	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = name
+	return c
+}
+
+func (c *AtlasDeployment) WithDatabaseEdition(edition string) *AtlasDeployment {
+	c.Spec.DeploymentSpec.DatabaseEdition = edition
 	return c
 }
 

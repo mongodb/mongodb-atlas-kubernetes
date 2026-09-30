@@ -33,12 +33,18 @@ import (
 const NOTIFICATION_REASON_DEPRECATION = "DeprecationWarning"
 const NOTIFICATION_REASON_RECOMMENDATION = "RecommendationWarning"
 
+const (
+	DatabaseEditionCore     = "CORE"
+	DatabaseEditionInfinite = "INFINITE"
+)
+
 type Deployment interface {
 	GetName() string
 	GetProjectID() string
 	GetCustomResource() *akov2.AtlasDeployment
 	GetState() string
 	GetMongoDBVersion() string
+	GetDatabaseEdition() string
 	GetConnection() *status.ConnectionStrings
 	GetReplicaSet() []status.ReplicaSet
 	IsServerless() bool
@@ -55,8 +61,11 @@ type Cluster struct {
 	MongoDBVersion string
 	Connection     *status.ConnectionStrings
 	ProcessArgs    *akov2.ProcessArgs
-	ReplicaSet     []status.ReplicaSet
-	ZoneID         string
+	// EffectiveDatabaseEdition is the edition Atlas actually assigned to the cluster.
+	// It is read-only and lives outside AdvancedDeploymentSpec
+	EffectiveDatabaseEdition string
+	ReplicaSet               []status.ReplicaSet
+	ZoneID                   string
 
 	customResource            *akov2.AtlasDeployment
 	computeAutoscalingEnabled bool
@@ -85,6 +94,16 @@ func (c *Cluster) GetState() string {
 
 func (c *Cluster) GetMongoDBVersion() string {
 	return c.MongoDBVersion
+}
+
+func (c *Cluster) GetDatabaseEdition() string {
+	if c.EffectiveDatabaseEdition != "" {
+		return c.EffectiveDatabaseEdition
+	}
+	if c.AdvancedDeploymentSpec == nil {
+		return ""
+	}
+	return c.DatabaseEdition
 }
 
 func (c *Cluster) GetConnection() *status.ConnectionStrings {
@@ -184,6 +203,10 @@ func (f *Flex) GetState() string {
 
 func (f *Flex) GetMongoDBVersion() string {
 	return f.MongoDBVersion
+}
+
+func (f *Flex) GetDatabaseEdition() string {
+	return ""
 }
 
 func (f *Flex) GetConnection() *status.ConnectionStrings {
@@ -309,13 +332,25 @@ func normalizeClusterDeployment(cluster *Cluster) {
 	cluster.instanceSizeOverride = instanceSizeOverride
 	cluster.isTenant = isTenant
 
+	// Atlas mandates a fixed configuration for an Atlas Infinite cluster and rejects any
+	// request that contradicts it, so the defaults below have to match what Atlas forces
+	// rather than what a CORE cluster gets. Otherwise the operator would keep PATCHing a
+	// body Atlas refuses on every single reconciliation.
+	isInfinite := cluster.DatabaseEdition == DatabaseEditionInfinite
+
 	if cluster.ClusterType == "" {
 		cluster.ClusterType = "REPLICASET"
 	}
 
 	cluster.Paused = pointer.GetOrPointerToDefault(cluster.Paused, false)
 	if cluster.VersionReleaseSystem == "" {
-		cluster.VersionReleaseSystem = "LTS"
+		// Atlas runs Atlas Infinite on its internal DISAGGREGATED release system but both
+		// reports and accepts only CONTINUOUS through the public API.
+		if isInfinite {
+			cluster.VersionReleaseSystem = "CONTINUOUS"
+		} else {
+			cluster.VersionReleaseSystem = "LTS"
+		}
 	}
 
 	if cluster.RootCertType == "" {
@@ -323,8 +358,11 @@ func normalizeClusterDeployment(cluster *Cluster) {
 	}
 
 	if !isTenant {
-		cluster.BackupEnabled = pointer.GetOrPointerToDefault(cluster.BackupEnabled, false)
-		cluster.PitEnabled = pointer.GetOrPointerToDefault(cluster.PitEnabled, false)
+		// Atlas Infinite always runs backups and always uses point in time recovery. There
+		// backupEnabled selects Additional Backup Retention instead, which stays a customer
+		// choice but defaults to enabled, so an unset field defaults to enabled either way.
+		cluster.BackupEnabled = pointer.GetOrPointerToDefault(cluster.BackupEnabled, isInfinite)
+		cluster.PitEnabled = pointer.GetOrPointerToDefault(cluster.PitEnabled, isInfinite)
 
 		if cluster.EncryptionAtRestProvider == "" {
 			cluster.EncryptionAtRestProvider = "NONE"
@@ -347,11 +385,11 @@ func normalizeClusterDeployment(cluster *Cluster) {
 		return strings.Compare(a.Key, b.Key)
 	})
 
-	normalizeReplicationSpecs(cluster, isTenant)
+	normalizeReplicationSpecs(cluster, isTenant, isInfinite)
 	normalizeProcessArgs(cluster.ProcessArgs)
 }
 
-func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
+func normalizeReplicationSpecs(cluster *Cluster, isTenant, isInfinite bool) {
 	for ix, replicationSpec := range cluster.ReplicationSpecs {
 		if replicationSpec == nil {
 			continue
@@ -363,7 +401,7 @@ func normalizeReplicationSpecs(cluster *Cluster, isTenant bool) {
 			replicationSpec.ZoneName = fmt.Sprintf("Zone %d", ix+1)
 		}
 
-		normalizeRegionConfigs(replicationSpec.RegionConfigs, isTenant)
+		normalizeRegionConfigs(replicationSpec.RegionConfigs, isTenant, isInfinite)
 	}
 	cmp.NormalizeSlice(cluster.ReplicationSpecs, func(a, b *akov2.AdvancedReplicationSpec) int {
 		var zoneA, zoneB string
@@ -402,7 +440,7 @@ func compareRegionConfigs(a, b *akov2.AdvancedRegionConfig) int {
 	return strings.Compare(bProviderRegion, aProviderRegion)
 }
 
-func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenant bool) {
+func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenant, isInfinite bool) {
 	cmp.NormalizeSlice(regionConfigs, compareRegionConfigs)
 
 	for _, regionConfig := range regionConfigs {
@@ -440,8 +478,10 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 		}
 
 		if diskUnsetOrDisabled {
+			// Atlas manages storage for an Atlas Infinite cluster and keeps disk auto scaling
+			// permanently on, so an unset field defaults to enabled there.
 			regionConfig.AutoScaling.DiskGB = &akov2.DiskGB{
-				Enabled: new(false),
+				Enabled: new(isInfinite),
 			}
 		}
 	}
@@ -537,9 +577,10 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 	}
 
 	cluster := &Cluster{
-		ProjectID:      clusterDesc.GetGroupId(),
-		State:          clusterDesc.GetStateName(),
-		MongoDBVersion: clusterDesc.GetMongoDBVersion(),
+		ProjectID:                clusterDesc.GetGroupId(),
+		State:                    clusterDesc.GetStateName(),
+		MongoDBVersion:           clusterDesc.GetMongoDBVersion(),
+		EffectiveDatabaseEdition: clusterDesc.GetEffectiveDatabaseEdition(),
 		Connection: &status.ConnectionStrings{
 			Standard:        connectionStrings.GetStandard(),
 			StandardSrv:     connectionStrings.GetStandardSrv(),
@@ -551,6 +592,7 @@ func clusterFromAtlas(clusterDesc *admin.ClusterDescription20240805) *Cluster {
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:                         clusterDesc.GetName(),
 			ClusterType:                  clusterDesc.GetClusterType(),
+			DatabaseEdition:              databaseEditionFromAtlas(clusterDesc),
 			MongoDBMajorVersion:          clusterDesc.GetMongoDBMajorVersion(),
 			MongoDBVersion:               clusterDesc.GetMongoDBVersion(),
 			VersionReleaseSystem:         clusterDesc.GetVersionReleaseSystem(),
@@ -585,6 +627,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 	return &admin.ClusterDescription20240805{
 		Name:                         pointer.MakePtrOrNil(cluster.Name),
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
+		DatabaseEdition:              pointer.MakePtrOrNil(cluster.DatabaseEdition),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
 		BackupEnabled:                cluster.BackupEnabled,
@@ -611,6 +654,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 	}
 	return &admin.ClusterDescription20240805{
 		ClusterType:                  pointer.MakePtrOrNil(cluster.ClusterType),
+		DatabaseEdition:              pointer.MakePtrOrNil(cluster.DatabaseEdition),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(cluster.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(cluster.VersionReleaseSystem),
 		BackupEnabled:                cluster.BackupEnabled,
@@ -640,6 +684,18 @@ func replicaSetFromAtlas(replicationSpecs []admin.ReplicationSpec20240805) []sta
 	}
 
 	return replicaSet
+}
+
+// databaseEditionFromAtlas prefers the requested edition and falls back to the
+// effective one. Atlas always returns effectiveDatabaseEdition but only echoes
+// databaseEdition when it was explicitly set, and it validates an incoming
+// databaseEdition against the effective value, so the fallback is what keeps a
+// cluster that requested an edition from diffing forever against Atlas.
+func databaseEditionFromAtlas(cluster *admin.ClusterDescription20240805) string {
+	if edition := cluster.GetDatabaseEdition(); edition != "" {
+		return edition
+	}
+	return cluster.GetEffectiveDatabaseEdition()
 }
 
 func diskSizeFromAtlas(cluster *admin.ClusterDescription20240805) *int {
@@ -1195,6 +1251,7 @@ func flexUpgradeToAtlas(cluster *Cluster) *admin.AtlasTenantClusterUpgradeReques
 	return &admin.AtlasTenantClusterUpgradeRequest20240805{
 		Name:                         spec.Name,
 		ClusterType:                  pointer.MakePtrOrNil(spec.ClusterType),
+		DatabaseEdition:              pointer.MakePtrOrNil(spec.DatabaseEdition),
 		MongoDBMajorVersion:          pointer.MakePtrOrNil(spec.MongoDBMajorVersion),
 		VersionReleaseSystem:         pointer.MakePtrOrNil(spec.VersionReleaseSystem),
 		BackupEnabled:                spec.BackupEnabled,

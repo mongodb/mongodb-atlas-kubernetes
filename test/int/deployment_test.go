@@ -1093,6 +1093,47 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
+	// Atlas Infinite detaches compute from storage and forces its own values for the
+	// release system, backup, point in time recovery and disk auto scaling. The CR below
+	// leaves all of those out on purpose: the operator has to converge on what Atlas
+	// mandates, otherwise it keeps re-issuing a PATCH that Atlas rejects.
+	Describe("Create an Atlas Infinite deployment", Label("focus-infinite-deployment", "focus-slow"), func() {
+		It("Should Succeed", func(ctx context.Context) {
+			createdDeployment = akov2.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name).
+				WithName("test-deployment-infinite-k8s").
+				WithAtlasName("test-deployment-infinite").
+				WithDatabaseEdition("INFINITE").
+				// Atlas Infinite only accepts second generation instance sizes, up to M60.
+				WithInstanceSize("M40_GEN_2")
+
+			By(fmt.Sprintf("Creating the Atlas Infinite Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				performCreate(createdDeployment, 45*time.Minute)
+
+				doDeploymentStatusChecks()
+				// Asserts ComputeChanges reports no pending changes, which is what fails if
+				// the operator and Atlas disagree on the Atlas Infinite defaults.
+				checkAdvancedAtlasState()
+			})
+
+			By("Reporting the effective database edition in the status", func() {
+				Expect(createdDeployment.Status.DatabaseEdition).To(Equal("INFINITE"))
+			})
+
+			By("Keeping the deployment converged on a second reconciliation", func() {
+				deploymentInAtlas, err := deploymentService.GetDeployment(ctx, createdProject.ID(), createdDeployment)
+				Expect(err).ToNot(HaveOccurred())
+
+				cluster, ok := deploymentInAtlas.(*deployment.Cluster)
+				Expect(ok).To(BeTrue())
+				Expect(cluster.GetDatabaseEdition()).To(Equal("INFINITE"))
+				Expect(cluster.VersionReleaseSystem).To(Equal("CONTINUOUS"))
+				Expect(cluster.PitEnabled).ToNot(BeNil())
+				Expect(*cluster.PitEnabled).To(BeTrue())
+
+				checkAdvancedAtlasState()
+			})
+		})
+	})
 	Describe("Set advanced deployment options", func() {
 		It("Should Succeed", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
