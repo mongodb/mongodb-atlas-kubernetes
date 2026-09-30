@@ -3339,6 +3339,24 @@ The parameter is required if replicationSpecs are set or if Global Deployments a
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>enum</td>
+        <td>
+          Type of database topology.
+Setting this field to "INFINITE" creates an Atlas Infinite cluster, where compute is detached
+from storage. Atlas assigns the edition at creation time and refuses to change it afterwards,
+so the field is immutable. Leave it unset to let Atlas pick the default edition.
+An Atlas Infinite cluster may be a REPLICASET or SHARDED, but must use exactly one region
+and cannot change its topology afterwards. Atlas reports it as CONTINUOUS and manages its
+storage, so versionReleaseSystem, pitEnabled, autoScaling.diskGB, diskSizeGB and diskIOPS
+are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
+Additional Backup Retention, and defaults to enabled: backups always run either way.<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: databaseEdition is immutable</li>
+            <i>Enum</i>: CORE, INFINITE<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>diskSizeGB</b></td>
         <td>integer</td>
         <td>
@@ -5210,6 +5228,15 @@ AtlasDeploymentStatus defines the observed state of AtlasDeployment.
         <td>
           List that contains key value pairs to map zones to geographic regions.
 These pairs map an ISO 3166-1a2 location code, with an ISO 3166-2 subdivision code when possible, to a unique 24-hexadecimal string that identifies the custom zone.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>string</td>
+        <td>
+          DatabaseEdition is the database edition Atlas assigned to the cluster, either CORE or
+INFINITE. Atlas picks a default when spec.deploymentSpec.databaseEdition is left unset,
+so this reports the edition actually in effect rather than the one requested.<br/>
         </td>
         <td>false</td>
       </tr><tr>

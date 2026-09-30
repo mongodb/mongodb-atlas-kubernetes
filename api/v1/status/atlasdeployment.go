@@ -29,6 +29,11 @@ type AtlasDeploymentStatus struct {
 	// MongoDBVersion is the version of MongoDB the cluster runs, in <major version>.<minor version> format.
 	MongoDBVersion string `json:"mongoDBVersion,omitempty"`
 
+	// DatabaseEdition is the database edition Atlas assigned to the cluster, either CORE or
+	// INFINITE. Atlas picks a default when spec.deploymentSpec.databaseEdition is left unset,
+	// so this reports the edition actually in effect rather than the one requested.
+	DatabaseEdition string `json:"databaseEdition,omitempty"`
+
 	// ConnectionStrings is a set of connection strings that your applications use to connect to this cluster.
 	ConnectionStrings *ConnectionStrings `json:"connectionStrings,omitempty"`
 
@@ -174,6 +179,12 @@ func AtlasDeploymentManagedNamespacesOption(namespaces []ManagedNamespace) Atlas
 func AtlasDeploymentMongoDBVersionOption(mongoDBVersion string) AtlasDeploymentStatusOption {
 	return func(s *AtlasDeploymentStatus) {
 		s.MongoDBVersion = mongoDBVersion
+	}
+}
+
+func AtlasDeploymentDatabaseEditionOption(databaseEdition string) AtlasDeploymentStatusOption {
+	return func(s *AtlasDeploymentStatus) {
+		s.DatabaseEdition = databaseEdition
 	}
 }
 
