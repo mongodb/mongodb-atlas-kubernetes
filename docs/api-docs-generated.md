@@ -272,10 +272,24 @@ The entry fields of the cluster resource spec. These fields can be set for creat
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Optional field that indicates whether your cluster will be Atlas INFINITE or CORE. You can set it only when you create the cluster, or when you upgrade a Free or Flex cluster to a dedicated cluster. This value is immutable once the dedicated cluster exists; attempting to change it on an update request returns an error.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>diskWarmingMode</b></td>
         <td>string</td>
         <td>
           Disk warming mode selection.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>effectiveDatabaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Field that represents whether your cluster is Atlas INFINITE or CORE. This is read-only and always returned in the response. It reflects the actual cluster state. This value matches `databaseEdition` if it was set, otherwise it reflects the default database edition assigned to the cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -778,6 +792,13 @@ Options that determine how this cluster handles resource scaling.
           Setting that enables disk auto-scaling.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecv20250312entryreplicationspecsindexregionconfigsindexanalyticsautoscalingstorageconfig">storageConfig</a></b></td>
+        <td>object</td>
+        <td>
+          Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -854,6 +875,33 @@ Setting that enables disk auto-scaling.
         <td>boolean</td>
         <td>
           Flag that indicates whether this cluster enables disk auto-scaling. The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.v20250312.entry.replicationSpecs[index].regionConfigs[index].analyticsAutoScaling.storageConfig
+<sup><sup>[↩ Parent](#clusterspecv20250312entryreplicationspecsindexregionconfigsindexanalyticsautoscaling)</sup></sup>
+
+
+
+Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>shardSizeLimitGB</b></td>
+        <td>integer</td>
+        <td>
+          Available in Public Preview: Maximum data size that MongoDB Cloud allows each shard of this cluster to reach, expressed in gigabytes. MongoDB Cloud rejects writes to a shard that reaches the limit that it enforces. In `replicationSpecs`, this field reports the limit that you configured, and MongoDB Cloud omits it when you never configured one. In `effectiveReplicationSpecs`, this field reports the limit that MongoDB Cloud enforces: usually the limit that you configured, otherwise the default limit that MongoDB Cloud assigns when it creates or updates the cluster. This value may differ from the limit that you configured due to system-managed changes. This limit applies to every shard of the cluster; set the same value on each region configuration's `autoScaling`, as MongoDB Cloud rejects requests that specify differing values. You can set this only on Atlas INFINITE clusters: MongoDB Cloud rejects any request that names this field, including as `null`, for a cluster or node type that doesn't support it. In a request that includes `replicationSpecs`, omitting `shardSizeLimitGB` or sending it as `null` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -981,6 +1029,13 @@ Options that determine how this cluster handles resource scaling.
           Setting that enables disk auto-scaling.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterspecv20250312entryreplicationspecsindexregionconfigsindexautoscalingstorageconfig">storageConfig</a></b></td>
+        <td>object</td>
+        <td>
+          Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -1057,6 +1112,33 @@ Setting that enables disk auto-scaling.
         <td>boolean</td>
         <td>
           Flag that indicates whether this cluster enables disk auto-scaling. The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.spec.v20250312.entry.replicationSpecs[index].regionConfigs[index].autoScaling.storageConfig
+<sup><sup>[↩ Parent](#clusterspecv20250312entryreplicationspecsindexregionconfigsindexautoscaling)</sup></sup>
+
+
+
+Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>shardSizeLimitGB</b></td>
+        <td>integer</td>
+        <td>
+          Available in Public Preview: Maximum data size that MongoDB Cloud allows each shard of this cluster to reach, expressed in gigabytes. MongoDB Cloud rejects writes to a shard that reaches the limit that it enforces. In `replicationSpecs`, this field reports the limit that you configured, and MongoDB Cloud omits it when you never configured one. In `effectiveReplicationSpecs`, this field reports the limit that MongoDB Cloud enforces: usually the limit that you configured, otherwise the default limit that MongoDB Cloud assigns when it creates or updates the cluster. This value may differ from the limit that you configured due to system-managed changes. This limit applies to every shard of the cluster; set the same value on each region configuration's `autoScaling`, as MongoDB Cloud rejects requests that specify differing values. You can set this only on Atlas INFINITE clusters: MongoDB Cloud rejects any request that names this field, including as `null`, for a cluster or node type that doesn't support it. In a request that includes `replicationSpecs`, omitting `shardSizeLimitGB` or sending it as `null` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1469,6 +1551,20 @@ The last observed Atlas state of the cluster resource for version v20250312.
         <td>string</td>
         <td>
           Date and time when MongoDB Cloud created this cluster. This parameter expresses its value in ISO 8601 format in UTC.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Optional field that indicates whether your cluster will be Atlas INFINITE or CORE. You can set it only when you create the cluster, or when you upgrade a Free or Flex cluster to a dedicated cluster. This value is immutable once the dedicated cluster exists; attempting to change it on an update request returns an error.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>effectiveDatabaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Field that represents whether your cluster is Atlas INFINITE or CORE. This is read-only and always returned in the response. It reflects the actual cluster state. This value matches `databaseEdition` if it was set, otherwise it reflects the default database edition assigned to the cluster.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1993,6 +2089,13 @@ Options that determine how this cluster handles resource scaling.
           Setting that enables disk auto-scaling.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterstatusv20250312effectivereplicationspecsindexregionconfigsindexanalyticsautoscalingstorageconfig">storageConfig</a></b></td>
+        <td>object</td>
+        <td>
+          Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2069,6 +2172,33 @@ Setting that enables disk auto-scaling.
         <td>boolean</td>
         <td>
           Flag that indicates whether this cluster enables disk auto-scaling. The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.status.v20250312.effectiveReplicationSpecs[index].regionConfigs[index].analyticsAutoScaling.storageConfig
+<sup><sup>[↩ Parent](#clusterstatusv20250312effectivereplicationspecsindexregionconfigsindexanalyticsautoscaling)</sup></sup>
+
+
+
+Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>shardSizeLimitGB</b></td>
+        <td>integer</td>
+        <td>
+          Available in Public Preview: Maximum data size that MongoDB Cloud allows each shard of this cluster to reach, expressed in gigabytes. MongoDB Cloud rejects writes to a shard that reaches the limit that it enforces. In `replicationSpecs`, this field reports the limit that you configured, and MongoDB Cloud omits it when you never configured one. In `effectiveReplicationSpecs`, this field reports the limit that MongoDB Cloud enforces: usually the limit that you configured, otherwise the default limit that MongoDB Cloud assigns when it creates or updates the cluster. This value may differ from the limit that you configured due to system-managed changes. This limit applies to every shard of the cluster; set the same value on each region configuration's `autoScaling`, as MongoDB Cloud rejects requests that specify differing values. You can set this only on Atlas INFINITE clusters: MongoDB Cloud rejects any request that names this field, including as `null`, for a cluster or node type that doesn't support it. In a request that includes `replicationSpecs`, omitting `shardSizeLimitGB` or sending it as `null` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2196,6 +2326,13 @@ Options that determine how this cluster handles resource scaling.
           Setting that enables disk auto-scaling.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#clusterstatusv20250312effectivereplicationspecsindexregionconfigsindexautoscalingstorageconfig">storageConfig</a></b></td>
+        <td>object</td>
+        <td>
+          Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -2272,6 +2409,33 @@ Setting that enables disk auto-scaling.
         <td>boolean</td>
         <td>
           Flag that indicates whether this cluster enables disk auto-scaling. The maximum memory allowed for the selected cluster tier and the oplog size can limit storage auto-scaling.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.status.v20250312.effectiveReplicationSpecs[index].regionConfigs[index].autoScaling.storageConfig
+<sup><sup>[↩ Parent](#clusterstatusv20250312effectivereplicationspecsindexregionconfigsindexautoscaling)</sup></sup>
+
+
+
+Available in Public Preview: Settings that determine the per-shard data-size limit for this cluster. Applies only to Atlas INFINITE clusters. MongoDB Cloud accepts these settings only on `autoScaling` and rejects them on `analyticsAutoScaling`, including when you send them as `null`. In a request that includes `replicationSpecs`, omitting `storageConfig` or sending it as `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>shardSizeLimitGB</b></td>
+        <td>integer</td>
+        <td>
+          Available in Public Preview: Maximum data size that MongoDB Cloud allows each shard of this cluster to reach, expressed in gigabytes. MongoDB Cloud rejects writes to a shard that reaches the limit that it enforces. In `replicationSpecs`, this field reports the limit that you configured, and MongoDB Cloud omits it when you never configured one. In `effectiveReplicationSpecs`, this field reports the limit that MongoDB Cloud enforces: usually the limit that you configured, otherwise the default limit that MongoDB Cloud assigns when it creates or updates the cluster. This value may differ from the limit that you configured due to system-managed changes. This limit applies to every shard of the cluster; set the same value on each region configuration's `autoScaling`, as MongoDB Cloud rejects requests that specify differing values. You can set this only on Atlas INFINITE clusters: MongoDB Cloud rejects any request that names this field, including as `null`, for a cluster or node type that doesn't support it. In a request that includes `replicationSpecs`, omitting `shardSizeLimitGB` or sending it as `null` clears the limit. Omitting `replicationSpecs` preserves it.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3656,6 +3820,13 @@ The entry fields of the flexcluster resource spec. These fields can be set for c
         </td>
         <td>true</td>
       </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Optional field that indicates whether your tenant cluster will be upgraded to Atlas INFINITE or CORE.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#flexclusterspecv20250312entrytagsindex">tags</a></b></td>
         <td>[]object</td>
         <td>
@@ -3917,6 +4088,13 @@ The last observed Atlas state of the flexcluster resource for version v20250312.
         <td>string</td>
         <td>
           Date and time when MongoDB Cloud created this instance. This parameter expresses its value in ISO 8601 format in UTC.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>databaseEdition</b></td>
+        <td>string</td>
+        <td>
+          Available in Public Preview: Optional field that indicates whether your tenant cluster will be upgraded to Atlas INFINITE or CORE.<br/>
         </td>
         <td>false</td>
       </tr><tr>
