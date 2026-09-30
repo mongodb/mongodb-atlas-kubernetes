@@ -66,3 +66,6 @@ helm-charts/atlas-operator-crds/templates/*.yaml
 
 # ignore helm test artifacts
 helm-charts/atlas-operator/charts/
+
+# ignore opencode plans, etc
+.opencode/

@@ -19,8 +19,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -347,7 +349,8 @@ func findReferences(data any, path string, schema *apiextensionsv1.JSONSchemaPro
 	case map[string]any:
 		processKubernetesMapping(v, path, requiredSegments, references)
 
-		for key, value := range v {
+		for _, key := range slices.Sorted(maps.Keys(v)) {
+			value := v[key]
 			newPath := path
 			if newPath != "" {
 				newPath += "."

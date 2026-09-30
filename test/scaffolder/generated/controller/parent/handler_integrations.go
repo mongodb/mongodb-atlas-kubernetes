@@ -18,8 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	constate "github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	integrationssdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -28,7 +27,6 @@ import (
 	controller "sigs.k8s.io/controller-runtime/pkg/controller"
 	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 
@@ -49,120 +47,120 @@ func NewHandlerintegrations(kubeClient client.Client, atlasClient *integrationss
 }
 
 // HandleInitial handles the initial state for version integrations
-func (h *Handlerintegrations) HandleInitial(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleInitial(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement initial state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateUpdated, "Updated AtlasParent.")
+	return constate.NextState(constate.StateUpdated, "Updated AtlasParent.")
 }
 
 // HandleImportRequested handles the importrequested state for version integrations
-func (h *Handlerintegrations) HandleImportRequested(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleImportRequested(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement importrequested state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateImported, "Import completed")
+	return constate.NextState(constate.StateImported, "Import completed")
 }
 
 // HandleImported handles the imported state for version integrations
-func (h *Handlerintegrations) HandleImported(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleImported(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateImported, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateImported, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement imported state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateUpdated, "Ready")
+	return constate.NextState(constate.StateUpdated, "Ready")
 }
 
 // HandleCreating handles the creating state for version integrations
-func (h *Handlerintegrations) HandleCreating(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleCreating(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement creating state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateCreated, "Resource created")
+	return constate.NextState(constate.StateCreated, "Resource created")
 }
 
 // HandleCreated handles the created state for version integrations
-func (h *Handlerintegrations) HandleCreated(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleCreated(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateCreated, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateCreated, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement created state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateUpdated, "Ready")
+	return constate.NextState(constate.StateUpdated, "Ready")
 }
 
 // HandleUpdating handles the updating state for version integrations
-func (h *Handlerintegrations) HandleUpdating(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleUpdating(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement updating state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateUpdated, "Update completed")
+	return constate.NextState(constate.StateUpdated, "Update completed")
 }
 
 // HandleUpdated handles the updated state for version integrations
-func (h *Handlerintegrations) HandleUpdated(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleUpdated(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateUpdated, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateUpdated, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement updated state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateUpdated, "Ready")
+	return constate.NextState(constate.StateUpdated, "Ready")
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version integrations
-func (h *Handlerintegrations) HandleDeletionRequested(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleDeletionRequested(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement deletionrequested state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateDeleting, "Deletion started")
+	return constate.NextState(constate.StateDeleting, "Deletion started")
 }
 
 // HandleDeleting handles the deleting state for version integrations
-func (h *Handlerintegrations) HandleDeleting(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handlerintegrations) HandleDeleting(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	_, err := h.getDependencies(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to resolve Parent dependencies: %w", err))
 	}
 
 	// TODO: Implement deleting state logic
 	// TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client
 	// TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods
-	return result.NextState(state.StateDeleted, "Deleted")
+	return constate.NextState(constate.StateDeleted, "Deleted")
 }
 
 // For returns the resource and predicates for the controller

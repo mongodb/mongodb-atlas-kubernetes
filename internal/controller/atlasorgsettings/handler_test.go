@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	ctrlstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -322,19 +321,19 @@ func TestUpsert(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		currentState   state.ResourceState
-		nextState      state.ResourceState
+		currentState   constate.ResourceState
+		nextState      constate.ResourceState
 		provider       atlas.Provider
 		serviceBuilder func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
 		input          *akov2.AtlasOrgSettings
 		objects        []client.Object
-		want           ctrlstate.Result
+		want           constate.Result
 		wantErr        string
 	}{
 		{
 			name:         "successful upsert with settings different - update needed",
-			currentState: state.StateInitial,
-			nextState:    state.StateCreated,
+			currentState: constate.StateInitial,
+			nextState:    constate.StateCreated,
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t,
 				&atlasorgsettings.AtlasOrgSettings{
@@ -351,15 +350,15 @@ func TestUpsert(t *testing.T) {
 				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Updated.",
 			},
 		},
 		{
 			name:         "successful upsert with identical settings - no update needed",
-			currentState: state.StateInitial,
-			nextState:    state.StateCreated,
+			currentState: constate.StateInitial,
+			nextState:    constate.StateCreated,
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t,
 				&atlasorgsettings.AtlasOrgSettings{
@@ -376,15 +375,15 @@ func TestUpsert(t *testing.T) {
 				}, nil, nil, nil, false), // No update expected
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Ready.",
 			},
 		},
 		{
 			name:         "successful upsert with nil current atlas settings",
-			currentState: state.StateInitial,
-			nextState:    state.StateCreated,
+			currentState: constate.StateInitial,
+			nextState:    constate.StateCreated,
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t, nil, nil,
 				&atlasorgsettings.AtlasOrgSettings{
@@ -395,39 +394,39 @@ func TestUpsert(t *testing.T) {
 				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Updated.",
 			},
 		},
 		{
 			name:         "failed reconcile context creation",
-			currentState: state.StateCreated,
-			nextState:    state.StateUpdated,
+			currentState: constate.StateCreated,
+			nextState:    constate.StateUpdated,
 			provider:     createFailingProvider("connection error"),
 			serviceBuilder: func(_ *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Created"},
+			want:    constate.Result{NextState: "Created"},
 			wantErr: "failed to create reconcile context: connection error",
 		},
 		{
 			name:           "get current settings error",
-			currentState:   state.StateInitial,
-			nextState:      state.StateCreated,
+			currentState:   constate.StateInitial,
+			nextState:      constate.StateCreated,
 			provider:       createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t, nil, errors.New("get failed"), nil, nil, false),
 			input:          &sampleAtlasOrgSettings,
 			objects:        []client.Object{&fakeAtlasSecret},
-			want:           ctrlstate.Result{NextState: "Initial"},
+			want:           constate.Result{NextState: "Initial"},
 			wantErr:        "failed to get current org settings from Atlas: get failed",
 		},
 		{
 			name:         "update error after successful get",
-			currentState: state.StateInitial,
-			nextState:    state.StateCreated,
+			currentState: constate.StateInitial,
+			nextState:    constate.StateCreated,
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t,
 				&atlasorgsettings.AtlasOrgSettings{
@@ -438,13 +437,13 @@ func TestUpsert(t *testing.T) {
 				}, nil, nil, errors.New("update failed"), true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
+			want:    constate.Result{NextState: "Initial"},
 			wantErr: "update failed",
 		},
 		{
 			name:         "nil response from atlas update service",
-			currentState: state.StateInitial,
-			nextState:    state.StateCreated,
+			currentState: constate.StateInitial,
+			nextState:    constate.StateCreated,
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t,
 				&atlasorgsettings.AtlasOrgSettings{
@@ -455,7 +454,7 @@ func TestUpsert(t *testing.T) {
 				}, nil, nil, nil, true), // Update returns nil
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
+			want:    constate.Result{NextState: "Initial"},
 			wantErr: "atlas returned OrgSettings which is nil after update",
 		},
 	}
@@ -493,12 +492,12 @@ func TestUnmanage(t *testing.T) {
 	tests := []struct {
 		name     string
 		orgID    string
-		expected ctrlstate.Result
+		expected constate.Result
 	}{
 		{
 			name:  "unmanage with standard org id",
 			orgID: fakeOrgID,
-			expected: ctrlstate.Result{
+			expected: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
 			},
@@ -506,7 +505,7 @@ func TestUnmanage(t *testing.T) {
 		{
 			name:  "unmanage with different org id",
 			orgID: "another-org-id",
-			expected: ctrlstate.Result{
+			expected: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Unmanaged AtlasOrgSettings for orgID another-org-id.",
 			},
@@ -514,7 +513,7 @@ func TestUnmanage(t *testing.T) {
 		{
 			name:  "unmanage with empty org id",
 			orgID: "",
-			expected: ctrlstate.Result{
+			expected: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Unmanaged AtlasOrgSettings for orgID .",
 			},
@@ -522,7 +521,7 @@ func TestUnmanage(t *testing.T) {
 		{
 			name:  "unmanage with special characters in org id",
 			orgID: "org-with-special-chars!@#$%",
-			expected: ctrlstate.Result{
+			expected: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Unmanaged AtlasOrgSettings for orgID org-with-special-chars!@#$%.",
 			},
@@ -578,13 +577,13 @@ func TestHandlerMethods(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		handlerFunc    func(*AtlasOrgSettingsHandler, context.Context, *akov2.AtlasOrgSettings) (ctrlstate.Result, error)
-		expectedResult ctrlstate.Result
+		handlerFunc    func(*AtlasOrgSettingsHandler, context.Context, *akov2.AtlasOrgSettings) (constate.Result, error)
+		expectedResult constate.Result
 	}{
 		{
 			name:        "HandleInitial",
 			handlerFunc: (*AtlasOrgSettingsHandler).HandleInitial,
-			expectedResult: ctrlstate.Result{
+			expectedResult: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated AtlasOrgSettings.",
 			},
@@ -592,7 +591,7 @@ func TestHandlerMethods(t *testing.T) {
 		{
 			name:        "HandleUpdated",
 			handlerFunc: (*AtlasOrgSettingsHandler).HandleUpdated,
-			expectedResult: ctrlstate.Result{
+			expectedResult: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated.",
 			},
@@ -615,7 +614,7 @@ func TestHandlerMethods(t *testing.T) {
 
 		got, err := h.HandleDeletionRequested(ctx, &sampleAtlasOrgSettings)
 		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
+		assert.Equal(t, constate.Result{
 			NextState: "Deleted",
 			StateMsg:  fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", fakeOrgID),
 		}, got)
@@ -653,9 +652,9 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			serviceBuilder: serviceBuilder,
 		}
 
-		got, err := h.upsert(ctx, state.StateInitial, state.StateCreated, &sampleAtlasOrgSettings)
+		got, err := h.upsert(ctx, constate.StateInitial, constate.StateCreated, &sampleAtlasOrgSettings)
 		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
+		assert.Equal(t, constate.Result{
 			NextState: "Created",
 			StateMsg:  "Updated.",
 		}, got)
@@ -692,9 +691,9 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			serviceBuilder: serviceBuilder,
 		}
 
-		got, err := h.upsert(ctx, state.StateUpdated, state.StateUpdated, &sampleAtlasOrgSettings)
+		got, err := h.upsert(ctx, constate.StateUpdated, constate.StateUpdated, &sampleAtlasOrgSettings)
 		require.NoError(t, err)
-		assert.Equal(t, ctrlstate.Result{
+		assert.Equal(t, constate.Result{
 			NextState: "Updated",
 			StateMsg:  "Updated.",
 		}, got)

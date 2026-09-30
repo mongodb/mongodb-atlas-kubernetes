@@ -21,33 +21,31 @@ import (
 	"fmt"
 	"reflect"
 
-	ctrlstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 const (
 	AnnotationContentHash = "mongodb.com/content-hash"
 )
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateInitial, state.StateCreated, integration)
+func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
+	return h.upsert(ctx, constate.StateInitial, constate.StateCreated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateCreated, state.StateUpdated, integration)
+func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
+	return h.upsert(ctx, constate.StateCreated, constate.StateUpdated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateUpdated, state.StateUpdated, integration)
+func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
+	return h.upsert(ctx, constate.StateUpdated, constate.StateUpdated, integration)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		// TODO is this good for all error cases?
@@ -60,23 +58,23 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState,
-	integration *akov2.AtlasThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState constate.ResourceState,
+	integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
 	}
 
 	integrationSpec, err := h.populateIntegration(ctx, integration)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to populate integration: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to populate integration: %w", err))
 	}
 	atlasIntegration, err := req.Service.Get(ctx, req.Project.ID, integrationSpec.Type)
 	if errors.Is(err, thirdpartyintegration.ErrNotFound) {
 		return h.create(ctx, currentState, req, integrationSpec)
 	}
 	if err != nil {
-		return result.Error(
+		return constate.ErrorState(
 			currentState,
 			fmt.Errorf("Error getting %s Atlas Integration for project %s: %w",
 				integrationSpec.Type, req.Project.ID, err),
@@ -86,7 +84,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	spec := integrationSpec.Comparable()
 	secretChanged, err := h.secretChanged(ctx, integration)
 	if err != nil {
-		return result.Error(
+		return constate.ErrorState(
 			currentState,
 			fmt.Errorf("Error evaluating secret changes for %s Atlas Integration for project %s: %w",
 				integrationSpec.Type, req.Project.ID, err),
@@ -95,72 +93,72 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	if secretChanged || !reflect.DeepEqual(atlas, spec) {
 		return h.update(ctx, currentState, req, integrationSpec)
 	}
-	return result.NextState(
+	return constate.NextState(
 		nextState,
 		fmt.Sprintf("Synced %s Atlas Third Party Integration for %s", integrationSpec.Type, req.Project.ID),
 	)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentState state.ResourceState, req *reconcileRequest,
-	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentState constate.ResourceState, req *reconcileRequest,
+	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (constate.Result, error) {
 	newIntegration, err := req.Service.Create(ctx, req.Project.ID, integrationSpec)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to create %s Atlas Third Party Integration for project %s: %w",
+		return constate.ErrorState(currentState, fmt.Errorf("failed to create %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
 	}
 	req.integration.Status.ID = newIntegration.ID
 	if err := h.patchNonConditionStatus(ctx, req); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
+		return constate.ErrorState(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
 	}
 	if err := h.ensureSecretHash(ctx, req.integration); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to ensure secret is hashed to detect further changes "+
+		return constate.ErrorState(currentState, fmt.Errorf("failed to ensure secret is hashed to detect further changes "+
 			"for %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
 	}
-	return result.NextState(
-		state.StateCreated,
+	return constate.NextState(
+		constate.StateCreated,
 		fmt.Sprintf("Created Atlas Third Party Integration for %s", integrationSpec.Type),
 	)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState state.ResourceState, req *reconcileRequest,
-	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState constate.ResourceState, req *reconcileRequest,
+	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (constate.Result, error) {
 	updatedIntegration, err := req.Service.Update(ctx, req.Project.ID, integrationSpec)
 	if req.integration.Status.ID == "" { // On imports, the ID might be unset
 		req.integration.Status.ID = updatedIntegration.ID
 		if err := h.patchNonConditionStatus(ctx, req); err != nil {
-			return result.Error(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
+			return constate.ErrorState(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
 				integrationSpec.Type, req.Project.ID, err))
 		}
 	}
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to update %s Atlas Third Party Integration for project %s: %w",
+		return constate.ErrorState(currentState, fmt.Errorf("failed to update %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
 	}
-	return result.NextState(
-		state.StateUpdated,
+	return constate.NextState(
+		constate.StateUpdated,
 		fmt.Sprintf("Updated Atlas Third Party Integration for %s", integrationSpec.Type),
 	)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) delete(ctx context.Context, req *reconcileRequest, integrationType string) (ctrlstate.Result, error) {
+func (h *AtlasThirdPartyIntegrationHandler) delete(ctx context.Context, req *reconcileRequest, integrationType string) (constate.Result, error) {
 	err := req.Service.Delete(ctx, req.Project.ID, integrationType)
 	if errors.Is(err, thirdpartyintegration.ErrNotFound) {
 		return h.unmanage(integrationType)
 	}
 	if err != nil {
-		return result.Error(
-			state.StateDeletionRequested,
+		return constate.ErrorState(
+			constate.StateDeletionRequested,
 			fmt.Errorf("Error deleting %s Atlas Integration for project %s: %w", integrationType, req.Project.ID, err),
 		)
 	}
 	return h.unmanage(integrationType)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) unmanage(integrationType string) (ctrlstate.Result, error) {
-	return result.NextState(
-		state.StateDeleted,
+func (h *AtlasThirdPartyIntegrationHandler) unmanage(integrationType string) (constate.Result, error) {
+	return constate.NextState(
+		constate.StateDeleted,
 		fmt.Sprintf("Deleted Atlas Third Party Integration for %s", integrationType),
 	)
 }

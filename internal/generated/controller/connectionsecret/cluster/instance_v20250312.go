@@ -17,7 +17,7 @@ package cluster
 import (
 	"context"
 
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -43,7 +43,7 @@ func (e *ClusterInstance_v20250312) GetName() string {
 }
 
 func (e *ClusterInstance_v20250312) IsReady() bool {
-	ready := meta.FindStatusCondition(e.Cluster.GetConditions(), state.ReadyCondition)
+	ready := meta.FindStatusCondition(e.Cluster.GetConditions(), constate.ReadyCondition)
 	return ready != nil && ready.Status == metav1.ConditionTrue
 }
 

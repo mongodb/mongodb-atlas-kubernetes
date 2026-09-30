@@ -21,8 +21,7 @@ import (
 	"os"
 	"testing"
 
-	ctrlstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"github.com/crd2go/crapi"
 	"github.com/crd2go/crapi/refs"
 	"github.com/crd2go/crd2go/k8s"
@@ -295,7 +294,7 @@ func TestGetSDKClientSet(t *testing.T) {
 }
 
 // TestHandlerStateTransitions tests that the Handler dispatch layer correctly
-// delegates to the version-specific handler for each state.
+// delegates to the version-specific handler for each constate.
 func TestHandlerStateTransitions(t *testing.T) {
 	ctx := context.Background()
 	scheme := newSchemeWithCoreV1(t)
@@ -327,22 +326,22 @@ func TestHandlerStateTransitions(t *testing.T) {
 
 	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
-	type stateFunc func(context.Context, *v1.Child) (ctrlstate.Result, error)
+	type stateFunc func(context.Context, *v1.Child) (constate.Result, error)
 
 	stateTests := []struct {
 		name      string
 		fn        stateFunc
-		wantState state.ResourceState
+		wantState constate.ResourceState
 	}{
-		{"HandleInitial", handler.HandleInitial, state.StateUpdated},
-		{"HandleImportRequested", handler.HandleImportRequested, state.StateImported},
-		{"HandleImported", handler.HandleImported, state.StateUpdated},
-		{"HandleCreating", handler.HandleCreating, state.StateCreated},
-		{"HandleCreated", handler.HandleCreated, state.StateUpdated},
-		{"HandleUpdating", handler.HandleUpdating, state.StateUpdated},
-		{"HandleUpdated", handler.HandleUpdated, state.StateUpdated},
-		{"HandleDeletionRequested", handler.HandleDeletionRequested, state.StateDeleting},
-		{"HandleDeleting", handler.HandleDeleting, state.StateDeleted},
+		{"HandleInitial", handler.HandleInitial, constate.StateUpdated},
+		{"HandleImportRequested", handler.HandleImportRequested, constate.StateImported},
+		{"HandleImported", handler.HandleImported, constate.StateUpdated},
+		{"HandleCreating", handler.HandleCreating, constate.StateCreated},
+		{"HandleCreated", handler.HandleCreated, constate.StateUpdated},
+		{"HandleUpdating", handler.HandleUpdating, constate.StateUpdated},
+		{"HandleUpdated", handler.HandleUpdated, constate.StateUpdated},
+		{"HandleDeletionRequested", handler.HandleDeletionRequested, constate.StateDeleting},
+		{"HandleDeleting", handler.HandleDeleting, constate.StateDeleted},
 	}
 
 	for _, tc := range stateTests {
@@ -385,22 +384,22 @@ func TestHandlerStateTransitions_NoVersion(t *testing.T) {
 
 	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
-	type stateFunc func(context.Context, *v1.Child) (ctrlstate.Result, error)
+	type stateFunc func(context.Context, *v1.Child) (constate.Result, error)
 
 	stateTests := []struct {
 		name         string
 		fn           stateFunc
-		wantErrState state.ResourceState
+		wantErrState constate.ResourceState
 	}{
-		{"HandleInitial", handler.HandleInitial, state.StateInitial},
-		{"HandleImportRequested", handler.HandleImportRequested, state.StateImportRequested},
-		{"HandleImported", handler.HandleImported, state.StateImported},
-		{"HandleCreating", handler.HandleCreating, state.StateCreating},
-		{"HandleCreated", handler.HandleCreated, state.StateCreated},
-		{"HandleUpdating", handler.HandleUpdating, state.StateUpdating},
-		{"HandleUpdated", handler.HandleUpdated, state.StateUpdated},
-		{"HandleDeletionRequested", handler.HandleDeletionRequested, state.StateDeletionRequested},
-		{"HandleDeleting", handler.HandleDeleting, state.StateDeleting},
+		{"HandleInitial", handler.HandleInitial, constate.StateInitial},
+		{"HandleImportRequested", handler.HandleImportRequested, constate.StateImportRequested},
+		{"HandleImported", handler.HandleImported, constate.StateImported},
+		{"HandleCreating", handler.HandleCreating, constate.StateCreating},
+		{"HandleCreated", handler.HandleCreated, constate.StateCreated},
+		{"HandleUpdating", handler.HandleUpdating, constate.StateUpdating},
+		{"HandleUpdated", handler.HandleUpdated, constate.StateUpdated},
+		{"HandleDeletionRequested", handler.HandleDeletionRequested, constate.StateDeletionRequested},
+		{"HandleDeleting", handler.HandleDeleting, constate.StateDeleting},
 	}
 
 	for _, tc := range stateTests {
@@ -428,7 +427,8 @@ func TestGetDependents_Child(t *testing.T) {
 	}
 
 	handler := NewHandlerv20250312(nil, nil, nil, false)
-	dependents := handler.getDependents(ctx, child)
+	dependents, err := handler.getDependents(ctx, child)
+	require.NoError(t, err)
 	assert.Empty(t, dependents)
 }
 
@@ -495,7 +495,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 	// Verify the full dispatch chain works with real translators
 	result, err := handler.HandleInitial(ctx, child)
 	require.NoError(t, err)
-	assert.Equal(t, state.StateUpdated, result.NextState)
+	assert.Equal(t, constate.StateUpdated, result.NextState)
 
 	// Verify version dispatch selects the correct handler
 	versionHandler, err := handler.getHandlerForResource(ctx, child)

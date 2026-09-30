@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	pkgCtrlState  = "github.com/crd2go/constate"
+	pkgCtrlState    = "github.com/crd2go/constate"
 	pkgCRAPIHandler = "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/handler"
 )
 
@@ -37,7 +37,6 @@ func generateControllerFile(dir, resourceName, typesPath string, parsedConfig *c
 	f := jen.NewFile(atlasResourceName)
 	boilerplate.AddLicenseHeader(f)
 
-	f.ImportAlias(pkgCtrlState, "ctrlstate")
 	f.ImportAlias(apiPkg, "akov2generated")
 
 	f.Const().Defs(

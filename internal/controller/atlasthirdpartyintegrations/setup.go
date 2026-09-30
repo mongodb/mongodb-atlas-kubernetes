@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -52,7 +52,7 @@ import (
 type serviceBuilderFunc func(*atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService
 
 type AtlasThirdPartyIntegrationHandler struct {
-	ctrlstate.StateHandler[akov2.AtlasThirdPartyIntegration]
+	constate.StateHandler[akov2.AtlasThirdPartyIntegration]
 	reconciler.AtlasReconciler
 	deletionProtection bool
 	serviceBuilder     serviceBuilderFunc
@@ -65,7 +65,7 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
 	reapplySupport bool,
-) *ctrlstate.Reconciler[akov2.AtlasThirdPartyIntegration] {
+) *constate.Reconciler[akov2.AtlasThirdPartyIntegration] {
 	intHandler := &AtlasThirdPartyIntegrationHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -76,10 +76,10 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 		deletionProtection: deletionProtection,
 		serviceBuilder:     thirdpartyintegration.NewThirdPartyIntegrationServiceFromClientSet,
 	}
-	return ctrlstate.NewStateReconciler(
+	return constate.NewStateReconciler(
 		intHandler,
-		ctrlstate.WithCluster[akov2.AtlasThirdPartyIntegration](c),
-		ctrlstate.WithReapplySupport[akov2.AtlasThirdPartyIntegration](reapplySupport),
+		constate.WithCluster[akov2.AtlasThirdPartyIntegration](c),
+		constate.WithReapplySupport[akov2.AtlasThirdPartyIntegration](reapplySupport),
 	)
 }
 

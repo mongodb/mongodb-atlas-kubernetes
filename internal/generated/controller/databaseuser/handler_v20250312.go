@@ -20,8 +20,7 @@ import (
 	"strings"
 	"time"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -33,7 +32,6 @@ import (
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	atlasapi "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 type Handlerv20250312 struct {
@@ -53,50 +51,50 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 }
 
 // HandleInitial handles the initial state for version v20250312
-func (h *Handlerv20250312) HandleInitial(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleInitial(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve DatabaseUser dependencies: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to resolve DatabaseUser dependencies: %w", err))
 	}
 
 	atlasDBUser := &v20250312sdk.CloudDatabaseUser{}
 	if err := h.translator.ToAPI(atlasDBUser, databaseuser, deps...); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate DatabaseUser to Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate DatabaseUser to Atlas: %w", err))
 	}
 
 	response, _, err := h.atlasClient.DatabaseUsersAPI.CreateDatabaseUser(ctx, atlasDBUser.GroupId, atlasDBUser).Execute()
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to create DatabaseUser: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create DatabaseUser: %w", err))
 	}
 
 	databaseuserCopy := databaseuser.DeepCopy()
 	if _, err := h.translator.FromAPI(databaseuserCopy, response); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
 	}
 
-	if err := ctrlstate.NewPatcher(databaseuserCopy).UpdateStatus().UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to patch DatabaseUser status: %w", err))
+	if err := constate.NewPatcher(databaseuserCopy).UpdateStatus().UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to patch DatabaseUser status: %w", err))
 	}
 
-	return result.NextState(state.StateCreating, "DatabaseUser created. Waiting for clusters to apply changes.")
+	return constate.NextState(constate.StateCreating, "DatabaseUser created. Waiting for clusters to apply changes.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312.
 // The annotation mongodb.com/external-id must be set to "groupId:databaseName:username".
-func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
-	externalID, err := ctrlstate.GetExternalID(databaseuser)
+func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
+	externalID, err := constate.GetExternalID(databaseuser)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 
 	databaseName, username, err := parseExternalID(externalID)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 
 	deps, err := h.getDependencies(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetDatabaseUserApiParams{
@@ -105,135 +103,135 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, databaseus
 	}
 	err = h.translator.ToAPI(params, databaseuser, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	response, _, err := h.atlasClient.DatabaseUsersAPI.GetDatabaseUserWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get DatabaseUser %q: %w", externalID, err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to get DatabaseUser %q: %w", externalID, err))
 	}
 
 	databaseuserCopy := databaseuser.DeepCopy()
 	if _, err := h.translator.FromAPI(databaseuserCopy, response); err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
 	}
 
-	if err := ctrlstate.NewPatcher(databaseuserCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch DatabaseUser status: %w", err))
+	if err := constate.NewPatcher(databaseuserCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to patch DatabaseUser status: %w", err))
 	}
 
-	return result.NextState(state.StateImported, "DatabaseUser imported.")
+	return constate.NextState(constate.StateImported, "DatabaseUser imported.")
 }
 
 // HandleImported handles the imported state for version v20250312
-func (h *Handlerv20250312) HandleImported(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleImported(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	if expired, err := checkExpiry(databaseuser); err != nil {
-		return result.Error(state.StateImported, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
+		return constate.ErrorState(constate.StateImported, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
 	} else if expired {
-		return result.NextState(state.StateDeletionRequested, "DatabaseUser has expired.")
+		return constate.NextState(constate.StateDeletionRequested, "DatabaseUser has expired.")
 	}
 
-	return h.handleUpserted(ctx, state.StateImported, databaseuser)
+	return h.handleUpserted(ctx, constate.StateImported, databaseuser)
 }
 
 // HandleCreating polls cluster readiness after a DatabaseUser has been created in Atlas.
-func (h *Handlerv20250312) HandleCreating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	groupID, _, _, err := h.resolveIdentity(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateCreating, err)
+		return constate.ErrorState(constate.StateCreating, err)
 	}
 
 	ready, err := h.deploymentsReady(ctx, groupID, clusterScopes(databaseuser))
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to check cluster readiness: %w", err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to check cluster readiness: %w", err))
 	}
 
 	if !ready {
-		return result.NextState(state.StateCreating, "Waiting for clusters to apply DatabaseUser changes.")
+		return constate.NextState(constate.StateCreating, "Waiting for clusters to apply DatabaseUser changes.")
 	}
 
-	return result.NextState(state.StateCreated, "DatabaseUser is ready.")
+	return constate.NextState(constate.StateCreated, "DatabaseUser is ready.")
 }
 
 // HandleCreated handles the created state for version v20250312
-func (h *Handlerv20250312) HandleCreated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	if expired, err := checkExpiry(databaseuser); err != nil {
-		return result.Error(state.StateCreated, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
+		return constate.ErrorState(constate.StateCreated, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
 	} else if expired {
-		return result.NextState(state.StateDeletionRequested, "DatabaseUser has expired.")
+		return constate.NextState(constate.StateDeletionRequested, "DatabaseUser has expired.")
 	}
 
-	return h.handleUpserted(ctx, state.StateCreated, databaseuser)
+	return h.handleUpserted(ctx, constate.StateCreated, databaseuser)
 }
 
 // HandleUpdating polls cluster readiness after a DatabaseUser has been updated in Atlas.
-func (h *Handlerv20250312) HandleUpdating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdating(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	groupID, _, _, err := h.resolveIdentity(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateUpdating, err)
+		return constate.ErrorState(constate.StateUpdating, err)
 	}
 
 	ready, err := h.deploymentsReady(ctx, groupID, clusterScopes(databaseuser))
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to check cluster readiness: %w", err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to check cluster readiness: %w", err))
 	}
 
 	if !ready {
-		return result.NextState(state.StateUpdating, "Waiting for clusters to apply DatabaseUser changes.")
+		return constate.NextState(constate.StateUpdating, "Waiting for clusters to apply DatabaseUser changes.")
 	}
 
-	return result.NextState(state.StateUpdated, "DatabaseUser is up to date.")
+	return constate.NextState(constate.StateUpdated, "DatabaseUser is up to date.")
 }
 
 // HandleUpdated handles the updated state for version v20250312
-func (h *Handlerv20250312) HandleUpdated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdated(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	if expired, err := checkExpiry(databaseuser); err != nil {
-		return result.Error(state.StateUpdated, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
+		return constate.ErrorState(constate.StateUpdated, fmt.Errorf("failed to check DatabaseUser expiry: %w", err))
 	} else if expired {
-		return result.NextState(state.StateDeletionRequested, "DatabaseUser has expired.")
+		return constate.NextState(constate.StateDeletionRequested, "DatabaseUser has expired.")
 	}
 
-	return h.handleUpserted(ctx, state.StateUpdated, databaseuser)
+	return h.handleUpserted(ctx, constate.StateUpdated, databaseuser)
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
-func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(databaseuser, h.deletionProtection) {
-		return result.NextState(state.StateDeleted, "DatabaseUser skipped deletion due to retention policy.")
+		return constate.NextState(constate.StateDeleted, "DatabaseUser skipped deletion due to retention policy.")
 	}
 
 	groupID, databaseName, username, err := h.identityFromStatusOrDeps(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, err)
+		return constate.ErrorState(constate.StateDeletionRequested, err)
 	}
 
 	_, err = h.atlasClient.DatabaseUsersAPI.DeleteDatabaseUser(ctx, groupID, databaseName, username).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasapi.UserNotfound) || v20250312sdk.IsErrorCode(err, atlasapi.UsernameNotFound) {
-		return result.NextState(state.StateDeleted, "DatabaseUser deleted.")
+		return constate.NextState(constate.StateDeleted, "DatabaseUser deleted.")
 	}
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete DatabaseUser: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete DatabaseUser: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Deleting DatabaseUser.")
+	return constate.NextState(constate.StateDeleting, "Deleting DatabaseUser.")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
-func (h *Handlerv20250312) HandleDeleting(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeleting(ctx context.Context, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	groupID, databaseName, username, err := h.identityFromStatusOrDeps(ctx, databaseuser)
 	if err != nil {
-		return result.Error(state.StateDeleting, err)
+		return constate.ErrorState(constate.StateDeleting, err)
 	}
 
 	_, _, err = h.atlasClient.DatabaseUsersAPI.GetDatabaseUser(ctx, groupID, databaseName, username).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, atlasapi.UserNotfound) || v20250312sdk.IsErrorCode(err, atlasapi.UsernameNotFound):
-		return result.NextState(state.StateDeleted, "DatabaseUser deleted.")
+		return constate.NextState(constate.StateDeleted, "DatabaseUser deleted.")
 	case err != nil:
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to check DatabaseUser deletion: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to check DatabaseUser deletion: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Deleting DatabaseUser.")
+	return constate.NextState(constate.StateDeleting, "Deleting DatabaseUser.")
 }
 
 // For returns the resource and predicates for the controller
@@ -247,25 +245,25 @@ func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec r
 	return nil
 }
 
-func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, databaseuser *akov2generated.DatabaseUser) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState constate.ResourceState, databaseuser *akov2generated.DatabaseUser) (constate.Result, error) {
 	// Fetch dependencies first so ShouldUpdate can detect Secret.ResourceVersion changes (password rotation).
 	deps, err := h.getDependencies(ctx, databaseuser)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to resolve DatabaseUser dependencies: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to resolve DatabaseUser dependencies: %w", err))
 	}
 
-	update, err := ctrlstate.ShouldUpdate(databaseuser, deps...)
+	update, err := constate.ShouldUpdate(databaseuser, deps...)
 	if err != nil {
-		return result.Error(currentState, reconcile.TerminalError(err))
+		return constate.ErrorState(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
-		return result.NextState(currentState, "DatabaseUser is up to date. No update required.")
+		return constate.NextState(currentState, "DatabaseUser is up to date. No update required.")
 	}
 
 	atlasDBUser := &v20250312sdk.CloudDatabaseUser{}
 	if err := h.translator.ToAPI(atlasDBUser, databaseuser, deps...); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate DatabaseUser to Atlas: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate DatabaseUser to Atlas: %w", err))
 	}
 
 	params := &v20250312sdk.UpdateDatabaseUserApiParams{
@@ -277,20 +275,20 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 
 	response, _, err := h.atlasClient.DatabaseUsersAPI.UpdateDatabaseUserWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to update DatabaseUser: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to update DatabaseUser: %w", err))
 	}
 
 	databaseuserCopy := databaseuser.DeepCopy()
 	if _, err := h.translator.FromAPI(databaseuserCopy, response); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate DatabaseUser from Atlas: %w", err))
 	}
 
 	// Pass deps to UpdateStateTracker so Secret.ResourceVersion is included in the hash.
-	if err := ctrlstate.NewPatcher(databaseuserCopy).UpdateStateTracker(deps...).UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to patch DatabaseUser: %w", err))
+	if err := constate.NewPatcher(databaseuserCopy).UpdateStateTracker(deps...).UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to patch DatabaseUser: %w", err))
 	}
 
-	return result.NextState(state.StateUpdating, "DatabaseUser updated. Waiting for clusters to apply changes.")
+	return constate.NextState(constate.StateUpdating, "DatabaseUser updated. Waiting for clusters to apply changes.")
 }
 
 // deploymentsReady returns true when all relevant clusters have applied the latest DatabaseUser changes.

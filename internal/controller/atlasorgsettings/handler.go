@@ -18,14 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 type reconcileRequest struct {
@@ -57,16 +55,16 @@ func (h *AtlasOrgSettingsHandler) newReconcileRequest(ctx context.Context, aos *
 	}, nil
 }
 
-func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, nextState state.ResourceState,
-	aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
+func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, nextState constate.ResourceState,
+	aos *akov2.AtlasOrgSettings) (constate.Result, error) {
 	reconcileCtx, err := h.newReconcileRequest(ctx, aos)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to create reconcile context: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to create reconcile context: %w", err))
 	}
 
 	currentAtlasSettings, err := reconcileCtx.svc.Get(ctx, aos.Spec.OrgID)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to get current org settings from Atlas: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to get current org settings from Atlas: %w", err))
 	}
 
 	desiredSettings := atlasorgsettings.NewFromAKO(aos.Spec)
@@ -74,30 +72,30 @@ func (h *AtlasOrgSettingsHandler) upsert(ctx context.Context, currentState, next
 	if !desiredSettings.Equal(currentAtlasSettings) {
 		resp, apiErr := reconcileCtx.svc.Update(ctx, aos.Spec.OrgID, desiredSettings)
 		if apiErr != nil {
-			return result.Error(currentState, apiErr)
+			return constate.ErrorState(currentState, apiErr)
 		}
 		if resp == nil {
-			return result.Error(currentState, fmt.Errorf("atlas returned OrgSettings which is nil after update"))
+			return constate.ErrorState(currentState, fmt.Errorf("atlas returned OrgSettings which is nil after update"))
 		}
 
-		return result.NextState(nextState, "Updated")
+		return constate.NextState(nextState, "Updated")
 	}
 
-	return result.NextState(nextState, "Ready")
+	return constate.NextState(nextState, "Ready")
 }
 
-func (h *AtlasOrgSettingsHandler) unmanage(orgID string) (ctrlstate.Result, error) {
-	return result.NextState(state.StateDeleted, fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", orgID))
+func (h *AtlasOrgSettingsHandler) unmanage(orgID string) (constate.Result, error) {
+	return constate.NextState(constate.StateDeleted, fmt.Sprintf("Unmanaged AtlasOrgSettings for orgID %s.", orgID))
 }
 
-func (h *AtlasOrgSettingsHandler) HandleInitial(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-	return result.NextState(state.StateUpdated, "Updated AtlasOrgSettings.")
+func (h *AtlasOrgSettingsHandler) HandleInitial(ctx context.Context, aos *akov2.AtlasOrgSettings) (constate.Result, error) {
+	return constate.NextState(constate.StateUpdated, "Updated AtlasOrgSettings.")
 }
 
-func (h *AtlasOrgSettingsHandler) HandleUpdated(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
-	return h.upsert(ctx, state.StateUpdated, state.StateUpdated, aos)
+func (h *AtlasOrgSettingsHandler) HandleUpdated(ctx context.Context, aos *akov2.AtlasOrgSettings) (constate.Result, error) {
+	return h.upsert(ctx, constate.StateUpdated, constate.StateUpdated, aos)
 }
 
-func (h *AtlasOrgSettingsHandler) HandleDeletionRequested(ctx context.Context, aos *akov2.AtlasOrgSettings) (ctrlstate.Result, error) {
+func (h *AtlasOrgSettingsHandler) HandleDeletionRequested(ctx context.Context, aos *akov2.AtlasOrgSettings) (constate.Result, error) {
 	return h.unmanage(aos.Spec.OrgID)
 }

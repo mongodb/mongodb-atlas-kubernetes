@@ -17,7 +17,7 @@ package controller
 import (
 	"testing"
 
-	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,7 +30,7 @@ import (
 func TestCtrlStateReconciler_SetupWithManager_NoGomock(t *testing.T) {
 	fakeMgr := &fakeManager{}
 	mock := mockStateReconciler{}
-	fakeReconciler := ctrlstate.NewStateReconciler(&mock)
+	fakeReconciler := constate.NewStateReconciler(&mock)
 	skipNameValidation := true
 
 	r := newCtrlStateReconciler(fakeReconciler, 0)
@@ -48,7 +48,7 @@ type fakeManager struct {
 }
 
 type mockStateReconciler struct {
-	ctrlstate.StateHandler[mockStateReconciler]
+	constate.StateHandler[mockStateReconciler]
 	ReceivedMgr  ctrl.Manager
 	ReceivedOpts controller.TypedOptions[reconcile.Request]
 }

@@ -15,7 +15,7 @@
 package atlasorgsettings
 
 import (
-	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -47,7 +47,7 @@ import (
 type serviceBuilderFunc func(*atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService
 
 type AtlasOrgSettingsHandler struct {
-	ctrlstate.StateHandler[akov2.AtlasOrgSettings]
+	constate.StateHandler[akov2.AtlasOrgSettings]
 	reconciler.AtlasReconciler
 	serviceBuilder serviceBuilderFunc
 }
@@ -58,7 +58,7 @@ func NewAtlasOrgSettingsReconciler(
 	logger *zap.Logger,
 	globalSecretRef client.ObjectKey,
 	reapplySupport bool,
-) *ctrlstate.Reconciler[akov2.AtlasOrgSettings] {
+) *constate.Reconciler[akov2.AtlasOrgSettings] {
 	orgSettingsHandler := &AtlasOrgSettingsHandler{
 		AtlasReconciler: reconciler.AtlasReconciler{
 			Client:          c.GetClient(),
@@ -70,10 +70,10 @@ func NewAtlasOrgSettingsReconciler(
 			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312.OrganizationsAPI)
 		},
 	}
-	return ctrlstate.NewStateReconciler(
+	return constate.NewStateReconciler(
 		orgSettingsHandler,
-		ctrlstate.WithCluster[akov2.AtlasOrgSettings](c),
-		ctrlstate.WithReapplySupport[akov2.AtlasOrgSettings](reapplySupport),
+		constate.WithCluster[akov2.AtlasOrgSettings](c),
+		constate.WithReapplySupport[akov2.AtlasOrgSettings](reapplySupport),
 	)
 }
 

@@ -18,8 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -30,7 +29,6 @@ import (
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 // Handlerv20250312 is the handler for the v20250312 version of the group resource
@@ -52,116 +50,119 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 }
 
 // HandleInitial handles the initial state for version v20250312
-func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleInitial(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
 	atlasGroup := &v20250312sdk.Group{}
 	err := h.translator.ToAPI(atlasGroup, group)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate group to Atlas: %w", err))
 	}
 
 	params := &v20250312sdk.CreateGroupApiParams{Group: atlasGroup, ProjectOwnerId: group.Spec.V20250312.ProjectOwnerId}
 	response, _, err := h.atlasClient.ProjectsAPI.CreateGroupWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to create group: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create group: %w", err))
 	}
 
 	groupCopy := group.DeepCopy()
 	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate group from Atlas: %w", err))
 	}
 
-	if err := ctrlstate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to patch group status: %w", err))
+	if err := constate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to patch group status: %w", err))
 	}
 
-	return result.NextState(state.StateCreated, "Group created.")
+	return constate.NextState(constate.StateCreated, "Group created.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312
-func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	id, err := ctrlstate.GetExternalID(group)
+func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
+	id, err := constate.GetExternalID(group)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 
 	response, _, err := h.atlasClient.ProjectsAPI.GetGroup(ctx, id).Execute()
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to get Group with id %s: %w", id, err))
 	}
 
 	groupCopy := group.DeepCopy()
 	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate Group from Atlas: %w", err))
 	}
 
-	if err := ctrlstate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Group status: %w", err))
+	if err := constate.NewPatcher(groupCopy).UpdateStatus().UpdateStateTracker().Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to patch Group status: %w", err))
 	}
 
-	return result.NextState(state.StateImported, "Group imported.")
+	return constate.NextState(constate.StateImported, "Group imported.")
 }
 
-func (h *Handlerv20250312) HandleImported(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateImported, group)
+func (h *Handlerv20250312) HandleImported(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateImported, group)
 }
 
-func (h *Handlerv20250312) HandleCreating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreating(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
 	panic("unsupported state")
 }
 
 // HandleCreated handles the created state for version v20250312
-func (h *Handlerv20250312) HandleCreated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateCreated, group)
+func (h *Handlerv20250312) HandleCreated(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateCreated, group)
 }
 
 // HandleUpdating handles the updating state for version v20250312
-func (h *Handlerv20250312) HandleUpdating(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdating(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
 	panic("unsupported state")
 }
 
 // HandleUpdated handles the updated state for version v20250312
-func (h *Handlerv20250312) HandleUpdated(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateUpdated, group)
+func (h *Handlerv20250312) HandleUpdated(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateUpdated, group)
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
-func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
-	dependents := h.getDependents(ctx, group)
+func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
+	dependents, err := h.getDependents(ctx, group)
+	if err != nil {
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to list group dependents: %w", err))
+	}
 	if len(dependents) > 0 {
-		return result.NextState(state.StateDeletionRequested, fmt.Sprintf("failed to delete group because %v resources depend on it.", len(dependents)))
+		return constate.NextState(constate.StateDeletionRequested, fmt.Sprintf("failed to delete group because %v resources depend on it.", len(dependents)))
 	}
 
 	if customresource.IsResourcePolicyKeepOrDefault(group, h.deletionProtection) {
-		return result.NextState(state.StateDeleted, "Group deleted.")
+		return constate.NextState(constate.StateDeleted, "Group deleted.")
 	}
 
 	if group.Status.V20250312 == nil || group.Status.V20250312.Id == nil {
-		return result.NextState(state.StateDeleted, "Group deleted.")
+		return constate.NextState(constate.StateDeleted, "Group deleted.")
 	}
 
-	_, err := h.atlasClient.ProjectsAPI.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
+	_, err = h.atlasClient.ProjectsAPI.DeleteGroup(ctx, *group.Status.V20250312.Id).Execute()
 	if v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND") {
-		return result.NextState(state.StateDeleted, "Group deleted.")
+		return constate.NextState(constate.StateDeleted, "Group deleted.")
 	}
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Deleting group.")
+	return constate.NextState(constate.StateDeleting, "Deleting group.")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
-func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeleting(ctx context.Context, group *akov2generated.Group) (constate.Result, error) {
 	_, _, err := h.atlasClient.ProjectsAPI.GetGroup(ctx, *group.Status.V20250312.Id).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "GROUP_NOT_FOUND"):
-		return result.NextState(state.StateDeleted, "Deleted")
+		return constate.NextState(constate.StateDeleted, "Deleted")
 	case err != nil:
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete group: %w", err))
 	}
-	return result.NextState(state.StateDeleting, "Deleting Group.")
+	return constate.NextState(constate.StateDeleting, "Deleting Group.")
 }
 
 // For returns the resource and predicates for the controller
@@ -175,20 +176,20 @@ func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec r
 	return nil
 }
 
-func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, group *akov2generated.Group) (ctrlstate.Result, error) {
-	update, err := ctrlstate.ShouldUpdate(group)
+func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState constate.ResourceState, group *akov2generated.Group) (constate.Result, error) {
+	update, err := constate.ShouldUpdate(group)
 	if err != nil {
-		return result.Error(currentState, reconcile.TerminalError(err))
+		return constate.ErrorState(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
-		return result.NextState(currentState, "Group is up to date. No update required.")
+		return constate.NextState(currentState, "Group is up to date. No update required.")
 	}
 
 	atlasGroupUpdate := &v20250312sdk.GroupUpdate{}
 	err = h.translator.ToAPI(atlasGroupUpdate, group)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	params := &v20250312sdk.UpdateGroupApiParams{
@@ -198,18 +199,18 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 
 	response, _, err := h.atlasClient.ProjectsAPI.UpdateGroupWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	groupCopy := group.DeepCopy()
 	_, err = h.translator.FromAPI(groupCopy, response)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
-	if err := ctrlstate.NewPatcher(groupCopy).UpdateStateTracker().UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to patch group: %w", err))
+	if err := constate.NewPatcher(groupCopy).UpdateStateTracker().UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to patch group: %w", err))
 	}
 
-	return result.NextState(state.StateUpdated, "Group is updated.")
+	return constate.NextState(constate.StateUpdated, "Group is updated.")
 }

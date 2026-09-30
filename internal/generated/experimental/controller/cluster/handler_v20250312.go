@@ -19,8 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -31,7 +30,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 const (
@@ -60,10 +58,10 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 }
 
 // HandleInitial handles the initial state for version v20250312
-func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	body := &v20250312sdk.ClusterDescription20240805{}
@@ -73,37 +71,37 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, cluster *akov2gene
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	err = h.translator.ToAPI(body, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
 	}
 
 	response, _, err := h.atlasClient.ClustersAPI.CreateClusterWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to create cluster: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create cluster: %w", err))
 	}
 
 	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return constate.ErrorState(constate.StateInitial, err)
 	}
 
-	return result.NextState(state.StateCreating, "Cluster is being created.")
+	return constate.NextState(constate.StateCreating, "Cluster is being created.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312
-func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	id, ok := cluster.GetAnnotations()["mongodb.com/external-id"]
 	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
+		return constate.ErrorState(constate.StateImportRequested, errors.New("missing annotation mongodb.com/external-id"))
 	}
 
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
@@ -112,32 +110,32 @@ func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, cluster *a
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	response, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get Cluster with id %s: %w", id, err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to get Cluster with id %s: %w", id, err))
 	}
 
 	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to patch Cluster status: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to patch Cluster status: %w", err))
 	}
 
-	return result.NextState(state.StateImported, "Cluster is being imported.")
+	return constate.NextState(constate.StateImported, "Cluster is being imported.")
 }
 
 // HandleImported handles the imported state for version v20250312
-func (h *Handlerv20250312) HandleImported(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateImported, cluster)
+func (h *Handlerv20250312) HandleImported(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateImported, cluster)
 }
 
 // HandleCreating handles the creating state for version v20250312
-func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
@@ -146,27 +144,27 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, cluster *akov2gen
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateCreating, state.StateCreated, deps...)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, constate.StateCreating, constate.StateCreated, deps...)
 }
 
 // HandleCreated handles the created state for version v20250312
-func (h *Handlerv20250312) HandleCreated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateCreated, cluster)
+func (h *Handlerv20250312) HandleCreated(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateCreated, cluster)
 }
 
 // HandleUpdating handles the updating state for version v20250312
-func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
@@ -175,35 +173,35 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, cluster *akov2gen
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to get Cluster with name %s: %w", params.ClusterName, err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateUpdating, state.StateUpdated, deps...)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, constate.StateUpdating, constate.StateUpdated, deps...)
 }
 
 // HandleUpdated handles the updated state for version v20250312
-func (h *Handlerv20250312) HandleUpdated(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
-	return h.handleUpserted(ctx, state.StateUpdated, cluster)
+func (h *Handlerv20250312) HandleUpdated(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
+	return h.handleUpserted(ctx, constate.StateUpdated, cluster)
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
-func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(cluster, h.deletionProtection) {
-		return result.NextState(state.StateDeleted, "Cluster deleted.")
+		return constate.NextState(constate.StateDeleted, "Cluster deleted.")
 	}
 
 	if cluster.Status.V20250312 == nil || cluster.Status.V20250312.Id == nil {
-		return result.NextState(state.StateDeleted, "Cluster deleted.")
+		return constate.NextState(constate.StateDeleted, "Cluster deleted.")
 	}
 
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.DeleteClusterApiParams{
@@ -211,25 +209,25 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster 
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	_, err = h.atlasClient.ClustersAPI.DeleteClusterWithParams(ctx, params).Execute()
 	if v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
-		return result.NextState(state.StateDeleted, "Cluster deleted.")
+		return constate.NextState(constate.StateDeleted, "Cluster deleted.")
 	}
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete Cluster: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete Cluster: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Deleting Cluster.")
+	return constate.NextState(constate.StateDeleting, "Deleting Cluster.")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
-func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetClusterApiParams{
@@ -238,33 +236,33 @@ func (h *Handlerv20250312) HandleDeleting(ctx context.Context, cluster *akov2gen
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
-		return result.NextState(state.StateDeleted, "Deleted")
+		return constate.NextState(constate.StateDeleted, "Deleted")
 	case err != nil:
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete Cluster: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete Cluster: %w", err))
 	}
 
-	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, state.StateDeleting, state.StateDeleted, deps...)
+	return h.handleAtlasClusterState(ctx, cluster, atlasCluster, constate.StateDeleting, constate.StateDeleted, deps...)
 }
 
-func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState state.ResourceState, cluster *akov2generated.Cluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState constate.ResourceState, cluster *akov2generated.Cluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
 	}
 
-	update, err := ctrlstate.ShouldUpdate(cluster, deps...)
+	update, err := constate.ShouldUpdate(cluster, deps...)
 	if err != nil {
-		return result.Error(currentState, reconcile.TerminalError(err))
+		return constate.ErrorState(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
-		return result.NextState(currentState, "Cluster is up to date. No update required.")
+		return constate.NextState(currentState, "Cluster is up to date. No update required.")
 	}
 
 	body := &v20250312sdk.ClusterDescription20240805{}
@@ -275,29 +273,29 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState stat
 	}
 	err = h.translator.ToAPI(params, cluster, deps...)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err))
 	}
 
 	err = h.translator.ToAPI(body, cluster, deps...)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate cluster API body to Atlas: %w", err))
 	}
 
 	response, _, err := h.atlasClient.ClustersAPI.UpdateClusterWithParams(ctx, params).Execute()
 	if err != nil {
 		if v20250312sdk.IsErrorCode(err, SharedImmutableError) {
-			return result.NextState(currentState, "Shared Cluster is immutable. No update performed.")
+			return constate.NextState(currentState, "Shared Cluster is immutable. No update performed.")
 		}
 
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	err = h.patchStatus(ctx, cluster, response, deps...)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
-	return result.NextState(state.StateUpdating, "Cluster is being updated.")
+	return constate.NextState(constate.StateUpdating, "Cluster is being updated.")
 }
 
 // For returns the resource and predicates for the controller
@@ -318,26 +316,26 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, cluster *akov2genera
 		return fmt.Errorf("failed to translate Cluster from Atlas: %w", err)
 	}
 
-	return ctrlstate.NewPatcher(clusterCopy).
+	return constate.NewPatcher(clusterCopy).
 		UpdateStateTracker(deps...).
 		UpdateStatus().
 		Patch(ctx, h.kubeClient)
 }
 
-func (h *Handlerv20250312) handleAtlasClusterState(ctx context.Context, cluster *akov2generated.Cluster, atlasCluster *v20250312sdk.ClusterDescription20240805, currentState, nextState state.ResourceState, deps ...client.Object) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleAtlasClusterState(ctx context.Context, cluster *akov2generated.Cluster, atlasCluster *v20250312sdk.ClusterDescription20240805, currentState, nextState constate.ResourceState, deps ...client.Object) (constate.Result, error) {
 	err := h.patchStatus(ctx, cluster, atlasCluster, deps...)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	switch atlasCluster.GetStateName() {
 	case StateCreating:
-		return result.NextState(state.StateCreating, "Cluster is being created.")
+		return constate.NextState(constate.StateCreating, "Cluster is being created.")
 	case StateUpdating, StateRepairing:
-		return result.NextState(state.StateUpdating, "Cluster is being updated.")
+		return constate.NextState(constate.StateUpdating, "Cluster is being updated.")
 	case StateDeleting:
-		return result.NextState(state.StateDeleting, "Cluster is being deleted.")
+		return constate.NextState(constate.StateDeleting, "Cluster is being deleted.")
 	}
 
-	return result.NextState(nextState, "Cluster is ready.")
+	return constate.NextState(nextState, "Cluster is ready.")
 }
