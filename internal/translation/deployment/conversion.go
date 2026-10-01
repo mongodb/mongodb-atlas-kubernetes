@@ -342,6 +342,12 @@ func normalizeClusterDeployment(cluster *Cluster) {
 		cluster.ClusterType = "REPLICASET"
 	}
 
+	if isInfinite {
+		// Atlas sizes the volume itself and reports a value the operator can neither send
+		// nor influence, so it is dropped on both sides rather than compared.
+		cluster.DiskSizeGB = nil
+	}
+
 	cluster.Paused = pointer.GetOrPointerToDefault(cluster.Paused, false)
 	if cluster.VersionReleaseSystem == "" {
 		// Atlas runs Atlas Infinite on its internal DISAGGREGATED release system but both
@@ -478,10 +484,19 @@ func normalizeRegionConfigs(regionConfigs []*akov2.AdvancedRegionConfig, isTenan
 		}
 
 		if diskUnsetOrDisabled {
-			// Atlas manages storage for an Atlas Infinite cluster and keeps disk auto scaling
-			// permanently on, so an unset field defaults to enabled there.
 			regionConfig.AutoScaling.DiskGB = &akov2.DiskGB{
-				Enabled: new(isInfinite),
+				Enabled: new(false),
+			}
+		}
+
+		if isInfinite {
+			// Disk auto scaling is Atlas' business on an Atlas Infinite cluster: it rejects
+			// the field on input yet reports a value back, and clusters from the private
+			// preview may even report it disabled. Clearing it on both sides is what keeps
+			// the comparison from demanding a PATCH the operator is not allowed to send.
+			regionConfig.AutoScaling.DiskGB = nil
+			if regionConfig.AnalyticsAutoScaling != nil {
+				regionConfig.AnalyticsAutoScaling.DiskGB = nil
 			}
 		}
 	}
@@ -636,7 +651,7 @@ func clusterCreateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB, cluster.DatabaseEdition == DatabaseEditionInfinite),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtr(cluster.TerminationProtectionEnabled),
@@ -663,7 +678,7 @@ func clusterUpdateToAtlas(cluster *Cluster) *admin.ClusterDescription20240805 {
 		Labels:                       labelsToAtlas(cluster.Labels),
 		Paused:                       cluster.Paused,
 		PitEnabled:                   cluster.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB),
+		ReplicationSpecs:             replicationSpecToAtlas(cluster.ReplicationSpecs, cluster.ClusterType, cluster.DiskSizeGB, cluster.DatabaseEdition == DatabaseEditionInfinite),
 		RootCertType:                 pointer.MakePtrOrNil(cluster.RootCertType),
 		Tags:                         tag.ToAtlas(cluster.Tags),
 		TerminationProtectionEnabled: pointer.MakePtr(cluster.TerminationProtectionEnabled),
@@ -886,109 +901,18 @@ func labelsToAtlas(labels []common.LabelSpec) *[]admin.ComponentLabel {
 	return &cLabels
 }
 
-func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, clusterType string, diskSize *int) *[]admin.ReplicationSpec20240805 {
+// isInfinite suppresses every storage related field from the request body. Atlas
+// manages storage for an Atlas Infinite cluster and rejects a request that carries
+// any of them, including the values it reports back itself, so they must be omitted
+// rather than echoed.
+func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, clusterType string, diskSize *int, isInfinite bool) *[]admin.ReplicationSpec20240805 {
 	if len(replicationSpecs) == 0 {
 		return nil
 	}
 
 	var diskSizeGB *float64
-	if diskSize != nil {
+	if diskSize != nil && !isInfinite {
 		diskSizeGB = new(float64(*diskSize))
-	}
-
-	hSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.HardwareSpec20240805 {
-		if spec == nil {
-			return nil
-		}
-
-		var diskIOPs *int
-		if spec.DiskIOPS != nil {
-			diskIOPs = new(int(*spec.DiskIOPS))
-		}
-
-		hardwareSpec := &admin.HardwareSpec20240805{
-			InstanceSize: &spec.InstanceSize,
-			NodeCount:    spec.NodeCount,
-			DiskIOPS:     diskIOPs,
-			DiskSizeGB:   diskSizeGB,
-		}
-
-		// Only include EbsVolumeType when:
-		// 1. It's explicitly set (non-empty), OR
-		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
-		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
-		if spec.EbsVolumeType != "" || providerName == "AWS" {
-			hardwareSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
-		}
-
-		return hardwareSpec
-	}
-	dHSpecOrDefault := func(spec *akov2.Specs, providerName string) *admin.DedicatedHardwareSpec20240805 {
-		if spec == nil || *spec.NodeCount == 0 {
-			return nil
-		}
-
-		var diskIOPs *int
-		if spec.DiskIOPS != nil {
-			diskIOPs = new(int(*spec.DiskIOPS))
-		}
-
-		dedicatedSpec := &admin.DedicatedHardwareSpec20240805{
-			InstanceSize: &spec.InstanceSize,
-			NodeCount:    spec.NodeCount,
-			DiskIOPS:     diskIOPs,
-			DiskSizeGB:   diskSizeGB,
-		}
-
-		// Only include EbsVolumeType when:
-		// 1. It's explicitly set (non-empty), OR
-		// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
-		// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
-		if spec.EbsVolumeType != "" || providerName == "AWS" {
-			dedicatedSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
-		}
-
-		return dedicatedSpec
-	}
-	autoScalingOrDefault := func(spec *akov2.AdvancedAutoScalingSpec) *admin.AdvancedAutoScalingSettings {
-		computeExist := spec != nil && spec.Compute != nil
-		diskGBExist := spec != nil && spec.DiskGB != nil
-
-		if !computeExist && !diskGBExist {
-			return &admin.AdvancedAutoScalingSettings{
-				Compute: &admin.AdvancedComputeAutoScaling{
-					Enabled: new(false),
-				},
-				DiskGB: &admin.DiskGBAutoScaling{
-					Enabled: new(false),
-				},
-			}
-		}
-
-		autoscaling := admin.NewAdvancedAutoScalingSettings()
-
-		if computeExist {
-			autoscaling.Compute = &admin.AdvancedComputeAutoScaling{
-				Enabled:          spec.Compute.Enabled,
-				ScaleDownEnabled: spec.Compute.ScaleDownEnabled,
-			}
-
-			if spec.Compute.Enabled != nil && *spec.Compute.Enabled {
-				autoscaling.Compute.MaxInstanceSize = &spec.Compute.MaxInstanceSize
-			}
-
-			if spec.Compute.ScaleDownEnabled != nil && *spec.Compute.ScaleDownEnabled {
-				autoscaling.Compute.MinInstanceSize = &spec.Compute.MinInstanceSize
-			}
-		}
-
-		if diskGBExist {
-			autoscaling.DiskGB = &admin.DiskGBAutoScaling{
-				Enabled: spec.DiskGB.Enabled,
-			}
-		}
-
-		return autoscaling
 	}
 
 	specs := make([]admin.ReplicationSpec20240805, 0, len(replicationSpecs))
@@ -1002,11 +926,11 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 					BackingProviderName:  pointer.MakePtrOrNil(regionConfig.BackingProviderName),
 					RegionName:           pointer.MakePtrOrNil(regionConfig.RegionName),
 					Priority:             regionConfig.Priority,
-					ElectableSpecs:       hSpecOrDefault(regionConfig.ElectableSpecs, regionConfig.ProviderName),
-					ReadOnlySpecs:        dHSpecOrDefault(regionConfig.ReadOnlySpecs, regionConfig.ProviderName),
-					AnalyticsSpecs:       dHSpecOrDefault(regionConfig.AnalyticsSpecs, regionConfig.ProviderName),
-					AutoScaling:          autoScalingOrDefault(regionConfig.AutoScaling),
-					AnalyticsAutoScaling: autoScalingOrDefault(regionConfig.AnalyticsAutoScaling),
+					ElectableSpecs:       hardwareSpecToAtlas(regionConfig.ElectableSpecs, regionConfig.ProviderName, diskSizeGB, isInfinite),
+					ReadOnlySpecs:        dedicatedHardwareSpecToAtlas(regionConfig.ReadOnlySpecs, regionConfig.ProviderName, diskSizeGB, isInfinite),
+					AnalyticsSpecs:       dedicatedHardwareSpecToAtlas(regionConfig.AnalyticsSpecs, regionConfig.ProviderName, diskSizeGB, isInfinite),
+					AutoScaling:          autoScalingToAtlas(regionConfig.AutoScaling, isInfinite),
+					AnalyticsAutoScaling: autoScalingToAtlas(regionConfig.AnalyticsAutoScaling, isInfinite),
 				},
 			)
 		}
@@ -1026,6 +950,113 @@ func replicationSpecToAtlas(replicationSpecs []*akov2.AdvancedReplicationSpec, c
 	}
 
 	return &specs
+}
+
+func hardwareSpecToAtlas(spec *akov2.Specs, providerName string, diskSizeGB *float64, isInfinite bool) *admin.HardwareSpec20240805 {
+	if spec == nil {
+		return nil
+	}
+
+	var diskIOPs *int
+	if spec.DiskIOPS != nil && !isInfinite {
+		diskIOPs = new(int(*spec.DiskIOPS))
+	}
+
+	hardwareSpec := &admin.HardwareSpec20240805{
+		InstanceSize: &spec.InstanceSize,
+		NodeCount:    spec.NodeCount,
+		DiskIOPS:     diskIOPs,
+		DiskSizeGB:   diskSizeGB,
+	}
+
+	// Only include EbsVolumeType when:
+	// 1. It's explicitly set (non-empty), OR
+	// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+	// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+	// Atlas Infinite manages its own volumes and rejects the field outright.
+	if !isInfinite && (spec.EbsVolumeType != "" || providerName == "AWS") {
+		hardwareSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+	}
+
+	return hardwareSpec
+}
+
+func dedicatedHardwareSpecToAtlas(spec *akov2.Specs, providerName string, diskSizeGB *float64, isInfinite bool) *admin.DedicatedHardwareSpec20240805 {
+	if spec == nil || *spec.NodeCount == 0 {
+		return nil
+	}
+
+	var diskIOPs *int
+	if spec.DiskIOPS != nil && !isInfinite {
+		diskIOPs = new(int(*spec.DiskIOPS))
+	}
+
+	dedicatedSpec := &admin.DedicatedHardwareSpec20240805{
+		InstanceSize: &spec.InstanceSize,
+		NodeCount:    spec.NodeCount,
+		DiskIOPS:     diskIOPs,
+		DiskSizeGB:   diskSizeGB,
+	}
+
+	// Only include EbsVolumeType when:
+	// 1. It's explicitly set (non-empty), OR
+	// 2. Provider is AWS (EbsVolumeType is only valid for AWS)
+	// This prevents sending EbsVolumeType="STANDARD" to GCP/Azure clusters, which causes reconcile loops
+	// Atlas Infinite manages its own volumes and rejects the field outright.
+	if !isInfinite && (spec.EbsVolumeType != "" || providerName == "AWS") {
+		dedicatedSpec.EbsVolumeType = pointer.NonZeroOrDefault(spec.EbsVolumeType, "STANDARD")
+	}
+
+	return dedicatedSpec
+}
+
+func autoScalingToAtlas(spec *akov2.AdvancedAutoScalingSpec, isInfinite bool) *admin.AdvancedAutoScalingSettings {
+	computeExist := spec != nil && spec.Compute != nil
+	// Unlike the disk fields above, which Atlas tolerates when they echo the current
+	// value, autoScaling.diskGB is rejected on an Atlas Infinite cluster whenever it is
+	// present at all: Atlas scales the volume itself, so no value is acceptable.
+	diskGBExist := spec != nil && spec.DiskGB != nil && !isInfinite
+
+	if !computeExist && !diskGBExist {
+		// Atlas requires an explicit autoScaling.compute.enabled on every region config
+		// of an Atlas Infinite create request, so the field is always sent.
+		settings := &admin.AdvancedAutoScalingSettings{
+			Compute: &admin.AdvancedComputeAutoScaling{
+				Enabled: new(false),
+			},
+		}
+		if !isInfinite {
+			settings.DiskGB = &admin.DiskGBAutoScaling{
+				Enabled: new(false),
+			}
+		}
+		return settings
+	}
+
+	autoscaling := admin.NewAdvancedAutoScalingSettings()
+
+	if computeExist {
+		autoscaling.Compute = &admin.AdvancedComputeAutoScaling{
+			Enabled:          spec.Compute.Enabled,
+			ScaleDownEnabled: spec.Compute.ScaleDownEnabled,
+		}
+
+		if spec.Compute.Enabled != nil && *spec.Compute.Enabled {
+			autoscaling.Compute.MaxInstanceSize = &spec.Compute.MaxInstanceSize
+		}
+
+		if spec.Compute.ScaleDownEnabled != nil && *spec.Compute.ScaleDownEnabled {
+			autoscaling.Compute.MinInstanceSize = &spec.Compute.MinInstanceSize
+		}
+	}
+
+	if diskGBExist {
+		autoscaling.DiskGB = &admin.DiskGBAutoScaling{
+			Enabled: spec.DiskGB.Enabled,
+		}
+	}
+
+	return autoscaling
 }
 
 // int64PtrToIntPtr converts *int64 to *int while preserving nil-ness.
@@ -1260,7 +1291,7 @@ func flexUpgradeToAtlas(cluster *Cluster) *admin.AtlasTenantClusterUpgradeReques
 		Labels:                       labelsToAtlas(spec.Labels),
 		Paused:                       spec.Paused,
 		PitEnabled:                   spec.PitEnabled,
-		ReplicationSpecs:             replicationSpecToAtlas(spec.ReplicationSpecs, spec.ClusterType, spec.DiskSizeGB),
+		ReplicationSpecs:             replicationSpecToAtlas(spec.ReplicationSpecs, spec.ClusterType, spec.DiskSizeGB, spec.DatabaseEdition == DatabaseEditionInfinite),
 		RootCertType:                 pointer.MakePtrOrNil(spec.RootCertType),
 		Tags:                         tag.ToAtlas(spec.Tags),
 		TerminationProtectionEnabled: pointer.MakePtrOrNil(spec.TerminationProtectionEnabled),

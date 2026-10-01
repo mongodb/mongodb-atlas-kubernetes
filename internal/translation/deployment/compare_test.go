@@ -2907,3 +2907,49 @@ func TestComputeChanges_DatabaseEditionIsSent(t *testing.T) {
 	require.NotNil(t, changes)
 	assert.Equal(t, "INFINITE", changes.DatabaseEdition)
 }
+
+// An Atlas Infinite cluster created during the private preview may report disk auto
+// scaling as disabled, and Atlas rejects the field on input either way. If the
+// comparison took an opinion on it the operator would demand a PATCH it is not
+// allowed to send, and would re-demand it forever.
+func TestComputeChanges_InfiniteIgnoresAtlasManagedDiskAutoScaling(t *testing.T) {
+	akoCluster := func(diskGB *akov2.DiskGB, diskSizeGB *int) *Cluster {
+		cluster := &Cluster{
+			ProjectID: "project-id",
+			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:            "cluster0",
+				ClusterType:     "REPLICASET",
+				DatabaseEdition: "INFINITE",
+				DiskSizeGB:      diskSizeGB,
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName:   "AWS",
+								RegionName:     "US_EAST_1",
+								Priority:       pointer.MakePtr(7),
+								ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2", NodeCount: pointer.MakePtr(3)},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
+									DiskGB:  diskGB,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		normalizeClusterDeployment(cluster)
+		return cluster
+	}
+
+	// The CR takes no position; Atlas reports disk auto scaling off and a managed size.
+	desired := akoCluster(nil, nil)
+	current := akoCluster(&akov2.DiskGB{Enabled: pointer.MakePtr(false)}, pointer.MakePtr(40))
+
+	changes, occurred := ComputeChanges(desired, current)
+
+	assert.False(t, occurred, "Atlas-managed disk settings must not be reported as a change")
+	assert.Nil(t, changes)
+}
