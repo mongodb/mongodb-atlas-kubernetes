@@ -3347,9 +3347,9 @@ Setting this field to "INFINITE" creates an Atlas Infinite cluster, where comput
 from storage. Atlas assigns the edition at creation time and refuses to change it afterwards,
 so the field is immutable. Leave it unset to let Atlas pick the default edition.
 An Atlas Infinite cluster may be a REPLICASET or SHARDED, but must use exactly one region
-and cannot change its topology afterwards. Atlas reports it as CONTINUOUS and manages its
-storage, so versionReleaseSystem, pitEnabled, autoScaling.diskGB, diskSizeGB and diskIOPS
-are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
+and exactly two electable nodes, and cannot change its topology afterwards. Atlas reports
+it as CONTINUOUS and manages its storage, so versionReleaseSystem, pitEnabled,
+autoScaling.diskGB, diskSizeGB and diskIOPS are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
 Additional Backup Retention, and defaults to enabled: backups always run either way.<br/>
           <br/>
             <i>Validations</i>:<li>self == oldSelf: databaseEdition is immutable</li>
