@@ -1093,10 +1093,17 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
-	// Atlas Infinite detaches compute from storage and forces its own values for the
-	// release system, backup, point in time recovery and disk auto scaling. The CR below
-	// leaves all of those out on purpose: the operator has to converge on what Atlas
-	// mandates, otherwise it keeps re-issuing a PATCH that Atlas rejects.
+	// Atlas Infinite detaches compute from storage, so Atlas manages storage itself and
+	// rejects a request that carries any storage field: diskSizeGB, diskIOPS,
+	// ebsVolumeType, diskThroughput, and autoScaling.diskGB whenever it is present at all.
+	// It also forces the release system and point in time recovery. The CR below therefore
+	// sets nothing but the edition, the region and the instance size; everything else has
+	// to be either omitted by the operator or converged on what Atlas mandates. Getting
+	// this wrong fails loudly on create ("ebsVolumeType is not configurable for an Atlas
+	// Infinite cluster") or silently, as a PATCH Atlas refuses on every reconciliation.
+	//
+	// Requires the DISAGGREGATED_STORAGE_ATLAS feature flag on the test organization:
+	// without it Atlas answers ATLAS_INFINITE_FEATURE_NOT_ENABLED.
 	Describe("Create an Atlas Infinite deployment", Label("focus-infinite-deployment", "focus-slow"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name).
@@ -1105,6 +1112,16 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				WithDatabaseEdition("INFINITE").
 				// Atlas Infinite only accepts second generation instance sizes, up to M60.
 				WithInstanceSize("M40_GEN_2")
+
+			By("Leaving every Atlas-managed storage field unset", func() {
+				spec := createdDeployment.Spec.DeploymentSpec
+				Expect(spec.DiskSizeGB).To(BeNil())
+				Expect(spec.ReplicationSpecs).To(HaveLen(1), "Atlas Infinite requires exactly one region")
+				regionConfig := spec.ReplicationSpecs[0].RegionConfigs[0]
+				Expect(regionConfig.ElectableSpecs.DiskIOPS).To(BeNil())
+				Expect(regionConfig.ElectableSpecs.EbsVolumeType).To(BeEmpty())
+				Expect(regionConfig.AutoScaling).To(BeNil())
+			})
 
 			By(fmt.Sprintf("Creating the Atlas Infinite Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
 				performCreate(createdDeployment, 45*time.Minute)
