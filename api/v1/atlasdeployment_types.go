@@ -104,9 +104,9 @@ type AdvancedDeploymentSpec struct {
 	// from storage. Atlas assigns the edition at creation time and refuses to change it afterwards,
 	// so the field is immutable. Leave it unset to let Atlas pick the default edition.
 	// An Atlas Infinite cluster may be a REPLICASET or SHARDED, but must use exactly one region
-	// and cannot change its topology afterwards. Atlas reports it as CONTINUOUS and manages its
-	// storage, so versionReleaseSystem, pitEnabled, autoScaling.diskGB, diskSizeGB and diskIOPS
-	// are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
+	// and exactly two electable nodes, and cannot change its topology afterwards. Atlas reports
+	// it as CONTINUOUS and manages its storage, so versionReleaseSystem, pitEnabled,
+	// autoScaling.diskGB, diskSizeGB and diskIOPS are not configurable on it. On an Atlas Infinite cluster backupEnabled instead selects
 	// Additional Backup Retention, and defaults to enabled: backups always run either way.
 	// +optional
 	// +kubebuilder:validation:Enum=CORE;INFINITE
@@ -813,6 +813,12 @@ func (c *AtlasDeployment) WithAutoscalingDisabled() *AtlasDeployment {
 func (c *AtlasDeployment) WithInstanceSize(name string) *AtlasDeployment {
 	addReplicaIfNotAdded(c)
 	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.InstanceSize = name
+	return c
+}
+
+func (c *AtlasDeployment) WithElectableNodes(count int) *AtlasDeployment {
+	addReplicaIfNotAdded(c)
+	c.Spec.DeploymentSpec.ReplicationSpecs[0].RegionConfigs[0].ElectableSpecs.NodeCount = &count
 	return c
 }
 
