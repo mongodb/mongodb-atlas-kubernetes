@@ -51,6 +51,7 @@ func UnorderedLists(paths ...string) Option {
 }
 
 // Normalize applies fn to both the requested and the returned value at path before comparing.
+// The path can point at a scalar, an object or a whole list; use "$.list[]" to reach list elements.
 func Normalize(path string, fn func(any) any) Option {
 	return func(o *options) { o.normalizer[path] = fn }
 }
@@ -84,6 +85,9 @@ func (o *options) compare(path string, want, got any) []string {
 	if slices.Contains(o.ignored, path) {
 		return nil
 	}
+	if fn, ok := o.normalizer[path]; ok {
+		want, got = fn(want), fn(got)
+	}
 
 	switch w := want.(type) {
 	case map[string]any:
@@ -116,9 +120,6 @@ func (o *options) compare(path string, want, got any) []string {
 		}
 		return diffs
 	default:
-		if fn, ok := o.normalizer[path]; ok {
-			want, got = fn(want), fn(got)
-		}
 		if !reflect.DeepEqual(want, got) {
 			return []string{fmt.Sprintf("%s: want %v, got %v", path, want, got)}
 		}
@@ -127,17 +128,36 @@ func (o *options) compare(path string, want, got any) []string {
 }
 
 // compareUnordered matches every requested element to a distinct returned element.
+// Returned elements may carry extra fields, so one returned element can match several
+// requested ones; augmenting paths find a full pairing whenever one exists.
 func (o *options) compareUnordered(path string, want, got []any) []string {
-	used := make([]bool, len(got))
-	for _, wv := range want {
-		found := false
-		for i, gv := range got {
-			if !used[i] && len(o.compare(path+"[]", wv, gv)) == 0 {
-				used[i], found = true, true
-				break
+	matches := make([][]bool, len(want))
+	for i, wv := range want {
+		matches[i] = make([]bool, len(got))
+		for j, gv := range got {
+			matches[i][j] = len(o.compare(path+"[]", wv, gv)) == 0
+		}
+	}
+	owner := make([]int, len(got))
+	for j := range owner {
+		owner[j] = -1
+	}
+	var assign func(i int, seen []bool) bool
+	assign = func(i int, seen []bool) bool {
+		for j := range got {
+			if !matches[i][j] || seen[j] {
+				continue
+			}
+			seen[j] = true
+			if owner[j] == -1 || assign(owner[j], seen) {
+				owner[j] = i
+				return true
 			}
 		}
-		if !found {
+		return false
+	}
+	for i := range want {
+		if !assign(i, make([]bool, len(got))) {
 			return []string{fmt.Sprintf("%s: want %v, got %v", path, want, got)}
 		}
 	}

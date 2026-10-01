@@ -98,8 +98,9 @@ var _ = Describe("NetworkContainer CRUD", Ordered, Label("networkcontainer"), fu
 			kubeClient.Delete(ctx, testNamespace),
 		).To(Succeed())
 		Eventually(func(g Gomega) bool {
-			return kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace) == nil
-		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeFalse())
+			err := kubeClient.Get(ctx, client.ObjectKeyFromObject(testNamespace), testNamespace)
+			return apierrors.IsNotFound(err)
+		}).WithContext(ctx).WithTimeout(time.Minute).WithPolling(time.Second).To(BeTrue())
 	})
 
 	// createGroup creates a Group in the test namespace and waits for it to be ready in Atlas.

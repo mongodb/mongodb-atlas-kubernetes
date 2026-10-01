@@ -82,6 +82,21 @@ func TestAtlasMatchesSpec(t *testing.T) {
 				return strings.ToUpper(v.(string))
 			})},
 		},
+		{
+			title: "normalize applies to a whole unordered list",
+			spec:  container{Regions: &[]string{"a", "b"}},
+			atlas: container{Regions: &[]string{"B", "A"}},
+			opts: []specmatch.Option{
+				specmatch.UnorderedLists("$.regions"),
+				specmatch.Normalize("$.regions", func(v any) any {
+					var out []any
+					for _, s := range v.([]any) {
+						out = append(out, strings.ToUpper(s.(string)))
+					}
+					return out
+				}),
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			err := specmatch.AtlasMatchesSpec(tc.spec, tc.atlas, tc.opts...)
@@ -93,4 +108,19 @@ func TestAtlasMatchesSpec(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.wantErr)
 		})
 	}
+}
+
+func TestAtlasMatchesSpecUnorderedObjectLists(t *testing.T) {
+	spec := map[string]any{"items": []any{
+		map[string]any{"a": 1},
+		map[string]any{"a": 1, "b": 2},
+	}}
+	atlas := map[string]any{"items": []any{
+		map[string]any{"a": 1, "b": 2},
+		map[string]any{"a": 1},
+	}}
+
+	err := specmatch.AtlasMatchesSpec(spec, atlas, specmatch.UnorderedLists("$.items"))
+
+	require.NoError(t, err)
 }
