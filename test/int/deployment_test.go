@@ -1111,12 +1111,26 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				WithAtlasName("test-deployment-infinite").
 				WithDatabaseEdition("INFINITE").
 				// Atlas Infinite only accepts second generation instance sizes, up to M60.
-				WithInstanceSize("M40_GEN_2")
+				WithInstanceSize("M40_GEN_2").
+				// Atlas Infinite requires exactly two electable nodes unless the
+				// DISAGG_ELECTABLE_TOPOLOGY feature flag widens that to 2, 3, 5 or 7.
+				WithElectableNodes(2)
+
+			By("Keeping the topology within what Atlas Infinite accepts", func() {
+				spec := createdDeployment.Spec.DeploymentSpec
+				Expect(spec.ReplicationSpecs).To(HaveLen(1))
+				Expect(spec.ReplicationSpecs[0].RegionConfigs).To(HaveLen(1),
+					"Atlas Infinite requires exactly one region")
+				regionConfig := spec.ReplicationSpecs[0].RegionConfigs[0]
+				Expect(regionConfig.ElectableSpecs.NodeCount).ToNot(BeNil())
+				Expect(*regionConfig.ElectableSpecs.NodeCount).To(Equal(2))
+				Expect(regionConfig.ReadOnlySpecs).To(BeNil())
+				Expect(regionConfig.AnalyticsSpecs).To(BeNil())
+			})
 
 			By("Leaving every Atlas-managed storage field unset", func() {
 				spec := createdDeployment.Spec.DeploymentSpec
 				Expect(spec.DiskSizeGB).To(BeNil())
-				Expect(spec.ReplicationSpecs).To(HaveLen(1), "Atlas Infinite requires exactly one region")
 				regionConfig := spec.ReplicationSpecs[0].RegionConfigs[0]
 				Expect(regionConfig.ElectableSpecs.DiskIOPS).To(BeNil())
 				Expect(regionConfig.ElectableSpecs.EbsVolumeType).To(BeEmpty())
