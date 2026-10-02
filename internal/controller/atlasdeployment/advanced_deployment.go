@@ -39,6 +39,19 @@ import (
 
 const FreeTier = "M0"
 
+func databaseEditionMatches(akoCluster, atlasCluster *deployment.Cluster) error {
+	requested := akoCluster.DatabaseEdition
+	inAtlas := atlasCluster.GetDatabaseEdition()
+	if requested == "" || inAtlas == "" || requested == inAtlas {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"cannot change databaseEdition of an existing deployment from %q to %q: Atlas assigns the database edition when the cluster is created and it is immutable afterwards",
+		inAtlas, requested,
+	)
+}
+
 func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Context, projectService project.ProjectService, deploymentService deployment.AtlasDeploymentsService, akoDeployment, atlasDeployment deployment.Deployment) (ctrl.Result, error) {
 	if akoDeployment.GetCustomResource().Spec.UpgradeToDedicated && atlasDeployment == nil {
 		return r.terminate(ctx, workflow.DedicatedMigrationFailed,
@@ -77,6 +90,10 @@ func (r *AtlasDeploymentReconciler) handleAdvancedDeployment(ctx *workflow.Conte
 		}
 
 		atlasCluster = newDeployment.(*deployment.Cluster)
+	}
+
+	if err := databaseEditionMatches(akoCluster, atlasCluster); err != nil {
+		return r.terminate(ctx, workflow.DeploymentDatabaseEditionMismatch, err)
 	}
 
 	switch atlasCluster.GetState() {

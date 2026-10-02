@@ -1512,14 +1512,13 @@ func TestClusterFromAtlas_DatabaseEdition(t *testing.T) {
 	})
 
 	assert.Equal(t, "INFINITE", cluster.DatabaseEdition)
-	assert.Equal(t, "INFINITE", cluster.EffectiveDatabaseEdition)
 	assert.Equal(t, "INFINITE", cluster.GetDatabaseEdition())
 }
 
-// GetDatabaseEdition feeds the CR status, so for a Cluster built from the custom
-// resource rather than from Atlas it must report the requested edition instead of
-// an empty string.
-func TestGetDatabaseEdition_FallsBackToRequestedEdition(t *testing.T) {
+// GetDatabaseEdition is read through the Deployment interface, where the caller cannot
+// tell which side built the Cluster. For one built from the custom resource it has to
+// report the requested edition.
+func TestGetDatabaseEdition_ReportsRequestedEdition(t *testing.T) {
 	cluster := &Cluster{
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			DatabaseEdition: "INFINITE",
@@ -1534,8 +1533,8 @@ func TestDatabaseEditionToAtlas(t *testing.T) {
 		edition  string
 		expected *string
 	}{
-		"an explicit edition is sent":  {edition: "INFINITE", expected: pointer.MakePtr("INFINITE")},
-		"an unset edition is not sent": {edition: "", expected: nil},
+		"an explicit edition is sent on create": {edition: "INFINITE", expected: pointer.MakePtr("INFINITE")},
+		"an unset edition is not sent":          {edition: "", expected: nil},
 	}
 
 	for name, tc := range tests {
@@ -1549,7 +1548,8 @@ func TestDatabaseEditionToAtlas(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expected, clusterCreateToAtlas(cluster).DatabaseEdition)
-			assert.Equal(t, tc.expected, clusterUpdateToAtlas(cluster).DatabaseEdition)
+			assert.Nil(t, clusterUpdateToAtlas(cluster).DatabaseEdition,
+				"Atlas accepts the database edition only at creation time")
 		})
 	}
 }
@@ -1607,10 +1607,9 @@ func TestNormalizeClusterDeployment_Infinite(t *testing.T) {
 	require.NotNil(t, cluster.PitEnabled)
 	assert.True(t, *cluster.PitEnabled, "point in time recovery cannot be disabled on Atlas Infinite")
 
-	// Disk auto scaling and disk sizing are Atlas-managed on Atlas Infinite: the operator
-	// may not send them, so they are cleared instead of compared.
+	// Atlas refuses autoScaling.diskGB on input yet reports it back, so it is cleared
+	// rather than compared.
 	assert.Nil(t, cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.DiskGB)
-	assert.Nil(t, cluster.DiskSizeGB)
 	require.NotNil(t, cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.Compute,
 		"compute auto scaling stays a customer choice and must be sent")
 }

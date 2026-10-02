@@ -85,6 +85,14 @@ type SearchNode struct {
 	NodeCount uint8 `json:"nodeCount,omitempty"`
 }
 
+const (
+	// DatabaseEditionCore is the classic cluster edition, where compute and storage are coupled.
+	DatabaseEditionCore = "CORE"
+	// DatabaseEditionInfinite is the Atlas Infinite edition, where compute is detached from
+	// storage and Atlas manages the volumes itself.
+	DatabaseEditionInfinite = "INFINITE"
+)
+
 type AdvancedDeploymentSpec struct {
 	// Flag that indicates if the deployment uses Cloud Backups for backups.
 	// Applicable only for M10+ deployments.

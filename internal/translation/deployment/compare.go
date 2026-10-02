@@ -43,9 +43,10 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 		ProjectID:                 desired.GetProjectID(),
 		computeAutoscalingEnabled: desired.computeAutoscalingEnabled,
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-			Name:                         desired.Name,
-			ClusterType:                  desired.ClusterType,
-			DatabaseEdition:              desired.DatabaseEdition,
+			Name:        desired.Name,
+			ClusterType: desired.ClusterType,
+			// DatabaseEdition is deliberately absent: Atlas accepts it only at creation
+			// time and refuses to change it afterwards, so it has no place in an update.
 			MongoDBMajorVersion:          desired.MongoDBMajorVersion,
 			VersionReleaseSystem:         desired.VersionReleaseSystem,
 			BackupEnabled:                desired.BackupEnabled,
@@ -211,13 +212,6 @@ func specAreEqual(desired, current *Cluster) bool {
 	}
 
 	if desired.EncryptionAtRestProvider != "" && !areEqual(&desired.EncryptionAtRestProvider, &current.EncryptionAtRestProvider) {
-		return false
-	}
-
-	// Atlas refuses to change the edition after creation, so a mismatch here can only be
-	// reported, never reconciled. It is still compared so the difference surfaces as an Atlas
-	// error rather than being silently dropped.
-	if desired.DatabaseEdition != "" && !areEqual(&desired.DatabaseEdition, &current.DatabaseEdition) {
 		return false
 	}
 

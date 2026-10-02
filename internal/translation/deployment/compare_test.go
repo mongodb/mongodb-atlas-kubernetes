@@ -2770,47 +2770,25 @@ func TestProcessArgsEqual(t *testing.T) {
 	}
 }
 
-func TestSpecAreEqual_DatabaseEdition(t *testing.T) {
-	tests := map[string]struct {
-		desiredEdition string
-		currentEdition string
-		expected       bool
-	}{
-		"equal editions match": {
-			desiredEdition: "INFINITE",
-			currentEdition: "INFINITE",
-			expected:       true,
+// The database edition is immutable once Atlas created the cluster, so a mismatch can
+// never be reconciled. Treating it as a difference only produced an update Atlas would
+// refuse, so it takes no part in the comparison; a mismatch is reported by the
+// reconciler instead.
+func TestSpecAreEqual_DatabaseEditionIsNotCompared(t *testing.T) {
+	desired := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
 		},
-		"a differing edition is a difference": {
-			desiredEdition: "INFINITE",
-			currentEdition: "CORE",
-			expected:       false,
-		},
-		"an unset desired edition takes no opinion": {
-			desiredEdition: "",
-			currentEdition: "CORE",
-			expected:       true,
+	}
+	current := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "CORE",
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			desired := &Cluster{
-				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-					Name:            "cluster0",
-					DatabaseEdition: tc.desiredEdition,
-				},
-			}
-			current := &Cluster{
-				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-					Name:            "cluster0",
-					DatabaseEdition: tc.currentEdition,
-				},
-			}
-
-			assert.Equal(t, tc.expected, specAreEqual(desired, current))
-		})
-	}
+	assert.True(t, specAreEqual(desired, current))
 }
 
 // Atlas overrides versionReleaseSystem, backupEnabled, pitEnabled and disk auto
@@ -2885,42 +2863,18 @@ func TestComputeChanges_InfiniteMinimalSpecConverges(t *testing.T) {
 	assert.Nil(t, changes)
 }
 
-func TestComputeChanges_DatabaseEditionIsSent(t *testing.T) {
-	desired := &Cluster{
-		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-			Name:            "cluster0",
-			ClusterType:     "REPLICASET",
-			DatabaseEdition: "INFINITE",
-		},
-	}
-	current := &Cluster{
-		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-			Name:            "cluster0",
-			ClusterType:     "REPLICASET",
-			DatabaseEdition: "CORE",
-		},
-	}
-
-	changes, occurred := ComputeChanges(desired, current)
-
-	require.True(t, occurred)
-	require.NotNil(t, changes)
-	assert.Equal(t, "INFINITE", changes.DatabaseEdition)
-}
-
-// An Atlas Infinite cluster created during the private preview may report disk auto
-// scaling as disabled, and Atlas rejects the field on input either way. If the
-// comparison took an opinion on it the operator would demand a PATCH it is not
-// allowed to send, and would re-demand it forever.
-func TestComputeChanges_InfiniteIgnoresAtlasManagedDiskAutoScaling(t *testing.T) {
-	akoCluster := func(diskGB *akov2.DiskGB, diskSizeGB *int) *Cluster {
-		cluster := &Cluster{
+// ComputeChanges feeds clusterUpdateToAtlas, so an edition left in the computed changes
+// would ride along on every unrelated update. Atlas rejects a request that carries the
+// field on a project outside the Atlas Infinite preview, which would break ordinary
+// updates of an ordinary deployment.
+func TestComputeChanges_DatabaseEditionNeverRidesAlong(t *testing.T) {
+	cluster := func(instanceSize string) *Cluster {
+		c := &Cluster{
 			ProjectID: "project-id",
 			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:            "cluster0",
 				ClusterType:     "REPLICASET",
-				DatabaseEdition: "INFINITE",
-				DiskSizeGB:      diskSizeGB,
+				DatabaseEdition: "CORE",
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName: "Zone 1",
@@ -2929,27 +2883,22 @@ func TestComputeChanges_InfiniteIgnoresAtlasManagedDiskAutoScaling(t *testing.T)
 								ProviderName:   "AWS",
 								RegionName:     "US_EAST_1",
 								Priority:       pointer.MakePtr(7),
-								ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2", NodeCount: pointer.MakePtr(3)},
-								AutoScaling: &akov2.AdvancedAutoScalingSpec{
-									Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
-									DiskGB:  diskGB,
-								},
+								ElectableSpecs: &akov2.Specs{InstanceSize: instanceSize, NodeCount: pointer.MakePtr(3)},
 							},
 						},
 					},
 				},
 			},
 		}
-		normalizeClusterDeployment(cluster)
-		return cluster
+		normalizeClusterDeployment(c)
+		return c
 	}
 
-	// The CR takes no position; Atlas reports disk auto scaling off and a managed size.
-	desired := akoCluster(nil, nil)
-	current := akoCluster(&akov2.DiskGB{Enabled: pointer.MakePtr(false)}, pointer.MakePtr(40))
+	changes, occurred := ComputeChanges(cluster("M20"), cluster("M10"))
 
-	changes, occurred := ComputeChanges(desired, current)
-
-	assert.False(t, occurred, "Atlas-managed disk settings must not be reported as a change")
-	assert.Nil(t, changes)
+	require.True(t, occurred, "the instance size change must still be detected")
+	require.NotNil(t, changes)
+	assert.Empty(t, changes.DatabaseEdition)
+	assert.Nil(t, clusterUpdateToAtlas(changes).DatabaseEdition,
+		"an update caused by an unrelated field must not carry the database edition")
 }
