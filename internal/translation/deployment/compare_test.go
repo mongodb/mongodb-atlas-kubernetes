@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -2767,4 +2768,137 @@ func TestProcessArgsEqual(t *testing.T) {
 			assert.Equal(t, tt.want, ProcessArgsEqual(tt.ako, tt.atlas))
 		})
 	}
+}
+
+// The database edition is immutable once Atlas created the cluster, so a mismatch can
+// never be reconciled. Treating it as a difference only produced an update Atlas would
+// refuse, so it takes no part in the comparison; a mismatch is reported by the
+// reconciler instead.
+func TestSpecAreEqual_DatabaseEditionIsNotCompared(t *testing.T) {
+	desired := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
+		},
+	}
+	current := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "CORE",
+		},
+	}
+
+	assert.True(t, specAreEqual(desired, current))
+}
+
+// Atlas overrides versionReleaseSystem, backupEnabled, pitEnabled and disk auto
+// scaling on an Atlas Infinite cluster, and then rejects any request that tries to
+// set them to anything else. A CR that leaves those fields out must therefore
+// converge on the first reconciliation: otherwise the operator re-issues the same
+// PATCH forever and Atlas refuses every one of them.
+func TestComputeChanges_InfiniteMinimalSpecConverges(t *testing.T) {
+	desired := NewDeployment("project-id", &akov2.AtlasDeployment{
+		Spec: akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:            "cluster0",
+				ClusterType:     "REPLICASET",
+				DatabaseEdition: "INFINITE",
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName:   "AWS",
+								RegionName:     "US_EAST_1",
+								Priority:       pointer.MakePtr(7),
+								ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: pointer.MakePtr(3)},
+							},
+						},
+					},
+				},
+			},
+		},
+	}).(*Cluster)
+
+	// What Atlas reports back for the cluster it just created.
+	current := clusterFromAtlas(&admin.ClusterDescription20240805{
+		GroupId:                      pointer.MakePtr("project-id"),
+		Name:                         pointer.MakePtr("cluster0"),
+		ClusterType:                  pointer.MakePtr("REPLICASET"),
+		StateName:                    pointer.MakePtr("IDLE"),
+		EffectiveDatabaseEdition:     pointer.MakePtr("INFINITE"),
+		VersionReleaseSystem:         pointer.MakePtr("CONTINUOUS"),
+		BackupEnabled:                pointer.MakePtr(true),
+		PitEnabled:                   pointer.MakePtr(true),
+		RootCertType:                 pointer.MakePtr("ISRGROOTX1"),
+		EncryptionAtRestProvider:     pointer.MakePtr("NONE"),
+		TerminationProtectionEnabled: pointer.MakePtr(false),
+		Paused:                       pointer.MakePtr(false),
+		ReplicationSpecs: &[]admin.ReplicationSpec20240805{
+			{
+				ZoneName: pointer.MakePtr("Zone 1"),
+				RegionConfigs: &[]admin.CloudRegionConfig20240805{
+					{
+						ProviderName: pointer.MakePtr("AWS"),
+						RegionName:   pointer.MakePtr("US_EAST_1"),
+						Priority:     pointer.MakePtr(7),
+						ElectableSpecs: &admin.HardwareSpec20240805{
+							InstanceSize: pointer.MakePtr("M40"),
+							NodeCount:    pointer.MakePtr(3),
+							DiskSizeGB:   pointer.MakePtr(40.0),
+						},
+						AutoScaling: &admin.AdvancedAutoScalingSettings{
+							Compute: &admin.AdvancedComputeAutoScaling{Enabled: pointer.MakePtr(false)},
+							DiskGB:  &admin.DiskGBAutoScaling{Enabled: pointer.MakePtr(true)},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	changes, occurred := ComputeChanges(desired, current)
+
+	assert.False(t, occurred, "a minimal Atlas Infinite spec must not diverge from Atlas")
+	assert.Nil(t, changes)
+}
+
+// ComputeChanges feeds clusterUpdateToAtlas, so an edition left in the computed changes
+// would ride along on every unrelated update. Atlas rejects a request that carries the
+// field on a project outside the Atlas Infinite preview, which would break ordinary
+// updates of an ordinary deployment.
+func TestComputeChanges_DatabaseEditionNeverRidesAlong(t *testing.T) {
+	cluster := func(instanceSize string) *Cluster {
+		c := &Cluster{
+			ProjectID: "project-id",
+			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:            "cluster0",
+				ClusterType:     "REPLICASET",
+				DatabaseEdition: "CORE",
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName:   "AWS",
+								RegionName:     "US_EAST_1",
+								Priority:       pointer.MakePtr(7),
+								ElectableSpecs: &akov2.Specs{InstanceSize: instanceSize, NodeCount: pointer.MakePtr(3)},
+							},
+						},
+					},
+				},
+			},
+		}
+		normalizeClusterDeployment(c)
+		return c
+	}
+
+	changes, occurred := ComputeChanges(cluster("M20"), cluster("M10"))
+
+	require.True(t, occurred, "the instance size change must still be detected")
+	require.NotNil(t, changes)
+	assert.Empty(t, changes.DatabaseEdition)
+	assert.Nil(t, clusterUpdateToAtlas(changes).DatabaseEdition,
+		"an update caused by an unrelated field must not carry the database edition")
 }

@@ -1460,7 +1460,7 @@ func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
 	}
 
 	// replicationSpecToAtlas must send analyticsAutoScaling back to Atlas
-	sentSpecsPtr := replicationSpecToAtlas(akoSpecs, "REPLICASET", nil)
+	sentSpecsPtr := replicationSpecToAtlas(akoSpecs, "REPLICASET", nil, false)
 	require.NotNil(t, sentSpecsPtr)
 	sentSpecs := *sentSpecsPtr
 	require.Len(t, sentSpecs, 1)
@@ -1472,4 +1472,289 @@ func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
 		require.NotNil(t, rc.AnalyticsAutoScaling.Compute)
 		assert.Equal(t, true, *rc.AnalyticsAutoScaling.Compute.Enabled)
 	}
+}
+
+func TestDatabaseEditionFromAtlas(t *testing.T) {
+	tests := map[string]struct {
+		clusterDesc *admin.ClusterDescription20240805
+		expected    string
+	}{
+		"prefers the requested edition": {
+			clusterDesc: &admin.ClusterDescription20240805{
+				DatabaseEdition:          pointer.MakePtr("INFINITE"),
+				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+			},
+			expected: "INFINITE",
+		},
+		"falls back to the effective edition when Atlas does not echo the requested one": {
+			clusterDesc: &admin.ClusterDescription20240805{
+				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+			},
+			expected: "INFINITE",
+		},
+		"stays empty when Atlas reports neither": {
+			clusterDesc: &admin.ClusterDescription20240805{},
+			expected:    "",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, databaseEditionFromAtlas(tc.clusterDesc))
+		})
+	}
+}
+
+func TestClusterFromAtlas_DatabaseEdition(t *testing.T) {
+	cluster := clusterFromAtlas(&admin.ClusterDescription20240805{
+		Name:                     pointer.MakePtr("cluster0"),
+		EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+	})
+
+	assert.Equal(t, "INFINITE", cluster.DatabaseEdition)
+	assert.Equal(t, "INFINITE", cluster.GetDatabaseEdition())
+}
+
+// GetDatabaseEdition is read through the Deployment interface, where the caller cannot
+// tell which side built the Cluster. For one built from the custom resource it has to
+// report the requested edition.
+func TestGetDatabaseEdition_ReportsRequestedEdition(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			DatabaseEdition: "INFINITE",
+		},
+	}
+
+	assert.Equal(t, "INFINITE", cluster.GetDatabaseEdition())
+}
+
+func TestDatabaseEditionToAtlas(t *testing.T) {
+	tests := map[string]struct {
+		edition  string
+		expected *string
+	}{
+		"an explicit edition is sent on create": {edition: "INFINITE", expected: pointer.MakePtr("INFINITE")},
+		"an unset edition is not sent":          {edition: "", expected: nil},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			cluster := &Cluster{
+				AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					ClusterType:     "REPLICASET",
+					DatabaseEdition: tc.edition,
+				},
+			}
+
+			assert.Equal(t, tc.expected, clusterCreateToAtlas(cluster).DatabaseEdition)
+			assert.Nil(t, clusterUpdateToAtlas(cluster).DatabaseEdition,
+				"Atlas accepts the database edition only at creation time")
+		})
+	}
+}
+
+func TestFlexUpgradeToAtlas_DatabaseEdition(t *testing.T) {
+	cluster := &Cluster{
+		customResource: &akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					ClusterType:     "REPLICASET",
+					DatabaseEdition: "INFINITE",
+				},
+			},
+		},
+	}
+
+	require.NotNil(t, flexUpgradeToAtlas(cluster).DatabaseEdition)
+	assert.Equal(t, "INFINITE", *flexUpgradeToAtlas(cluster).DatabaseEdition)
+}
+
+// Atlas forces a fixed configuration on an Atlas Infinite cluster and rejects any
+// request that contradicts it. Normalization therefore has to default the affected
+// fields to what Atlas mandates, not to what a CORE cluster gets.
+func TestNormalizeClusterDeployment_Infinite(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
+						{
+							ProviderName:   "AWS",
+							RegionName:     "US_EAST_1",
+							Priority:       pointer.MakePtr(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: pointer.MakePtr(3)},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	// Atlas Infinite supports SHARDED too; REPLICASET is only the generic default for an
+	// unset clusterType and is deliberately not forced by the Atlas Infinite branch.
+	assert.Equal(t, "REPLICASET", cluster.ClusterType)
+	assert.Equal(t, "CONTINUOUS", cluster.VersionReleaseSystem,
+		"Atlas reports Atlas Infinite as CONTINUOUS and rejects any other release system")
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.True(t, *cluster.BackupEnabled,
+		"additional backup retention defaults to enabled on Atlas Infinite")
+	require.NotNil(t, cluster.PitEnabled)
+	assert.True(t, *cluster.PitEnabled, "point in time recovery cannot be disabled on Atlas Infinite")
+
+	// Atlas refuses autoScaling.diskGB on input yet reports it back, so it is cleared
+	// rather than compared.
+	assert.Nil(t, cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.DiskGB)
+	require.NotNil(t, cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.Compute,
+		"compute auto scaling stays a customer choice and must be sent")
+}
+
+// The CORE defaults must stay untouched, otherwise every existing deployment
+// would start diverging from Atlas.
+func TestNormalizeClusterDeployment_CoreDefaultsUnchanged(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name: "cluster0",
+			ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+				{
+					RegionConfigs: []*akov2.AdvancedRegionConfig{
+						{
+							ProviderName:   "AWS",
+							RegionName:     "US_EAST_1",
+							Priority:       pointer.MakePtr(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: pointer.MakePtr(3)},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	assert.Equal(t, "LTS", cluster.VersionReleaseSystem)
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.False(t, *cluster.BackupEnabled)
+	require.NotNil(t, cluster.PitEnabled)
+	assert.False(t, *cluster.PitEnabled)
+	assert.False(t, *cluster.ReplicationSpecs[0].RegionConfigs[0].AutoScaling.DiskGB.Enabled)
+}
+
+// On an Atlas Infinite cluster backupEnabled selects Additional Backup Retention
+// rather than whether backups run, so an explicit false is a legitimate choice that
+// must survive normalization instead of being defaulted back to enabled.
+func TestNormalizeClusterDeployment_InfiniteKeepsExplicitBackupChoice(t *testing.T) {
+	cluster := &Cluster{
+		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+			Name:            "cluster0",
+			DatabaseEdition: "INFINITE",
+			BackupEnabled:   pointer.MakePtr(false),
+		},
+	}
+
+	normalizeClusterDeployment(cluster)
+
+	require.NotNil(t, cluster.BackupEnabled)
+	assert.False(t, *cluster.BackupEnabled)
+	require.NotNil(t, cluster.PitEnabled)
+	assert.True(t, *cluster.PitEnabled, "point in time recovery stays on regardless")
+}
+
+// Atlas rejects an Atlas Infinite request that carries any storage field, because it
+// manages storage itself. diskSizeGB, diskIOPS, ebsVolumeType and diskThroughput are
+// refused when they contradict the cluster, and autoScaling.diskGB is refused whenever
+// it is present at all. The operator must therefore omit them rather than echo back
+// what Atlas reported, which is what produced
+// "ebsVolumeType is not configurable for an Atlas Infinite cluster" on create.
+func TestReplicationSpecToAtlas_InfiniteOmitsStorageFields(t *testing.T) {
+	specs := []*akov2.AdvancedReplicationSpec{
+		{
+			ZoneName: "Zone 1",
+			RegionConfigs: []*akov2.AdvancedRegionConfig{
+				{
+					ProviderName: "AWS",
+					RegionName:   "US_EAST_1",
+					Priority:     pointer.MakePtr(7),
+					ElectableSpecs: &akov2.Specs{
+						InstanceSize: "M40_GEN_2",
+						NodeCount:    pointer.MakePtr(3),
+						DiskIOPS:     pointer.MakePtr(int64(3000)),
+					},
+					ReadOnlySpecs: &akov2.Specs{
+						InstanceSize: "M40_GEN_2",
+						NodeCount:    pointer.MakePtr(1),
+						DiskIOPS:     pointer.MakePtr(int64(3000)),
+					},
+					AutoScaling: &akov2.AdvancedAutoScalingSpec{
+						Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
+						DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+					},
+				},
+			},
+		},
+	}
+
+	sent := replicationSpecToAtlas(specs, "REPLICASET", pointer.MakePtr(40), true)
+
+	require.NotNil(t, sent)
+	require.Len(t, *sent, 1)
+	regions := *(*sent)[0].RegionConfigs
+	require.Len(t, regions, 1)
+	region := regions[0]
+
+	require.NotNil(t, region.ElectableSpecs)
+	assert.Nil(t, region.ElectableSpecs.EbsVolumeType, "ebsVolumeType is not configurable on Atlas Infinite")
+	assert.Nil(t, region.ElectableSpecs.DiskIOPS, "diskIOPS is not configurable on Atlas Infinite")
+	assert.Nil(t, region.ElectableSpecs.DiskSizeGB, "diskSizeGB is not configurable on Atlas Infinite")
+
+	require.NotNil(t, region.ReadOnlySpecs)
+	assert.Nil(t, region.ReadOnlySpecs.EbsVolumeType)
+	assert.Nil(t, region.ReadOnlySpecs.DiskIOPS)
+	assert.Nil(t, region.ReadOnlySpecs.DiskSizeGB)
+
+	require.NotNil(t, region.AutoScaling)
+	assert.Nil(t, region.AutoScaling.DiskGB, "autoScaling.diskGB is rejected whenever present on Atlas Infinite")
+	require.NotNil(t, region.AutoScaling.Compute,
+		"Atlas requires an explicit autoScaling.compute.enabled on every Atlas Infinite region config")
+	require.NotNil(t, region.AnalyticsAutoScaling)
+	assert.Nil(t, region.AnalyticsAutoScaling.DiskGB)
+}
+
+// The CORE path must keep sending the storage fields, including the AWS
+// ebsVolumeType default that avoids a reconcile loop on AWS clusters.
+func TestReplicationSpecToAtlas_CoreKeepsStorageFields(t *testing.T) {
+	specs := []*akov2.AdvancedReplicationSpec{
+		{
+			ZoneName: "Zone 1",
+			RegionConfigs: []*akov2.AdvancedRegionConfig{
+				{
+					ProviderName:   "AWS",
+					RegionName:     "US_EAST_1",
+					Priority:       pointer.MakePtr(7),
+					ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: pointer.MakePtr(3)},
+					AutoScaling: &akov2.AdvancedAutoScalingSpec{
+						Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
+						DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(false)},
+					},
+				},
+			},
+		},
+	}
+
+	sent := replicationSpecToAtlas(specs, "REPLICASET", pointer.MakePtr(40), false)
+
+	require.NotNil(t, sent)
+	regions := *(*sent)[0].RegionConfigs
+	region := regions[0]
+
+	require.NotNil(t, region.ElectableSpecs.EbsVolumeType)
+	assert.Equal(t, "STANDARD", *region.ElectableSpecs.EbsVolumeType)
+	require.NotNil(t, region.ElectableSpecs.DiskSizeGB)
+	assert.InDelta(t, 40.0, *region.ElectableSpecs.DiskSizeGB, 0.001)
+	require.NotNil(t, region.AutoScaling.DiskGB)
 }

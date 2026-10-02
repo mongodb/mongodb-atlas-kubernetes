@@ -1038,3 +1038,53 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		})
 	}
 }
+
+func TestDatabaseEditionMatches(t *testing.T) {
+	cluster := func(edition string) *deployment.Cluster {
+		return &deployment.Cluster{
+			AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:            "cluster0",
+				DatabaseEdition: edition,
+			},
+		}
+	}
+	// A Cluster read from Atlas carries the edition Atlas reports in the same field.
+	atlasCluster := cluster
+
+	tests := map[string]struct {
+		ako           *deployment.Cluster
+		atlas         *deployment.Cluster
+		expectedError string
+	}{
+		"matching editions are accepted": {
+			ako:   cluster(akov2.DatabaseEditionInfinite),
+			atlas: atlasCluster(akov2.DatabaseEditionInfinite),
+		},
+		"a resource taking no position is accepted": {
+			ako:   cluster(""),
+			atlas: atlasCluster(akov2.DatabaseEditionInfinite),
+		},
+		"an edition Atlas does not report is accepted": {
+			// Atlas hides the edition outside the Atlas Infinite preview, so an empty
+			// value says nothing about the cluster.
+			ako:   cluster(akov2.DatabaseEditionCore),
+			atlas: atlasCluster(""),
+		},
+		"a changed edition is rejected": {
+			ako:           cluster(akov2.DatabaseEditionInfinite),
+			atlas:         atlasCluster(akov2.DatabaseEditionCore),
+			expectedError: `cannot change databaseEdition of an existing deployment from "CORE" to "INFINITE": Atlas assigns the database edition when the cluster is created and it is immutable afterwards`,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := databaseEditionMatches(tc.ako, tc.atlas)
+			if tc.expectedError == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tc.expectedError)
+		})
+	}
+}

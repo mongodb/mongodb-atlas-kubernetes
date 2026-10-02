@@ -1093,6 +1093,78 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
+	// Atlas Infinite detaches compute from storage, so Atlas manages storage itself and
+	// rejects a request that carries any storage field: diskSizeGB, diskIOPS,
+	// ebsVolumeType, diskThroughput, and autoScaling.diskGB whenever it is present at all.
+	// It also forces the release system and point in time recovery. The CR below therefore
+	// sets nothing but the edition, the region and the instance size; everything else has
+	// to be either omitted by the operator or converged on what Atlas mandates. Getting
+	// this wrong fails loudly on create ("ebsVolumeType is not configurable for an Atlas
+	// Infinite cluster") or silently, as a PATCH Atlas refuses on every reconciliation.
+	//
+	// Requires the DISAGGREGATED_STORAGE_ATLAS feature flag on the test organization:
+	// without it Atlas answers ATLAS_INFINITE_FEATURE_NOT_ENABLED.
+	Describe("Create an Atlas Infinite deployment", Label("focus-infinite-deployment", "focus-slow"), func() {
+		It("Should Succeed", func(ctx context.Context) {
+			createdDeployment = akov2.DefaultAwsAdvancedDeployment(namespace.Name, createdProject.Name).
+				WithName("test-deployment-infinite-k8s").
+				WithAtlasName("test-deployment-infinite").
+				WithDatabaseEdition("INFINITE").
+				// Atlas Infinite only accepts second generation instance sizes, up to M60.
+				WithInstanceSize("M40_GEN_2").
+				// Atlas Infinite requires exactly two electable nodes unless the
+				// DISAGG_ELECTABLE_TOPOLOGY feature flag widens that to 2, 3, 5 or 7.
+				WithElectableNodes(2)
+
+			By("Keeping the topology within what Atlas Infinite accepts", func() {
+				spec := createdDeployment.Spec.DeploymentSpec
+				Expect(spec.ReplicationSpecs).To(HaveLen(1))
+				Expect(spec.ReplicationSpecs[0].RegionConfigs).To(HaveLen(1),
+					"Atlas Infinite requires exactly one region")
+				regionConfig := spec.ReplicationSpecs[0].RegionConfigs[0]
+				Expect(regionConfig.ElectableSpecs.NodeCount).ToNot(BeNil())
+				Expect(*regionConfig.ElectableSpecs.NodeCount).To(Equal(2))
+				Expect(regionConfig.ReadOnlySpecs).To(BeNil())
+				Expect(regionConfig.AnalyticsSpecs).To(BeNil())
+			})
+
+			By("Leaving every Atlas-managed storage field unset", func() {
+				spec := createdDeployment.Spec.DeploymentSpec
+				Expect(spec.DiskSizeGB).To(BeNil())
+				regionConfig := spec.ReplicationSpecs[0].RegionConfigs[0]
+				Expect(regionConfig.ElectableSpecs.DiskIOPS).To(BeNil())
+				Expect(regionConfig.ElectableSpecs.EbsVolumeType).To(BeEmpty())
+				Expect(regionConfig.AutoScaling).To(BeNil())
+			})
+
+			By(fmt.Sprintf("Creating the Atlas Infinite Deployment %s", kube.ObjectKeyFromObject(createdDeployment)), func() {
+				performCreate(createdDeployment, 45*time.Minute)
+
+				doDeploymentStatusChecks()
+				// Asserts ComputeChanges reports no pending changes, which is what fails if
+				// the operator and Atlas disagree on the Atlas Infinite defaults.
+				checkAdvancedAtlasState()
+			})
+
+			By("Reporting the effective database edition in the status", func() {
+				Expect(createdDeployment.Status.DatabaseEdition).To(Equal("INFINITE"))
+			})
+
+			By("Keeping the deployment converged on a second reconciliation", func() {
+				deploymentInAtlas, err := deploymentService.GetDeployment(ctx, createdProject.ID(), createdDeployment)
+				Expect(err).ToNot(HaveOccurred())
+
+				cluster, ok := deploymentInAtlas.(*deployment.Cluster)
+				Expect(ok).To(BeTrue())
+				Expect(cluster.GetDatabaseEdition()).To(Equal("INFINITE"))
+				Expect(cluster.VersionReleaseSystem).To(Equal("CONTINUOUS"))
+				Expect(cluster.PitEnabled).ToNot(BeNil())
+				Expect(*cluster.PitEnabled).To(BeTrue())
+
+				checkAdvancedAtlasState()
+			})
+		})
+	})
 	Describe("Set advanced deployment options", func() {
 		It("Should Succeed", func(ctx context.Context) {
 			createdDeployment = akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
