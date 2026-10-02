@@ -22,8 +22,7 @@ import (
 	"strings"
 	"time"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	k8smeta "k8s.io/apimachinery/pkg/api/meta"
@@ -35,7 +34,6 @@ import (
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 // expiredStateMsg is stored in the State condition's Message field to signal that the entry
@@ -63,192 +61,192 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 }
 
 // HandleInitial creates a new IP access list entry in Atlas.
-func (h *Handlerv20250312) HandleInitial(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleInitial(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	groupID, entryValue, err := h.resolveIdentity(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to resolve IPAccessListEntry identity: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to resolve IPAccessListEntry identity: %w", err))
 	}
 
 	entry := buildNetworkPermissionEntry(ipaccesslistentry)
 	_, _, err = h.atlasClient.ProjectIPAccessListAPI.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to create IP access list entry %q: %w", entryValue, err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create IP access list entry %q: %w", entryValue, err))
 	}
 
 	if err := h.persistIdentity(ctx, ipaccesslistentry, groupID, entryValue); err != nil {
-		return result.Error(state.StateInitial, err)
+		return constate.ErrorState(constate.StateInitial, err)
 	}
 
-	return result.NextState(state.StateCreating, "IP access list entry created. Waiting for activation.")
+	return constate.NextState(constate.StateCreating, "IP access list entry created. Waiting for activation.")
 }
 
 // HandleImportRequested imports an existing Atlas IP access list entry.
 // The annotation mongodb.com/external-id must be set to the entry value (IP address, CIDR block or AWS security group)
-func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
-	entryValue, err := ctrlstate.GetExternalID(ipaccesslistentry)
+func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
+	entryValue, err := constate.GetExternalID(ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 
 	groupID, err := h.resolveGroupID(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to resolve groupId: %w", err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to resolve groupId: %w", err))
 	}
 
 	_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
 	if err != nil {
-		return result.Error(state.StateImportRequested, fmt.Errorf("failed to get IP access list entry %q in group %q: %w", entryValue, groupID, err))
+		return constate.ErrorState(constate.StateImportRequested, fmt.Errorf("failed to get IP access list entry %q in group %q: %w", entryValue, groupID, err))
 	}
 
 	if err := h.persistIdentity(ctx, ipaccesslistentry, groupID, entryValue); err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 
-	return result.NextState(state.StateImported, "IP access list entry imported.")
+	return constate.NextState(constate.StateImported, "IP access list entry imported.")
 }
 
 // HandleImported handles the imported state.
-func (h *Handlerv20250312) HandleImported(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleImported(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	if checkExpiry(ipaccesslistentry) {
-		return expiredResult(state.StateImported), nil
+		return expiredResult(constate.StateImported), nil
 	}
 
-	return h.handleSteadyState(ctx, state.StateImported, ipaccesslistentry)
+	return h.handleSteadyState(ctx, constate.StateImported, ipaccesslistentry)
 }
 
 // HandleCreating polls Atlas until the entry is ACTIVE.
-func (h *Handlerv20250312) HandleCreating(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreating(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	groupID, entryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateCreating, err)
+		return constate.ErrorState(constate.StateCreating, err)
 	}
 
 	atlasStatus, err := h.getEntryStatus(ctx, groupID, entryValue)
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to get IP access list status: %w", err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to get IP access list status: %w", err))
 	}
 
 	if atlasStatus != "ACTIVE" {
-		return result.NextState(state.StateCreating, fmt.Sprintf("IP access list entry is %s. Waiting for activation.", atlasStatus))
+		return constate.NextState(constate.StateCreating, fmt.Sprintf("IP access list entry is %s. Waiting for activation.", atlasStatus))
 	}
 
 	deps, err := h.getDependencies(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to resolve dependencies: %w", err))
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to resolve dependencies: %w", err))
 	}
 
 	copy := ipaccesslistentry.DeepCopy()
-	if err := ctrlstate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateCreating, fmt.Errorf("failed to update state tracker: %w", err))
+	if err := constate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateCreating, fmt.Errorf("failed to update state tracker: %w", err))
 	}
 
 	// If the entry has a deleteAfterDate, schedule a requeue instead of relying on watch events
 	// (which are filtered by predicates when only metadata/status changes). This ensures
 	// HandleCreated fires and sets up the expiry polling loop.
 	if hasDeleteAfterDate(ipaccesslistentry) {
-		return ctrlstate.Result{
+		return constate.Result{
 			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
-			NextState: state.StateCreated,
+			NextState: constate.StateCreated,
 			StateMsg:  "IP access list entry is active.",
 		}, nil
 	}
 
-	return result.NextState(state.StateCreated, "IP access list entry is active.")
+	return constate.NextState(constate.StateCreated, "IP access list entry is active.")
 }
 
 // HandleCreated handles the created steady state.
-func (h *Handlerv20250312) HandleCreated(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleCreated(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	if checkExpiry(ipaccesslistentry) {
-		return expiredResult(state.StateCreated), nil
+		return expiredResult(constate.StateCreated), nil
 	}
 
-	return h.handleSteadyState(ctx, state.StateCreated, ipaccesslistentry)
+	return h.handleSteadyState(ctx, constate.StateCreated, ipaccesslistentry)
 }
 
 // HandleUpdating polls Atlas until the entry is ACTIVE after an update.
-func (h *Handlerv20250312) HandleUpdating(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdating(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	groupID, entryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateUpdating, err)
+		return constate.ErrorState(constate.StateUpdating, err)
 	}
 
 	atlasStatus, err := h.getEntryStatus(ctx, groupID, entryValue)
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to get IP access list status: %w", err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to get IP access list status: %w", err))
 	}
 
 	if atlasStatus != "ACTIVE" {
-		return result.NextState(state.StateUpdating, fmt.Sprintf("IP access list entry is %s. Waiting for activation.", atlasStatus))
+		return constate.NextState(constate.StateUpdating, fmt.Sprintf("IP access list entry is %s. Waiting for activation.", atlasStatus))
 	}
 
 	deps, err := h.getDependencies(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to resolve dependencies: %w", err))
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to resolve dependencies: %w", err))
 	}
 
 	copy := ipaccesslistentry.DeepCopy()
-	if err := ctrlstate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(state.StateUpdating, fmt.Errorf("failed to update state tracker: %w", err))
+	if err := constate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(constate.StateUpdating, fmt.Errorf("failed to update state tracker: %w", err))
 	}
 
 	if hasDeleteAfterDate(ipaccesslistentry) {
-		return ctrlstate.Result{
+		return constate.Result{
 			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
-			NextState: state.StateUpdated,
+			NextState: constate.StateUpdated,
 			StateMsg:  "IP access list entry is active.",
 		}, nil
 	}
 
-	return result.NextState(state.StateUpdated, "IP access list entry is up to date.")
+	return constate.NextState(constate.StateUpdated, "IP access list entry is up to date.")
 }
 
 // HandleUpdated handles the updated steady state.
-func (h *Handlerv20250312) HandleUpdated(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleUpdated(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	if checkExpiry(ipaccesslistentry) {
-		return expiredResult(state.StateUpdated), nil
+		return expiredResult(constate.StateUpdated), nil
 	}
 
-	return h.handleSteadyState(ctx, state.StateUpdated, ipaccesslistentry)
+	return h.handleSteadyState(ctx, constate.StateUpdated, ipaccesslistentry)
 }
 
 // HandleDeletionRequested deletes the IP access list entry from Atlas.
-func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(ipaccesslistentry, h.deletionProtection) {
-		return result.NextState(state.StateDeleted, "IP access list entry skipped deletion due to retention policy.")
+		return constate.NextState(constate.StateDeleted, "IP access list entry skipped deletion due to retention policy.")
 	}
 
 	groupID, entryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, err)
+		return constate.ErrorState(constate.StateDeletionRequested, err)
 	}
 
 	_, err = h.atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID, entryValue).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) || v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
-		return result.NextState(state.StateDeleted, "IP access list entry deleted.")
+		return constate.NextState(constate.StateDeleted, "IP access list entry deleted.")
 	}
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete IP access list entry %q: %w", entryValue, err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete IP access list entry %q: %w", entryValue, err))
 	}
 
-	return result.NextState(state.StateDeleted, "IP access list entry deleted.")
+	return constate.NextState(constate.StateDeleted, "IP access list entry deleted.")
 }
 
 // HandleDeleting handles the deleting state.
-func (h *Handlerv20250312) HandleDeleting(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeleting(ctx context.Context, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	groupID, entryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(state.StateDeleting, err)
+		return constate.ErrorState(constate.StateDeleting, err)
 	}
 
 	_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
 	if v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) || v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
-		return result.NextState(state.StateDeleted, "IP access list entry deleted.")
+		return constate.NextState(constate.StateDeleted, "IP access list entry deleted.")
 	}
 	if err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to check IP access list deletion: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to check IP access list deletion: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Waiting for IP access list entry deletion.")
+	return constate.NextState(constate.StateDeleting, "Waiting for IP access list entry deletion.")
 }
 
 // For returns the resource and predicates for the controller.
@@ -262,17 +260,17 @@ func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec r
 }
 
 // handleSteadyState checks whether the spec changed and recreates the entry if needed.
-func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState state.ResourceState, ipaccesslistentry *akov2generated.IPAccessListEntry) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState constate.ResourceState, ipaccesslistentry *akov2generated.IPAccessListEntry) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to resolve IPAccessListEntry dependencies: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to resolve IPAccessListEntry dependencies: %w", err))
 	}
 
 	// First, check if the entry has expired
 	if hasDeleteAfterDate(ipaccesslistentry) {
 		groupID, entryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 		if err != nil {
-			return result.Error(currentState, err)
+			return constate.ErrorState(currentState, err)
 		}
 		// Check if the entry exists in Atlas
 		_, _, err = h.atlasClient.ProjectIPAccessListAPI.GetAccessListEntry(ctx, groupID, entryValue).Execute()
@@ -281,62 +279,62 @@ func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState s
 			return expiredResult(currentState), nil
 		}
 		if err != nil {
-			return result.Error(currentState, fmt.Errorf("failed to verify IP access list entry in Atlas: %w", err))
+			return constate.ErrorState(currentState, fmt.Errorf("failed to verify IP access list entry in Atlas: %w", err))
 		}
 		// Entry is still active in Atlas. Skip the normal ShouldUpdate/update cycle:
 		// entries with deleteAfterDate are ephemeral and re-creating them after the
 		// date has passed would produce EXPIRATION_DATE_IN_PAST errors. Just schedule
 		// a requeue so we poll Atlas again soon.
-		return ctrlstate.Result{
+		return constate.Result{
 			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
 			NextState: currentState,
 			StateMsg:  "IP access list entry is active.",
 		}, nil
 	}
 
-	update, err := ctrlstate.ShouldUpdate(ipaccesslistentry, deps...)
+	update, err := constate.ShouldUpdate(ipaccesslistentry, deps...)
 	if err != nil {
-		return result.Error(currentState, reconcile.TerminalError(err))
+		return constate.ErrorState(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
-		return result.NextState(currentState, "IP access list entry is up to date. No update required.")
+		return constate.NextState(currentState, "IP access list entry is up to date. No update required.")
 	}
 
 	groupID, oldEntryValue, err := h.identityFromStatusOrDeps(ctx, ipaccesslistentry)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	newEntryValue := entryValueFromSpec(ipaccesslistentry)
 	if newEntryValue == "" {
-		return result.Error(currentState, errors.New("spec must set exactly one of: ipAddress, cidrBlock, awsSecurityGroup"))
+		return constate.ErrorState(currentState, errors.New("spec must set exactly one of: ipAddress, cidrBlock, awsSecurityGroup"))
 	}
 
 	// Delete the old one if the entry value changed (e.g. CIDR, IP, AWS Security Group were modified).
 	if oldEntryValue != "" && oldEntryValue != newEntryValue {
 		_, err = h.atlasClient.ProjectIPAccessListAPI.DeleteAccessListEntry(ctx, groupID, oldEntryValue).Execute()
 		if err != nil && !v20250312sdk.IsErrorCode(err, atlasAccessListNotFound) && !v20250312sdk.IsErrorCode(err, atlasAccessListEntryNotFound) {
-			return result.Error(currentState, fmt.Errorf("failed to delete old IP access list entry %q: %w", oldEntryValue, err))
+			return constate.ErrorState(currentState, fmt.Errorf("failed to delete old IP access list entry %q: %w", oldEntryValue, err))
 		}
 	}
 
 	entry := buildNetworkPermissionEntry(ipaccesslistentry)
 	_, _, err = h.atlasClient.ProjectIPAccessListAPI.CreateAccessListEntry(ctx, groupID, &[]v20250312sdk.NetworkPermissionEntry{entry}).Execute()
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to create IP access list entry %q: %w", newEntryValue, err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to create IP access list entry %q: %w", newEntryValue, err))
 	}
 
 	if err := h.persistIdentity(ctx, ipaccesslistentry, groupID, newEntryValue); err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 
 	copy := ipaccesslistentry.DeepCopy()
-	if err := ctrlstate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to update state tracker: %w", err))
+	if err := constate.NewPatcher(copy).UpdateStateTracker(deps...).Patch(ctx, h.kubeClient); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to update state tracker: %w", err))
 	}
 
-	return result.NextState(state.StateUpdating, "IP access list entry updated. Waiting for activation.")
+	return constate.NextState(constate.StateUpdating, "IP access list entry updated. Waiting for activation.")
 }
 
 // resolveIdentity resolves the groupID and entry value from spec + dependencies.
@@ -434,7 +432,7 @@ func (h *Handlerv20250312) persistIdentity(ctx context.Context, ipaccesslistentr
 		copy.Status.V20250312.IpAddress = &entryValue
 	}
 
-	if err := ctrlstate.NewPatcher(copy).UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
+	if err := constate.NewPatcher(copy).UpdateStatus().Patch(ctx, h.kubeClient); err != nil {
 		return fmt.Errorf("failed to patch IPAccessListEntry status: %w", err)
 	}
 
@@ -546,8 +544,8 @@ func checkExpiry(ipaccesslistentry *akov2generated.IPAccessListEntry) bool {
 // expiredResult returns a reconcile result that marks the resource as expired without
 // transitioning to a new state. The 24 h requeue prevents reconcileReapply from running
 // while still allowing the controller to notice if the resource is updated.
-func expiredResult(currentState state.ResourceState) ctrlstate.Result {
-	return ctrlstate.Result{
+func expiredResult(currentState constate.ResourceState) constate.Result {
+	return constate.Result{
 		Result:    reconcile.Result{RequeueAfter: 24 * time.Hour},
 		NextState: currentState,
 		StateMsg:  expiredStateMsg,

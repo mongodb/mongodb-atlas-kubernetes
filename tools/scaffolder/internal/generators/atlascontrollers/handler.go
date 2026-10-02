@@ -16,7 +16,9 @@ package atlascontrollers
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -48,7 +50,6 @@ func generateMainHandlerFile(dir, resourceName, typesPath, indexerImportPath str
 	f := jen.NewFile(atlasResourceName)
 	boilerplate.AddLicenseHeader(f)
 
-	f.ImportAlias(pkgCtrlState, "ctrlstate")
 	f.ImportAlias("k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1", "apiextensionsv1")
 	f.ImportAlias(apiPkg, "akov2generated")
 
@@ -157,8 +158,8 @@ func generateDelegatingStateHandlers(f *jen.File, resourceName, apiPkg, indexerI
 				Dot("getHandlerForResource").
 				Call(jen.Id("ctx"), jen.Id(strings.ToLower(resourceName))),
 			jen.If(jen.Id("err").Op("!=").Nil()).Block(
-				jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-					jen.Qual("github.com/crd2go/constate/state", startStateMap[handlerName]),
+				jen.Return(jen.Qual(pkgCtrlState, "ErrorState").Call(
+					jen.Qual(pkgCtrlState, startStateMap[handlerName]),
 					jen.Id("err"),
 				)),
 			),
@@ -186,7 +187,7 @@ func generateSetupWithManager(f *jen.File, resourceName, typesPath, indexerImpor
 		Dot("Named").Call(jen.Lit(resourceName)).
 		Dot("For").Call(jen.Id("h").Dot("For").Call())
 
-	for referencedKind := range refsByKind {
+	for _, referencedKind := range slices.Sorted(maps.Keys(refsByKind)) {
 		newControllerManagedBy = newControllerManagedBy.Dot("Watches").Call(
 			getWatchedTypeInstance(referencedKind, typesPath),
 			jen.Qual("sigs.k8s.io/controller-runtime/pkg/handler", "EnqueueRequestsFromMapFunc").

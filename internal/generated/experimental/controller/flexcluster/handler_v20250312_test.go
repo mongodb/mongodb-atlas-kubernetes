@@ -24,8 +24,7 @@ import (
 	"os"
 	"testing"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +45,6 @@ import (
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/flexcluster"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 const (
@@ -68,7 +66,7 @@ func TestHandleInitial(t *testing.T) {
 		atlasCreateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
 		atlasGetFlexClusterFunc    func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
 		interceptorFuncs           *interceptor.Funcs
-		want                       ctrlstate.Result
+		want                       constate.Result
 		wantErr                    string
 	}{
 		{
@@ -80,7 +78,7 @@ func TestHandleInitial(t *testing.T) {
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return &v20250312sdk.FlexClusterDescription20241113{Id: new(testClusterName)}, nil, nil
 			},
-			want: reenqueueResult(state.StateCreating, "Creating Flex Cluster."),
+			want: reenqueueResult(constate.StateCreating, "Creating Flex Cluster."),
 		},
 		{
 			title:       "corrupt flex type cluster",
@@ -88,7 +86,7 @@ func TestHandleInitial(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup("some-group", testNamespace, nil),
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to translate flex api params",
 		},
 		{
@@ -100,13 +98,13 @@ func TestHandleInitial(t *testing.T) {
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, nil
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to translate flex create response",
 		},
 		{
 			title:       "missing group",
 			flexCluster: setGroupRef(defaultTestFlexCluster("test-cluster1", "ns"), "not-found"),
-			want:        ctrlstate.Result{NextState: state.StateInitial},
+			want:        constate.Result{NextState: constate.StateInitial},
 			wantErr:     "failed to get dependencies: failed to get Group",
 		},
 		{
@@ -115,7 +113,7 @@ func TestHandleInitial(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, nil),
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to fetch referenced value groupId",
 		},
 		{
@@ -127,7 +125,7 @@ func TestHandleInitial(t *testing.T) {
 			atlasCreateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("atlas API error: cluster creation failed")
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to create flex cluster",
 		},
 		{
@@ -144,7 +142,7 @@ func TestHandleInitial(t *testing.T) {
 					return fmt.Errorf("simulated status patch failure")
 				},
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to patch flex cluster status",
 		},
 		{
@@ -167,7 +165,7 @@ func TestHandleInitial(t *testing.T) {
 					StateName: new("CREATING"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateCreating, "Creating Flex Cluster."),
+			want: reenqueueResult(constate.StateCreating, "Creating Flex Cluster."),
 		},
 		{
 			title: "duplicate cluster name - get existing cluster fails when id in status",
@@ -186,7 +184,7 @@ func TestHandleInitial(t *testing.T) {
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("get cluster failed")
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to get existing flex cluster",
 		},
 		{
@@ -200,7 +198,7 @@ func TestHandleInitial(t *testing.T) {
 				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "DUPLICATE_CLUSTER_NAME"})
 				return nil, nil, apiErr
 			},
-			want:    ctrlstate.Result{NextState: state.StateInitial},
+			want:    constate.Result{NextState: constate.StateInitial},
 			wantErr: "failed to create flex cluster",
 		},
 	} {
@@ -241,7 +239,7 @@ func TestHandleImportRequested(t *testing.T) {
 		flexCluster             *akov2generated.FlexCluster
 		kubeObjects             []client.Object
 		atlasGetFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                    ctrlstate.Result
+		want                    constate.Result
 		wantErr                 string
 	}{
 		{
@@ -262,12 +260,12 @@ func TestHandleImportRequested(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: nextStateResult(state.StateImported, "Imported Flex Cluster."),
+			want: nextStateResult(constate.StateImported, "Imported Flex Cluster."),
 		},
 		{
 			title:       "missing external-name annotation",
 			flexCluster: defaultTestFlexCluster(testClusterName, testNamespace),
-			want:        errorResult(state.StateImportRequested),
+			want:        errorResult(constate.StateImportRequested),
 			wantErr:     "missing mongodb.com/external-name",
 		},
 		{
@@ -278,7 +276,7 @@ func TestHandleImportRequested(t *testing.T) {
 					"mongodb.com/external-name": "external-cluster",
 				},
 			),
-			want:    errorResult(state.StateImportRequested),
+			want:    errorResult(constate.StateImportRequested),
 			wantErr: "missing mongodb.com/external-group-id",
 		},
 		{
@@ -296,7 +294,7 @@ func TestHandleImportRequested(t *testing.T) {
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("failed to get cluster")
 			},
-			want:    errorResult(state.StateImportRequested),
+			want:    errorResult(constate.StateImportRequested),
 			wantErr: "failed to get cluster",
 		},
 	} {
@@ -331,7 +329,7 @@ func TestHandleCreating(t *testing.T) {
 		flexCluster             *akov2generated.FlexCluster
 		kubeObjects             []client.Object
 		atlasGetFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                    ctrlstate.Result
+		want                    constate.Result
 		wantErr                 string
 	}{
 		{
@@ -346,7 +344,7 @@ func TestHandleCreating(t *testing.T) {
 					StateName: new("CREATING"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateCreating, "Upserting Flex Cluster."),
+			want: reenqueueResult(constate.StateCreating, "Upserting Flex Cluster."),
 		},
 		{
 			title:       "cluster created",
@@ -360,12 +358,12 @@ func TestHandleCreating(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: nextStateResult(state.StateCreated, "Upserted Flex Cluster."),
+			want: nextStateResult(constate.StateCreated, "Upserted Flex Cluster."),
 		},
 		{
 			title:       "patchStatus fails",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), "not-found"),
-			want:        errorResult(state.StateCreating),
+			want:        errorResult(constate.StateCreating),
 			wantErr:     "failed to get Group",
 		},
 	} {
@@ -400,7 +398,7 @@ func TestHandleUpdating(t *testing.T) {
 		flexCluster             *akov2generated.FlexCluster
 		kubeObjects             []client.Object
 		atlasGetFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                    ctrlstate.Result
+		want                    constate.Result
 		wantErr                 string
 	}{
 		{
@@ -415,7 +413,7 @@ func TestHandleUpdating(t *testing.T) {
 					StateName: new("UPDATING"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateUpdating, "Upserting Flex Cluster."),
+			want: reenqueueResult(constate.StateUpdating, "Upserting Flex Cluster."),
 		},
 		{
 			title:       "cluster updated",
@@ -429,7 +427,7 @@ func TestHandleUpdating(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: nextStateResult(state.StateUpdated, "Upserted Flex Cluster."),
+			want: nextStateResult(constate.StateUpdated, "Upserted Flex Cluster."),
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -464,7 +462,7 @@ func TestHandleCreated(t *testing.T) {
 		kubeObjects                []client.Object
 		atlasUpdateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
 		interceptorFuncs           *interceptor.Funcs
-		want                       ctrlstate.Result
+		want                       constate.Result
 		wantErr                    string
 	}{
 		{
@@ -479,7 +477,7 @@ func TestHandleCreated(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want: nextStateResult(state.StateCreated, "Flex cluster up to date. No update required."),
+			want: nextStateResult(constate.StateCreated, "Flex cluster up to date. No update required."),
 		},
 		{
 			title: "update needed",
@@ -499,7 +497,7 @@ func TestHandleCreated(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
+			want: reenqueueResult(constate.StateUpdating, "Updating Flex Cluster."),
 		},
 		{
 			title: "update fails",
@@ -516,7 +514,7 @@ func TestHandleCreated(t *testing.T) {
 			atlasUpdateFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("update failed")
 			},
-			want:    errorResult(state.StateCreated),
+			want:    errorResult(constate.StateCreated),
 			wantErr: "failed to get update cluster",
 		},
 		{
@@ -537,7 +535,7 @@ func TestHandleCreated(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want:    errorResult(state.StateCreated),
+			want:    errorResult(constate.StateCreated),
 			wantErr: "failed to check reapply period",
 		},
 		{
@@ -556,7 +554,7 @@ func TestHandleCreated(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want:    errorResult(state.StateCreated),
+			want:    errorResult(constate.StateCreated),
 			wantErr: "failed to translate update flex cluster parameters",
 		},
 		{
@@ -575,7 +573,7 @@ func TestHandleCreated(t *testing.T) {
 				// Return nil to trigger "source is nil" check in FromAPI
 				return nil, nil, nil
 			},
-			want:    errorResult(state.StateCreated),
+			want:    errorResult(constate.StateCreated),
 			wantErr: "failed to translate update cluster response",
 		},
 		{
@@ -601,7 +599,7 @@ func TestHandleCreated(t *testing.T) {
 					return fmt.Errorf("simulated status patch failure")
 				},
 			},
-			want:    errorResult(state.StateCreated),
+			want:    errorResult(constate.StateCreated),
 			wantErr: "failed to patch cluster",
 		},
 	} {
@@ -636,7 +634,7 @@ func TestHandleImported(t *testing.T) {
 		flexCluster                *akov2generated.FlexCluster
 		kubeObjects                []client.Object
 		atlasUpdateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                       ctrlstate.Result
+		want                       constate.Result
 		wantErr                    string
 	}{
 		{
@@ -651,7 +649,7 @@ func TestHandleImported(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want: nextStateResult(state.StateCreated, "Flex cluster up to date. No update required."),
+			want: nextStateResult(constate.StateCreated, "Flex cluster up to date. No update required."),
 		},
 		{
 			title: "update needed",
@@ -671,7 +669,7 @@ func TestHandleImported(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
+			want: reenqueueResult(constate.StateUpdating, "Updating Flex Cluster."),
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -705,7 +703,7 @@ func TestHandleUpdated(t *testing.T) {
 		flexCluster                *akov2generated.FlexCluster
 		kubeObjects                []client.Object
 		atlasUpdateFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                       ctrlstate.Result
+		want                       constate.Result
 		wantErr                    string
 	}{
 		{
@@ -720,7 +718,7 @@ func TestHandleUpdated(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want: nextStateResult(state.StateUpdated, "Flex cluster up to date. No update required."),
+			want: nextStateResult(constate.StateUpdated, "Flex cluster up to date. No update required."),
 		},
 		{
 			title: "update needed",
@@ -740,7 +738,7 @@ func TestHandleUpdated(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateUpdating, "Updating Flex Cluster."),
+			want: reenqueueResult(constate.StateUpdating, "Updating Flex Cluster."),
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -774,7 +772,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 		kubeObjects                []client.Object
 		deletionProtection         bool
 		atlasDeleteFlexClusterFunc func() (*http.Response, error)
-		want                       ctrlstate.Result
+		want                       constate.Result
 		wantErr                    string
 	}{
 		{
@@ -789,7 +787,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 			atlasDeleteFlexClusterFunc: func() (*http.Response, error) {
 				return nil, nil
 			},
-			want: reenqueueResult(state.StateDeleting, "Deleting Flex Cluster."),
+			want: reenqueueResult(constate.StateDeleting, "Deleting Flex Cluster."),
 		},
 		{
 			title: "delete with keep annotation",
@@ -802,7 +800,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
-			want:               nextStateResult(state.StateDeleted, "Flex Cluster deleted."),
+			want:               nextStateResult(constate.StateDeleted, "Flex Cluster deleted."),
 		},
 		{
 			title: "delete with deletion protection enabled",
@@ -813,7 +811,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: true,
-			want:               nextStateResult(state.StateDeleted, "Flex Cluster deleted."),
+			want:               nextStateResult(constate.StateDeleted, "Flex Cluster deleted."),
 		},
 		{
 			title: "delete unmanaged cluster",
@@ -825,7 +823,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
-			want:               nextStateResult(state.StateDeleted, "Flex Cluster is unamanged."),
+			want:               nextStateResult(constate.StateDeleted, "Flex Cluster is unamanged."),
 		},
 		{
 			title: "cluster already deleted in Atlas",
@@ -841,7 +839,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "CLUSTER_NOT_FOUND"})
 				return nil, apiErr
 			},
-			want: nextStateResult(state.StateDeleted, "Flex Cluster was deleted in Atlas."),
+			want: nextStateResult(constate.StateDeleted, "Flex Cluster was deleted in Atlas."),
 		},
 		{
 			title: "delete fails",
@@ -855,7 +853,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 			atlasDeleteFlexClusterFunc: func() (*http.Response, error) {
 				return nil, fmt.Errorf("delete failed")
 			},
-			want:    errorResult(state.StateDeletionRequested),
+			want:    errorResult(constate.StateDeletionRequested),
 			wantErr: "failed to delete flex cluster",
 		},
 		{
@@ -864,7 +862,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), "not-found"),
 			),
 			deletionProtection: false,
-			want:               errorResult(state.StateDeletionRequested),
+			want:               errorResult(constate.StateDeletionRequested),
 			wantErr:            "failed to get dependencies",
 		},
 		{
@@ -880,7 +878,7 @@ func TestHandleDeletionRequested(t *testing.T) {
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
 			deletionProtection: false,
-			want:               errorResult(state.StateDeletionRequested),
+			want:               errorResult(constate.StateDeletionRequested),
 			wantErr:            "failed to translate flex api params",
 		},
 	} {
@@ -915,7 +913,7 @@ func TestHandleDeleting(t *testing.T) {
 		flexCluster             *akov2generated.FlexCluster
 		kubeObjects             []client.Object
 		atlasGetFlexClusterFunc func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error)
-		want                    ctrlstate.Result
+		want                    constate.Result
 		wantErr                 string
 	}{
 		{
@@ -929,7 +927,7 @@ func TestHandleDeleting(t *testing.T) {
 				apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "CLUSTER_NOT_FOUND"})
 				return nil, nil, apiErr
 			},
-			want: nextStateResult(state.StateDeleted, "Deleted."),
+			want: nextStateResult(constate.StateDeleted, "Deleted."),
 		},
 		{
 			title:       "cluster still deleting",
@@ -943,7 +941,7 @@ func TestHandleDeleting(t *testing.T) {
 					StateName: new("DELETING"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateDeleting, "Deleting Flex Cluster."),
+			want: reenqueueResult(constate.StateDeleting, "Deleting Flex Cluster."),
 		},
 		{
 			title:       "cluster in unexpected state after deletion — re-request deletion",
@@ -957,7 +955,7 @@ func TestHandleDeleting(t *testing.T) {
 					StateName: new("IDLE"),
 				}, nil, nil
 			},
-			want: reenqueueResult(state.StateDeletionRequested, `Flex cluster is in "IDLE" state instead of DELETING, re-requesting deletion.`),
+			want: reenqueueResult(constate.StateDeletionRequested, `Flex cluster is in "IDLE" state instead of DELETING, re-requesting deletion.`),
 		},
 		{
 			title:       "get cluster fails",
@@ -968,13 +966,13 @@ func TestHandleDeleting(t *testing.T) {
 			atlasGetFlexClusterFunc: func() (*v20250312sdk.FlexClusterDescription20241113, *http.Response, error) {
 				return nil, nil, fmt.Errorf("get failed")
 			},
-			want:    errorResult(state.StateDeletionRequested),
+			want:    errorResult(constate.StateDeletionRequested),
 			wantErr: "failed to get flex cluster status",
 		},
 		{
 			title:       "get dependencies fails",
 			flexCluster: setGroupRef(defaultTestFlexCluster(testClusterName, testNamespace), "not-found"),
-			want:        errorResult(state.StateDeleting),
+			want:        errorResult(constate.StateDeleting),
 			wantErr:     "failed to get dependencies",
 		},
 		{
@@ -987,7 +985,7 @@ func TestHandleDeleting(t *testing.T) {
 			kubeObjects: []client.Object{
 				defaultTestGroup(testGroupName, testNamespace, new(testGroupID)),
 			},
-			want:    errorResult(state.StateDeleting),
+			want:    errorResult(constate.StateDeleting),
 			wantErr: "failed to translate flex api params",
 		},
 	} {
@@ -1168,23 +1166,23 @@ func withFlexGVK(flexCluster *akov2generated.FlexCluster, kind string, apiVersio
 	return flexCluster
 }
 
-func reenqueueResult(state state.ResourceState, msg string) ctrlstate.Result {
-	return ctrlstate.Result{
-		Result:    reconcile.Result{RequeueAfter: result.DefaultRequeueTIme},
+func reenqueueResult(state constate.ResourceState, msg string) constate.Result {
+	return constate.Result{
+		Result:    reconcile.Result{RequeueAfter: constate.DefaultRequeueTime},
 		NextState: state,
 		StateMsg:  msg,
 	}
 }
 
-func nextStateResult(nextState state.ResourceState, msg string) ctrlstate.Result {
-	return ctrlstate.Result{
+func nextStateResult(nextState constate.ResourceState, msg string) constate.Result {
+	return constate.Result{
 		NextState: nextState,
 		StateMsg:  msg,
 	}
 }
 
-func errorResult(nextState state.ResourceState) ctrlstate.Result {
-	return ctrlstate.Result{
+func errorResult(nextState constate.ResourceState) constate.Result {
+	return constate.Result{
 		NextState: nextState,
 	}
 }
@@ -1239,7 +1237,7 @@ func withObservedGeneration(flexCluster *akov2generated.FlexCluster, observedGen
 	}
 	conditions := *flexCluster.Status.Conditions
 	conditions = append(conditions, metav1.Condition{
-		Type:               state.StateCondition,
+		Type:               constate.StateCondition,
 		ObservedGeneration: observedGen,
 		Status:             metav1.ConditionTrue,
 	})
@@ -1265,6 +1263,6 @@ func withStateTracker(flexCluster *akov2generated.FlexCluster, deps ...client.Ob
 	if flexCluster.Annotations == nil {
 		flexCluster.Annotations = make(map[string]string)
 	}
-	flexCluster.Annotations[ctrlstate.AnnotationStateTracker] = ctrlstate.ComputeStateTracker(flexCluster, deps...)
+	flexCluster.Annotations[constate.AnnotationStateTracker] = constate.ComputeStateTracker(flexCluster, deps...)
 	return flexCluster
 }

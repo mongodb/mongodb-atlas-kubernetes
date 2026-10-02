@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	k8s "github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -277,7 +277,7 @@ func newDatabaseUser(name, namespace string, modifiers ...func(*generatedv1.Data
 func withReadyCondition(u *generatedv1.DatabaseUser) {
 	conditions := []metav1.Condition{
 		{
-			Type:               state.ReadyCondition,
+			Type:               constate.ReadyCondition,
 			Status:             metav1.ConditionTrue,
 			LastTransitionTime: metav1.Now(),
 			Reason:             "Ready",

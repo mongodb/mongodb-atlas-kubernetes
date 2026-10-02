@@ -161,7 +161,7 @@ func (r *ConnectionSecretReconciler) handleBatchUpsert(
 		return ctrl.Result{}, nil
 	}
 
-	patcher := state.NewPatcher(user).
+	patcher := constate.NewPatcher(user).
 		WithFieldOwner(FieldOwner).
 		UpdateConditions([]metav1.Condition{connectionSecretCondition})
 

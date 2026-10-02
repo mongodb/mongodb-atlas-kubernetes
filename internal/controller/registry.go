@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate"
 	"go.uber.org/zap"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -217,11 +217,11 @@ func (r *Registry) defaultPredicates() []predicate.Predicate {
 }
 
 type ctrlStateReconciler[T any] struct {
-	*ctrlstate.Reconciler[T]
+	*constate.Reconciler[T]
 	maxConcurrentReconciles int
 }
 
-func newCtrlStateReconciler[T any](r *ctrlstate.Reconciler[T], maxConcurrentReconciles int) *ctrlStateReconciler[T] {
+func newCtrlStateReconciler[T any](r *constate.Reconciler[T], maxConcurrentReconciles int) *ctrlStateReconciler[T] {
 	return &ctrlStateReconciler[T]{Reconciler: r, maxConcurrentReconciles: maxConcurrentReconciles}
 }
 

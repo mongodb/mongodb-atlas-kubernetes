@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -140,7 +140,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 					}
 					if ready {
 						if condition := meta.FindStatusCondition(integration.GetConditions(), "State"); condition != nil {
-							return state.ResourceState(condition.Reason) == state.StateUpdated
+							return constate.ResourceState(condition.Reason) == constate.StateUpdated
 						}
 					}
 					return false
@@ -317,7 +317,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 				}
 				if ready {
 					if condition := meta.FindStatusCondition(integration.GetConditions(), "State"); condition != nil {
-						return state.ResourceState(condition.Reason) == state.StateUpdated
+						return constate.ResourceState(condition.Reason) == constate.StateUpdated
 					}
 				}
 				return false

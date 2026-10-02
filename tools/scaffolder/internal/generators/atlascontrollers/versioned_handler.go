@@ -36,48 +36,52 @@ func generateVersionHandlerFile(dir, resourceName, typesPath, indexerImportPath,
 	fileName := filepath.Join(dir, "handler_"+versionSuffix+".go")
 
 	// Check if a versioned handler file exists
+	skipHandler := false
 	if !override {
 		if _, err := os.Stat(fileName); err == nil {
 			fmt.Printf("Skipping versioned handler %s (already exists, use --override to overwrite)\n", fileName)
-			return nil
+			skipHandler = true
 		}
 	}
 
-	f := jen.NewFile(atlasResourceName)
-	boilerplate.AddLicenseHeader(f)
+	if !skipHandler {
+		f := jen.NewFile(atlasResourceName)
+		boilerplate.AddLicenseHeader(f)
 
-	f.ImportAlias(pkgCtrlState, "ctrlstate")
-	f.ImportAlias(apiPkg, "akov2generated")
-	f.ImportAlias(sdkImportPath, versionSuffix+"sdk")
+		f.ImportAlias(apiPkg, "akov2generated")
+		f.ImportAlias(sdkImportPath, versionSuffix+"sdk")
 
-	f.Type().Id("Handler"+versionSuffix).Struct(
-		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
-		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-		jen.Id("translator").Qual("github.com/crd2go/crapi", "Translator"),
-		jen.Id("deletionProtection").Bool(),
-	)
+		f.Type().Id("Handler"+versionSuffix).Struct(
+			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
+			jen.Id("translator").Qual("github.com/crd2go/crapi", "Translator"),
+			jen.Id("deletionProtection").Bool(),
+		)
 
-	f.Func().Id("NewHandler"+versionSuffix).Params(
-		jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
-		jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
-		jen.Id("translator").Qual("github.com/crd2go/crapi", "Translator"),
-		jen.Id("deletionProtection").Bool(),
-	).Op("*").Id("Handler" + versionSuffix).Block(
-		jen.Return(jen.Op("&").Id("Handler" + versionSuffix).Values(jen.Dict{
-			jen.Id("kubeClient"):         jen.Id("kubeClient"),
-			jen.Id("atlasClient"):        jen.Id("atlasClient"),
-			jen.Id("translator"):         jen.Id("translator"),
-			jen.Id("deletionProtection"): jen.Id("deletionProtection"),
-		})),
-	)
+		f.Func().Id("NewHandler"+versionSuffix).Params(
+			jen.Id("kubeClient").Qual("sigs.k8s.io/controller-runtime/pkg/client", "Client"),
+			jen.Id("atlasClient").Op("*").Qual(sdkImportPath, "APIClient"),
+			jen.Id("translator").Qual("github.com/crd2go/crapi", "Translator"),
+			jen.Id("deletionProtection").Bool(),
+		).Op("*").Id("Handler" + versionSuffix).Block(
+			jen.Return(jen.Op("&").Id("Handler" + versionSuffix).Values(jen.Dict{
+				jen.Id("kubeClient"):         jen.Id("kubeClient"),
+				jen.Id("atlasClient"):        jen.Id("atlasClient"),
+				jen.Id("translator"):         jen.Id("translator"),
+				jen.Id("deletionProtection"): jen.Id("deletionProtection"),
+			})),
+		)
 
-	generateVersionStateHandlers(f, resourceName, apiPkg, versionSuffix)
-	generateVersionInterfaceMethods(f, resourceName, apiPkg, versionSuffix)
+		generateVersionStateHandlers(f, resourceName, apiPkg, versionSuffix)
+		generateVersionInterfaceMethods(f, resourceName, apiPkg, versionSuffix)
 
-	if err := f.Save(fileName); err != nil {
-		return err
+		if err := f.Save(fileName); err != nil {
+			return err
+		}
 	}
 
+	// Always (re)generate the "DO NOT EDIT" dependencies file, even when the
+	// handler file was skipped.
 	return generateVersionHandlerGeneratedFile(dir, resourceName, typesPath, indexerImportPath, resultPath, mapping)
 }
 
@@ -141,8 +145,8 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			),
 			jen.If(jen.Err().Op("!=").Nil()).Block(
 				jen.Return(
-					jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "Error").Call(
-						jen.Qual("github.com/crd2go/constate/state", "State"+strings.TrimPrefix(handler.name, "Handle")),
+					jen.Qual(pkgCtrlState, "ErrorState").Call(
+						jen.Qual(pkgCtrlState, "State"+strings.TrimPrefix(handler.name, "Handle")),
 						jen.Qual("fmt", "Errorf").Call(
 							jen.Lit(fmt.Sprintf("failed to resolve %s dependencies: %%w", resourceName)),
 							jen.Err(),
@@ -154,8 +158,8 @@ func generateVersionStateHandlers(f *jen.File, resourceName, apiPkg, versionSuff
 			jen.Comment("TODO: Implement " + strings.ToLower(strings.TrimPrefix(handler.name, "Handle")) + " state logic"),
 			jen.Comment("TODO: Use h.atlasProvider.SdkClientSet(ctx, h.globalSecretRef, h.log) to get Atlas SDK client"),
 			jen.Comment("TODO: Replace _ with deps and use deps variable when calling h.translator.ToAPI() methods"),
-			jen.Return(jen.Qual("github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result", "NextState").Call(
-				jen.Qual("github.com/crd2go/constate/state", handler.nextState),
+			jen.Return(jen.Qual(pkgCtrlState, "NextState").Call(
+				jen.Qual(pkgCtrlState, handler.nextState),
 				jen.Lit(handler.message),
 			)),
 		}
@@ -231,6 +235,7 @@ func generateGetDependenciesMethod(f *jen.File, resourceName, apiPkg, versionSuf
 		blockStatements = append(blockStatements, jen.Return(jen.Id("deps"), jen.Nil()))
 	}
 
+	f.Comment("//nolint:unparam // Dependency result is reserved for the handler implementation.")
 	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("getDependencies").Params(
 		jen.Id("ctx").Qual("context", "Context"),
 		jen.Id(resourceVarName).Op("*").Qual(apiPkg, resourceName),
@@ -251,28 +256,63 @@ func generateGetDependentsMethod(f *jen.File, resourceName, apiPkg, versionSuffi
 	}
 
 	if len(dependentInfos) == 0 {
-		blockStatements = append(blockStatements, jen.Return(jen.Id("dependents")))
+		blockStatements = append(blockStatements, jen.Return(jen.Id("dependents"), jen.Nil()))
 	} else {
-		for _, depInfo := range dependentInfos {
+		for depIdx, depInfo := range dependentInfos {
+			kind := depInfo.DependentKind
+			kindVarName := strings.ToLower(kind) + "List"
+			// Only the first dependent can declare err; subsequent ones must assign.
+			errStatement := jen.Err().Op(":=")
+			if depIdx > 0 {
+				errStatement = jen.Err().Op("=")
+			}
+
 			blockStatements = append(blockStatements,
-				jen.Id("dependents").Op("=").Append(
-					jen.Id("dependents"),
-					jen.Qual(indexerImportPath, depInfo.MapFuncName).
-						Call(jen.Id("h").Dot("kubeClient")).
-						Call(jen.Id("ctx"), jen.Id(resourceVarName)).Op("..."),
+				jen.Id(kindVarName).Op(":=").Op("&").Qual(apiPkg, kind+"List").Values(),
+				errStatement.Id("h").Dot("kubeClient").Dot("List").Call(
+					jen.Id("ctx"),
+					jen.Id(kindVarName),
+					jen.Op("&").Qual("sigs.k8s.io/controller-runtime/pkg/client", "ListOptions").Values(jen.Dict{
+						jen.Id("FieldSelector"): jen.Qual("k8s.io/apimachinery/pkg/fields", "OneTermEqualSelector").Call(
+							jen.Qual(indexerImportPath, depInfo.IndexerConstantName),
+							jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+								jen.Id("Name"):      jen.Id(resourceVarName).Dot("Name"),
+								jen.Id("Namespace"): jen.Id(resourceVarName).Dot("Namespace"),
+							}).Dot("String").Call(),
+						),
+					}),
 				),
+				jen.If(jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Nil(), jen.Qual("fmt", "Errorf").Call(
+						jen.Lit(fmt.Sprintf("failed to list %s objects: %%w", kind)),
+						jen.Err(),
+					)),
+				),
+				jen.For(jen.List(jen.Id("_"), jen.Id("item")).Op(":=").Range().Id(kindVarName).Dot("Items")).Block(
+					jen.Id("dependents").Op("=").Append(
+						jen.Id("dependents"),
+						jen.Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request").Values(jen.Dict{
+							jen.Id("NamespacedName"): jen.Qual("k8s.io/apimachinery/pkg/types", "NamespacedName").Values(jen.Dict{
+								jen.Id("Name"):      jen.Id("item").Dot("Name"),
+								jen.Id("Namespace"): jen.Id("item").Dot("Namespace"),
+							}),
+						}),
+					),
+				),
+				jen.Line(),
 			)
 		}
-		blockStatements = append(blockStatements, jen.Line(), jen.Return(jen.Id("dependents")))
+		blockStatements = append(blockStatements, jen.Return(jen.Id("dependents"), jen.Nil()))
 	}
 
 	f.Comment("getDependents returns all resources that reference this resource.")
-	f.Comment("It uses the generated indexer MapFunc functions to find dependent resources.")
+	f.Comment("It uses the generated indexer field indexes to find dependent resources.")
 	f.Func().Params(jen.Id("h").Op("*").Id("Handler"+versionSuffix)).Id("getDependents").Params(
 		jen.Id("ctx").Qual("context", "Context"),
 		jen.Id(resourceVarName).Op("*").Qual(apiPkg, resourceName),
 	).Params(
 		jen.Index().Qual("sigs.k8s.io/controller-runtime/pkg/reconcile", "Request"),
+		jen.Error(),
 	).Block(blockStatements...)
 }
 

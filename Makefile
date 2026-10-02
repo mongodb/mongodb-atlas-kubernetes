@@ -795,6 +795,7 @@ addlicense-check:
 	-ignore "**/*.nix" \
 	-ignore "tools/**" \
 	-ignore ".devbox/**" \
+	-ignore ".opencode/**" \
 	-ignore "tmp/**" \
 	-ignore "temp/**" \
 	-ignore "**/*Dockerfile" .

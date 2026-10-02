@@ -170,7 +170,8 @@ func TestGetDependents(t *testing.T) {
 				Build()
 
 			handler := NewHandlerintegrations(fakeClient, nil, nil, false)
-			requests := handler.getDependents(ctx, tc.parent)
+			requests, err := handler.getDependents(ctx, tc.parent)
+			require.NoError(t, err)
 
 			require.Len(t, requests, tc.wantRequestsCount)
 

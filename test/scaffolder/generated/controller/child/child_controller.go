@@ -17,7 +17,7 @@ package child
 import (
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
+	constate "github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	zap "go.uber.org/zap"
@@ -55,7 +55,7 @@ var (
 // +kubebuilder:rbac:groups="",namespace=default,resources=events,verbs=create;patch
 
 type Handler struct {
-	ctrlstate.StateHandler[akov2generated.Child]
+	constate.StateHandler[akov2generated.Child]
 	reconciler.AtlasReconciler
 	deletionProtection bool
 	predicates         []predicate.Predicate
@@ -70,7 +70,7 @@ func NewChildReconciler(
 	globalSecretRef client.ObjectKey,
 	deletionProtection bool,
 	reapplySupport bool,
-	predicates []predicate.Predicate) (*ctrlstate.Reconciler[akov2generated.Child], error) {
+	predicates []predicate.Predicate) (*constate.Reconciler[akov2generated.Child], error) {
 	crd, err := crds.EmbeddedCRD("Child")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CRD for Child: %w", err)
@@ -93,8 +93,8 @@ func NewChildReconciler(
 		translators:        translators,
 	}
 
-	return ctrlstate.NewStateReconciler(childHandler, ctrlstate.WithCluster[akov2generated.Child](c), ctrlstate.WithReapplySupport[akov2generated.Child](reapplySupport)), nil
+	return constate.NewStateReconciler(childHandler, constate.WithCluster[akov2generated.Child](c), constate.WithReapplySupport[akov2generated.Child](reapplySupport)), nil
 }
-func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) ctrlstate.StateHandler[akov2generated.Child] {
+func handlerv20250312Func(kubeClient client.Client, atlasClient *v20250312sdk.APIClient, translator crapi.Translator, deletionProtection bool) constate.StateHandler[akov2generated.Child] {
 	return NewHandlerv20250312(kubeClient, atlasClient, translator, deletionProtection)
 }

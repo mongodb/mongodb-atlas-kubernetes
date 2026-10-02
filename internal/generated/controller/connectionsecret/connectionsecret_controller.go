@@ -21,8 +21,7 @@ import (
 	"reflect"
 	"time"
 
-	controllerstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -168,7 +167,7 @@ func (r *ConnectionSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			Message:            err.Error(),
 		}
 
-		patcher := controllerstate.NewPatcher(user).
+		patcher := constate.NewPatcher(user).
 			WithFieldOwner(FieldOwner).
 			UpdateConditions([]metav1.Condition{errorCondition})
 
@@ -210,7 +209,7 @@ func (r *ConnectionSecretReconciler) reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Verify if the AtlasDatabaseUser is ready.
-	ready := meta.FindStatusCondition(user.GetConditions(), state.ReadyCondition)
+	ready := meta.FindStatusCondition(user.GetConditions(), constate.ReadyCondition)
 	isUserReady := ready != nil && ready.Status == metav1.ConditionTrue
 	if !isUserReady {
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil

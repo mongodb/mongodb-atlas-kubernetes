@@ -19,8 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	constate "github.com/crd2go/constate"
 	v1 "k8s.io/api/core/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -32,20 +31,19 @@ import (
 
 	atlas "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	reconciler "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 	indexers "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/indexers"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
 
 // getHandlerForResource selects the appropriate version-specific handler based on which resource spec version is set
-func (h *Handler) getHandlerForResource(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.StateHandler[akov2generated.Parent], error) {
+func (h *Handler) getHandlerForResource(ctx context.Context, parent *akov2generated.Parent) (constate.StateHandler[akov2generated.Parent], error) {
 	atlasClients, err := h.getSDKClientSet(ctx, parent)
 	if err != nil {
 		return nil, err
 	}
 	// Check which resource spec version is set and validate that only one is specified
 	var versionCount int
-	var selectedHandler ctrlstate.StateHandler[akov2generated.Parent]
+	var selectedHandler constate.StateHandler[akov2generated.Parent]
 
 	if parent.Spec.Integrations != nil {
 		translator, ok := h.translators["integrations"]
@@ -66,82 +64,82 @@ func (h *Handler) getHandlerForResource(ctx context.Context, parent *akov2genera
 }
 
 // HandleInitial delegates to the version-specific handler
-func (h *Handler) HandleInitial(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleInitial(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateInitial, err)
+		return constate.ErrorState(constate.StateInitial, err)
 	}
 	return handler.HandleInitial(ctx, parent)
 }
 
 // HandleImportRequested delegates to the version-specific handler
-func (h *Handler) HandleImportRequested(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleImportRequested(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
 	return handler.HandleImportRequested(ctx, parent)
 }
 
 // HandleImported delegates to the version-specific handler
-func (h *Handler) HandleImported(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleImported(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateImported, err)
+		return constate.ErrorState(constate.StateImported, err)
 	}
 	return handler.HandleImported(ctx, parent)
 }
 
 // HandleCreating delegates to the version-specific handler
-func (h *Handler) HandleCreating(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleCreating(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateCreating, err)
+		return constate.ErrorState(constate.StateCreating, err)
 	}
 	return handler.HandleCreating(ctx, parent)
 }
 
 // HandleCreated delegates to the version-specific handler
-func (h *Handler) HandleCreated(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleCreated(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateCreated, err)
+		return constate.ErrorState(constate.StateCreated, err)
 	}
 	return handler.HandleCreated(ctx, parent)
 }
 
 // HandleUpdating delegates to the version-specific handler
-func (h *Handler) HandleUpdating(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleUpdating(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateUpdating, err)
+		return constate.ErrorState(constate.StateUpdating, err)
 	}
 	return handler.HandleUpdating(ctx, parent)
 }
 
 // HandleUpdated delegates to the version-specific handler
-func (h *Handler) HandleUpdated(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleUpdated(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateUpdated, err)
+		return constate.ErrorState(constate.StateUpdated, err)
 	}
 	return handler.HandleUpdated(ctx, parent)
 }
 
 // HandleDeletionRequested delegates to the version-specific handler
-func (h *Handler) HandleDeletionRequested(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleDeletionRequested(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, err)
+		return constate.ErrorState(constate.StateDeletionRequested, err)
 	}
 	return handler.HandleDeletionRequested(ctx, parent)
 }
 
 // HandleDeleting delegates to the version-specific handler
-func (h *Handler) HandleDeleting(ctx context.Context, parent *akov2generated.Parent) (ctrlstate.Result, error) {
+func (h *Handler) HandleDeleting(ctx context.Context, parent *akov2generated.Parent) (constate.Result, error) {
 	handler, err := h.getHandlerForResource(ctx, parent)
 	if err != nil {
-		return result.Error(state.StateDeleting, err)
+		return constate.ErrorState(constate.StateDeleting, err)
 	}
 	return handler.HandleDeleting(ctx, parent)
 }

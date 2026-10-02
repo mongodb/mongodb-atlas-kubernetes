@@ -19,8 +19,7 @@ import (
 	"fmt"
 	"testing"
 
-	ctrlstate "github.com/crd2go/constate"
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -94,17 +93,17 @@ func TestHandleUpsert(t *testing.T) {
 
 	for _, tc := range []struct {
 		name           string
-		state          state.ResourceState
+		state          constate.ResourceState
 		provider       atlas.Provider
 		serviceBuilder serviceBuilderFunc
 		input          *akov2.AtlasThirdPartyIntegration
 		objects        []client.Object
-		want           ctrlstate.Result
+		want           constate.Result
 		wantErr        string
 	}{
 		{
 			name:  "initial creates",
-			state: state.StateInitial,
+			state: constate.StateInitial,
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
@@ -125,7 +124,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Created Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -133,7 +132,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "initial updates",
-			state: state.StateInitial,
+			state: constate.StateInitial,
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
@@ -157,7 +156,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{unannotatedSampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -165,7 +164,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "initial get fails",
-			state: state.StateInitial,
+			state: constate.StateInitial,
 			provider: &atlasmock.TestProvider{
 				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
 					return &atlas.ClientSet{
@@ -181,13 +180,13 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want:    ctrlstate.Result{NextState: "Initial"},
+			want:    constate.Result{NextState: "Initial"},
 			wantErr: "Error getting WEBHOOK Atlas Integration for project testProjectID: unexpected error",
 		},
 
 		{
 			name:  "created creates",
-			state: state.StateCreated,
+			state: constate.StateCreated,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
@@ -208,7 +207,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Created Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -216,7 +215,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "updated updates due unhashed secret",
-			state: state.StateUpdated,
+			state: constate.StateUpdated,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
@@ -240,7 +239,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{unannotatedSampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -248,7 +247,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "imported does not update",
-			state: state.StateInitial,
+			state: constate.StateInitial,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
@@ -271,7 +270,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Created",
 				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
 			},
@@ -279,7 +278,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "id diff does not update",
-			state: state.StateUpdated,
+			state: constate.StateUpdated,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
@@ -302,7 +301,7 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
 			},
@@ -310,7 +309,7 @@ func TestHandleUpsert(t *testing.T) {
 
 		{
 			name:  "different integration updates",
-			state: state.StateUpdated,
+			state: constate.StateUpdated,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "SLACK").
@@ -374,7 +373,7 @@ func TestHandleUpsert(t *testing.T) {
 					"apiToken": ([]byte)("fake-token"),
 				},
 			}},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for SLACK.",
 			},
@@ -396,11 +395,11 @@ func TestHandleUpsert(t *testing.T) {
 
 			handle := h.HandleInitial
 			switch tc.state {
-			case state.StateInitial:
+			case constate.StateInitial:
 				handle = h.HandleInitial
-			case state.StateCreated:
+			case constate.StateCreated:
 				handle = h.HandleCreated
-			case state.StateUpdated:
+			case constate.StateUpdated:
 				handle = h.HandleUpdated
 			default:
 				panic(fmt.Errorf("unsupported state %v for test", tc.state))
@@ -430,7 +429,7 @@ func TestHandleDeletion(t *testing.T) {
 		serviceBuilder     serviceBuilderFunc
 		input              *akov2.AtlasThirdPartyIntegration
 		objects            []client.Object
-		want               ctrlstate.Result
+		want               constate.Result
 		wantErr            string
 	}{
 		{
@@ -451,7 +450,7 @@ func TestHandleDeletion(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Deleted Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -472,7 +471,7 @@ func TestHandleDeletion(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Deleted Atlas Third Party Integration for WEBHOOK.",
 			},
@@ -496,7 +495,7 @@ func TestHandleDeletion(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want:    ctrlstate.Result{NextState: "DeletionRequested"},
+			want:    constate.Result{NextState: "DeletionRequested"},
 			wantErr: "Error deleting WEBHOOK Atlas Integration for project testProjectID: unexpected error",
 		},
 
@@ -520,7 +519,7 @@ func TestHandleDeletion(t *testing.T) {
 			},
 			input:   &sampleWebhookIntegration,
 			objects: []client.Object{sampleWebhookSecret},
-			want: ctrlstate.Result{
+			want: constate.Result{
 				NextState: "Deleted",
 				StateMsg:  "Deleted Atlas Third Party Integration for WEBHOOK.",
 			},

@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -857,7 +857,7 @@ func newTestDatabaseUser(name, namespace, projectID string) *generatedv1.Databas
 		Status: generatedv1.DatabaseUserStatus{
 			Conditions: &[]metav1.Condition{
 				{
-					Type:               state.ReadyCondition,
+					Type:               constate.ReadyCondition,
 					Status:             metav1.ConditionTrue,
 					LastTransitionTime: metav1.Now(),
 					Reason:             "Ready",

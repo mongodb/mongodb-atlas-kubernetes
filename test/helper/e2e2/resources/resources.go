@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,7 +102,7 @@ func CheckResourceReady(ctx context.Context, kubeClient client.Client, obj kube.
 	return ErrResourceNotReady
 }
 
-// CheckResourceUpdated checks if a resource is Ready and in Updated state.
+// CheckResourceUpdated checks if a resource is Ready and in Updated constate.
 // Returns nil if updated, ErrResourceNotUpdated if not updated, or an error if the resource cannot be fetched.
 func CheckResourceUpdated(ctx context.Context, kubeClient client.Client, obj kube.ObjectWithStatus) error {
 	key := client.ObjectKeyFromObject(obj)
@@ -117,7 +117,7 @@ func CheckResourceUpdated(ctx context.Context, kubeClient client.Client, obj kub
 		return ErrResourceNotUpdated
 	}
 	if condition := meta.FindStatusCondition(obj.GetConditions(), "State"); condition != nil {
-		if state.ResourceState(condition.Reason) == state.StateUpdated {
+		if constate.ResourceState(condition.Reason) == constate.StateUpdated {
 			return nil
 		}
 	}

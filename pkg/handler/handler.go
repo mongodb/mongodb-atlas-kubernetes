@@ -15,7 +15,7 @@
 package handler
 
 import (
-	ctrlstate "github.com/crd2go/constate"
+	"github.com/crd2go/constate"
 	"github.com/crd2go/crapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -23,4 +23,4 @@ import (
 // VersionedHandlerFunc is a factory function that creates a StateHandler for a specific
 // Atlas SDK version, wired up with the provided Kubernetes client, Atlas API client,
 // CRD translator, and deletion-protection setting.
-type VersionedHandlerFunc[C any, T any] func(kubeClient client.Client, atlasClient *C, translator crapi.Translator, deletionProtection bool) ctrlstate.StateHandler[T]
+type VersionedHandlerFunc[C any, T any] func(kubeClient client.Client, atlasClient *C, translator crapi.Translator, deletionProtection bool) constate.StateHandler[T]

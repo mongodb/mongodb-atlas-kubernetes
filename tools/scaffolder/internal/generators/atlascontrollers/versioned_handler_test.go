@@ -103,7 +103,7 @@ spec:
 	assert.Contains(t, contentStr, "Apache License, Version 2.0")
 
 	// Verify imports
-	assert.Contains(t, contentStr, `ctrlstate "github.com/crd2go/constate"`)
+	assert.Contains(t, contentStr, `"github.com/crd2go/constate"`)
 	assert.Contains(t, contentStr, `akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"`)
 	assert.Contains(t, contentStr, `v20250312sdk "go.mongodb.org/atlas-sdk/v20250312008/admin"`)
 
@@ -440,7 +440,7 @@ spec:
 			assert.Contains(t, contentStr, "func (h *Handlerv20250312) "+tt.handler)
 
 			// Verify it returns correct state
-			assert.Contains(t, contentStr, `state.`+tt.nextState)
+			assert.Contains(t, contentStr, `constate.`+tt.nextState)
 			assert.Contains(t, contentStr, `"`+tt.message+`"`)
 
 			// Verify it has TODO comments
@@ -991,16 +991,23 @@ spec:`, 1)
 		// Verify it declares dependents slice
 		assert.Contains(t, contentStr, "var dependents []reconcile.Request")
 
-		// Verify it calls the indexer MapFunc for Cluster (which references Group)
-		assert.Contains(t, contentStr, "indexers.NewClusterByGroupMapFunc")
-		assert.Contains(t, contentStr, "h.kubeClient")
-		assert.Contains(t, contentStr, "(ctx, group)")
+		// Verify it lists Cluster objects via the indexer field index (which references Group)
+		assert.Contains(t, contentStr, "h.kubeClient.List")
+		assert.Contains(t, contentStr, "indexers.ClusterByGroupIndex")
+		assert.Contains(t, contentStr, "&akov2generated.ClusterList{}")
 
-		// Verify it calls the indexer MapFunc for FlexCluster (which references Group)
-		assert.Contains(t, contentStr, "indexers.NewFlexClusterByGroupMapFunc")
+		// Verify it lists FlexCluster objects via the indexer field index (which references Group)
+		assert.Contains(t, contentStr, "indexers.FlexClusterByGroupIndex")
+		assert.Contains(t, contentStr, "&akov2generated.FlexClusterList{}")
 
-		// Verify it returns dependents
-		assert.Contains(t, contentStr, "return dependents")
+		// Verify the first dependent declares err and subsequent ones assign it,
+		// otherwise the generated code fails to compile with
+		// "no new variables on left side of :="
+		assert.Contains(t, contentStr, "err := h.kubeClient.List(")
+		assert.Contains(t, contentStr, "err = h.kubeClient.List(")
+
+		// Verify it returns dependents and error
+		assert.Contains(t, contentStr, "return dependents, nil")
 	})
 
 	t.Run("GeneratesGetDependentsMethodWithNoDependents", func(t *testing.T) {

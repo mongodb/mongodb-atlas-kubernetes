@@ -19,8 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	ctrlstate "github.com/crd2go/constate"
-	state "github.com/crd2go/constate/state"
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -31,7 +30,6 @@ import (
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/nextapi/generated/v1"
-	result "github.com/mongodb/mongodb-atlas-kubernetes/v2/pkg/result"
 )
 
 type Handlerv20250312 struct {
@@ -51,10 +49,10 @@ func NewHandlerv20250312(kubeClient client.Client, atlasClient *v20250312sdk.API
 }
 
 // HandleInitial handles the initial state for version v20250312
-func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to get dependencies: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to get dependencies: %w", err))
 	}
 
 	body := &v20250312sdk.FlexClusterDescriptionCreate20241113{}
@@ -63,11 +61,11 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 	}
 
 	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex api params: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
 	if err := h.translator.ToAPI(body, flexcluster, deps...); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex create description: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate flex create description: %w", err))
 	}
 
 	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.CreateFlexClusterWithParams(ctx, params).Execute()
@@ -77,136 +75,136 @@ func (h *Handlerv20250312) HandleInitial(ctx context.Context, flexcluster *akov2
 		// Atlas resource we must not hijack) or the cache is too stale to confirm ownership; return
 		// an error so the next retry (after backoff) reads the updated cache and decides correctly.
 		if flexcluster.Status.V20250312 == nil || flexcluster.Status.V20250312.Id == nil {
-			return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
+			return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
 		}
 		getParams := &v20250312sdk.GetFlexClusterApiParams{}
 		if translateErr := h.translator.ToAPI(getParams, flexcluster, deps...); translateErr != nil {
-			return result.Error(state.StateInitial, fmt.Errorf("failed to translate get params for existing cluster: %w", translateErr))
+			return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate get params for existing cluster: %w", translateErr))
 		}
 		atlasFlexCluster, _, err = h.atlasClient.FlexClustersAPI.GetFlexClusterWithParams(ctx, getParams).Execute()
 		if err != nil {
-			return result.Error(state.StateInitial, fmt.Errorf("failed to get existing flex cluster: %w", err))
+			return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to get existing flex cluster: %w", err))
 		}
 	} else if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to create flex cluster: %w", err))
 	}
 	newFlexCluster := flexcluster.DeepCopy()
 	if _, err := h.translator.FromAPI(newFlexCluster, atlasFlexCluster); err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to translate flex create response: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to translate flex create response: %w", err))
 	}
 
 	err = h.kubeClient.Status().Patch(ctx, newFlexCluster, client.MergeFrom(flexcluster))
 	if err != nil {
-		return result.Error(state.StateInitial, fmt.Errorf("failed to patch flex cluster status: %w", err))
+		return constate.ErrorState(constate.StateInitial, fmt.Errorf("failed to patch flex cluster status: %w", err))
 	}
-	return result.NextState(state.StateCreating, "Creating Flex Cluster.")
+	return constate.NextState(constate.StateCreating, "Creating Flex Cluster.")
 }
 
 // HandleImportRequested handles the importrequested state for version v20250312
-func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleImportRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
 	externalName, ok := flexcluster.GetAnnotations()["mongodb.com/external-name"]
 	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing mongodb.com/external-name"))
+		return constate.ErrorState(constate.StateImportRequested, errors.New("missing mongodb.com/external-name"))
 	}
 
 	externalGroupID, ok := flexcluster.GetAnnotations()["mongodb.com/external-group-id"]
 	if !ok {
-		return result.Error(state.StateImportRequested, errors.New("missing mongodb.com/external-group-id"))
+		return constate.ErrorState(constate.StateImportRequested, errors.New("missing mongodb.com/external-group-id"))
 	}
 	flexClusterCopy := flexcluster.DeepCopy()
 	flexClusterCopy.Spec.V20250312.Entry.Name = externalName
 	flexClusterCopy.Spec.V20250312.GroupId = &externalGroupID
 	_, err := h.patchStatus(ctx, flexClusterCopy)
 	if err != nil {
-		return result.Error(state.StateImportRequested, err)
+		return constate.ErrorState(constate.StateImportRequested, err)
 	}
-	return result.NextState(state.StateImported, "Imported Flex Cluster.")
+	return constate.NextState(constate.StateImported, "Imported Flex Cluster.")
 }
 
 // HandleImported handles the imported state for version v20250312
-func (h *Handlerv20250312) HandleImported(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	return h.handleIdle(ctx, flexcluster, state.StateCreated, state.StateUpdating)
+func (h *Handlerv20250312) HandleImported(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
+	return h.handleIdle(ctx, flexcluster, constate.StateCreated, constate.StateUpdating)
 }
 
 // HandleCreating handles the creating state for version v20250312
-func (h *Handlerv20250312) HandleCreating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	return h.handleUpserting(ctx, flexcluster, state.StateCreating, state.StateCreated)
+func (h *Handlerv20250312) HandleCreating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
+	return h.handleUpserting(ctx, flexcluster, constate.StateCreating, constate.StateCreated)
 }
 
 // HandleCreated handles the created state for version v20250312
-func (h *Handlerv20250312) HandleCreated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	return h.handleIdle(ctx, flexcluster, state.StateCreated, state.StateUpdating)
+func (h *Handlerv20250312) HandleCreated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
+	return h.handleIdle(ctx, flexcluster, constate.StateCreated, constate.StateUpdating)
 }
 
 // HandleUpdating handles the updating state for version v20250312
-func (h *Handlerv20250312) HandleUpdating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	return h.handleUpserting(ctx, flexcluster, state.StateUpdating, state.StateUpdated)
+func (h *Handlerv20250312) HandleUpdating(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
+	return h.handleUpserting(ctx, flexcluster, constate.StateUpdating, constate.StateUpdated)
 }
 
 // HandleUpdated handles the updated state for version v20250312
-func (h *Handlerv20250312) HandleUpdated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
-	return h.handleIdle(ctx, flexcluster, state.StateUpdated, state.StateUpdating)
+func (h *Handlerv20250312) HandleUpdated(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
+	return h.handleIdle(ctx, flexcluster, constate.StateUpdated, constate.StateUpdating)
 }
 
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
-func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(flexcluster, h.deletionProtection) {
-		return result.NextState(state.StateDeleted, "Flex Cluster deleted.")
+		return constate.NextState(constate.StateDeleted, "Flex Cluster deleted.")
 	}
 
 	if flexcluster.Status.V20250312 == nil {
-		return result.NextState(state.StateDeleted, "Flex Cluster is unamanged.")
+		return constate.NextState(constate.StateDeleted, "Flex Cluster is unamanged.")
 	}
 
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.DeleteFlexClusterApiParams{}
 	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to translate flex api params: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
 	_, err = h.atlasClient.FlexClustersAPI.DeleteFlexClusterWithParams(ctx, params).Execute()
 
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
-		return result.NextState(state.StateDeleted, "Flex Cluster was deleted in Atlas.")
+		return constate.NextState(constate.StateDeleted, "Flex Cluster was deleted in Atlas.")
 	case err != nil:
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to delete flex cluster: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to delete flex cluster: %w", err))
 	}
 
-	return result.NextState(state.StateDeleting, "Deleting Flex Cluster.")
+	return constate.NextState(constate.StateDeleting, "Deleting Flex Cluster.")
 }
 
 // HandleDeleting handles the deleting state for version v20250312
-func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov2generated.FlexCluster) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) HandleDeleting(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to get dependencies: %w", err))
 	}
 
 	params := &v20250312sdk.GetFlexClusterApiParams{}
 	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
-		return result.Error(state.StateDeleting, fmt.Errorf("failed to translate flex api params: %w", err))
+		return constate.ErrorState(constate.StateDeleting, fmt.Errorf("failed to translate flex api params: %w", err))
 	}
 
 	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.GetFlexClusterWithParams(ctx, params).Execute()
 	switch {
 	case v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND"):
-		return result.NextState(state.StateDeleted, "Deleted")
+		return constate.NextState(constate.StateDeleted, "Deleted")
 	case err != nil:
-		return result.Error(state.StateDeletionRequested, fmt.Errorf("failed to get flex cluster status: %w", err))
+		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to get flex cluster status: %w", err))
 	}
 
 	if atlasFlexCluster.GetStateName() == "DELETING" {
-		return result.NextState(state.StateDeleting, "Deleting Flex Cluster.")
+		return constate.NextState(constate.StateDeleting, "Deleting Flex Cluster.")
 	}
 
 	// Atlas returned the cluster in a non-deleting state. This can happen when Atlas silently
 	// ignores the deletion request. Re-request deletion so the DELETE is retried.
-	return result.NextState(state.StateDeletionRequested,
+	return constate.NextState(constate.StateDeletionRequested,
 		fmt.Sprintf("Flex cluster is in %q state instead of DELETING, re-requesting deletion.", atlasFlexCluster.GetStateName()))
 }
 
@@ -221,31 +219,31 @@ func (h *Handlerv20250312) SetupWithManager(mgr controllerruntime.Manager, rec r
 }
 
 // HandleUpserting handles the creating and updating state for flex version v20250312
-func (h *Handlerv20250312) handleUpserting(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState state.ResourceState) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleUpserting(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState constate.ResourceState) (constate.Result, error) {
 	atlasFlexCluster, err := h.patchStatus(ctx, flexcluster)
 	if err != nil {
-		return result.Error(currentState, err)
+		return constate.ErrorState(currentState, err)
 	}
 	if atlasFlexCluster.GetStateName() == "CREATING" || atlasFlexCluster.GetStateName() == "UPDATING" {
-		return result.NextState(currentState, "Upserting Flex Cluster.")
+		return constate.NextState(currentState, "Upserting Flex Cluster.")
 	}
-	return result.NextState(finalState, "Upserted Flex Cluster.")
+	return constate.NextState(finalState, "Upserted Flex Cluster.")
 }
 
 // HandleIdle handles the creating and updating state for flex version v20250312
-func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState state.ResourceState) (ctrlstate.Result, error) {
+func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2generated.FlexCluster, currentState, finalState constate.ResourceState) (constate.Result, error) {
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to get dependencies: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to get dependencies: %w", err))
 	}
 
-	update, err := ctrlstate.ShouldUpdate(flexcluster, deps...)
+	update, err := constate.ShouldUpdate(flexcluster, deps...)
 	if err != nil {
-		return result.Error(currentState, reconcile.TerminalError(err))
+		return constate.ErrorState(currentState, reconcile.TerminalError(err))
 	}
 
 	if !update {
-		return result.NextState(currentState, "Flex cluster up to date. No update required.")
+		return constate.NextState(currentState, "Flex cluster up to date. No update required.")
 	}
 
 	body := &v20250312sdk.FlexClusterDescriptionUpdate20241113{}
@@ -255,33 +253,33 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 
 	// translate parameters
 	if err := h.translator.ToAPI(params, flexcluster, deps...); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate update flex cluster parameters: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate update flex cluster parameters: %w", err))
 	}
 
 	// translate body
 	if err := h.translator.ToAPI(body, flexcluster, deps...); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate update flex cluster description: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate update flex cluster description: %w", err))
 	}
 
 	atlasFlexCluster, _, err := h.atlasClient.FlexClustersAPI.UpdateFlexClusterWithParams(ctx, params).Execute()
 	if err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to get update cluster: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to get update cluster: %w", err))
 	}
 
 	flexclusterCopy := flexcluster.DeepCopy()
 	if _, err := h.translator.FromAPI(flexclusterCopy, atlasFlexCluster); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to translate update cluster response: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to translate update cluster response: %w", err))
 	}
 
-	if err := ctrlstate.
+	if err := constate.
 		NewPatcher(flexclusterCopy).
 		UpdateStateTracker(deps...).
 		UpdateStatus().
 		Patch(ctx, h.kubeClient); err != nil {
-		return result.Error(currentState, fmt.Errorf("failed to patch cluster: %w", err))
+		return constate.ErrorState(currentState, fmt.Errorf("failed to patch cluster: %w", err))
 	}
 
-	return result.NextState(finalState, "Updating Flex Cluster.")
+	return constate.NextState(finalState, "Updating Flex Cluster.")
 }
 
 func (h *Handlerv20250312) patchStatus(ctx context.Context, flexcluster *akov2generated.FlexCluster) (*v20250312sdk.FlexClusterDescription20241113, error) {
@@ -304,7 +302,7 @@ func (h *Handlerv20250312) patchStatus(ctx context.Context, flexcluster *akov2ge
 		return nil, fmt.Errorf("failed to translate get cluster response: %w", err)
 	}
 
-	if err := ctrlstate.
+	if err := constate.
 		NewPatcher(flexclusterCopy).
 		UpdateStateTracker(deps...).
 		UpdateStatus().
