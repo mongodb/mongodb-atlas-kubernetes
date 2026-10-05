@@ -396,12 +396,13 @@ func TestHandleIPAccessList(t *testing.T) {
 	deletionTime := metav1.Now()
 	deleteAfterDate := metav1.NewTime(time.Now().Add(time.Minute * -5))
 	tests := map[string]struct {
-		akoIPAccessList     *akov2.AtlasIPAccessList
-		partial             bool
-		ipAccessListService func() ipaccesslist.IPAccessListService
-		expectedResult      ctrl.Result
-		expectedConditions  []api.Condition
-		expectError         bool
+		akoIPAccessList          *akov2.AtlasIPAccessList
+		partial                  bool
+		globalDeletionProtection bool
+		ipAccessListService      func() ipaccesslist.IPAccessListService
+		expectedResult           ctrl.Result
+		expectedConditions       []api.Condition
+		expectError              bool
 	}{
 		"should fail to parse ip access list from crd": {
 			expectError: true,
@@ -465,6 +466,46 @@ func TestHandleIPAccessList(t *testing.T) {
 				s := translation.NewIPAccessListServiceMock(t)
 				s.EXPECT().List(context.Background(), "").
 					Return(ipaccesslist.IPAccessEntries{}, nil)
+
+				return s
+			},
+			expectedResult: ctrl.Result{},
+		},
+		"should keep atlas entries and release resource for deletion when global deletion protection is enabled": {
+			akoIPAccessList: &akov2.AtlasIPAccessList{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ip-access-list",
+					Namespace:         "default",
+					DeletionTimestamp: &deletionTime,
+					Finalizers:        []string{customresource.FinalizerLabel},
+				},
+			},
+			globalDeletionProtection: true,
+			ipAccessListService: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().List(context.Background(), "").
+					Return(ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}}, nil)
+
+				return s
+			},
+			expectedResult: ctrl.Result{},
+		},
+		"should keep atlas entries and release resource for deletion when resource policy is keep": {
+			akoIPAccessList: &akov2.AtlasIPAccessList{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "ip-access-list",
+					Namespace:         "default",
+					DeletionTimestamp: &deletionTime,
+					Finalizers:        []string{customresource.FinalizerLabel},
+					Annotations: map[string]string{
+						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
+					},
+				},
+			},
+			ipAccessListService: func() ipaccesslist.IPAccessListService {
+				s := translation.NewIPAccessListServiceMock(t)
+				s.EXPECT().List(context.Background(), "").
+					Return(ipaccesslist.IPAccessEntries{"192.168.0.0/24": {CIDR: "192.168.0.0/24"}}, nil)
 
 				return s
 			},
@@ -697,6 +738,7 @@ func TestHandleIPAccessList(t *testing.T) {
 					Client: k8sClient,
 					Log:    logger,
 				},
+				ObjectDeletionProtection: tt.globalDeletionProtection,
 			}
 			result, err := r.handleIPAccessList(ctx, tt.ipAccessListService(), "", tt.akoIPAccessList)
 			if tt.expectError {

@@ -83,6 +83,11 @@ func (r *AtlasIPAccessListReconciler) handleIPAccessList(
 	existInAtlas := len(atlasIPAccessList) > 0
 
 	if !ipAccessList.GetDeletionTimestamp().IsZero() {
+		if customresource.IsResourcePolicyKeepOrDefault(ipAccessList, r.ObjectDeletionProtection) {
+			r.Log.Infof("deletion protection is enabled, keeping ip access list entries in Atlas and unmanaging resource in project %s", projectID)
+			return r.unmanage(ctx, ipAccessList)
+		}
+
 		if existInAtlas {
 			r.Log.Infof("deleting ip access list from project %s", projectID)
 			return r.deleteAll(ctx, ipAccessListService, ipAccessList, projectID, atlasIPAccessList)
