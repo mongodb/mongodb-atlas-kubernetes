@@ -1367,9 +1367,9 @@ func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
 // drops the zero and Atlas never converges.
 func TestProcessArgsToAtlas_ExplicitZeroIntIsSent(t *testing.T) {
 	args := &akov2.ProcessArgs{
-		OplogSizeMB:                      pointer.MakePtr[int64](0),
-		SampleSizeBIConnector:            pointer.MakePtr[int64](0),
-		SampleRefreshIntervalBIConnector: pointer.MakePtr[int64](0),
+		OplogSizeMB:                      new(int64(0)),
+		SampleSizeBIConnector:            new(int64(0)),
+		SampleRefreshIntervalBIConnector: new(int64(0)),
 	}
 
 	got, err := processArgsToAtlas(args)

@@ -2700,7 +2700,7 @@ func TestProcessArgsEqual(t *testing.T) {
 		},
 		"ako unset oplog, atlas server default": {
 			ako:   &akov2.ProcessArgs{},
-			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: new(int64(990))},
 			want:  true,
 		},
 		"ako sets javascriptEnabled true, atlas true": {
@@ -2719,8 +2719,8 @@ func TestProcessArgsEqual(t *testing.T) {
 			want:  false,
 		},
 		"ako sets oplogSizeMB differently": {
-			ako:   &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
-			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](1000)},
+			ako:   &akov2.ProcessArgs{OplogSizeMB: new(int64(990))},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: new(int64(1000))},
 			want:  false,
 		},
 		"ako sets minTLS differently": {
@@ -2739,20 +2739,20 @@ func TestProcessArgsEqual(t *testing.T) {
 				MinimumEnabledTLSProtocol: "TLS1_2",
 				JavascriptEnabled:         pointer.MakePtr(true),
 				NoTableScan:               pointer.MakePtr(false),
-				OplogSizeMB:               pointer.MakePtr[int64](990),
+				OplogSizeMB:               new(int64(990)),
 			},
 			atlas: &akov2.ProcessArgs{
 				DefaultWriteConcern:       "majority",
 				MinimumEnabledTLSProtocol: "TLS1_2",
 				JavascriptEnabled:         pointer.MakePtr(true),
 				NoTableScan:               pointer.MakePtr(false),
-				OplogSizeMB:               pointer.MakePtr[int64](990),
+				OplogSizeMB:               new(int64(990)),
 			},
 			want: true,
 		},
 		"ako sample size differs": {
-			ako:   &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](100)},
-			atlas: &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](200)},
+			ako:   &akov2.ProcessArgs{SampleSizeBIConnector: new(int64(100))},
+			atlas: &akov2.ProcessArgs{SampleSizeBIConnector: new(int64(200))},
 			want:  false,
 		},
 		"ako oplog min retention differs": {

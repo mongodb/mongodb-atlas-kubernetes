@@ -28,20 +28,20 @@ import (
 
 func alertConfigWithNotification() *admin.GroupAlertsConfig {
 	return &admin.GroupAlertsConfig{
-		Id:            admin.PtrString("alert-config-id"),
-		GroupId:       admin.PtrString("group-id"),
-		EventTypeName: admin.PtrString("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
-		Enabled:       admin.PtrBool(true),
+		Id:            new("alert-config-id"),
+		GroupId:       new("group-id"),
+		EventTypeName: new("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+		Enabled:       new(true),
 		Notifications: &[]admin.AlertsNotificationRootForGroup{
 			{
-				TypeName:            admin.PtrString("SLACK"),
-				ChannelName:         admin.PtrString("#alerts"),
-				ApiToken:            admin.PtrString("xoxb-plaintext-slack-token"),
-				ServiceKey:          admin.PtrString("plaintext-pagerduty-service-key"),
-				DatadogApiKey:       admin.PtrString("plaintext-datadog-key"),
-				OpsGenieApiKey:      admin.PtrString("plaintext-opsgenie-key"),
-				VictorOpsApiKey:     admin.PtrString("plaintext-victorops-key"),
-				VictorOpsRoutingKey: admin.PtrString("plaintext-victorops-routing-key"),
+				TypeName:            new("SLACK"),
+				ChannelName:         new("#alerts"),
+				ApiToken:            new("xoxb-plaintext-slack-token"),
+				ServiceKey:          new("plaintext-pagerduty-service-key"),
+				DatadogApiKey:       new("plaintext-datadog-key"),
+				OpsGenieApiKey:      new("plaintext-opsgenie-key"),
+				VictorOpsApiKey:     new("plaintext-victorops-key"),
+				VictorOpsRoutingKey: new("plaintext-victorops-routing-key"),
 			},
 		},
 	}
@@ -93,12 +93,12 @@ func TestNewIncorrectAlertConfigStatus_NoPlaintextInSerializedStatus(t *testing.
 
 func TestParseAlertConfiguration_KeepsMaskedCredentials(t *testing.T) {
 	response := admin.GroupAlertsConfig{
-		Id:            admin.PtrString("alert-config-id"),
-		EventTypeName: admin.PtrString("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
+		Id:            new("alert-config-id"),
+		EventTypeName: new("REPLICATION_OPLOG_WINDOW_RUNNING_OUT"),
 		Notifications: &[]admin.AlertsNotificationRootForGroup{
 			{
-				TypeName: admin.PtrString("SLACK"),
-				ApiToken: admin.PtrString("xoxb-*********************"),
+				TypeName: new("SLACK"),
+				ApiToken: new("xoxb-*********************"),
 			},
 		},
 	}
