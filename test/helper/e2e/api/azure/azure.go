@@ -26,7 +26,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
@@ -67,9 +66,9 @@ func SessionAzure(subscriptionID string, tagNameValue string) (sessionAzure, err
 		Tags: map[string]*string{
 			"name":               new(tagNameValue),
 			config.TagForTestKey: to.StringPtr(config.TagForTestValue),
-			tags.OwnerEmailTag:   pointer.MakePtr(tags.AKOEmail),
-			tags.CostCenterTag:   pointer.MakePtr(tags.AKOCostCenter),
-			tags.EnvironmentTag:  pointer.MakePtr(tags.AKOEnvTest),
+			tags.OwnerEmailTag:   new(tags.AKOEmail),
+			tags.CostCenterTag:   new(tags.AKOCostCenter),
+			tags.EnvironmentTag:  new(tags.AKOEnvTest),
 		},
 	}, nil
 }

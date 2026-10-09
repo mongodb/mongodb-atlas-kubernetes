@@ -806,7 +806,7 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: all-lints
-all-lints: helm-crds fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck test-go-bump-policy
+all-lints: helm-crds gofix fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck test-go-bump-policy
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci
@@ -1064,3 +1064,7 @@ send-sboms: ## Send the SBOMs to Kondukto
 .PHONY: check-kubernetes-versions
 check-kubernetes-versions: ## Check the Kubernetes versions are supported
 	./scripts/check-kube-versions.sh
+
+.PHONY: gofix
+gofix:
+	go fix ./...

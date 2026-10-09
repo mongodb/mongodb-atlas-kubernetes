@@ -31,7 +31,6 @@ import (
 
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/connectionsecret"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -195,8 +194,8 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 							V20250312: &generatedv1.IPAccessListEntrySpecV20250312{
 								GroupRef: &k8s.LocalReference{Name: testGroup.GetName()},
 								Entry: &generatedv1.IPAccessListEntrySpecV20250312Entry{
-									CidrBlock: pointer.MakePtr(ipalCIDR),
-									Comment:   pointer.MakePtr("generated resources integration test"),
+									CidrBlock: new(ipalCIDR),
+									Comment:   new("generated resources integration test"),
 								},
 							},
 						},
@@ -216,7 +215,7 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 						g.Expect(resources.CheckResourceReady(ctx, kubeClient, testIAL)).To(Succeed())
 					}).WithContext(ctx).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 					Expect(testIAL.Status.V20250312).NotTo(BeNil())
-					Expect(testIAL.Status.V20250312.CidrBlock).To(Equal(pointer.MakePtr(ipalCIDR)))
+					Expect(testIAL.Status.V20250312.CidrBlock).To(Equal(new(ipalCIDR)))
 				})
 
 				By("Create DatabaseUser and wait for it to be Ready", func() {

@@ -21,7 +21,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
 
@@ -47,9 +46,9 @@ func CreateVPC(ctx context.Context, vpcName, cidr, region string) (string, error
 			},
 			Tags: map[string]*string{
 				"Name":              new(vpcName),
-				tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
-				tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
-				tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),
+				tags.OwnerEmailTag:  new(tags.AKOEmail),
+				tags.CostCenterTag:  new(tags.AKOCostCenter),
+				tags.EnvironmentTag: new(tags.AKOEnvTest),
 			},
 		},
 		nil,

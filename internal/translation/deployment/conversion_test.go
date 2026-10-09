@@ -25,7 +25,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestNewDeployment(t *testing.T) {
@@ -1275,7 +1274,7 @@ func TestClusterUpdateToAtlas_PauseOnlyOmitsOtherFields(t *testing.T) {
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:                         "cluster0",
 			ClusterType:                  "REPLICASET",
-			Paused:                       pointer.MakePtr(true),
+			Paused:                       new(true),
 			TerminationProtectionEnabled: false,
 		},
 	}
@@ -1283,7 +1282,7 @@ func TestClusterUpdateToAtlas_PauseOnlyOmitsOtherFields(t *testing.T) {
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:                         "cluster0",
 			ClusterType:                  "REPLICASET",
-			Paused:                       pointer.MakePtr(false),
+			Paused:                       new(false),
 			TerminationProtectionEnabled: false,
 		},
 	}
@@ -1341,11 +1340,11 @@ func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
 
 	// What Atlas returns for an unconfigured cluster: populated server defaults.
 	atlasArgs := processArgsFromAtlas(&admin.ClusterDescriptionProcessArgs20240805{
-		DefaultWriteConcern:       pointer.MakePtr("majority"),
-		MinimumEnabledTlsProtocol: pointer.MakePtr("TLS1_2"),
-		JavascriptEnabled:         pointer.MakePtr(true),
-		NoTableScan:               pointer.MakePtr(false),
-		OplogSizeMB:               pointer.MakePtr(990),
+		DefaultWriteConcern:       new("majority"),
+		MinimumEnabledTlsProtocol: new("TLS1_2"),
+		JavascriptEnabled:         new(true),
+		NoTableScan:               new(false),
+		OplogSizeMB:               new(990),
 	})
 
 	// Drives the controller's UpdateProcessArgs call in
@@ -1361,15 +1360,15 @@ func TestProcessArgs_UnsetFieldShouldNotDivergeFromAtlasDefaults(t *testing.T) {
 
 // Regression test for https://github.com/mongodb/mongodb-atlas-kubernetes/issues/3142
 // (review follow-up). When the user sets an explicit zero on a *int64 processArgs
-// field (e.g. OplogSizeMB: pointer.MakePtr[int64](0)), processArgsToAtlas must
+// field (e.g. OplogSizeMB: new[int64](0)), processArgsToAtlas must
 // preserve that zero in the PATCH body — otherwise the same loop class returns:
 // the comparator sees a diff against Atlas's non-zero default, but the converter
 // drops the zero and Atlas never converges.
 func TestProcessArgsToAtlas_ExplicitZeroIntIsSent(t *testing.T) {
 	args := &akov2.ProcessArgs{
-		OplogSizeMB:                      pointer.MakePtr[int64](0),
-		SampleSizeBIConnector:            pointer.MakePtr[int64](0),
-		SampleRefreshIntervalBIConnector: pointer.MakePtr[int64](0),
+		OplogSizeMB:                      new(int64(0)),
+		SampleSizeBIConnector:            new(int64(0)),
+		SampleRefreshIntervalBIConnector: new(int64(0)),
 	}
 
 	got, err := processArgsToAtlas(args)
@@ -1409,13 +1408,13 @@ func TestProcessArgsToAtlas_NilIntStaysNil(t *testing.T) {
 func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
 	atlasAutoScaling := admin.AdvancedAutoScalingSettings{
 		Compute: &admin.AdvancedComputeAutoScaling{
-			Enabled:          pointer.MakePtr(true),
-			ScaleDownEnabled: pointer.MakePtr(true),
-			MinInstanceSize:  pointer.MakePtr("M40"),
-			MaxInstanceSize:  pointer.MakePtr("M60"),
+			Enabled:          new(true),
+			ScaleDownEnabled: new(true),
+			MinInstanceSize:  new("M40"),
+			MaxInstanceSize:  new("M60"),
 		},
 		DiskGB: &admin.DiskGBAutoScaling{
-			Enabled: pointer.MakePtr(true),
+			Enabled: new(true),
 		},
 	}
 
@@ -1423,23 +1422,23 @@ func TestAnalyticsAutoScaling_RoundTrip(t *testing.T) {
 		{
 			RegionConfigs: &[]admin.CloudRegionConfig20240805{
 				{
-					ProviderName: pointer.MakePtr("AWS"),
-					RegionName:   pointer.MakePtr("US_EAST_1"),
-					Priority:     pointer.MakePtr(7),
+					ProviderName: new("AWS"),
+					RegionName:   new("US_EAST_1"),
+					Priority:     new(7),
 					ElectableSpecs: &admin.HardwareSpec20240805{
-						InstanceSize: pointer.MakePtr("M40"),
-						NodeCount:    pointer.MakePtr(3),
+						InstanceSize: new("M40"),
+						NodeCount:    new(3),
 					},
 					AutoScaling:          &atlasAutoScaling,
 					AnalyticsAutoScaling: &atlasAutoScaling,
 				},
 				{
-					ProviderName: pointer.MakePtr("AWS"),
-					RegionName:   pointer.MakePtr("US_WEST_2"),
-					Priority:     pointer.MakePtr(0),
+					ProviderName: new("AWS"),
+					RegionName:   new("US_WEST_2"),
+					Priority:     new(0),
 					ReadOnlySpecs: &admin.DedicatedHardwareSpec20240805{
-						InstanceSize: pointer.MakePtr("M40"),
-						NodeCount:    pointer.MakePtr(1),
+						InstanceSize: new("M40"),
+						NodeCount:    new(1),
 					},
 					AutoScaling:          &atlasAutoScaling,
 					AnalyticsAutoScaling: &atlasAutoScaling,

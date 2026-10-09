@@ -22,7 +22,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestComputeChanges(t *testing.T) {
@@ -579,8 +578,8 @@ func TestComputeChanges(t *testing.T) {
 										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
-										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
-										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+										DiskGB:  &akov2.DiskGB{Enabled: new(true)},
+										Compute: &akov2.ComputeSpec{Enabled: new(true), ScaleDownEnabled: new(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
 									},
 								},
 								{
@@ -592,8 +591,8 @@ func TestComputeChanges(t *testing.T) {
 										NodeCount:    new(1),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
-										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
-										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+										DiskGB:  &akov2.DiskGB{Enabled: new(true)},
+										Compute: &akov2.ComputeSpec{Enabled: new(true), ScaleDownEnabled: new(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
 									},
 								},
 							},
@@ -621,8 +620,8 @@ func TestComputeChanges(t *testing.T) {
 										NodeCount:    new(3),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
-										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
-										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+										DiskGB:  &akov2.DiskGB{Enabled: new(true)},
+										Compute: &akov2.ComputeSpec{Enabled: new(true), ScaleDownEnabled: new(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
 									},
 								},
 							},
@@ -653,8 +652,8 @@ func TestComputeChanges(t *testing.T) {
 									// AutoScaling must be passed through (not nil) so all
 									// regions in the PATCH body have consistent values.
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
-										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
-										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+										DiskGB:  &akov2.DiskGB{Enabled: new(true)},
+										Compute: &akov2.ComputeSpec{Enabled: new(true), ScaleDownEnabled: new(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
 									},
 								},
 								{
@@ -666,8 +665,8 @@ func TestComputeChanges(t *testing.T) {
 										NodeCount:    new(1),
 									},
 									AutoScaling: &akov2.AdvancedAutoScalingSpec{
-										DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
-										Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(true), ScaleDownEnabled: pointer.MakePtr(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
+										DiskGB:  &akov2.DiskGB{Enabled: new(true)},
+										Compute: &akov2.ComputeSpec{Enabled: new(true), ScaleDownEnabled: new(true), MinInstanceSize: "M10", MaxInstanceSize: "M30"},
 									},
 								},
 							},
@@ -2700,17 +2699,17 @@ func TestProcessArgsEqual(t *testing.T) {
 		},
 		"ako unset oplog, atlas server default": {
 			ako:   &akov2.ProcessArgs{},
-			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: new(int64(990))},
 			want:  true,
 		},
 		"ako sets javascriptEnabled true, atlas true": {
-			ako:   &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
-			atlas: &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
+			ako:   &akov2.ProcessArgs{JavascriptEnabled: new(true)},
+			atlas: &akov2.ProcessArgs{JavascriptEnabled: new(true)},
 			want:  true,
 		},
 		"ako sets javascriptEnabled false, atlas true": {
-			ako:   &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(false)},
-			atlas: &akov2.ProcessArgs{JavascriptEnabled: pointer.MakePtr(true)},
+			ako:   &akov2.ProcessArgs{JavascriptEnabled: new(false)},
+			atlas: &akov2.ProcessArgs{JavascriptEnabled: new(true)},
 			want:  false,
 		},
 		"ako sets defaultWriteConcern differently": {
@@ -2719,8 +2718,8 @@ func TestProcessArgsEqual(t *testing.T) {
 			want:  false,
 		},
 		"ako sets oplogSizeMB differently": {
-			ako:   &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](990)},
-			atlas: &akov2.ProcessArgs{OplogSizeMB: pointer.MakePtr[int64](1000)},
+			ako:   &akov2.ProcessArgs{OplogSizeMB: new(int64(990))},
+			atlas: &akov2.ProcessArgs{OplogSizeMB: new(int64(1000))},
 			want:  false,
 		},
 		"ako sets minTLS differently": {
@@ -2729,30 +2728,30 @@ func TestProcessArgsEqual(t *testing.T) {
 			want:  false,
 		},
 		"ako sets noTableScan true, atlas false": {
-			ako:   &akov2.ProcessArgs{NoTableScan: pointer.MakePtr(true)},
-			atlas: &akov2.ProcessArgs{NoTableScan: pointer.MakePtr(false)},
+			ako:   &akov2.ProcessArgs{NoTableScan: new(true)},
+			atlas: &akov2.ProcessArgs{NoTableScan: new(false)},
 			want:  false,
 		},
 		"identical fully populated": {
 			ako: &akov2.ProcessArgs{
 				DefaultWriteConcern:       "majority",
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				JavascriptEnabled:         pointer.MakePtr(true),
-				NoTableScan:               pointer.MakePtr(false),
-				OplogSizeMB:               pointer.MakePtr[int64](990),
+				JavascriptEnabled:         new(true),
+				NoTableScan:               new(false),
+				OplogSizeMB:               new(int64(990)),
 			},
 			atlas: &akov2.ProcessArgs{
 				DefaultWriteConcern:       "majority",
 				MinimumEnabledTLSProtocol: "TLS1_2",
-				JavascriptEnabled:         pointer.MakePtr(true),
-				NoTableScan:               pointer.MakePtr(false),
-				OplogSizeMB:               pointer.MakePtr[int64](990),
+				JavascriptEnabled:         new(true),
+				NoTableScan:               new(false),
+				OplogSizeMB:               new(int64(990)),
 			},
 			want: true,
 		},
 		"ako sample size differs": {
-			ako:   &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](100)},
-			atlas: &akov2.ProcessArgs{SampleSizeBIConnector: pointer.MakePtr[int64](200)},
+			ako:   &akov2.ProcessArgs{SampleSizeBIConnector: new(int64(100))},
+			atlas: &akov2.ProcessArgs{SampleSizeBIConnector: new(int64(200))},
 			want:  false,
 		},
 		"ako oplog min retention differs": {

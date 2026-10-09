@@ -23,14 +23,13 @@ import (
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestBuildNetworkPermissionEntry_DeleteAfterDate(t *testing.T) {
 	t.Run("valid RFC3339 string is parsed to *time.Time", func(t *testing.T) {
 		entry := buildNetworkPermissionEntry(ipal(func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-			e.CidrBlock = pointer.MakePtr("10.0.0.0/8")
-			e.DeleteAfterDate = pointer.MakePtr("2025-07-01T12:30:00Z")
+			e.CidrBlock = new("10.0.0.0/8")
+			e.DeleteAfterDate = new("2025-07-01T12:30:00Z")
 		}))
 		require.NotNil(t, entry.DeleteAfterDate)
 		want := time.Date(2025, 7, 1, 12, 30, 0, 0, time.UTC)
@@ -39,8 +38,8 @@ func TestBuildNetworkPermissionEntry_DeleteAfterDate(t *testing.T) {
 
 	t.Run("invalid string is silently ignored — DeleteAfterDate stays nil", func(t *testing.T) {
 		entry := buildNetworkPermissionEntry(ipal(func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-			e.CidrBlock = pointer.MakePtr("10.0.0.0/8")
-			e.DeleteAfterDate = pointer.MakePtr("not-a-date")
+			e.CidrBlock = new("10.0.0.0/8")
+			e.DeleteAfterDate = new("not-a-date")
 		}))
 		assert.Nil(t, entry.DeleteAfterDate,
 			"unparseable date must not produce a zero-value time — Atlas would reject the request")
@@ -48,7 +47,7 @@ func TestBuildNetworkPermissionEntry_DeleteAfterDate(t *testing.T) {
 
 	t.Run("nil deleteAfterDate produces nil in output", func(t *testing.T) {
 		entry := buildNetworkPermissionEntry(ipal(func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-			e.CidrBlock = pointer.MakePtr("10.0.0.0/8")
+			e.CidrBlock = new("10.0.0.0/8")
 		}))
 		assert.Nil(t, entry.DeleteAfterDate)
 	})
@@ -57,16 +56,16 @@ func TestBuildNetworkPermissionEntry_DeleteAfterDate(t *testing.T) {
 func TestBuildNetworkPermissionEntry_CIDRNormalization(t *testing.T) {
 	t.Run("host bits are masked to network address", func(t *testing.T) {
 		entry := buildNetworkPermissionEntry(ipal(func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-			e.CidrBlock = pointer.MakePtr("192.168.1.5/24")
+			e.CidrBlock = new("192.168.1.5/24")
 		}))
-		assert.Equal(t, pointer.MakePtr("192.168.1.0/24"), entry.CidrBlock)
+		assert.Equal(t, new("192.168.1.0/24"), entry.CidrBlock)
 	})
 
 	t.Run("already-normalized CIDR is unchanged", func(t *testing.T) {
 		entry := buildNetworkPermissionEntry(ipal(func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-			e.CidrBlock = pointer.MakePtr("10.0.0.0/8")
+			e.CidrBlock = new("10.0.0.0/8")
 		}))
-		assert.Equal(t, pointer.MakePtr("10.0.0.0/8"), entry.CidrBlock)
+		assert.Equal(t, new("10.0.0.0/8"), entry.CidrBlock)
 	})
 }
 
@@ -79,12 +78,12 @@ func TestBuildNetworkPermissionEntry_EntryType(t *testing.T) {
 		{
 			name: "cidrBlock",
 			setup: func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-				e.CidrBlock = pointer.MakePtr("10.0.0.0/8")
-				e.Comment = pointer.MakePtr("office network")
+				e.CidrBlock = new("10.0.0.0/8")
+				e.Comment = new("office network")
 			},
 			check: func(t *testing.T, got v20250312sdk.NetworkPermissionEntry) {
-				assert.Equal(t, pointer.MakePtr("10.0.0.0/8"), got.CidrBlock)
-				assert.Equal(t, pointer.MakePtr("office network"), got.Comment)
+				assert.Equal(t, new("10.0.0.0/8"), got.CidrBlock)
+				assert.Equal(t, new("office network"), got.Comment)
 				assert.Nil(t, got.IpAddress)
 				assert.Nil(t, got.AwsSecurityGroup)
 			},
@@ -92,10 +91,10 @@ func TestBuildNetworkPermissionEntry_EntryType(t *testing.T) {
 		{
 			name: "ipAddress",
 			setup: func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-				e.IpAddress = pointer.MakePtr("1.2.3.4")
+				e.IpAddress = new("1.2.3.4")
 			},
 			check: func(t *testing.T, got v20250312sdk.NetworkPermissionEntry) {
-				assert.Equal(t, pointer.MakePtr("1.2.3.4"), got.IpAddress)
+				assert.Equal(t, new("1.2.3.4"), got.IpAddress)
 				assert.Nil(t, got.CidrBlock)
 				assert.Nil(t, got.AwsSecurityGroup)
 			},
@@ -103,10 +102,10 @@ func TestBuildNetworkPermissionEntry_EntryType(t *testing.T) {
 		{
 			name: "awsSecurityGroup",
 			setup: func(e *akov2generated.IPAccessListEntrySpecV20250312Entry) {
-				e.AwsSecurityGroup = pointer.MakePtr("sg-0123456789abcdef0")
+				e.AwsSecurityGroup = new("sg-0123456789abcdef0")
 			},
 			check: func(t *testing.T, got v20250312sdk.NetworkPermissionEntry) {
-				assert.Equal(t, pointer.MakePtr("sg-0123456789abcdef0"), got.AwsSecurityGroup)
+				assert.Equal(t, new("sg-0123456789abcdef0"), got.AwsSecurityGroup)
 				assert.Nil(t, got.CidrBlock)
 				assert.Nil(t, got.IpAddress)
 			},

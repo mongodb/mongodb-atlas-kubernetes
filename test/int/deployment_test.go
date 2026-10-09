@@ -633,7 +633,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 
 			By("Updating the Deployment backups settings", func() {
 				createdDeployment = performUpdate(ctx, 30*time.Minute, client.ObjectKeyFromObject(createdDeployment), func(deployment *akov2.AtlasDeployment) {
-					// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = pointer.MakePtr(true)
+					// createdDeployment.Spec.DeploymentSpec.ProviderBackupEnabled = new(true)
 					deployment.Spec.DeploymentSpec.BackupEnabled = new(true)
 				})
 				doDeploymentStatusChecks()

@@ -21,7 +21,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 const (
@@ -305,13 +304,13 @@ func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 func autoscalingSpec(minSize, maxSize string) *akov2.AdvancedAutoScalingSpec {
 	return &akov2.AdvancedAutoScalingSpec{
 		Compute: &akov2.ComputeSpec{
-			Enabled:          pointer.MakePtr(true),
-			ScaleDownEnabled: pointer.MakePtr(true),
+			Enabled:          new(true),
+			ScaleDownEnabled: new(true),
 			MinInstanceSize:  minSize,
 			MaxInstanceSize:  maxSize,
 		},
 		DiskGB: &akov2.DiskGB{
-			Enabled: pointer.MakePtr(true),
+			Enabled: new(true),
 		},
 	}
 }

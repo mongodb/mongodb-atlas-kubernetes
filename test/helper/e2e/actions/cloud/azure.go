@@ -25,7 +25,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/onsi/ginkgo/v2/dsl/core"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/tags"
 )
 
@@ -143,9 +142,9 @@ func (a *AzureAction) CreatePrivateEndpoint(vpcName, subnetName, endpointName, s
 				},
 			},
 			Tags: map[string]*string{
-				tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
-				tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
-				tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),
+				tags.OwnerEmailTag:  new(tags.AKOEmail),
+				tags.CostCenterTag:  new(tags.AKOCostCenter),
+				tags.EnvironmentTag: new(tags.AKOEnvTest),
 			},
 		},
 		nil,
@@ -253,9 +252,9 @@ func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, r
 			},
 			Tags: map[string]*string{
 				"Name":              new(vpcName),
-				tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
-				tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
-				tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),
+				tags.OwnerEmailTag:  new(tags.AKOEmail),
+				tags.CostCenterTag:  new(tags.AKOCostCenter),
+				tags.EnvironmentTag: new(tags.AKOEnvTest),
 			},
 		},
 		nil,
@@ -349,7 +348,7 @@ func (a *AzureAction) disableSubnetPENetworkPolicy(ctx context.Context, vpcName,
 		return nil, fmt.Errorf("subnet %s not found", subnetName)
 	}
 
-	subnet.Properties.PrivateEndpointNetworkPolicies = pointer.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled)
+	subnet.Properties.PrivateEndpointNetworkPolicies = new(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesDisabled)
 	op, err := subnetClient.BeginCreateOrUpdate(
 		ctx,
 		a.resourceGroupName,
@@ -379,7 +378,7 @@ func (a *AzureAction) enableSubnetPENetworkPolicy(ctx context.Context, vpcName, 
 		return nil, fmt.Errorf("subnet %s not found", subnetName)
 	}
 
-	subnet.Properties.PrivateEndpointNetworkPolicies = pointer.MakePtr(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesEnabled)
+	subnet.Properties.PrivateEndpointNetworkPolicies = new(armnetwork.VirtualNetworkPrivateEndpointNetworkPoliciesEnabled)
 	op, err := subnetClient.BeginCreateOrUpdate(
 		ctx,
 		a.resourceGroupName,
@@ -428,12 +427,12 @@ func (a *AzureAction) CreateKeyVault(keyName string) (string, error) {
 
 	params := armkeyvault.KeyCreateParameters{
 		Properties: &armkeyvault.KeyProperties{
-			Kty: pointer.MakePtr(armkeyvault.JSONWebKeyTypeRSA),
+			Kty: new(armkeyvault.JSONWebKeyTypeRSA),
 		},
 		Tags: map[string]*string{
-			tags.OwnerEmailTag:  pointer.MakePtr(tags.AKOEmail),
-			tags.CostCenterTag:  pointer.MakePtr(tags.AKOCostCenter),
-			tags.EnvironmentTag: pointer.MakePtr(tags.AKOEnvTest),
+			tags.OwnerEmailTag:  new(tags.AKOEmail),
+			tags.CostCenterTag:  new(tags.AKOCostCenter),
+			tags.EnvironmentTag: new(tags.AKOEnvTest),
 		},
 	}
 

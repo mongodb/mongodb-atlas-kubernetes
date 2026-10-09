@@ -36,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/timeutil"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/access"
@@ -664,7 +663,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			By("Assigning a maintenance wave", func() {
 				var err error
 				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
-					p.Spec.MaintenanceWindow.WaveAssignment = pointer.MakePtr(2)
+					p.Spec.MaintenanceWindow.WaveAssignment = new(2)
 				})
 				Expect(err).To(BeNil())
 
@@ -678,7 +677,7 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 			By("Changing the assigned maintenance wave", func() {
 				var err error
 				createdProject, err = akoretry.RetryUpdateOnConflict(context.Background(), k8sClient, client.ObjectKeyFromObject(createdProject), func(p *akov2.AtlasProject) {
-					p.Spec.MaintenanceWindow.WaveAssignment = pointer.MakePtr(3)
+					p.Spec.MaintenanceWindow.WaveAssignment = new(3)
 				})
 				Expect(err).To(BeNil())
 
