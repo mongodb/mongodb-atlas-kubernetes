@@ -53,13 +53,6 @@ func NonZeroOrDefault[T comparable](val T, defaultValue T) *T {
 	return &val
 }
 
-// MakePtr returns a pointer to the given value
-//
-//go:fix inline
-func MakePtr[T any](value T) *T {
-	return new(value)
-}
-
 // MakePtrOrNil returns a pointer only when value is not empty.
 // Otherwise Atlas versioned API interprets a pointer to an empty value as not empty.
 func MakePtrOrNil[T comparable](value T) *T {

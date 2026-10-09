@@ -26,7 +26,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkcontainer"
 )
 
@@ -67,7 +66,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			api: testCreateNetworkContainerAPI(
 				&admin.CloudProviderContainer{
 					Id:             new(testContainerID),
-					ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+					ProviderName:   new(string(provider.ProviderAWS)),
 					Provisioned:    new(false),
 					AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 					RegionName:     new(testContainerConfig().Region),
@@ -95,7 +94,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			api: testCreateNetworkContainerAPI(
 				&admin.CloudProviderContainer{
 					Id:             new(testContainerID),
-					ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+					ProviderName:   new(string(provider.ProviderAWS)),
 					Provisioned:    new(false),
 					AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 					RegionName:     new(testContainerConfig().Region),
@@ -120,7 +119,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			},
 			api: testCreateNetworkContainerAPI(&admin.CloudProviderContainer{
 				Id:                  new(testContainerID),
-				ProviderName:        pointer.MakePtr(string(provider.ProviderAzure)),
+				ProviderName:        new(string(provider.ProviderAzure)),
 				Provisioned:         new(false),
 				AtlasCidrBlock:      new(testContainerConfig().CIDRBlock),
 				Region:              new(testContainerConfig().Region),
@@ -151,7 +150,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			},
 			api: testCreateNetworkContainerAPI(&admin.CloudProviderContainer{
 				Id:             new(testContainerID),
-				ProviderName:   pointer.MakePtr(string(provider.ProviderAzure)),
+				ProviderName:   new(string(provider.ProviderAzure)),
 				Provisioned:    new(false),
 				AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 				Region:         new(testContainerConfig().Region),
@@ -176,7 +175,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			},
 			api: testCreateNetworkContainerAPI(&admin.CloudProviderContainer{
 				Id:             new(testContainerID),
-				ProviderName:   pointer.MakePtr(string(provider.ProviderGCP)),
+				ProviderName:   new(string(provider.ProviderGCP)),
 				Provisioned:    new(false),
 				AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 				GcpProjectId:   new(testGCPProjectID),
@@ -206,7 +205,7 @@ func TestNetworkContainerCreate(t *testing.T) {
 			},
 			api: testCreateNetworkContainerAPI(&admin.CloudProviderContainer{
 				Id:             new(testContainerID),
-				ProviderName:   pointer.MakePtr(string(provider.ProviderGCP)),
+				ProviderName:   new(string(provider.ProviderGCP)),
 				Provisioned:    new(false),
 				AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 			},
@@ -255,7 +254,7 @@ func TestNetworkContainerGet(t *testing.T) {
 			api: testGetNetworkContainerAPI(
 				&admin.CloudProviderContainer{
 					Id:             new(testContainerID),
-					ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+					ProviderName:   new(string(provider.ProviderAWS)),
 					Provisioned:    new(false),
 					AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 					RegionName:     new(testContainerConfig().Region),
@@ -316,7 +315,7 @@ func TestNetworkContainerFind(t *testing.T) {
 				[]admin.CloudProviderContainer{
 					{
 						Id:             new(testContainerID),
-						ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+						ProviderName:   new(string(provider.ProviderAWS)),
 						Provisioned:    new(false),
 						AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 						RegionName:     new(testContainerConfig().Region),
@@ -376,7 +375,7 @@ func TestNetworkContainerFind(t *testing.T) {
 				[]admin.CloudProviderContainer{
 					{
 						Id:             new(testContainerID),
-						ProviderName:   pointer.MakePtr(string(provider.ProviderGCP)),
+						ProviderName:   new(string(provider.ProviderGCP)),
 						Provisioned:    new(false),
 						AtlasCidrBlock: new("18.18.192.0/18"),
 						GcpProjectId:   new(testGCPProjectID),
@@ -414,7 +413,7 @@ func TestNetworkContainerFind(t *testing.T) {
 				[]admin.CloudProviderContainer{
 					{
 						Id:             new(testContainerID),
-						ProviderName:   pointer.MakePtr(string(provider.ProviderAzure)),
+						ProviderName:   new(string(provider.ProviderAzure)),
 						Provisioned:    new(false),
 						AtlasCidrBlock: new("11.11.0.0/16"),
 						Region:         new("US_EAST_2"),
@@ -448,7 +447,7 @@ func TestNetworkContainerFind(t *testing.T) {
 				[]admin.CloudProviderContainer{
 					{
 						Id:             new(testContainerID),
-						ProviderName:   pointer.MakePtr(string(provider.ProviderAzure)),
+						ProviderName:   new(string(provider.ProviderAzure)),
 						Provisioned:    new(false),
 						AtlasCidrBlock: new("11.11.0.0/16"),
 						Region:         new("US_EAST_2"),
@@ -487,7 +486,7 @@ func TestNetworkContainerUpdate(t *testing.T) {
 			api: testUpdateNetworkContainerAPI(
 				&admin.CloudProviderContainer{
 					Id:             new(testContainerID),
-					ProviderName:   pointer.MakePtr(string(provider.ProviderAWS)),
+					ProviderName:   new(string(provider.ProviderAWS)),
 					Provisioned:    new(false),
 					AtlasCidrBlock: new(testContainerConfig().CIDRBlock),
 					RegionName:     new(testContainerConfig().Region),

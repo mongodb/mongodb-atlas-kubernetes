@@ -26,7 +26,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/networkpeering"
 )
 
@@ -81,7 +80,7 @@ func TestNetworkPeeringCreate(t *testing.T) {
 				&admin.BaseNetworkPeeringConnectionSettings{
 					ContainerId:         testContainerID,
 					Id:                  new(testPeerID),
-					ProviderName:        pointer.MakePtr(string(provider.ProviderAWS)),
+					ProviderName:        new(string(provider.ProviderAWS)),
 					AccepterRegionName:  new("US_EAST_1"),
 					AwsAccountId:        new(testAWSSubscriptionID),
 					RouteTableCidrBlock: new("10.0.0.0/18"),
@@ -189,7 +188,7 @@ func TestNetworkPeeringGet(t *testing.T) {
 				&admin.BaseNetworkPeeringConnectionSettings{
 					ContainerId:         testContainerID,
 					Id:                  new(testPeerID),
-					ProviderName:        pointer.MakePtr(string(provider.ProviderAzure)),
+					ProviderName:        new(string(provider.ProviderAzure)),
 					AzureDirectoryId:    new(testAzureDirectoryID),
 					AzureSubscriptionId: new(testAzureSubcriptionID),
 					ResourceGroupName:   new(testAzureResourceGroup),
@@ -282,7 +281,7 @@ func TestNetworkPeeringUpdate(t *testing.T) {
 				&admin.BaseNetworkPeeringConnectionSettings{
 					ContainerId:  testContainerID,
 					Id:           new(testPeerID),
-					ProviderName: pointer.MakePtr(string(provider.ProviderGCP)),
+					ProviderName: new(string(provider.ProviderGCP)),
 					GcpProjectId: new(testGCPProjectID),
 					NetworkName:  new(testNetworkName),
 				},

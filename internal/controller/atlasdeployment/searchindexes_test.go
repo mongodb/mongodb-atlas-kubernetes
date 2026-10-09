@@ -693,10 +693,10 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		// 		&admin.ClusterSearchIndex{
 		// 			CollectionName: "testCollection",
 		// 			Database:       "testDB",
-		// 			IndexID:        pointer.MakePtr("testID"),
+		// 			IndexID:        new("testID"),
 		// 			Name:           "testName",
-		// 			Status:         pointer.MakePtr(IndexStatusActive),
-		// 			Type:           pointer.MakePtr(IndexTypeVector),
+		// 			Status:         new(IndexStatusActive),
+		// 			Type:           new(IndexTypeVector),
 		// 		},
 		// 		&http.Response{StatusCode: http.StatusOK}, nil,
 		// 	)

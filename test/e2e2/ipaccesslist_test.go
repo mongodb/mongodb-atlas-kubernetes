@@ -34,7 +34,6 @@ import (
 	generatedv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/control"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/kube"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/operator"
@@ -152,7 +151,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 
 			By("Update IPAccessList comment", func() {
 				Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testIAL), testIAL)).To(Succeed())
-				testIAL.Spec.V20250312.Entry.Comment = pointer.MakePtr("updated comment")
+				testIAL.Spec.V20250312.Entry.Comment = new("updated comment")
 				Expect(kubeClient.Update(ctx, testIAL)).To(Succeed())
 
 				Eventually(func(g Gomega) {
@@ -296,7 +295,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 				Expect(len(objs)).To(Equal(1))
 				testIAL = objs[0].(*generatedv1.IPAccessListEntry)
 				applyTestParamsToIPAccessList(testIAL, testNamespace.Name, entryName, testGroup.GetName())
-				testIAL.Spec.V20250312.Entry.DeleteAfterDate = pointer.MakePtr(deleteAfterDate)
+				testIAL.Spec.V20250312.Entry.DeleteAfterDate = new(deleteAfterDate)
 				Expect(kubeClient.Create(ctx, testIAL)).To(Succeed())
 
 				Eventually(func(g Gomega) {
@@ -540,7 +539,7 @@ func applyTestParamsToIPAccessList(ial *generatedv1.IPAccessListEntry, namespace
 	ial.Spec.V20250312.GroupRef = &k8s.LocalReference{Name: groupRefName}
 	ial.Spec.V20250312.GroupId = nil
 	ial.Spec.V20250312.Entry = &generatedv1.IPAccessListEntrySpecV20250312Entry{
-		CidrBlock: pointer.MakePtr(testCIDR),
-		Comment:   pointer.MakePtr("e2e test entry"),
+		CidrBlock: new(testCIDR),
+		Comment:   new("e2e test entry"),
 	}
 }

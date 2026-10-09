@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
 
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/actions/deploy"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/api/atlas"
@@ -90,7 +89,7 @@ func freeTierDeploymentFlow(userData *model.TestDataProvider) {
 									Priority:            new(7),
 									RegionName:          new("US_EAST_1"),
 									ElectableSpecs: &admin.HardwareSpec20240805{
-										InstanceSize: pointer.MakePtr(data.InstanceSizeM0),
+										InstanceSize: new(data.InstanceSizeM0),
 										NodeCount:    new(3),
 									},
 								},

@@ -29,7 +29,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/maintenancewindow"
 )
 
@@ -137,7 +136,7 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 		// Wave assignment only, valid
 		{
 			in: project.MaintenanceWindow{
-				WaveAssignment: pointer.MakePtr(2),
+				WaveAssignment: new(2),
 			},
 			valid: true,
 		},
@@ -147,7 +146,7 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 			in: project.MaintenanceWindow{
 				DayOfWeek:      3, // Tuesday
 				HourOfDay:      14,
-				WaveAssignment: pointer.MakePtr(1),
+				WaveAssignment: new(1),
 			},
 			valid: true,
 		},
@@ -158,7 +157,7 @@ func TestValidateMaintenanceWindow(t *testing.T) {
 				DayOfWeek:      3, // Tuesday
 				HourOfDay:      14,
 				AutoDefer:      true,
-				WaveAssignment: pointer.MakePtr(1),
+				WaveAssignment: new(1),
 			},
 			valid: false,
 		},
@@ -460,7 +459,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 		{
 			name: "wave-only window is created without a schedule",
 			maintenanceWindow: project.MaintenanceWindow{
-				WaveAssignment: pointer.MakePtr(2),
+				WaveAssignment: new(2),
 			},
 			maintenanceService: func() maintenancewindow.MaintenanceWindowService {
 				service := translation.NewMaintenanceWindowServiceMock(t)
@@ -481,7 +480,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 			maintenanceWindow: project.MaintenanceWindow{
 				DayOfWeek:      2,
 				HourOfDay:      14,
-				WaveAssignment: pointer.MakePtr(3),
+				WaveAssignment: new(3),
 			},
 			maintenanceService: func() maintenancewindow.MaintenanceWindowService {
 				service := translation.NewMaintenanceWindowServiceMock(t)
@@ -490,7 +489,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 						MaintenanceWindow: &project.MaintenanceWindow{
 							DayOfWeek:      2,
 							HourOfDay:      14,
-							WaveAssignment: pointer.MakePtr(1),
+							WaveAssignment: new(1),
 						},
 					},
 					nil,
@@ -507,7 +506,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 			// drift it cannot correct.
 			name: "wave-only window leaves an existing atlas schedule alone",
 			maintenanceWindow: project.MaintenanceWindow{
-				WaveAssignment: pointer.MakePtr(2),
+				WaveAssignment: new(2),
 			},
 			maintenanceService: func() maintenancewindow.MaintenanceWindowService {
 				service := translation.NewMaintenanceWindowServiceMock(t)
@@ -516,7 +515,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 						MaintenanceWindow: &project.MaintenanceWindow{
 							DayOfWeek:      3,
 							HourOfDay:      5,
-							WaveAssignment: pointer.MakePtr(2),
+							WaveAssignment: new(2),
 						},
 					},
 					nil,
@@ -540,7 +539,7 @@ func TestEnsureMaintenanceWindow(t *testing.T) {
 						MaintenanceWindow: &project.MaintenanceWindow{
 							DayOfWeek:      2,
 							HourOfDay:      14,
-							WaveAssignment: pointer.MakePtr(1),
+							WaveAssignment: new(1),
 						},
 					},
 					nil,
@@ -599,7 +598,7 @@ func TestWaveOnlyWindowConvergesAcrossReconciles(t *testing.T) {
 			MaintenanceWindow: &project.MaintenanceWindow{
 				DayOfWeek:      3,
 				HourOfDay:      5,
-				WaveAssignment: pointer.MakePtr(2),
+				WaveAssignment: new(2),
 			},
 		},
 		nil,
@@ -610,7 +609,7 @@ func TestWaveOnlyWindowConvergesAcrossReconciles(t *testing.T) {
 		Maybe()
 
 	r := &AtlasProjectReconciler{}
-	windowSpec := project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)}
+	windowSpec := project.MaintenanceWindow{WaveAssignment: new(2)}
 
 	for range reconciles {
 		ctx := &workflow.Context{Context: context.Background(), Log: zap.S()}
@@ -636,26 +635,26 @@ func TestWaveIsDifferent(t *testing.T) {
 		},
 		{
 			name:        "AKO unmanaged, Atlas has a wave",
-			inAtlas:     project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)},
+			inAtlas:     project.MaintenanceWindow{WaveAssignment: new(2)},
 			inAKO:       project.MaintenanceWindow{},
 			isDifferent: false,
 		},
 		{
 			name:        "AKO manages a wave, Atlas has none",
 			inAtlas:     project.MaintenanceWindow{},
-			inAKO:       project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)},
+			inAKO:       project.MaintenanceWindow{WaveAssignment: new(2)},
 			isDifferent: true,
 		},
 		{
 			name:        "both manage the same wave",
-			inAtlas:     project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)},
-			inAKO:       project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)},
+			inAtlas:     project.MaintenanceWindow{WaveAssignment: new(2)},
+			inAKO:       project.MaintenanceWindow{WaveAssignment: new(2)},
 			isDifferent: false,
 		},
 		{
 			name:        "both manage different waves",
-			inAtlas:     project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(1)},
-			inAKO:       project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(2)},
+			inAtlas:     project.MaintenanceWindow{WaveAssignment: new(1)},
+			inAKO:       project.MaintenanceWindow{WaveAssignment: new(2)},
 			isDifferent: true,
 		},
 	}
@@ -671,5 +670,5 @@ func TestWaveIsDifferent(t *testing.T) {
 
 func TestIsEmptyWindow(t *testing.T) {
 	assert.True(t, isEmptyWindow(project.MaintenanceWindow{}))
-	assert.False(t, isEmptyWindow(project.MaintenanceWindow{WaveAssignment: pointer.MakePtr(1)}))
+	assert.False(t, isEmptyWindow(project.MaintenanceWindow{WaveAssignment: new(1)}))
 }

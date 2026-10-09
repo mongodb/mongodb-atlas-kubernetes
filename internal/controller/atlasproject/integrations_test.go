@@ -417,7 +417,7 @@ func TestEnsureIntegration(t *testing.T) {
 		//		}
 		//	},
 		//	wantOk:        false,
-		//	wantCondition: pointer.MakePtr(false),
+		//	wantCondition: new(false),
 		//	wantCode:      workflow.ProjectIntegrationInternal,
 		//	wantErrMsg:    "failed to convert integrations from AKO",
 		//},
@@ -433,7 +433,7 @@ func TestEnsureIntegration(t *testing.T) {
 		//		return &AtlasProjectReconciler{}
 		//	},
 		//	wantOk:        false,
-		//	wantCondition: pointer.MakePtr(false),
+		//	wantCondition: new(false),
 		//	wantCode:      workflow.ProjectIntegrationInternal,
 		//	wantErrMsg:    "failed to map last applied integrations",
 		//},
@@ -468,7 +468,7 @@ func TestEnsureIntegration(t *testing.T) {
 		//		return r
 		//	},
 		//	wantOk:        false,
-		//	wantCondition: pointer.MakePtr(false),
+		//	wantCondition: new(false),
 		//},
 		//{
 		//	name: "integrations exist, condition set true",
@@ -501,7 +501,7 @@ func TestEnsureIntegration(t *testing.T) {
 		//		return r
 		//	},
 		//	wantOk:        true,
-		//	wantCondition: pointer.MakePtr(true),
+		//	wantCondition: new(true),
 		//},
 	}
 	for name, tt := range tests {
