@@ -213,6 +213,9 @@ CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
 OPENAPI2CRD := go tool -modfile=tools/toolbox/go.mod openapi2crd
 SCAFFOLDER := tools/scaffolder/bin/scaffolder
 
+# Kuver
+KUVER := go tool -modfile=tools/toolbox/go.mod kuver
+
 SCAFFOLDER_FLAGS ?= --all
 
 RH_DRYRUN ?= true
@@ -472,7 +475,7 @@ image-push: ## Push the docker image
 
 # Kubernetes version for the local kind cluster. kind pulls kindest/node:vX.Y.Z.
 # Override with: make run-kind KIND_K8S_VERSION=v1.29.0
-KIND_K8S_VERSION ?= v$(shell jq -r '.kubernetes.max' kubernetes-versions.json)
+KIND_K8S_VERSION ?= v$(shell jq -r '.kubernetes.max' .kuver.json)
 
 # Additional make goals
 .PHONY: run-kind
@@ -1063,7 +1066,7 @@ send-sboms: ## Send the SBOMs to Kondukto
 
 .PHONY: check-kubernetes-versions
 check-kubernetes-versions: ## Check the Kubernetes versions are supported
-	./scripts/check-kube-versions.sh
+	$(KUVER) policy
 
 .PHONY: gofix
 gofix:

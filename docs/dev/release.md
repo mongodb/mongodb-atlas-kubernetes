@@ -29,7 +29,7 @@ The Kubernetes Version testing matrix is automatically checked via CI, Every wee
 
 **No manual action is required** unless you receive an alert or the automated check fails. If an alert is received or the check fails, please refer to the [Updating Kubernetes Versions documentation](update-kubernetes-version.md)
 
-Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yaml) ran successfully recently to ensure versions are up to date.
+Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yml) ran successfully recently to ensure versions are up to date.
 
 ## A Note on Versioning with `version.json`
 
