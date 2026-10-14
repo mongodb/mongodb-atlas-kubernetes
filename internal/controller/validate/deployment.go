@@ -76,6 +76,12 @@ func AtlasDeployment(atlasDeployment *akov2.AtlasDeployment) error {
 }
 
 func regularDeployment(spec *akov2.AdvancedDeploymentSpec) error {
+	if spec.DatabaseEdition == akov2.DatabaseEditionInfinite {
+		if err := infiniteDeployment(spec); err != nil {
+			return err
+		}
+	}
+
 	var autoscaling akov2.AdvancedAutoScalingSpec
 	for _, replicaSetSpec := range spec.ReplicationSpecs {
 		for _, regionConfig := range replicaSetSpec.RegionConfigs {
@@ -89,6 +95,57 @@ func regularDeployment(spec *akov2.AdvancedDeploymentSpec) error {
 
 			if err := instanceSizeRangeForAdvancedDeployment(regionConfig); err != nil {
 				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func infiniteDeployment(spec *akov2.AdvancedDeploymentSpec) error {
+	const managedByAtlas = "%s is not configurable on an Atlas Infinite deployment, where Atlas manages storage"
+
+	if spec.DiskSizeGB != nil {
+		return fmt.Errorf(managedByAtlas, "diskSizeGB")
+	}
+
+	for specIdx, replicaSetSpec := range spec.ReplicationSpecs {
+		if replicaSetSpec == nil {
+			continue
+		}
+
+		for regionIdx, regionConfig := range replicaSetSpec.RegionConfigs {
+			if regionConfig == nil {
+				continue
+			}
+
+			path := fmt.Sprintf("replicationSpecs[%d].regionConfigs[%d]", specIdx, regionIdx)
+
+			nodeSpecs := []struct {
+				name  string
+				specs *akov2.Specs
+			}{
+				{name: "electableSpecs", specs: regionConfig.ElectableSpecs},
+				{name: "readOnlySpecs", specs: regionConfig.ReadOnlySpecs},
+				{name: "analyticsSpecs", specs: regionConfig.AnalyticsSpecs},
+			}
+			for _, nodeSpec := range nodeSpecs {
+				if nodeSpec.specs == nil {
+					continue
+				}
+				if nodeSpec.specs.DiskIOPS != nil {
+					return fmt.Errorf(managedByAtlas, fmt.Sprintf("%s.%s.diskIOPS", path, nodeSpec.name))
+				}
+				if nodeSpec.specs.EbsVolumeType != "" {
+					return fmt.Errorf(managedByAtlas, fmt.Sprintf("%s.%s.ebsVolumeType", path, nodeSpec.name))
+				}
+			}
+
+			if regionConfig.AutoScaling != nil && regionConfig.AutoScaling.DiskGB != nil {
+				return fmt.Errorf(managedByAtlas, path+".autoScaling.diskGB")
+			}
+			if regionConfig.AnalyticsAutoScaling != nil && regionConfig.AnalyticsAutoScaling.DiskGB != nil {
+				return fmt.Errorf(managedByAtlas, path+".analyticsAutoScaling.diskGB")
 			}
 		}
 	}
