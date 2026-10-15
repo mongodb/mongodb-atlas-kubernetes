@@ -18,6 +18,8 @@ Resource Types:
 
 - [IPAccessListEntry](#ipaccesslistentry)
 
+- [NetworkContainer](#networkcontainer)
+
 
 
 
@@ -5071,6 +5073,445 @@ The last observed Atlas state of the ipaccesslistentry resource for version v202
         <td>string</td>
         <td>
           IP address that you want to add to the project's IP access list. Your IP access list entry can be one `awsSecurityGroup`, one `cidrBlock`, or one `ipAddress`. Don't set this parameter if you set `awsSecurityGroup` or `cidrBlock`.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## NetworkContainer
+<sup><sup>[↩ Parent](#atlasgeneratedmongodbcomv1 )</sup></sup>
+
+
+
+
+
+
+A networkcontainer, managed by the MongoDB Kubernetes Atlas Operator.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>atlas.generated.mongodb.com/v1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>NetworkContainer</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#networkcontainerspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          Specification of the networkcontainer supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.v20250312.groupId) && has(self.connectionSecretRef)) || (!has(self.v20250312.groupId)): spec.connectionSecretRef must be set if spec.v20250312.groupId is set.</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#networkcontainerstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          Most recently observed read-only status of the networkcontainer for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.spec
+<sup><sup>[↩ Parent](#networkcontainer)</sup></sup>
+
+
+
+Specification of the networkcontainer supporting the following versions:
+
+- v20250312
+
+At most one versioned spec can be specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#networkcontainerspecconnectionsecretref">connectionSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#networkcontainerspecv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The spec of the networkcontainer resource for version v20250312.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.groupId) && !has(self.groupRef)) || (!has(self.groupId) && has(self.groupRef)): groupId and groupRef are mutually exclusive; only one of them can be set</li>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.spec.connectionSecretRef
+<sup><sup>[↩ Parent](#networkcontainerspec)</sup></sup>
+
+
+
+SENSITIVE FIELD
+
+Reference to a secret containing the credentials to setup the connection to Atlas.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the secret containing the Atlas credentials.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.spec.v20250312
+<sup><sup>[↩ Parent](#networkcontainerspec)</sup></sup>
+
+
+
+The spec of the networkcontainer resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#networkcontainerspecv20250312entry">entry</a></b></td>
+        <td>object</td>
+        <td>
+          The entry fields of the networkcontainer resource spec. These fields can be set for creating and updating networkcontainers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>groupId</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies your project. Use the [/groups](#tag/Projects/operation/listProjects) endpoint to retrieve all projects to which the authenticated user has access.
+
+**NOTE**: Groups and projects are synonymous terms. Your group id is the same as your project id. For existing groups, your group/project id remains the same. The resource and corresponding endpoints use the term groups.<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: groupId cannot be modified after creation</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#networkcontainerspecv20250312groupref">groupRef</a></b></td>
+        <td>object</td>
+        <td>
+          A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.spec.v20250312.entry
+<sup><sup>[↩ Parent](#networkcontainerspecv20250312)</sup></sup>
+
+
+
+The entry fields of the networkcontainer resource spec. These fields can be set for creating and updating networkcontainers.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>atlasCidrBlock</b></td>
+        <td>string</td>
+        <td>
+          IP addresses expressed in Classless Inter-Domain Routing (CIDR) notation that MongoDB Cloud uses for the network peering containers in your project. MongoDB Cloud assigns all of the project's clusters deployed to this cloud provider an IP address from this range. MongoDB Cloud locks this value if an M10 or greater cluster or a network peering connection exists in this project.
+
+These CIDR blocks must fall within the ranges reserved per RFC 1918. AWS and Azure further limit the block to between the `/24` and  `/21` ranges.
+
+To modify the CIDR block, the target project cannot have:
+
+- Any M10 or greater clusters
+- Any other VPC peering connections
+
+ You can also create a new project and create a network peering connection to set the desired MongoDB Cloud network peering container CIDR block for that project. MongoDB Cloud limits the number of MongoDB nodes per network peering connection based on the CIDR block and the region selected for the project.
+
+ **Example:** A project in an Amazon Web Services (AWS) region supporting three availability zones and an MongoDB CIDR network peering container block of limit of `/24` equals 27 three-node replica sets.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>providerName</b></td>
+        <td>string</td>
+        <td>
+          Cloud service provider that serves the requested network peering containers.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>region</b></td>
+        <td>string</td>
+        <td>
+          Azure region to which MongoDB Cloud deployed this network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>regionName</b></td>
+        <td>string</td>
+        <td>
+          Geographic area that Amazon Web Services (AWS) defines to which MongoDB Cloud deployed this network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>regions</b></td>
+        <td>[]string</td>
+        <td>
+          List of GCP regions to which you want to deploy this MongoDB Cloud network peering container.  In this MongoDB Cloud project, you can deploy clusters only to the GCP regions in this list. To deploy MongoDB Cloud clusters to other GCP regions, create additional projects.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.spec.v20250312.groupRef
+<sup><sup>[↩ Parent](#networkcontainerspecv20250312)</sup></sup>
+
+
+
+A reference to a "Group" resource.
+The value of "$.status.v20250312.id" will be used to set "groupId".
+Mutually exclusive with the "groupId" property.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the "Group" resource.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.status
+<sup><sup>[↩ Parent](#networkcontainer)</sup></sup>
+
+
+
+Most recently observed read-only status of the networkcontainer for the specified resource version. This data may not be up to date and is populated by the system. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#networkcontainerstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          Represents the latest available observations of a resource's current state.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#networkcontainerstatusv20250312">v20250312</a></b></td>
+        <td>object</td>
+        <td>
+          The last observed Atlas state of the networkcontainer resource for version v20250312.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.status.conditions[index]
+<sup><sup>[↩ Parent](#networkcontainerstatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>status</b></td>
+        <td>string</td>
+        <td>
+          Status of the condition, one of True, False, Unknown.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          Type of condition.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          Last time the condition transitioned from one status to another.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          A human readable message indicating details about the transition.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          The reason for the condition's last transition.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### NetworkContainer.status.v20250312
+<sup><sup>[↩ Parent](#networkcontainerstatus)</sup></sup>
+
+
+
+The last observed Atlas state of the networkcontainer resource for version v20250312.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>azureSubscriptionId</b></td>
+        <td>string</td>
+        <td>
+          Unique string that identifies the Azure subscription in which the MongoDB Cloud VNet resides.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>gcpProjectId</b></td>
+        <td>string</td>
+        <td>
+          Unique string that identifies the GCP project in which MongoDB Cloud clusters in this network peering container exist. The response returns **null** if no clusters exist in this network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>id</b></td>
+        <td>string</td>
+        <td>
+          Unique 24-hexadecimal digit string that identifies the network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>networkName</b></td>
+        <td>string</td>
+        <td>
+          Human-readable label that identifies the network in which MongoDB Cloud clusters in this network peering container exist. MongoDB Cloud returns **null** if no clusters exist in this network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>provisioned</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicates whether MongoDB Cloud clusters exist in the specified network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>vnetName</b></td>
+        <td>string</td>
+        <td>
+          Unique string that identifies the Azure VNet in which MongoDB Cloud clusters in this network peering container exist. The response returns **null** if no clusters exist in this network peering container.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>vpcId</b></td>
+        <td>string</td>
+        <td>
+          Unique string that identifies the MongoDB Cloud VPC on AWS.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
