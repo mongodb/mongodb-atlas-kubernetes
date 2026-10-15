@@ -20,7 +20,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
+	"go.mongodb.org/atlas-sdk/v20250312026/mockadmin"
+	"go.uber.org/zap/zaptest"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
@@ -203,5 +206,44 @@ func TestTeamManagedByAtlas(t *testing.T) {
 		result, err := checker(team)
 		assert.NoError(t, err)
 		assert.True(t, result)
+	})
+}
+
+func TestEnsureTeamUsersAreInSync(t *testing.T) {
+	var r AtlasProjectReconciler
+
+	t.Run("should look up new users by username and add them to the team", func(t *testing.T) {
+		usersAPI := mockadmin.NewMongoDBCloudUsersAPI(t)
+		usersAPI.EXPECT().GetUserByName(mock.Anything, "new.user@mongodb.com").
+			Return(admin.GetUserByNameApiRequest{ApiService: usersAPI})
+		usersAPI.EXPECT().GetUserByNameExecute(admin.GetUserByNameApiRequest{ApiService: usersAPI}).
+			Return(&admin.CloudAppUser{Id: admin.PtrString("user-id-1")}, nil, nil)
+		atlasClient := admin.APIClient{
+			MongoDBCloudUsersAPI: usersAPI,
+		}
+		team := &akov2.AtlasTeam{
+			Spec: akov2.TeamSpec{
+				Name:      "My Team",
+				Usernames: []akov2.TeamUser{"new.user@mongodb.com"},
+			},
+		}
+		workflowCtx := &workflow.Context{
+			OrgID: "orgID-1",
+			SdkClientSet: &atlas.ClientSet{
+				SdkClient20250312: &atlasClient,
+			},
+			Context: context.Background(),
+			Log:     zaptest.NewLogger(t).Sugar(),
+		}
+		teamService := func() teams.TeamsService {
+			service := translation.NewTeamsServiceMock(t)
+			service.EXPECT().GetTeamUsers(workflowCtx.Context, workflowCtx.OrgID, "team-id-1").
+				Return([]teams.TeamUser{}, nil)
+			service.EXPECT().AddUsers(workflowCtx.Context, &[]teams.TeamUser{{UserID: "user-id-1"}}, workflowCtx.OrgID, "team-id-1").
+				Return(nil)
+			return service
+		}
+		result := r.ensureTeamUsersAreInSync(workflowCtx, teamService(), "team-id-1", team)
+		assert.True(t, result.IsOk())
 	})
 }
