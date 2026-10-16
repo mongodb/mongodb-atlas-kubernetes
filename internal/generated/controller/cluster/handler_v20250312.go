@@ -188,6 +188,41 @@ func (h *Handlerv20250312) HandleUpdated(ctx context.Context, cluster *akov2gene
 	return h.handleUpserted(ctx, constate.StateUpdated, cluster)
 }
 
+// verifyRecordedIdentity guards against spec.v20250312.entry.name being repointed at a
+// different Atlas cluster after creation. Atlas addresses clusters by name only, so a
+// rename would otherwise aim the name-keyed update and delete calls at whatever cluster
+// currently bears that name. The Atlas cluster id recorded in status is the stable
+// identity, so resolve the spec name and refuse to act when the two disagree.
+func (h *Handlerv20250312) verifyRecordedIdentity(ctx context.Context, cluster *akov2generated.Cluster, deps ...client.Object) error {
+	if cluster.Status.V20250312 == nil || cluster.Status.V20250312.Id == nil {
+		return nil // nothing recorded yet, so there is no identity to contradict
+	}
+
+	params := &v20250312sdk.GetClusterApiParams{
+		ClusterName:                *cluster.Spec.V20250312.Entry.Name,
+		UseEffectiveInstanceFields: new(true),
+	}
+	if err := h.translator.ToAPI(params, cluster, deps...); err != nil {
+		return fmt.Errorf("failed to translate cluster API parameters to Atlas: %w", err)
+	}
+
+	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
+	if v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
+		return nil // no cluster bears this name, so no foreign cluster can be hit
+	}
+	if err != nil {
+		return fmt.Errorf("failed to verify Cluster identity: %w", err)
+	}
+
+	if atlasCluster.GetId() != *cluster.Status.V20250312.Id {
+		return reconcile.TerminalError(fmt.Errorf(
+			"spec.v20250312.entry.name %q refers to Atlas cluster %s, but this resource manages cluster %s: cluster names are immutable after creation",
+			params.ClusterName, atlasCluster.GetId(), *cluster.Status.V20250312.Id))
+	}
+
+	return nil
+}
+
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
 func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster *akov2generated.Cluster) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(cluster, h.deletionProtection) {
@@ -201,6 +236,10 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, cluster 
 	deps, err := h.getDependencies(ctx, cluster)
 	if err != nil {
 		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to resolve Cluster dependencies: %w", err))
+	}
+
+	if err := h.verifyRecordedIdentity(ctx, cluster, deps...); err != nil {
+		return constate.ErrorState(constate.StateDeletionRequested, err)
 	}
 
 	params := &v20250312sdk.DeleteClusterApiParams{
@@ -262,6 +301,10 @@ func (h *Handlerv20250312) handleUpserted(ctx context.Context, currentState cons
 
 	if !update {
 		return constate.NextState(currentState, "Cluster is up to date. No update required.")
+	}
+
+	if err := h.verifyRecordedIdentity(ctx, cluster, deps...); err != nil {
+		return constate.ErrorState(currentState, err)
 	}
 
 	body := &v20250312sdk.ClusterDescription20240805{}
