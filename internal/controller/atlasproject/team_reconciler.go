@@ -209,8 +209,8 @@ func (r *AtlasProjectReconciler) ensureTeamUsersAreInSync(workflowCtx *workflow.
 		username := team.Spec.Usernames[i]
 		if _, ok := atlasUsernamesMap[string(username)]; !ok {
 			g.Go(func() error {
-				user, _, err := workflowCtx.SdkClientSet.SdkClient20250312.MongoDBCloudUsersAPI.GetUser(taskContext, string(username)).Execute()
-
+				user, _, err := workflowCtx.SdkClientSet.SdkClient20250312.MongoDBCloudUsersAPI.
+					GetUserByName(taskContext, string(username)).Execute()
 				if err != nil {
 					return err
 				}
