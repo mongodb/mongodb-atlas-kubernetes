@@ -17,16 +17,19 @@ package atlasproject
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
 	"go.mongodb.org/atlas-sdk/v20250312026/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -200,4 +203,96 @@ func TestEnsureX509_TerminatesWhenAtlasReadFails(t *testing.T) {
 	result := reconciler.ensureX509(ctx, project)
 
 	assert.False(t, result.IsOk())
+}
+
+// TestReadX509CertFromSecretDoesNotLeakValues is the regression test for the secret
+// dump: the error used to embed the whole secret.Data map, and that error travels
+// verbatim into the AtlasProject status and the operator log.
+func TestReadX509CertFromSecretDoesNotLeakValues(t *testing.T) {
+	const privateKeyValue = "super-secret-private-api-key"
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "atlas-creds", Namespace: "operator-ns"},
+		Data: map[string][]byte{
+			"orgId":         []byte("5f4c1b2a3d4e5f6a7b8c9d0e"),
+			"publicApiKey":  []byte("abcdefgh"),
+			"privateApiKey": []byte(privateKeyValue),
+		},
+	}
+
+	kubeClient := fake.NewClientBuilder().
+		WithScheme(testScheme(t)).
+		WithObjects(secret).
+		Build()
+
+	_, err := readX509CertFromSecret(
+		context.Background(),
+		kubeClient,
+		client.ObjectKey{Name: "atlas-creds", Namespace: "operator-ns"},
+		zaptest.NewLogger(t).Sugar(),
+	)
+
+	require.Error(t, err)
+	assertNoSecretValues(t, err.Error(), secret.Data)
+
+	// the key names stay, they are what makes the error actionable
+	assert.Contains(t, err.Error(), "privateApiKey")
+	assert.Contains(t, err.Error(), "3 entries")
+}
+
+// TestEnsureX509_ConditionMessageDoesNotLeakSecret covers the full sink: a referenced
+// secret that is not a certificate must not end up readable in the project status.
+func TestEnsureX509_ConditionMessageDoesNotLeakSecret(t *testing.T) {
+	const privateKeyValue = "super-secret-private-api-key"
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "atlas-creds", Namespace: "operator-ns"},
+		Data: map[string][]byte{
+			"orgId":         []byte("5f4c1b2a3d4e5f6a7b8c9d0e"),
+			"privateApiKey": []byte(privateKeyValue),
+		},
+	}
+
+	project := &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "tenant-ns"},
+		Spec: akov2.AtlasProjectSpec{
+			X509CertRef: &common.ResourceRefNamespaced{Name: "atlas-creds", Namespace: "operator-ns"},
+		},
+	}
+	project.Status.ID = testProjectID
+
+	reconciler := &AtlasProjectReconciler{
+		Client: fake.NewClientBuilder().WithScheme(testScheme(t)).WithObjects(secret).Build(),
+		Log:    zaptest.NewLogger(t).Sugar(),
+	}
+
+	workflowCtx := x509TestContext(t, nil, nil)
+	result := reconciler.ensureX509(workflowCtx, project)
+
+	require.False(t, result.IsOk())
+	condition := workflowCtx.LastCondition()
+	require.NotNil(t, condition)
+	assertNoSecretValues(t, condition.Message, secret.Data)
+}
+
+func assertNoSecretValues(t *testing.T, message string, data map[string][]byte) {
+	t.Helper()
+
+	for key, value := range data {
+		assert.NotContains(t, message, string(value),
+			"message leaks the plaintext value of %q", key)
+
+		// %v on a map[string][]byte renders values as decimal byte lists
+		assert.NotContains(t, message, fmt.Sprintf("%v", value),
+			"message leaks the byte representation of %q", key)
+	}
+}
+
+func testScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
+	return scheme
 }

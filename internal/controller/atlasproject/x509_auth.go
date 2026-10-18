@@ -19,6 +19,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"go.mongodb.org/atlas-sdk/v20250312026/admin"
@@ -137,8 +139,11 @@ func readX509CertFromSecret(ctx context.Context, kubeClient client.Client, secre
 	certData, found := secret.Data[defaultName]
 	if !found {
 		if len(secret.Data) != 1 {
-			errorMsg := fmt.Sprintf("the secret should have data entry with key \"%s\" or have a single data entry, data: %v", defaultName, secret.Data)
-			return "", errors.New(errorMsg)
+			// Only ever report the key names: the values are secret material and this
+			// error is surfaced verbatim in the AtlasProject status and the operator log.
+			return "", fmt.Errorf(
+				"the secret should have a data entry with key %q or have a single data entry, got %d entries with keys %v",
+				defaultName, len(secret.Data), slices.Sorted(maps.Keys(secret.Data)))
 		}
 
 		singleKey, _ := getFirstMapItemKey(secret.Data)
