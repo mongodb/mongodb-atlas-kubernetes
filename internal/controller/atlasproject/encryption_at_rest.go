@@ -206,8 +206,13 @@ func normalizeAwsKms(ctx *workflow.Context, projectID string, awsKms *encryption
 		}
 	}
 
-	ctx.Log.Debugf("no match for provided AWS RoleID ARN: '%s'. Is the CPA configured for the project?", awsKms.RoleID)
-	return fmt.Errorf("can not use '%s' aws roleID for encryption at rest. AWS ARN not configured as Cloud Provider Access", awsKms.RoleID)
+	// Identify the offending value by where it came from, never by its content: this
+	// error is surfaced verbatim in the AtlasProject status, a Kubernetes Event and
+	// the operator log, none of which are limited to the owner of the secret.
+	ctx.Log.Debugf("no match for the AWS RoleID ARN read from secret %q. Is the CPA configured for the project?", awsKms.SecretRef.Name)
+	return fmt.Errorf(
+		"the RoleID in secret %q referenced by spec.encryptionAtRest.awsKms.secretRef is neither an Atlas role ID nor an AWS ARN configured as Cloud Provider Access for this project",
+		awsKms.SecretRef.Name)
 }
 
 func IsEncryptionSpecEmpty(spec *akov2.EncryptionAtRest) bool {

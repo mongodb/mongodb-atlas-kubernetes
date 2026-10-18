@@ -15,9 +15,15 @@
 package atlasproject
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/atlas-sdk/v20250312026/admin"
+	"go.mongodb.org/atlas-sdk/v20250312026/mockadmin"
+	"go.uber.org/zap/zaptest"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,6 +31,7 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/encryptionatrest"
 )
@@ -327,4 +334,46 @@ func TestIsEncryptionAtlasEmpty(t *testing.T) {
 	spec.AwsKms.Enabled = new(false)
 	isEmpty = IsEncryptionSpecEmpty(spec)
 	assert.True(t, isEmpty, "Enabled flag set to false is same as empty")
+}
+
+// TestNormalizeAwsKmsDoesNotLeakRoleID is the regression test for the RoleID leak:
+// the value comes from a secret the project owner may not be allowed to read, and
+// this error travels verbatim into the AtlasProject status, a Kubernetes Event and
+// the operator log.
+func TestNormalizeAwsKmsDoesNotLeakRoleID(t *testing.T) {
+	const victimRoleARN = "arn:aws:iam::210987654321:role/victim-only-role"
+
+	cpaAPI := mockadmin.NewCloudProviderAccessAPI(t)
+	cpaAPI.EXPECT().ListCloudProviderAccess(mock.Anything, testProjectID).
+		Return(admin.ListCloudProviderAccessApiRequest{ApiService: cpaAPI})
+	cpaAPI.EXPECT().ListCloudProviderAccessExecute(mock.Anything).
+		Return(&admin.CloudProviderAccessRoles{}, nil, nil)
+
+	workflowCtx := &workflow.Context{
+		Context: context.Background(),
+		Log:     zaptest.NewLogger(t).Sugar(),
+		SdkClientSet: &atlas.ClientSet{
+			SdkClient20250312: &admin.APIClient{CloudProviderAccessAPI: cpaAPI},
+		},
+	}
+
+	awsKms := &encryptionatrest.AwsKms{
+		AwsKms: akov2.AwsKms{
+			Enabled: new(true),
+			SecretRef: common.ResourceRefNamespaced{
+				Name:      "ear-secret",
+				Namespace: "victim-ns",
+			},
+		},
+		RoleID: victimRoleARN,
+	}
+
+	err := normalizeAwsKms(workflowCtx, testProjectID, awsKms)
+
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), victimRoleARN,
+		"the error leaks the RoleID read from the referenced secret")
+
+	// the reference is what makes the error actionable for the owner
+	assert.Contains(t, err.Error(), "ear-secret")
 }
