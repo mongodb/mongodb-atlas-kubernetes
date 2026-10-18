@@ -109,6 +109,13 @@ func (r *AtlasDataFederationReconciler) ensureConnectionSecrets(ctx *workflow.Co
 }
 
 func dbUserBelongsToProject(dbUser *akov2.AtlasDatabaseUser, project *akov2.AtlasProject) bool {
+	// Users are listed cluster-wide, so this sees every AtlasDatabaseUser including the
+	// ones pointing at an external Atlas project. Those carry no projectRef at all - the
+	// CEL rule on the spec requires it to be absent - and belong to no Kubernetes project.
+	if dbUser.Spec.ProjectRef == nil {
+		return false
+	}
+
 	if dbUser.Spec.ProjectRef.Name != project.Name {
 		return false
 	}
