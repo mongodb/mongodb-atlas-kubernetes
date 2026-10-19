@@ -157,6 +157,29 @@ func (h *Handlerv20250312) HandleUpdated(ctx context.Context, flexcluster *akov2
 	return h.handleIdle(ctx, flexcluster, constate.StateUpdated, constate.StateUpdating)
 }
 
+// verifyRecordedIdentity guards against spec.v20250312.entry.name being repointed at a
+// different Atlas flex cluster after creation. Atlas addresses flex clusters by name
+// only, so a rename would otherwise aim the name-keyed update and delete calls at
+// whatever cluster currently bears that name. The name recorded in status is written by
+// the operator from the Atlas response, so it is the trustworthy side of the comparison.
+func verifyRecordedIdentity(flexcluster *akov2generated.FlexCluster) error {
+	if flexcluster.Status.V20250312 == nil || flexcluster.Status.V20250312.Name == nil {
+		return nil // nothing recorded yet, so there is no identity to contradict
+	}
+	if flexcluster.Spec.V20250312 == nil || flexcluster.Spec.V20250312.Entry == nil {
+		return nil
+	}
+
+	recorded := *flexcluster.Status.V20250312.Name
+	if desired := flexcluster.Spec.V20250312.Entry.Name; desired != recorded {
+		return reconcile.TerminalError(fmt.Errorf(
+			"spec.v20250312.entry.name was changed from %q to %q: flex cluster names are immutable after creation",
+			recorded, desired))
+	}
+
+	return nil
+}
+
 // HandleDeletionRequested handles the deletionrequested state for version v20250312
 func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexcluster *akov2generated.FlexCluster) (constate.Result, error) {
 	if customresource.IsResourcePolicyKeepOrDefault(flexcluster, h.deletionProtection) {
@@ -170,6 +193,10 @@ func (h *Handlerv20250312) HandleDeletionRequested(ctx context.Context, flexclus
 	deps, err := h.getDependencies(ctx, flexcluster)
 	if err != nil {
 		return constate.ErrorState(constate.StateDeletionRequested, fmt.Errorf("failed to get dependencies: %w", err))
+	}
+
+	if err := verifyRecordedIdentity(flexcluster); err != nil {
+		return constate.ErrorState(constate.StateDeletionRequested, err)
 	}
 
 	params := &v20250312sdk.DeleteFlexClusterApiParams{}
@@ -255,6 +282,10 @@ func (h *Handlerv20250312) handleIdle(ctx context.Context, flexcluster *akov2gen
 
 	if !update {
 		return constate.NextState(currentState, "Flex cluster up to date. No update required.")
+	}
+
+	if err := verifyRecordedIdentity(flexcluster); err != nil {
+		return constate.ErrorState(currentState, err)
 	}
 
 	body := &v20250312sdk.FlexClusterDescriptionUpdate20241113{}
