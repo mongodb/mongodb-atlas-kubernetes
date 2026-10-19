@@ -166,7 +166,17 @@ type ScopeSpec struct {
 	Type ScopeType `json:"type"`
 }
 
+// AtlasProjectObjectKey returns the key of the referenced AtlasProject, or the zero
+// value when the resource points at an external Atlas project and therefore refers to
+// no Kubernetes project at all. Callers must treat the zero value as "no project".
+//
+// Deprecated: this cannot express the external-project case. Use ProjectDualRef with
+// reconciler.AtlasReconciler.ResolveProject, which resolves both reference styles.
 func (p AtlasDatabaseUser) AtlasProjectObjectKey() client.ObjectKey {
+	if p.Spec.ProjectRef == nil {
+		return client.ObjectKey{}
+	}
+
 	ns := p.Namespace
 	if p.Spec.ProjectRef.Namespace != "" {
 		ns = p.Spec.ProjectRef.Namespace

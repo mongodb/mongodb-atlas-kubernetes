@@ -136,7 +136,17 @@ type AtlasPrivateEndpointList struct {
 	Items           []AtlasPrivateEndpoint `json:"items"`
 }
 
+// AtlasProjectObjectKey returns the key of the referenced AtlasProject, or the zero
+// value when the resource points at an external Atlas project and therefore refers to
+// no Kubernetes project at all. Callers must treat the zero value as "no project".
+//
+// Deprecated: this cannot express the external-project case. Use ProjectDualRef with
+// reconciler.AtlasReconciler.ResolveProject, which resolves both reference styles.
 func (pe *AtlasPrivateEndpoint) AtlasProjectObjectKey() client.ObjectKey {
+	if pe.Spec.ProjectRef == nil {
+		return client.ObjectKey{}
+	}
+
 	ns := pe.Namespace
 	if pe.Spec.ProjectRef.Namespace != "" {
 		ns = pe.Spec.ProjectRef.Namespace
