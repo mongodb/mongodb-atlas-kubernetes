@@ -188,11 +188,15 @@ func (h *Handlerv20250312) HandleUpdated(ctx context.Context, cluster *akov2gene
 	return h.handleUpserted(ctx, constate.StateUpdated, cluster)
 }
 
-// verifyRecordedIdentity guards against spec.v20250312.entry.name being repointed at a
-// different Atlas cluster after creation. Atlas addresses clusters by name only, so a
-// rename would otherwise aim the name-keyed update and delete calls at whatever cluster
-// currently bears that name. The Atlas cluster id recorded in status is the stable
-// identity, so resolve the spec name and refuse to act when the two disagree.
+// verifyRecordedIdentity requires spec.v20250312.entry.name to still resolve to the Atlas
+// cluster recorded in status. Atlas addresses clusters by name only, so repointing the name
+// after creation would otherwise aim the name-keyed update and delete calls somewhere else:
+// at whatever cluster now bears that name, or at nothing at all, which makes a deletion
+// report success while leaving the recorded cluster running. The Atlas cluster id in status
+// is the stable identity, so refuse to act unless the spec name resolves back to it.
+//
+// Releasing a resource whose Atlas cluster is gone, or was never ours to delete, is what the
+// resource policy annotation is for; HandleDeletionRequested honors it before reaching here.
 func (h *Handlerv20250312) verifyRecordedIdentity(ctx context.Context, cluster *akov2generated.Cluster, deps ...client.Object) error {
 	if cluster.Status.V20250312 == nil || cluster.Status.V20250312.Id == nil {
 		return nil // nothing recorded yet, so there is no identity to contradict
@@ -208,7 +212,11 @@ func (h *Handlerv20250312) verifyRecordedIdentity(ctx context.Context, cluster *
 
 	atlasCluster, _, err := h.atlasClient.ClustersAPI.GetClusterWithParams(ctx, params).Execute()
 	if v20250312sdk.IsErrorCode(err, "CLUSTER_NOT_FOUND") {
-		return nil // no cluster bears this name, so no foreign cluster can be hit
+		return reconcile.TerminalError(fmt.Errorf(
+			"spec.v20250312.entry.name %q does not exist in Atlas, but this resource manages cluster %s: "+
+				"restore the name, or annotate with %s=%s to release this resource without deleting the cluster in Atlas",
+			params.ClusterName, *cluster.Status.V20250312.Id,
+			customresource.ResourcePolicyAnnotation, customresource.ResourcePolicyKeep))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to verify Cluster identity: %w", err)

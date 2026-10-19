@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	akov2generated "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	akocluster "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/controller/cluster"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 )
@@ -91,6 +93,47 @@ func TestHandleDeletionRequestedVerifiesRecordedIdentity(t *testing.T) {
 	}
 }
 
+// TestHandleDeletionRequestedRefusesVanishedName covers the gap josvazg found in the first
+// cut of the guard: a spec name that resolves to nothing used to be waved through, after
+// which the delete call reported CLUSTER_NOT_FOUND and the resource went to StateDeleted,
+// leaving the cluster recorded in status running in Atlas with nothing managing it.
+func TestHandleDeletionRequestedRefusesVanishedName(t *testing.T) {
+	cluster := testCluster()
+
+	clustersAPI := mockadmin.NewClustersAPI(t)
+	getReq := v20250312sdk.GetClusterApiRequest{ApiService: clustersAPI}
+	clustersAPI.EXPECT().GetClusterWithParams(mock.Anything, mock.Anything).Return(getReq)
+	clustersAPI.EXPECT().GetClusterExecute(getReq).Return(nil, nil, clusterNotFoundError())
+
+	handler := testHandler(t, clustersAPI)
+	_, err := handler.HandleDeletionRequested(context.Background(), cluster)
+
+	require.ErrorContains(t, err, "does not exist in Atlas")
+	require.ErrorContains(t, err, testClusterID)
+	// The way out has to be discoverable from the message itself, otherwise the only
+	// remaining move is editing finalizers by hand.
+	require.ErrorContains(t, err, customresource.ResourcePolicyAnnotation)
+	clustersAPI.AssertNotCalled(t, "DeleteClusterWithParams", mock.Anything, mock.Anything)
+}
+
+// TestHandleDeletionRequestedHonorsKeepPolicyOverVanishedName pins the escape hatch that
+// makes the strict check above acceptable: a cluster removed outside the operator is
+// released by annotation, without reaching the identity check at all.
+func TestHandleDeletionRequestedHonorsKeepPolicyOverVanishedName(t *testing.T) {
+	cluster := testCluster()
+	cluster.SetAnnotations(map[string]string{
+		customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
+	})
+
+	clustersAPI := mockadmin.NewClustersAPI(t)
+	handler := testHandler(t, clustersAPI)
+
+	result, err := handler.HandleDeletionRequested(context.Background(), cluster)
+	require.NoError(t, err)
+	require.Equal(t, constate.StateDeleted, result.NextState)
+	clustersAPI.AssertNotCalled(t, "GetClusterWithParams", mock.Anything, mock.Anything)
+}
+
 // TestHandleDeletionRequestedSkipsVerificationWhenUnmanaged makes sure a resource that never
 // reached Atlas does not pay for an extra lookup.
 func TestHandleDeletionRequestedSkipsVerificationWhenUnmanaged(t *testing.T) {
@@ -103,6 +146,12 @@ func TestHandleDeletionRequestedSkipsVerificationWhenUnmanaged(t *testing.T) {
 	_, err := handler.HandleDeletionRequested(context.Background(), cluster)
 	require.NoError(t, err)
 	clustersAPI.AssertNotCalled(t, "GetClusterWithParams", mock.Anything, mock.Anything)
+}
+
+func clusterNotFoundError() error {
+	apiErr := &v20250312sdk.GenericOpenAPIError{}
+	apiErr.SetModel(v20250312sdk.ApiError{ErrorCode: "CLUSTER_NOT_FOUND"})
+	return apiErr
 }
 
 func testCluster() *akov2generated.Cluster {
