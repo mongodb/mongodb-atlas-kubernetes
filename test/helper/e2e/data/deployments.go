@@ -200,7 +200,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 	case provider.ProviderAWS:
 		regions = []string{"US_EAST_1", "US_WEST_2"}
 	case provider.ProviderAzure:
-		regions = []string{"NORWAY_EAST", "GERMANY_NORTH"}
+		regions = []string{"SWEDEN_CENTRAL", "GERMANY_WEST_CENTRAL"}
 	case provider.ProviderGCP:
 		regions = []string{"CENTRAL_US", "EASTERN_US"}
 	}
