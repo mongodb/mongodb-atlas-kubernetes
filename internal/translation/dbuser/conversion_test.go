@@ -109,6 +109,26 @@ func TestNewUser(t *testing.T) {
 		},
 
 		{
+			title: "Spec with date in a non UTC timezone gets normalized to UTC",
+			spec: func() *akov2.AtlasDatabaseUserSpec {
+				spec := defaultTestSpec()
+				spec.DeleteAfterDate = "2021-11-30T15:04:05+08:00"
+				return spec
+			}(),
+			projectID: testProjectID,
+			password:  testPassword,
+			expectedUser: &dbuser.User{
+				AtlasDatabaseUserSpec: func() *akov2.AtlasDatabaseUserSpec {
+					spec := defaultTestSpec()
+					spec.DeleteAfterDate = "2021-11-30T07:04:05Z"
+					return spec
+				}(),
+				ProjectID: testProjectID,
+				Password:  testPassword,
+			},
+		},
+
+		{
 			title: "Spec with unordered roles renders a normalized user with ordered entries",
 			spec: func() *akov2.AtlasDatabaseUserSpec {
 				spec := defaultTestSpec()

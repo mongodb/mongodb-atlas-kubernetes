@@ -57,9 +57,9 @@ func MustParseISO8601(dateTime string) time.Time {
 	return iso8601
 }
 
-// FormatISO8601 returns the ISO8601 string format for the dateTime.
+// FormatISO8601 returns the ISO8601 string format for the dateTime in UTC.
 func FormatISO8601(dateTime time.Time) string {
-	return dateTime.Format("2006-01-02T15:04:05.999Z")
+	return dateTime.UTC().Format("2006-01-02T15:04:05.999Z")
 }
 
 // IsExpired parses the given ISO8601 date string and returns whether it is before now.
