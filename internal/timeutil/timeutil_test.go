@@ -44,3 +44,22 @@ func TestParseISO8601(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatISO8601(t *testing.T) {
+	tests := []struct {
+		name     string
+		dateTime string
+		want     string
+	}{
+		{name: "UTC", dateTime: "2021-02-07T21:39:31Z", want: "2021-02-07T21:39:31Z"},
+		{name: "Positive offset", dateTime: "2021-11-30T15:04:05+08:00", want: "2021-11-30T07:04:05Z"},
+		{name: "Negative offset", dateTime: "2020-11-02T20:04:05-0700", want: "2020-11-03T03:04:05Z"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FormatISO8601(MustParseISO8601(tt.dateTime)); got != tt.want {
+				t.Errorf("FormatISO8601() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
