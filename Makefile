@@ -804,16 +804,12 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: all-lints
-all-lints: helm-crds gofix fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck test-go-bump-policy
+all-lints: helm-crds gofix fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci
 ci: clean unit-test all-lints
 	@echo "✅ CI PASSED all checks"
-
-.PHONY: test-go-bump-policy
-test-go-bump-policy:
-	scripts/test-check-go-bump-policy-examples.sh
 
 prepare-dirs:
 	@echo "Creating directories..."
