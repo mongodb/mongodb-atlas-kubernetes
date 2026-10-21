@@ -22,7 +22,7 @@ import (
 
 	"github.com/crd2go/constate"
 	crapi "github.com/crd2go/crapi"
-	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312026/admin"
+	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312027/admin"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	builder "sigs.k8s.io/controller-runtime/pkg/builder"
 	client "sigs.k8s.io/controller-runtime/pkg/client"

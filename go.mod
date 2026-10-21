@@ -35,7 +35,7 @@ require (
 	github.com/sethvargo/go-password v0.4.0
 	github.com/stretchr/testify v1.12.1
 	github.com/yudai/gojsondiff v1.0.0
-	go.mongodb.org/atlas-sdk/v20250312026 v20250312026.1.0
+	go.mongodb.org/atlas-sdk/v20250312027 v20250312027.0.0
 	go.mongodb.org/mongo-driver v1.17.10
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.24.0
@@ -105,7 +105,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
-	github.com/stretchr/objx v0.5.3 // indirect
+	github.com/stretchr/objx v0.8.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
