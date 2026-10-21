@@ -474,6 +474,7 @@ func (a *AwsAction) getSubnets(ctx context.Context, vpcID, region string) (map[s
 	return subnetsMap, nil
 }
 
+//nolint:unparam // false positive: az is used via the value-taking new(az) builtin
 func (a *AwsAction) createSubnet(ctx context.Context, vpcID, name, cidr, region, az string) (string, error) {
 	ec2Client := ec2.NewFromConfig(a.cfg, func(o *ec2.Options) {
 		o.Region = region

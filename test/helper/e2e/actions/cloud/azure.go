@@ -219,6 +219,7 @@ func (a *AzureAction) findVpc(ctx context.Context, vpcName string) (*armnetwork.
 	return &vpc.VirtualNetwork, nil
 }
 
+//nolint:unparam // false positive: cidr is used via the value-taking new(cidr) builtin
 func (a *AzureAction) createVpcWithSubnets(ctx context.Context, vpcName, cidr, region string, subnets map[string]string) (*armnetwork.VirtualNetwork, error) {
 	a.t.Helper()
 	vpcClient := a.networkResourceFactory.NewVirtualNetworksClient()
@@ -290,6 +291,7 @@ func (a *AzureAction) deleteVpc(ctx context.Context, vpcName string) error {
 	return err
 }
 
+//nolint:unparam // false positive: ipRange is used via the value-taking new(ipRange) builtin
 func (a *AzureAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange string) (*armnetwork.Subnet, error) {
 	a.t.Helper()
 	subnetClient := a.networkResourceFactory.NewSubnetsClient()

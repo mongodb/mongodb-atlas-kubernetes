@@ -364,6 +364,7 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 	})
 })
 
+//nolint:unparam // false positive: groupId is used via the value-taking new(groupId) builtin
 func newReplicaSetCluster(name, namespace, groupId, secretName string) *generatedv1.Cluster {
 	return &generatedv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{

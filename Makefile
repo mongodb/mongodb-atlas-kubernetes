@@ -251,7 +251,6 @@ build-licenses.csv: go.mod ## Track licenses in a CSV file
 	@echo "========================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	GOTOOLCHAIN=local \
 	go-licenses csv --include_tests $(BASE_GO_PACKAGE)/... > licenses.csv
 
 .PHONY: check-licenses
@@ -260,7 +259,6 @@ check-licenses:  ## Check licenses are compliant with our restrictions
 	@echo "============================================"
 	export GOOS=linux
 	export GOARCH=amd64
-	GOTOOLCHAIN=local \
 	go-licenses check --include_tests \
 	--disallowed_types $(DISALLOWED_LICENSES) $(BASE_GO_PACKAGE)/...
 	@echo "--------------------"
