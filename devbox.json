@@ -11,7 +11,7 @@
     "ginkgo":                      "latest",
     "git":                         "latest",
     "go":                          "1.26",
-    "go-licenses":                 "1.6.0",
+    "go-licenses":                 "2.0.1",
     "golangci-lint":               "2",
     "govulncheck":                 "latest",
     "gotests":                     "latest",
@@ -38,7 +38,9 @@
   },
   "shell": {
     "init_hook": [
-      "export PATH=\"$(GOTOOLCHAIN=auto go env GOROOT)/bin:$PATH\""
+      "export PATH=\"$(GOTOOLCHAIN=auto go env GOROOT)/bin:$PATH\"",
+      "go install github.com/google/go-licenses/v2@v2.0.1",
+      "export PATH=\"$(go env GOPATH)/bin:$PATH\""
     ]
   }
 }

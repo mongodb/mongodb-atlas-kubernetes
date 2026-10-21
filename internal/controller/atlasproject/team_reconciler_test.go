@@ -226,6 +226,7 @@ func TestEnsureTeamUsersAreInSync(t *testing.T) {
 	}
 
 	// Resolves the username and hands back an identifier, the way Atlas does.
+	//nolint:unparam // false positive: userID is used via the value-taking new(userID) builtin
 	resolvesUsername := func(username, userID string) func(*mockadmin.MongoDBCloudUsersAPI) {
 		return func(usersAPI *mockadmin.MongoDBCloudUsersAPI) {
 			usersAPI.EXPECT().GetUserByName(mock.Anything, username).

@@ -675,51 +675,51 @@
         }
       }
     },
-    "go-licenses@1.6.0": {
-      "last_modified": "2026-03-21T07:29:51Z",
-      "resolved": "github:NixOS/nixpkgs/09061f748ee21f68a089cd5d91ec1859cd93d0be#go-licenses",
+    "go-licenses@2.0.1": {
+      "last_modified": "2026-10-19T15:20:57Z",
+      "resolved": "github:NixOS/nixpkgs/682ba80136e2c8dacd6b8900f578a72329458901#go-licenses",
       "source": "devbox-search",
-      "version": "1.6.0",
+      "version": "2.0.1",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/cnmsmqx35v926zzwyksi9hbw66lmxg50-go-licenses-1.6.0",
+              "path": "/nix/store/7lmsw0ww1c4g1xsxaznhxsadxj5la0km-go-licenses-2.0.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/cnmsmqx35v926zzwyksi9hbw66lmxg50-go-licenses-1.6.0"
+          "store_path": "/nix/store/7lmsw0ww1c4g1xsxaznhxsadxj5la0km-go-licenses-2.0.1"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/4l89v81v6a5h4gizky2svl9s2vrvfj8y-go-licenses-1.6.0",
+              "path": "/nix/store/pi12scl4js8qsn0sjz3sqnn1dqpz692c-go-licenses-2.0.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/4l89v81v6a5h4gizky2svl9s2vrvfj8y-go-licenses-1.6.0"
+          "store_path": "/nix/store/pi12scl4js8qsn0sjz3sqnn1dqpz692c-go-licenses-2.0.1"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/mkl25zcxfs9gqnixxlmms097i5fsz4kl-go-licenses-1.6.0",
+              "path": "/nix/store/4j3320hywyqscpxp7id5mlwvglhgfcla-go-licenses-2.0.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/mkl25zcxfs9gqnixxlmms097i5fsz4kl-go-licenses-1.6.0"
+          "store_path": "/nix/store/4j3320hywyqscpxp7id5mlwvglhgfcla-go-licenses-2.0.1"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/9ssqwb8r7izh5phg4cdr2arcah96729l-go-licenses-1.6.0",
+              "path": "/nix/store/kbkmzc0jlgfal0bqskr0fpv0zvfcf5mi-go-licenses-2.0.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/9ssqwb8r7izh5phg4cdr2arcah96729l-go-licenses-1.6.0"
+          "store_path": "/nix/store/kbkmzc0jlgfal0bqskr0fpv0zvfcf5mi-go-licenses-2.0.1"
         }
       }
     },

@@ -467,6 +467,7 @@ func interfaceFromAtlas(peInterface *admin.PrivateLinkEndpoint) EndpointInterfac
 	return nil
 }
 
+//nolint:unparam // false positive: gcpProjectID is used via the value-taking new(gcpProjectID) builtin
 func interfaceCreateToAtlas(peInterface EndpointInterface, gcpProjectID string) *admin.CreateEndpointRequest {
 	switch i := peInterface.(type) {
 	case *AWSInterface:

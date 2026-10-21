@@ -194,6 +194,7 @@ func (a *GCPAction) findVPC(ctx context.Context, vpcName string) (*computepb.Net
 	return vpc, nil
 }
 
+//nolint:unparam // false positive: vpcName is used via the value-taking new(vpcName) builtin
 func (a *GCPAction) createVPC(ctx context.Context, vpcName string) error {
 	vpcRequest := &computepb.InsertNetworkRequest{
 		Project: a.projectID,
@@ -259,6 +260,7 @@ func (a *GCPAction) getSubnets(ctx context.Context, region string) (map[string]s
 	return subnets, nil
 }
 
+//nolint:unparam // false positive: vpcName is used to build the network self-link via fmt.Sprintf
 func (a *GCPAction) createSubnet(ctx context.Context, vpcName, subnetName, ipRange, region string) error {
 	subnetRequest := &computepb.InsertSubnetworkRequest{
 		Project: a.projectID,
@@ -347,6 +349,7 @@ func (a *GCPAction) randomIP(subnet string) string {
 	}
 }
 
+//nolint:unparam // false positive: ip is used via the value-taking new(ip) builtin
 func (a *GCPAction) createVirtualAddress(ctx context.Context, ip, name, subnet, region string) error {
 	addressRequest := &computepb.InsertAddressRequest{
 		Project: a.projectID,
@@ -399,6 +402,7 @@ func (a *GCPAction) deleteVirtualAddress(ctx context.Context, name, region strin
 	return nil
 }
 
+//nolint:unparam // false positive: rule is used via the value-taking new(rule) builtin
 func (a *GCPAction) createForwardRule(ctx context.Context, rule, address, region, target string) error {
 	ruleRequest := &computepb.InsertForwardingRuleRequest{
 		Project: a.projectID,
@@ -444,6 +448,7 @@ func (a *GCPAction) deleteForwardRule(ctx context.Context, rule, region string) 
 	return nil
 }
 
+//nolint:unparam // false positive: peerName is used via the value-taking new(peerName) builtin
 func (a *GCPAction) deleteVPCPeering(ctx context.Context, vpcName, peerName string) error {
 	peerRequest := &computepb.RemovePeeringNetworkRequest{
 		Project: a.projectID,
