@@ -1480,14 +1480,14 @@ func TestDatabaseEditionFromAtlas(t *testing.T) {
 	}{
 		"prefers the requested edition": {
 			clusterDesc: &admin.ClusterDescription20240805{
-				DatabaseEdition:          pointer.MakePtr("INFINITE"),
-				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+				DatabaseEdition:          new("INFINITE"),
+				EffectiveDatabaseEdition: new("INFINITE"),
 			},
 			expected: "INFINITE",
 		},
 		"falls back to the effective edition when Atlas does not echo the requested one": {
 			clusterDesc: &admin.ClusterDescription20240805{
-				EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+				EffectiveDatabaseEdition: new("INFINITE"),
 			},
 			expected: "INFINITE",
 		},
@@ -1506,8 +1506,8 @@ func TestDatabaseEditionFromAtlas(t *testing.T) {
 
 func TestClusterFromAtlas_DatabaseEdition(t *testing.T) {
 	cluster := clusterFromAtlas(&admin.ClusterDescription20240805{
-		Name:                     pointer.MakePtr("cluster0"),
-		EffectiveDatabaseEdition: pointer.MakePtr("INFINITE"),
+		Name:                     new("cluster0"),
+		EffectiveDatabaseEdition: new("INFINITE"),
 	})
 
 	assert.Equal(t, "INFINITE", cluster.DatabaseEdition)
@@ -1532,7 +1532,7 @@ func TestDatabaseEditionToAtlas(t *testing.T) {
 		edition  string
 		expected *string
 	}{
-		"an explicit edition is sent on create": {edition: "INFINITE", expected: pointer.MakePtr("INFINITE")},
+		"an explicit edition is sent on create": {edition: "INFINITE", expected: new("INFINITE")},
 		"an unset edition is not sent":          {edition: "", expected: nil},
 	}
 
@@ -1584,8 +1584,8 @@ func TestNormalizeClusterDeployment_Infinite(t *testing.T) {
 						{
 							ProviderName:   "AWS",
 							RegionName:     "US_EAST_1",
-							Priority:       pointer.MakePtr(7),
-							ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: pointer.MakePtr(3)},
+							Priority:       new(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M40", NodeCount: new(3)},
 						},
 					},
 				},
@@ -1625,8 +1625,8 @@ func TestNormalizeClusterDeployment_CoreDefaultsUnchanged(t *testing.T) {
 						{
 							ProviderName:   "AWS",
 							RegionName:     "US_EAST_1",
-							Priority:       pointer.MakePtr(7),
-							ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: pointer.MakePtr(3)},
+							Priority:       new(7),
+							ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: new(3)},
 						},
 					},
 				},
@@ -1652,7 +1652,7 @@ func TestNormalizeClusterDeployment_InfiniteKeepsExplicitBackupChoice(t *testing
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:            "cluster0",
 			DatabaseEdition: "INFINITE",
-			BackupEnabled:   pointer.MakePtr(false),
+			BackupEnabled:   new(false),
 		},
 	}
 
@@ -1678,27 +1678,27 @@ func TestReplicationSpecToAtlas_InfiniteOmitsStorageFields(t *testing.T) {
 				{
 					ProviderName: "AWS",
 					RegionName:   "US_EAST_1",
-					Priority:     pointer.MakePtr(7),
+					Priority:     new(7),
 					ElectableSpecs: &akov2.Specs{
 						InstanceSize: "M40_GEN_2",
-						NodeCount:    pointer.MakePtr(3),
-						DiskIOPS:     pointer.MakePtr(int64(3000)),
+						NodeCount:    new(3),
+						DiskIOPS:     new(int64(3000)),
 					},
 					ReadOnlySpecs: &akov2.Specs{
 						InstanceSize: "M40_GEN_2",
-						NodeCount:    pointer.MakePtr(1),
-						DiskIOPS:     pointer.MakePtr(int64(3000)),
+						NodeCount:    new(1),
+						DiskIOPS:     new(int64(3000)),
 					},
 					AutoScaling: &akov2.AdvancedAutoScalingSpec{
-						Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
-						DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+						Compute: &akov2.ComputeSpec{Enabled: new(false)},
+						DiskGB:  &akov2.DiskGB{Enabled: new(true)},
 					},
 				},
 			},
 		},
 	}
 
-	sent := replicationSpecToAtlas(specs, "REPLICASET", pointer.MakePtr(40), true)
+	sent := replicationSpecToAtlas(specs, "REPLICASET", new(40), true)
 
 	require.NotNil(t, sent)
 	require.Len(t, *sent, 1)
@@ -1734,18 +1734,18 @@ func TestReplicationSpecToAtlas_CoreKeepsStorageFields(t *testing.T) {
 				{
 					ProviderName:   "AWS",
 					RegionName:     "US_EAST_1",
-					Priority:       pointer.MakePtr(7),
-					ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: pointer.MakePtr(3)},
+					Priority:       new(7),
+					ElectableSpecs: &akov2.Specs{InstanceSize: "M10", NodeCount: new(3)},
 					AutoScaling: &akov2.AdvancedAutoScalingSpec{
-						Compute: &akov2.ComputeSpec{Enabled: pointer.MakePtr(false)},
-						DiskGB:  &akov2.DiskGB{Enabled: pointer.MakePtr(false)},
+						Compute: &akov2.ComputeSpec{Enabled: new(false)},
+						DiskGB:  &akov2.DiskGB{Enabled: new(false)},
 					},
 				},
 			},
 		},
 	}
 
-	sent := replicationSpecToAtlas(specs, "REPLICASET", pointer.MakePtr(40), false)
+	sent := replicationSpecToAtlas(specs, "REPLICASET", new(40), false)
 
 	require.NotNil(t, sent)
 	regions := *(*sent)[0].RegionConfigs

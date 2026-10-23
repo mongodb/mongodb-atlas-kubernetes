@@ -22,7 +22,6 @@ import (
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/pointer"
 )
 
 func TestAtlasDeployment(t *testing.T) {
@@ -874,8 +873,8 @@ func TestAtlasDeployment_InfiniteStorageFields(t *testing.T) {
 		regionConfig := &akov2.AdvancedRegionConfig{
 			ProviderName:   "AWS",
 			RegionName:     "US_EAST_1",
-			Priority:       pointer.MakePtr(7),
-			ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2", NodeCount: pointer.MakePtr(2)},
+			Priority:       new(7),
+			ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2", NodeCount: new(2)},
 		}
 		if mutate != nil {
 			mutate(regionConfig)
@@ -903,7 +902,7 @@ func TestAtlasDeployment_InfiniteStorageFields(t *testing.T) {
 		},
 		"diskIOPS is rejected": {
 			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
-				rc.ElectableSpecs.DiskIOPS = pointer.MakePtr(int64(5000))
+				rc.ElectableSpecs.DiskIOPS = new(int64(5000))
 			}),
 			expectedError: "replicationSpecs[0].regionConfigs[0].electableSpecs.diskIOPS is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
 		},
@@ -917,15 +916,15 @@ func TestAtlasDeployment_InfiniteStorageFields(t *testing.T) {
 			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
 				rc.ReadOnlySpecs = &akov2.Specs{
 					InstanceSize: "M40_GEN_2",
-					NodeCount:    pointer.MakePtr(1),
-					DiskIOPS:     pointer.MakePtr(int64(5000)),
+					NodeCount:    new(1),
+					DiskIOPS:     new(int64(5000)),
 				}
 			}),
 			expectedError: "replicationSpecs[0].regionConfigs[0].readOnlySpecs.diskIOPS is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
 		},
 		"autoScaling.diskGB is rejected": {
 			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
-				rc.AutoScaling = &akov2.AdvancedAutoScalingSpec{DiskGB: &akov2.DiskGB{Enabled: pointer.MakePtr(true)}}
+				rc.AutoScaling = &akov2.AdvancedAutoScalingSpec{DiskGB: &akov2.DiskGB{Enabled: new(true)}}
 			}),
 			expectedError: "replicationSpecs[0].regionConfigs[0].autoScaling.diskGB is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
 		},
@@ -933,7 +932,7 @@ func TestAtlasDeployment_InfiniteStorageFields(t *testing.T) {
 			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
 				rc.AutoScaling = &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
-						Enabled:         pointer.MakePtr(true),
+						Enabled:         new(true),
 						MinInstanceSize: "M40_GEN_2",
 						MaxInstanceSize: "M60_GEN_2",
 					},
@@ -962,7 +961,7 @@ func TestAtlasDeployment_CoreStorageFieldsAllowed(t *testing.T) {
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:        "cluster0",
 				ClusterType: "REPLICASET",
-				DiskSizeGB:  pointer.MakePtr(40),
+				DiskSizeGB:  new(40),
 				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
 					{
 						ZoneName: "Zone 1",
@@ -970,15 +969,15 @@ func TestAtlasDeployment_CoreStorageFieldsAllowed(t *testing.T) {
 							{
 								ProviderName: "AWS",
 								RegionName:   "US_EAST_1",
-								Priority:     pointer.MakePtr(7),
+								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
 									InstanceSize:  "M10",
-									NodeCount:     pointer.MakePtr(3),
-									DiskIOPS:      pointer.MakePtr(int64(3000)),
+									NodeCount:     new(3),
+									DiskIOPS:      new(int64(3000)),
 									EbsVolumeType: "PROVISIONED",
 								},
 								AutoScaling: &akov2.AdvancedAutoScalingSpec{
-									DiskGB: &akov2.DiskGB{Enabled: pointer.MakePtr(true)},
+									DiskGB: &akov2.DiskGB{Enabled: new(true)},
 								},
 							},
 						},
