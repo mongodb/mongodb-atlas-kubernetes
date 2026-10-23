@@ -255,3 +255,29 @@ spec:
               skipProperties:
                 - $.links
 
+    - gvk:
+        version: v1
+        kind: NetworkContainer
+        group: atlas.generated.mongodb.com
+      categories:
+        - atlas
+      shortNames:
+        - agnc
+      mappings:
+        - majorVersion: v20250312
+          openAPIRef:
+            name: v20250312
+          parameters:
+            path:
+              name: '/api/atlas/v2/groups/{groupId}/containers'
+              verb: post
+            references:
+              - *groupRef
+          entry:
+            schema: 'CloudProviderContainer'
+            filters:
+              readWriteOnly: true
+          status:
+            schema: 'CloudProviderContainer'
+            filters:
+              readOnly: true
