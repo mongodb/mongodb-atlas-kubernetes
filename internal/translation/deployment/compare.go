@@ -43,8 +43,10 @@ func ComputeChanges(desired, current *Cluster) (*Cluster, bool) {
 		ProjectID:                 desired.GetProjectID(),
 		computeAutoscalingEnabled: desired.computeAutoscalingEnabled,
 		AdvancedDeploymentSpec: &akov2.AdvancedDeploymentSpec{
-			Name:                         desired.Name,
-			ClusterType:                  desired.ClusterType,
+			Name:        desired.Name,
+			ClusterType: desired.ClusterType,
+			// DatabaseEdition is deliberately absent: Atlas accepts it only at creation
+			// time and refuses to change it afterwards, so it has no place in an update.
 			MongoDBMajorVersion:          desired.MongoDBMajorVersion,
 			VersionReleaseSystem:         desired.VersionReleaseSystem,
 			BackupEnabled:                desired.BackupEnabled,

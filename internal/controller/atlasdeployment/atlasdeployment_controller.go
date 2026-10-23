@@ -343,7 +343,8 @@ func (r *AtlasDeploymentReconciler) inProgress(ctx *workflow.Context, atlasDeplo
 	ctx.SetConditionFromResult(api.DeploymentReadyType, result).
 		EnsureStatusOption(status.AtlasDeploymentStateNameOption(deploymentInAtlas.GetState())).
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
-		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion()))
+		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
+		EnsureStatusOption(status.AtlasDeploymentDatabaseEditionOption(deploymentInAtlas.GetDatabaseEdition()))
 
 	return result.ReconcileResult()
 }
@@ -360,6 +361,7 @@ func (r *AtlasDeploymentReconciler) ready(ctx *workflow.Context, deploymentInAKO
 		EnsureStatusOption(status.AtlasDeploymentStateNameOption(deploymentInAtlas.GetState())).
 		EnsureStatusOption(status.AtlasDeploymentReplicaSet(deploymentInAtlas.GetReplicaSet())).
 		EnsureStatusOption(status.AtlasDeploymentMongoDBVersionOption(deploymentInAtlas.GetMongoDBVersion())).
+		EnsureStatusOption(status.AtlasDeploymentDatabaseEditionOption(deploymentInAtlas.GetDatabaseEdition())).
 		EnsureStatusOption(status.AtlasDeploymentConnectionStringsOption(deploymentInAtlas.GetConnection()))
 
 	if deploymentInAKO.GetCustomResource().Spec.ExternalProjectRef != nil {
