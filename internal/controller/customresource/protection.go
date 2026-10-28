@@ -26,10 +26,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
-// AnnotationLastAppliedConfiguration holds the spec the operator last applied.
-// AtlasProject alert configurations are left out of it: they are synced by
-// diffing the spec against Atlas and never read back from the annotation, and
-// a few hundred of them push the object past the 256 KiB annotations limit.
 const (
 	AnnotationLastAppliedConfiguration = "mongodb.com/last-applied-configuration"
 )
@@ -66,8 +62,10 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 	}
 
 	spec := uObj["spec"]
+	// Alert configurations are synced by diffing spec against Atlas and never read back from here,
+	// while a few hundred of them push the object past the 256 KiB annotations limit.
 	if _, ok := resource.(*akov2.AtlasProject); ok {
-		if m, ok := spec.(map[string]interface{}); ok {
+		if m, ok := spec.(map[string]any); ok {
 			delete(m, "alertConfigurations")
 		}
 	}
@@ -103,6 +101,7 @@ func PatchLastConfigApplied[S any](ctx context.Context, k8sClient client.Client,
 	}
 
 	var toStore any = spec
+	// Same as in ApplyLastConfigApplied: project alert configurations are not stored.
 	if projectSpec, ok := any(spec).(*akov2.AtlasProjectSpec); ok {
 		trimmed := *projectSpec
 		trimmed.AlertConfigurations = nil
