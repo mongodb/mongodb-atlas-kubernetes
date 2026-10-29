@@ -598,6 +598,9 @@ build-release-pr: ## Build release artifacts in released-branch directory (requi
 	fi
 	@$(MAKE) -C released-branch bundle ENV=prod VERSION=$(VERSION) IMAGE_URL=$(IMAGE_URL) OPERATOR_REGISTRY=$(OPERATOR_REGISTRY)
 	@$(MAKE) -C released-branch bump-helm-chart-version VERSION=$(VERSION)
+	@echo "Regenerating Chart.lock for released operator Helm chart"
+	@helm dependency update released-branch/helm-charts/atlas-operator
+	@rm -f released-branch/helm-charts/atlas-operator/charts/mongodb-atlas-operator-crds-*.tgz
 	@$(MAKE) -C released-branch generate-sboms RELEASED_OPERATOR_IMAGE=$(RELEASED_OPERATOR_IMAGE) IMAGE_TAG=$(IMAGE_TAG) VERSION=$(VERSION) SKIP_SIGNATURE_VERIFY=$(SKIP_SIGNATURE_VERIFY)
 	@$(MAKE) -C released-branch gen-sdlc-checklist VERSION=$(VERSION) AUTHORS=$(AUTHORS)
 	@$(MAKE) -C released-branch build-licenses.csv
