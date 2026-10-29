@@ -173,6 +173,57 @@ func TestApplyLastConfigApplied(t *testing.T) {
 	assert.Equal(t, expectedConfig, annot[customresource.AnnotationLastAppliedConfiguration])
 }
 
+func sampleProjectWithAlerts() *akov2.AtlasProject {
+	return &akov2.AtlasProject{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns"},
+		Spec: akov2.AtlasProjectSpec{
+			Name:                          "atlas-project-name",
+			ProjectIPAccessList:           []project.IPAccessList{{CIDRBlock: "10.0.0.0/8"}},
+			AlertConfigurationSyncEnabled: true,
+			AlertConfigurations:           []akov2.AlertConfiguration{{Enabled: true, EventTypeName: "HOST_DOWN"}},
+		},
+	}
+}
+
+func TestApplyLastConfigAppliedOmitsProjectAlertConfigurations(t *testing.T) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	utilruntime.Must(akov2.AddToScheme(scheme))
+	prj := sampleProjectWithAlerts()
+	k8sClient := fake.NewClientBuilder().WithObjects(prj).WithScheme(scheme).Build()
+
+	require.NoError(t, customresource.ApplyLastConfigApplied(ctx, prj, k8sClient))
+
+	result := akov2.AtlasProject{}
+	require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(prj), &result))
+	lastApplied, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](&result)
+	require.NoError(t, err)
+	assert.Nil(t, lastApplied.AlertConfigurations)
+	assert.True(t, lastApplied.AlertConfigurationSyncEnabled)
+	assert.Equal(t, prj.Spec.ProjectIPAccessList, lastApplied.ProjectIPAccessList)
+	assert.Len(t, result.Spec.AlertConfigurations, 1)
+	assert.Len(t, prj.Spec.AlertConfigurations, 1)
+}
+
+func TestPatchLastConfigAppliedOmitsProjectAlertConfigurations(t *testing.T) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	utilruntime.Must(akov2.AddToScheme(scheme))
+	prj := sampleProjectWithAlerts()
+	k8sClient := fake.NewClientBuilder().WithObjects(prj).WithScheme(scheme).Build()
+	spec := prj.Spec.DeepCopy()
+
+	require.NoError(t, customresource.PatchLastConfigApplied(ctx, k8sClient, prj, spec))
+
+	result := akov2.AtlasProject{}
+	require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(prj), &result))
+	lastApplied, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](&result)
+	require.NoError(t, err)
+	assert.Nil(t, lastApplied.AlertConfigurations)
+	assert.Equal(t, prj.Spec.ProjectIPAccessList, lastApplied.ProjectIPAccessList)
+	assert.Len(t, spec.AlertConfigurations, 1)
+}
+
 func TestIsResourceManagedByOperator(t *testing.T) {
 	testCases := []struct {
 		title         string
