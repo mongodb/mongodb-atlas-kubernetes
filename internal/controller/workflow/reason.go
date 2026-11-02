@@ -80,6 +80,7 @@ const (
 	DeploymentUpdating                    ConditionReason = "DeploymentUpdating"
 	DeploymentConnectionSecretsNotCreated ConditionReason = "DeploymentConnectionSecretsNotCreated"
 	DeploymentAdvancedOptionsReady        ConditionReason = "DeploymentAdvancedOptionsReady"
+	DeploymentDatabaseEditionMismatch     ConditionReason = "DeploymentDatabaseEditionMismatch"
 	DedicatedMigrationProgressing         ConditionReason = "DedicatedMigrationProgressing"
 	DedicatedMigrationFailed              ConditionReason = "DedicatedMigrationFailed"
 	ServerlessPrivateEndpointReady        ConditionReason = "ServerlessPrivateEndpointReady"

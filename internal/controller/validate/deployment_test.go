@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -865,4 +866,126 @@ func TestServerlessPrivateEndpoints(t *testing.T) {
 
 		assert.ErrorContains(t, err, "serverless private endpoint should have a unique name: spe-1 is duplicated")
 	})
+}
+
+func TestAtlasDeployment_InfiniteStorageFields(t *testing.T) {
+	infiniteDeploymentWith := func(mutate func(*akov2.AdvancedRegionConfig)) *akov2.AtlasDeployment {
+		regionConfig := &akov2.AdvancedRegionConfig{
+			ProviderName:   "AWS",
+			RegionName:     "US_EAST_1",
+			Priority:       new(7),
+			ElectableSpecs: &akov2.Specs{InstanceSize: "M40_GEN_2", NodeCount: new(2)},
+		}
+		if mutate != nil {
+			mutate(regionConfig)
+		}
+		return &akov2.AtlasDeployment{
+			Spec: akov2.AtlasDeploymentSpec{
+				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+					Name:            "cluster0",
+					ClusterType:     "REPLICASET",
+					DatabaseEdition: akov2.DatabaseEditionInfinite,
+					ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+						{ZoneName: "Zone 1", RegionConfigs: []*akov2.AdvancedRegionConfig{regionConfig}},
+					},
+				},
+			},
+		}
+	}
+
+	tests := map[string]struct {
+		atlasDeployment *akov2.AtlasDeployment
+		expectedError   string
+	}{
+		"a spec that leaves storage to Atlas is accepted": {
+			atlasDeployment: infiniteDeploymentWith(nil),
+		},
+		"diskIOPS is rejected": {
+			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
+				rc.ElectableSpecs.DiskIOPS = new(int64(5000))
+			}),
+			expectedError: "replicationSpecs[0].regionConfigs[0].electableSpecs.diskIOPS is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
+		},
+		"ebsVolumeType is rejected": {
+			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
+				rc.ElectableSpecs.EbsVolumeType = "PROVISIONED"
+			}),
+			expectedError: "replicationSpecs[0].regionConfigs[0].electableSpecs.ebsVolumeType is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
+		},
+		"a storage field on readOnlySpecs is rejected too": {
+			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
+				rc.ReadOnlySpecs = &akov2.Specs{
+					InstanceSize: "M40_GEN_2",
+					NodeCount:    new(1),
+					DiskIOPS:     new(int64(5000)),
+				}
+			}),
+			expectedError: "replicationSpecs[0].regionConfigs[0].readOnlySpecs.diskIOPS is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
+		},
+		"autoScaling.diskGB is rejected": {
+			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
+				rc.AutoScaling = &akov2.AdvancedAutoScalingSpec{DiskGB: &akov2.DiskGB{Enabled: new(true)}}
+			}),
+			expectedError: "replicationSpecs[0].regionConfigs[0].autoScaling.diskGB is not configurable on an Atlas Infinite deployment, where Atlas manages storage",
+		},
+		"compute auto scaling stays a customer choice": {
+			atlasDeployment: infiniteDeploymentWith(func(rc *akov2.AdvancedRegionConfig) {
+				rc.AutoScaling = &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled:         new(true),
+						MinInstanceSize: "M40_GEN_2",
+						MaxInstanceSize: "M60_GEN_2",
+					},
+				}
+			}),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := AtlasDeployment(tc.atlasDeployment)
+			if tc.expectedError == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Equal(t, tc.expectedError, err.Error())
+		})
+	}
+}
+
+// The same storage fields stay configurable on a CORE deployment.
+func TestAtlasDeployment_CoreStorageFieldsAllowed(t *testing.T) {
+	atlasDeployment := &akov2.AtlasDeployment{
+		Spec: akov2.AtlasDeploymentSpec{
+			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
+				Name:        "cluster0",
+				ClusterType: "REPLICASET",
+				DiskSizeGB:  new(40),
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						ZoneName: "Zone 1",
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "US_EAST_1",
+								Priority:     new(7),
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize:  "M10",
+									NodeCount:     new(3),
+									DiskIOPS:      new(int64(3000)),
+									EbsVolumeType: "PROVISIONED",
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									DiskGB: &akov2.DiskGB{Enabled: new(true)},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.NoError(t, AtlasDeployment(atlasDeployment))
 }
