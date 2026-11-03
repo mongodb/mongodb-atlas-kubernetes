@@ -518,7 +518,7 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 		ProjectIPAccessList:       nil,
 		CloudProviderAccessRoles:  []akov2.CloudProviderAccessRole{{}},
 		CloudProviderIntegrations: []akov2.CloudProviderIntegration{{}},
-		AlertConfigurations:       []akov2.AlertConfiguration{{}},
+		AlertConfigurations:       nil,
 		X509CertRef:               &common.ResourceRefNamespaced{},
 		EncryptionAtRest:          &akov2.EncryptionAtRest{},
 		Auditing:                  &akov2.Auditing{},

@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
+	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 )
 
 const (
@@ -60,7 +61,16 @@ func ApplyLastConfigApplied(ctx context.Context, resource api.AtlasCustomResourc
 		return err
 	}
 
-	js, err := json.Marshal(uObj["spec"])
+	spec := uObj["spec"]
+	// Alert configurations are synced by diffing spec against Atlas and never read back from here,
+	// while a few hundred of them push the object past the 256 KiB annotations limit.
+	if _, ok := resource.(*akov2.AtlasProject); ok {
+		if m, ok := spec.(map[string]any); ok {
+			delete(m, "alertConfigurations")
+		}
+	}
+
+	js, err := json.Marshal(spec)
 	if err != nil {
 		return err
 	}
@@ -90,7 +100,15 @@ func PatchLastConfigApplied[S any](ctx context.Context, k8sClient client.Client,
 		return fmt.Errorf("spec is nil")
 	}
 
-	js, err := json.Marshal(spec)
+	var toStore any = spec
+	// Same as in ApplyLastConfigApplied: project alert configurations are not stored.
+	if projectSpec, ok := any(spec).(*akov2.AtlasProjectSpec); ok {
+		trimmed := *projectSpec
+		trimmed.AlertConfigurations = nil
+		toStore = &trimmed
+	}
+
+	js, err := json.Marshal(toStore)
 	if err != nil {
 		return fmt.Errorf("failed to marshal %v: %w", spec, err)
 	}
