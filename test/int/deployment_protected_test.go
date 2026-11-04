@@ -137,8 +137,14 @@ func preserveDeploymentFlow(ns string, testProject *akov2.AtlasProject, testDepl
 	By("Making sure deployment gets removed from Atlas manually", func() {
 		if testDeployment.IsFlex() {
 			Expect(deleteFlexInstance(testProject.Status.ID, testDeployment.Spec.FlexSpec.Name)).ToNot(HaveOccurred())
+			Eventually(
+				checkAtlasFlexInstanceRemoved(testProject.Status.ID, testDeployment.Spec.FlexSpec.Name),
+			).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 			return
 		}
 		Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).ToNot(HaveOccurred())
+		Eventually(
+			checkAtlasDeploymentRemoved(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name),
+		).WithTimeout(15 * time.Minute).WithPolling(PollingInterval).Should(BeTrue())
 	})
 }
