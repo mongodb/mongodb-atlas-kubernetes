@@ -16,6 +16,7 @@ package atlasproject
 
 import (
 	"errors"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -38,6 +39,30 @@ type TeamDataContainer struct {
 }
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, teamsService teams.TeamsService, project *akov2.AtlasProject) workflow.DeprecatedResult {
+	if project.Annotations[customresource.ProjectTeamsPolicyAnnotation] == customresource.ProjectTeamsPolicyUnmanaged {
+		if len(project.Spec.Teams) > 0 {
+			workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
+			return workflow.Terminate(workflow.Internal, errors.New("spec.teams must be empty when using the unmanaged teams policy"))
+		}
+
+		lastApplied, err := customresource.ParseLastConfigApplied[akov2.AtlasProjectSpec](project)
+		if err != nil {
+			workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
+			return workflow.Terminate(workflow.Internal, fmt.Errorf("failed to parse last applied configuration: %w", err))
+		}
+
+		if lastApplied != nil && len(lastApplied.Teams) > 0 {
+			lastApplied.Teams = nil
+			if err := customresource.PatchLastConfigApplied(workflowCtx.Context, r.Client, project, lastApplied); err != nil {
+				workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
+				return workflow.Terminate(workflow.Internal, fmt.Errorf("failed to patch last applied configuration: %w", err))
+			}
+		}
+
+		workflowCtx.UnsetCondition(api.ProjectTeamsReadyType)
+		return workflow.OK()
+	}
+
 	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry

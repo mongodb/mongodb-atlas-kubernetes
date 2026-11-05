@@ -41,6 +41,8 @@ const (
 	ResourcePolicyDelete            = "delete"
 	ReconciliationPolicySkip        = "skip"
 	ResourceVersionAllow            = "allow"
+	ProjectTeamsPolicyAnnotation    = "mongodb.com/atlas-project-teams-policy"
+	ProjectTeamsPolicyUnmanaged     = "unmanaged"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.
