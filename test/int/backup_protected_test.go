@@ -77,6 +77,11 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 					return
 				}
 				Expect(deleteAtlasDeployment(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name)).To(Succeed())
+				Eventually(
+					checkAtlasDeploymentRemoved(testProject.Status.ID, testDeployment.Spec.DeploymentSpec.Name),
+				).WithTimeout(15 * time.Minute).
+					WithPolling(PollingInterval).
+					Should(BeTrue())
 			})
 			By("Deleting deployment from Kubernetes", func() {
 				Expect(k8sClient.Delete(context.Background(), testDeployment)).To(Succeed())
