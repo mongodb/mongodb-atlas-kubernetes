@@ -90,7 +90,7 @@ func (si *SearchIndexes) CreateIndex(ctx context.Context, projectID, clusterName
 func (si *SearchIndexes) DeleteIndex(ctx context.Context, projectID, clusterName, indexID string) error {
 	resp, err := si.searchAPI.DeleteClusterSearchIndex(ctx, projectID, clusterName, indexID).Execute()
 	statusCode := httputil.StatusCode(resp)
-	if statusCode != http.StatusAccepted && statusCode != http.StatusNotFound || err != nil {
+	if statusCode != http.StatusAccepted && statusCode != http.StatusNotFound && statusCode != http.StatusNoContent || err != nil {
 		return fmt.Errorf("error deleting index, status code %d: %w", statusCode, err)
 	}
 	return nil
