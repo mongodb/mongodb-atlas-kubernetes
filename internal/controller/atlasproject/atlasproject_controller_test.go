@@ -523,7 +523,7 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 		EncryptionAtRest:          &akov2.EncryptionAtRest{},
 		Auditing:                  &akov2.Auditing{},
 		Settings:                  &akov2.ProjectSettings{},
-		Teams:                     []akov2.Team{{}},
+		Teams:                     nil,
 		BackupCompliancePolicyRef: &common.ResourceRefNamespaced{},
 		ConnectionSecret:          &common.ResourceRefNamespaced{},
 	}
