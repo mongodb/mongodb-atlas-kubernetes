@@ -76,6 +76,7 @@ func RegisterAll(ctx context.Context, c cluster.Cluster, logger *zap.Logger) err
 		generatedindexer.NewClusterByGroupIndexer(logger),
 		generatedindexer.NewFlexClusterByGroupIndexer(logger),
 		generatedindexer.NewIPAccessListEntryByGroupIndexer(logger),
+		generatedindexer.NewNetworkContainerByGroupIndexer(logger),
 		connectionsecretindexer.NewClusterByGroupIdIndexer(logger),
 		connectionsecretindexer.NewFlexClusterByGroupIdIndexer(logger),
 		connectionsecretindexer.NewDatabaseUserBySecretIndexer(ctx, c.GetClient(), logger),

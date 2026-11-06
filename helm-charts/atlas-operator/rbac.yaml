@@ -21,6 +21,7 @@
     - flexclusters
     - groups
     - ipaccesslistentries
+    - networkcontainers
   verbs:
     - create
     - delete
@@ -37,6 +38,7 @@
     - flexclusters/finalizers
     - groups/finalizers
     - ipaccesslistentries/finalizers
+    - networkcontainers/finalizers
   verbs:
     - update
 - apiGroups:
@@ -47,6 +49,7 @@
     - flexclusters/status
     - groups/status
     - ipaccesslistentries/status
+    - networkcontainers/status
   verbs:
     - get
     - patch
