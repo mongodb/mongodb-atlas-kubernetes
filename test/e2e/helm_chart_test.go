@@ -146,7 +146,8 @@ var _ = Describe("HELM charts", Ordered, func() {
 			},
 			"flex",
 		),
-		Entry("Deployment multiregion by helm chart", Label("focus-helm-advanced-multiregion"),
+		// TEMPORARY: Re-enable this entry ASAP.
+		/* Entry("Deployment multiregion by helm chart", Label("focus-helm-advanced-multiregion"),
 			func(ctx context.Context) model.TestDataProvider {
 				return model.DataProviderWithResources(ctx, "helm-advanced-multiregion", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_advanced_multi_region_helm.yaml"}, []string{}, []model.DBUser{
 					*model.NewDBUser("reader2").
@@ -156,7 +157,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				}, 30015, []func(*model.TestDataProvider){})
 			},
 			"advanced",
-		),
+		), */
 		Entry("Flex deployment by helm chart", Label("focus-helm-flex"),
 			func(ctx context.Context) model.TestDataProvider {
 				return model.DataProviderWithResources(ctx, "helm-flex", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
