@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/crd2go/constate"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,20 +28,16 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
-const (
-	AnnotationContentHash = "mongodb.com/content-hash"
-)
-
 func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateInitial, constate.StateCreated, integration)
+	return h.upsert(ctx, constate.StateInitial, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateCreated, constate.StateUpdated, integration)
+	return h.upsert(ctx, constate.StateCreated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateUpdated, constate.StateUpdated, integration)
+	return h.upsert(ctx, constate.StateUpdated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
@@ -58,7 +53,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState constate.ResourceState,
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState constate.ResourceState,
 	integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
@@ -69,7 +64,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	if err != nil {
 		return constate.ErrorState(currentState, fmt.Errorf("failed to populate integration: %w", err))
 	}
-	atlasIntegration, err := req.Service.Get(ctx, req.Project.ID, integrationSpec.Type)
+	_, err = req.Service.Get(ctx, req.Project.ID, integrationSpec.Type)
 	if errors.Is(err, thirdpartyintegration.ErrNotFound) {
 		return h.create(ctx, currentState, req, integrationSpec)
 	}
@@ -80,23 +75,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 				integrationSpec.Type, req.Project.ID, err),
 		)
 	}
-	atlas := atlasIntegration.Comparable()
-	spec := integrationSpec.Comparable()
-	secretChanged, err := h.secretChanged(ctx, integration)
-	if err != nil {
-		return constate.ErrorState(
-			currentState,
-			fmt.Errorf("Error evaluating secret changes for %s Atlas Integration for project %s: %w",
-				integrationSpec.Type, req.Project.ID, err),
-		)
-	}
-	if secretChanged || !reflect.DeepEqual(atlas, spec) {
-		return h.update(ctx, currentState, req, integrationSpec)
-	}
-	return constate.NextState(
-		nextState,
-		fmt.Sprintf("Synced %s Atlas Third Party Integration for %s", integrationSpec.Type, req.Project.ID),
-	)
+	return h.update(ctx, currentState, req, integrationSpec)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentState constate.ResourceState, req *reconcileRequest,
@@ -109,11 +88,6 @@ func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentS
 	req.integration.Status.ID = newIntegration.ID
 	if err := h.patchNonConditionStatus(ctx, req); err != nil {
 		return constate.ErrorState(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
-			integrationSpec.Type, req.Project.ID, err))
-	}
-	if err := h.ensureSecretHash(ctx, req.integration); err != nil {
-		return constate.ErrorState(currentState, fmt.Errorf("failed to ensure secret is hashed to detect further changes "+
-			"for %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
 	}
 	return constate.NextState(
