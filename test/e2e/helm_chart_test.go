@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,7 +124,11 @@ var _ = Describe("HELM charts", Ordered, func() {
 			By("User deploy the deployment via helm", func() {
 				helm.InstallDeploymentSubmodule(data.Resources)
 			})
-			waitDeploymentWithChecks(&data)
+			if deploymentType == "advanced" {
+				waitDeploymentWithChecks(&data, 30*24*time.Hour)
+			} else {
+				waitDeploymentWithChecks(&data)
+			}
 			By("Additional check for the current data set", func() {
 				for _, check := range data.Actions {
 					check(&data)
@@ -146,8 +151,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 			},
 			"flex",
 		),
-		// TEMPORARY: Re-enable this entry ASAP.
-		/* Entry("Deployment multiregion by helm chart", Label("focus-helm-advanced-multiregion"),
+		Entry("Deployment multiregion by helm chart", Label("helm-advanced-multiregion"),
 			func(ctx context.Context) model.TestDataProvider {
 				return model.DataProviderWithResources(ctx, "helm-advanced-multiregion", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_advanced_multi_region_helm.yaml"}, []string{}, []model.DBUser{
 					*model.NewDBUser("reader2").
@@ -157,7 +161,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				}, 30015, []func(*model.TestDataProvider){})
 			},
 			"advanced",
-		), */
+		),
 		Entry("Flex deployment by helm chart", Label("focus-helm-flex"),
 			func(ctx context.Context) model.TestDataProvider {
 				return model.DataProviderWithResources(ctx, "helm-flex", model.AProject{}, model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), []string{"../helper/e2e/data/atlasdeployment_flex.yaml"}, []string{}, []model.DBUser{
@@ -239,13 +243,17 @@ var _ = Describe("HELM charts", Ordered, func() {
 	})
 })
 
-func waitDeploymentWithChecks(data *model.TestDataProvider) {
+func waitDeploymentWithChecks(data *model.TestDataProvider, deploymentReadinessTimeout ...time.Duration) {
 	By("Wait for a Deployment to be created", func() {
 		actions.WaitProjectWithoutGenerationCheck(data)
 		resource, err := kube.GetProjectResource(data)
 		Expect(err).Should(BeNil())
 		data.Resources.ProjectID = resource.Status.ID
-		actions.WaitDeploymentWithoutGenerationCheck(data)
+		if len(deploymentReadinessTimeout) > 0 {
+			actions.WaitDeploymentWithoutGenerationCheckWithTimeout(data, deploymentReadinessTimeout[0])
+		} else {
+			actions.WaitDeploymentWithoutGenerationCheck(data)
+		}
 	})
 
 	By("Check attributes", func() {

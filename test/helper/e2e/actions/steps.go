@@ -110,6 +110,12 @@ func WaitDeploymentWithoutGenerationCheckV2(data *model.TestDataProvider) {
 // WaitDeploymentWithoutGenerationCheck waits for deployment
 // nolint: dupl
 func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
+	WaitDeploymentWithoutGenerationCheckWithTimeout(data, 40*time.Minute)
+}
+
+// WaitDeploymentWithoutGenerationCheckWithTimeout waits for deployment using a custom timeout
+// nolint: dupl
+func WaitDeploymentWithoutGenerationCheckWithTimeout(data *model.TestDataProvider, timeout time.Duration) {
 	input := data.Resources
 	EventuallyWithOffset(1,
 		func(g Gomega) string {
@@ -117,14 +123,14 @@ func WaitDeploymentWithoutGenerationCheck(data *model.TestDataProvider) {
 			g.Expect(err).ToNot(HaveOccurred())
 			return deploymentStatus
 		},
-	).WithTimeout(40*time.Minute).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
+	).WithTimeout(timeout).WithPolling(1*time.Minute).Should(Equal("True"), "Kubernetes resource: Deployment status `Ready` should be 'True'")
 
 	Eventually(func(g Gomega) {
 		deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 			input.Namespace, input.Deployments[0].ObjectMeta.GetName())
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(deploymentState).Should(Equal("IDLE"), "Kubernetes resource: Deployment status should be IDLE")
-	}).WithTimeout(40 * time.Minute).WithPolling(1 * time.Minute).Should(Succeed())
+	}).WithTimeout(timeout).WithPolling(1 * time.Minute).Should(Succeed())
 
 	deploymentState, err := k8s.GetK8sDeploymentStateName(data.Context, data.K8SClient,
 		input.Namespace, input.Deployments[0].ObjectMeta.GetName())
