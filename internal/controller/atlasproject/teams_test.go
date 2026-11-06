@@ -16,10 +16,12 @@ package atlasproject
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/atlas-sdk/v20250312027/admin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +35,7 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/teams"
@@ -324,6 +327,201 @@ func TestSyncAssignedTeams(t *testing.T) {
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
+}
+
+func TestEnsureAssignedTeams(t *testing.T) {
+	ctx := context.Background()
+
+	tests := map[string]struct {
+		buildObjects func(t *testing.T) (*akov2.AtlasProject, *akov2.AtlasTeam)
+		setupService func(s *translation.TeamsServiceMock)
+		assertions   func(t *testing.T, k8sClient client.Client, teamsService *translation.TeamsServiceMock, project *akov2.AtlasProject, team *akov2.AtlasTeam, result workflow.DeprecatedResult)
+	}{
+		"no ownership skips sync and status changes": {
+			buildObjects: func(t *testing.T) (*akov2.AtlasProject, *akov2.AtlasTeam) {
+				project := &akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "projectName",
+						Namespace: "testNS",
+						Annotations: map[string]string{
+							customresource.AnnotationLastAppliedConfiguration: mustMarshalProjectSpec(t, akov2.AtlasProjectSpec{Name: "projectName"}),
+						},
+					},
+					Spec: akov2.AtlasProjectSpec{
+						Name:  "projectName",
+						Teams: nil,
+					},
+					Status: status.AtlasProjectStatus{
+						ID: "projectID",
+						Teams: []status.ProjectTeamStatus{{
+							ID:      "teamID_1",
+							TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+						}},
+					},
+				}
+
+				team := &akov2.AtlasTeam{
+					ObjectMeta: metav1.ObjectMeta{Name: "teamName_1", Namespace: "testNS"},
+					Status: status.TeamStatus{
+						ID: "teamID_1",
+						Projects: []status.TeamProject{{
+							ID:   "projectID",
+							Name: "projectName",
+						}},
+					},
+				}
+
+				return project, team
+			},
+			assertions: func(t *testing.T, k8sClient client.Client, teamsService *translation.TeamsServiceMock, project *akov2.AtlasProject, team *akov2.AtlasTeam, result workflow.DeprecatedResult) {
+				assert.True(t, result.IsOk())
+				teamsService.AssertNotCalled(t, "ListProjectTeams", mock.Anything, mock.Anything)
+				teamsService.AssertNotCalled(t, "Unassign", mock.Anything, mock.Anything, mock.Anything)
+
+				gotProject := &akov2.AtlasProject{}
+				assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(project), gotProject))
+				assert.Equal(t, []status.ProjectTeamStatus{{ID: "teamID_1", TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"}}}, gotProject.Status.Teams)
+
+				gotTeam := &akov2.AtlasTeam{}
+				assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(team), gotTeam))
+				assert.Equal(t, []status.TeamProject{{ID: "projectID", Name: "projectName"}}, gotTeam.Status.Projects)
+			},
+		},
+		"no ownership malformed last applied terminates": {
+			buildObjects: func(_ *testing.T) (*akov2.AtlasProject, *akov2.AtlasTeam) {
+				project := &akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "projectName",
+						Namespace: "testNS",
+						Annotations: map[string]string{
+							customresource.AnnotationLastAppliedConfiguration: "{not-valid-json}",
+						},
+					},
+					Spec: akov2.AtlasProjectSpec{Name: "projectName"},
+					Status: status.AtlasProjectStatus{
+						ID: "projectID",
+					},
+				}
+
+				return project, nil
+			},
+			assertions: func(t *testing.T, _ client.Client, teamsService *translation.TeamsServiceMock, _ *akov2.AtlasProject, _ *akov2.AtlasTeam, result workflow.DeprecatedResult) {
+				assert.False(t, result.IsOk())
+				assert.ErrorContains(t, result.GetError(), "failed to get last applied configuration")
+				teamsService.AssertNotCalled(t, "ListProjectTeams", mock.Anything, mock.Anything)
+				teamsService.AssertNotCalled(t, "Unassign", mock.Anything, mock.Anything, mock.Anything)
+			},
+		},
+		"with previously applied teams still removes": {
+			buildObjects: func(t *testing.T) (*akov2.AtlasProject, *akov2.AtlasTeam) {
+				project := &akov2.AtlasProject{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "projectName",
+						Namespace: "testNS",
+						Annotations: map[string]string{
+							customresource.AnnotationLastAppliedConfiguration: mustMarshalProjectSpec(t, akov2.AtlasProjectSpec{
+								Name: "projectName",
+								Teams: []akov2.Team{{
+									TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+									Roles:   []akov2.TeamRole{"GROUP_OWNER"},
+								}},
+							}),
+						},
+					},
+					Spec: akov2.AtlasProjectSpec{Name: "projectName", Teams: nil},
+					Status: status.AtlasProjectStatus{
+						ID: "projectID",
+						Teams: []status.ProjectTeamStatus{{
+							ID:      "teamID_1",
+							TeamRef: common.ResourceRefNamespaced{Name: "teamName_1", Namespace: "testNS"},
+						}},
+					},
+				}
+
+				team := &akov2.AtlasTeam{
+					ObjectMeta: metav1.ObjectMeta{Name: "teamName_1", Namespace: "testNS"},
+					Status: status.TeamStatus{
+						ID: "teamID_1",
+						Projects: []status.TeamProject{{
+							ID:   "projectID",
+							Name: "projectName",
+						}},
+					},
+				}
+
+				return project, team
+			},
+			setupService: func(s *translation.TeamsServiceMock) {
+				s.EXPECT().ListProjectTeams(ctx, "projectID").Return([]teams.AssignedTeam{{
+					TeamID:   "teamID_1",
+					TeamName: "teamName_1",
+					Roles:    []string{"GROUP_OWNER"},
+				}}, nil)
+				s.EXPECT().Unassign(ctx, "projectID", "teamID_1").Return(nil)
+			},
+			assertions: func(t *testing.T, k8sClient client.Client, teamsService *translation.TeamsServiceMock, project *akov2.AtlasProject, team *akov2.AtlasTeam, result workflow.DeprecatedResult) {
+				assert.True(t, result.IsOk())
+				teamsService.AssertNotCalled(t, "Assign", mock.Anything, mock.Anything, mock.Anything)
+
+				gotProject := &akov2.AtlasProject{}
+				assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(project), gotProject))
+				assert.Empty(t, gotProject.Status.Teams)
+
+				gotTeam := &akov2.AtlasTeam{}
+				assert.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(team), gotTeam))
+				assert.Empty(t, gotTeam.Status.Projects)
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			project, team := tc.buildObjects(t)
+
+			testScheme := runtime.NewScheme()
+			assert.NoError(t, akov2.AddToScheme(testScheme))
+			assert.NoError(t, corev1.AddToScheme(testScheme))
+
+			objects := []client.Object{project}
+			statusObjects := []client.Object{project}
+			if team != nil {
+				objects = append(objects, team)
+				statusObjects = append(statusObjects, team)
+			}
+
+			k8sClient := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(objects...).
+				WithStatusSubresource(statusObjects...).
+				Build()
+
+			teamsService := translation.NewTeamsServiceMock(t)
+			if tc.setupService != nil {
+				tc.setupService(teamsService)
+			}
+
+			logger := zaptest.NewLogger(t).Sugar()
+			workflowCtx := &workflow.Context{Context: ctx, Log: logger}
+			r := &AtlasProjectReconciler{
+				Client:        k8sClient,
+				EventRecorder: record.NewFakeRecorder(10),
+				Log:           logger,
+			}
+
+			result := r.ensureAssignedTeams(workflowCtx, teamsService, project)
+			tc.assertions(t, k8sClient, teamsService, project, team, result)
+		})
+	}
+}
+
+func mustMarshalProjectSpec(t *testing.T, spec akov2.AtlasProjectSpec) string {
+	t.Helper()
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatalf("failed to marshal project spec: %v", err)
+	}
+
+	return string(raw)
 }
 
 func TestUpdateTeamState(t *testing.T) {
