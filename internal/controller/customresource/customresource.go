@@ -32,14 +32,15 @@ import (
 )
 
 const (
-	ResourcePolicyAnnotation       = "mongodb.com/atlas-resource-policy"
-	ReconciliationPolicyAnnotation = "mongodb.com/atlas-reconciliation-policy"
-	ResourceVersion                = "mongodb.com/atlas-resource-version"
-	ResourceVersionOverride        = "mongodb.com/atlas-resource-version-policy"
-	ResourcePolicyKeep             = "keep"
-	ResourcePolicyDelete           = "delete"
-	ReconciliationPolicySkip       = "skip"
-	ResourceVersionAllow           = "allow"
+	ResourcePolicyAnnotation        = "mongodb.com/atlas-resource-policy"
+	ReconciliationPolicyAnnotation  = "mongodb.com/atlas-reconciliation-policy"
+	ResourceVersion                 = "mongodb.com/atlas-resource-version"
+	ReferencedSecretResourceVersion = "mongodb.com/referenced-secret-resource-version" // #nosec G101 -- metadata annotation key, not credential material
+	ResourceVersionOverride         = "mongodb.com/atlas-resource-version-policy"
+	ResourcePolicyKeep              = "keep"
+	ResourcePolicyDelete            = "delete"
+	ReconciliationPolicySkip        = "skip"
+	ResourceVersionAllow            = "allow"
 )
 
 // PrepareResource queries the Custom Resource 'request.NamespacedName' and populates the 'resource' pointer.

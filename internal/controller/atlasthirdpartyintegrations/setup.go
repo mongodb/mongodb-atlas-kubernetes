@@ -177,10 +177,12 @@ func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handle
 }
 
 type reconcileRequest struct {
-	ClientSet   *atlas.ClientSet
-	Project     *project.Project
-	Service     thirdpartyintegration.ThirdPartyIntegrationService
-	integration *akov2.AtlasThirdPartyIntegration
+	ClientSet             *atlas.ClientSet
+	Project               *project.Project
+	Service               thirdpartyintegration.ThirdPartyIntegrationService
+	integration           *akov2.AtlasThirdPartyIntegration
+	secretResourceVersion string
+	reapplyTimestamp      string
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*reconcileRequest, error) {

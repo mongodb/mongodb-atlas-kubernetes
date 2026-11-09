@@ -25,8 +25,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
+
+const annotationLastReconciledReapplyTimestamp = "mongodb.internal.com/last-reconciled-reapply-timestamp"
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
 	return h.upsert(ctx, constate.StateInitial, integration)
@@ -55,15 +58,24 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 
 func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState constate.ResourceState,
 	integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
+	populated, err := h.populateIntegration(ctx, integration)
+	if err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to populate integration: %w", err))
+	}
+	integrationSpec := populated.Integration
+	resourceVersion := populated.ResourceVersion
+	annotatedVersion, hasReferencedVersion := integration.Annotations[customresource.ReferencedSecretResourceVersion]
+	reapplyTimestamp := integration.Annotations[constate.AnnotationReapplyTimestamp]
+	lastReconciledReapplyTimestamp := integration.Annotations[annotationLastReconciledReapplyTimestamp]
+	if hasReferencedVersion && resourceVersion != "" && annotatedVersion == resourceVersion && integration.Status.ObservedGeneration == integration.Generation && reapplyTimestamp == lastReconciledReapplyTimestamp {
+		return constate.NextState(currentState, "Spec and referenced Secret unchanged")
+	}
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {
 		return constate.ErrorState(currentState, fmt.Errorf("failed to build reconcile request: %w", err))
 	}
-
-	integrationSpec, err := h.populateIntegration(ctx, integration)
-	if err != nil {
-		return constate.ErrorState(currentState, fmt.Errorf("failed to populate integration: %w", err))
-	}
+	req.secretResourceVersion = resourceVersion
+	req.reapplyTimestamp = reapplyTimestamp
 	_, err = req.Service.Get(ctx, req.Project.ID, integrationSpec.Type)
 	if errors.Is(err, thirdpartyintegration.ErrNotFound) {
 		return h.create(ctx, currentState, req, integrationSpec)
@@ -86,9 +98,13 @@ func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentS
 			integrationSpec.Type, req.Project.ID, err))
 	}
 	req.integration.Status.ID = newIntegration.ID
+	req.integration.Status.ObservedGeneration = req.integration.Generation
 	if err := h.patchNonConditionStatus(ctx, req); err != nil {
 		return constate.ErrorState(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
+	}
+	if err := h.persistReconcileAnnotations(ctx, req); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to record referenced Secret resource version: %w", err))
 	}
 	return constate.NextState(
 		constate.StateCreated,
@@ -99,21 +115,34 @@ func (h *AtlasThirdPartyIntegrationHandler) create(ctx context.Context, currentS
 func (h *AtlasThirdPartyIntegrationHandler) update(ctx context.Context, currentState constate.ResourceState, req *reconcileRequest,
 	integrationSpec *thirdpartyintegration.ThirdPartyIntegration) (constate.Result, error) {
 	updatedIntegration, err := req.Service.Update(ctx, req.Project.ID, integrationSpec)
+	if err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to update %s Atlas Third Party Integration for project %s: %w", integrationSpec.Type, req.Project.ID, err))
+	}
 	if req.integration.Status.ID == "" { // On imports, the ID might be unset
 		req.integration.Status.ID = updatedIntegration.ID
-		if err := h.patchNonConditionStatus(ctx, req); err != nil {
-			return constate.ErrorState(currentState, fmt.Errorf("failed to record id for %s Atlas Third Party Integration for project %s: %w",
-				integrationSpec.Type, req.Project.ID, err))
-		}
 	}
-	if err != nil {
-		return constate.ErrorState(currentState, fmt.Errorf("failed to update %s Atlas Third Party Integration for project %s: %w",
+	req.integration.Status.ObservedGeneration = req.integration.Generation
+	if err := h.patchNonConditionStatus(ctx, req); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to record status for %s Atlas Third Party Integration for project %s: %w",
 			integrationSpec.Type, req.Project.ID, err))
+	}
+	if err := h.persistReconcileAnnotations(ctx, req); err != nil {
+		return constate.ErrorState(currentState, fmt.Errorf("failed to record referenced Secret resource version: %w", err))
 	}
 	return constate.NextState(
 		constate.StateUpdated,
 		fmt.Sprintf("Updated Atlas Third Party Integration for %s", integrationSpec.Type),
 	)
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) persistReconcileAnnotations(ctx context.Context, req *reconcileRequest) error {
+	base := req.integration.DeepCopy()
+	if req.integration.Annotations == nil {
+		req.integration.Annotations = map[string]string{}
+	}
+	req.integration.Annotations[customresource.ReferencedSecretResourceVersion] = req.secretResourceVersion
+	req.integration.Annotations[annotationLastReconciledReapplyTimestamp] = req.reapplyTimestamp
+	return h.Client.Patch(ctx, req.integration, client.MergeFrom(base))
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) delete(ctx context.Context, req *reconcileRequest, integrationType string) (constate.Result, error) {
@@ -148,14 +177,19 @@ func (h *AtlasThirdPartyIntegrationHandler) patchNonConditionStatus(ctx context.
 	return nil
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) populateIntegration(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*thirdpartyintegration.ThirdPartyIntegration, error) {
+type populatedIntegration struct {
+	Integration     *thirdpartyintegration.ThirdPartyIntegration
+	ResourceVersion string
+}
+
+func (h *AtlasThirdPartyIntegrationHandler) populateIntegration(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*populatedIntegration, error) {
 	secrets, err := fetchIntegrationSecrets(ctx, h.Client, integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch integration secrets: %w", err)
 	}
-	internalIntegration, err := thirdpartyintegration.NewFromSpec(integration, secrets)
+	internalIntegration, err := thirdpartyintegration.NewFromSpec(integration, secrets.Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to populate integration: %w", err)
 	}
-	return internalIntegration, nil
+	return &populatedIntegration{Integration: internalIntegration, ResourceVersion: secrets.ResourceVersion}, nil
 }

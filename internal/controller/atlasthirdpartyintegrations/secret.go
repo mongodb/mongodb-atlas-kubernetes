@@ -25,12 +25,21 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
-func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, integration *akov2.AtlasThirdPartyIntegration) (map[string][]byte, error) {
+type secretData struct {
+	Data            map[string][]byte
+	ResourceVersion string
+}
+
+func fetchIntegrationSecrets(ctx context.Context, kubeClient client.Client, integration *akov2.AtlasThirdPartyIntegration) (*secretData, error) {
 	name, err := secretName(integration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to solve integration secret name: %w", err)
 	}
-	return fetchSecretData(ctx, kubeClient, name, integration.Namespace)
+	secret, err := fetchSecret(ctx, kubeClient, name, integration.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve secret value: %w", err)
+	}
+	return &secretData{Data: secret.Data, ResourceVersion: secret.ResourceVersion}, nil
 }
 
 func secretName(integration *akov2.AtlasThirdPartyIntegration) (string, error) {
@@ -65,12 +74,4 @@ func fetchSecret(ctx context.Context, kubeClient client.Client, name, namespace 
 		return nil, fmt.Errorf("failed to fetch secret: %w", err)
 	}
 	return &secret, nil
-}
-
-func fetchSecretData(ctx context.Context, kubeClient client.Client, name, namespace string) (map[string][]byte, error) {
-	secret, err := fetchSecret(ctx, kubeClient, name, namespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve secret value: %w", err)
-	}
-	return secret.Data, nil
 }

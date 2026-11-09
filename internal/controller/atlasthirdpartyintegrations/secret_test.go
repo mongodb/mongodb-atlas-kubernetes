@@ -230,14 +230,18 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				Build()
 			ctx := context.Background()
 
-			secretData, err := fetchIntegrationSecrets(ctx, k8sClient, tc.integration)
+			got, err := fetchIntegrationSecrets(ctx, k8sClient, tc.integration)
 
 			if tc.wantErr == "" {
 				require.NoError(t, err)
 			} else {
 				assert.ErrorContains(t, err, tc.wantErr)
 			}
-			assert.Equal(t, tc.want, secretData)
+			if err != nil {
+				assert.Nil(t, got)
+			} else {
+				assert.Equal(t, tc.want, got.Data)
+			}
 		})
 	}
 }
