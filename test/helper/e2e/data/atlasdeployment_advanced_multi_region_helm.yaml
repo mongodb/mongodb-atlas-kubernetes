@@ -13,7 +13,7 @@ spec:
         zoneName: Zone 1
         regionConfigs:
           - electableSpecs:
-              instanceSize: M10
+              instanceSize: M30
               nodeCount: 3
             providerName: AZURE
             backingProviderName: AZURE
@@ -24,21 +24,21 @@ spec:
         zoneName: Zone 2
         regionConfigs:
           - electableSpecs:
-              instanceSize: M10
+              instanceSize: M30
               nodeCount: 3
             providerName: AWS
             backingProviderName: AWS
             regionName: US_EAST_1
             priority: 7
 
-      # - numShards: 1
-      #   zoneName: Zone 3
-      #   regionConfigs:
-      #     - electableSpecs:
-      #         instanceSize: M10
-      #         nodeCount: 3
-      #       providerName: GCP
-      #       backingProviderName: GCP
-      #       regionName: EASTERN_US
-      #       priority: 7
+      - numShards: 1
+        zoneName: Zone 3
+        regionConfigs:
+          - electableSpecs:
+              instanceSize: M30
+              nodeCount: 3
+            providerName: GCP
+            backingProviderName: GCP
+            regionName: EASTERN_US
+            priority: 7
 
