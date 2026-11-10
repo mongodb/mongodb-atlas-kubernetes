@@ -1,0 +1,14 @@
+apiVersion: atlas.generated.mongodb.com/v1
+kind: NetworkContainer
+metadata:
+  name: my-networkcontainer-with-groupref
+spec:
+  connectionSecretRef:
+    name: mongodb-atlas-operator-api-key
+  v20250312:
+    groupRef:
+      name: my-group
+    entry:
+      providerName: AWS
+      regionName: US_EAST_1
+      atlasCidrBlock: "10.128.0.0/21"
