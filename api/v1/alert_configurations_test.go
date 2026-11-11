@@ -156,7 +156,7 @@ func TestAlertConfigurationToAtlas(t *testing.T) {
 		want := admin.GroupAlertsConfig{}
 		want.SetEventTypeName("TEST_EVENT")
 		want.SetSeverityOverride("CRITICAL")
-		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetMatchers([]admin.StreamsPrivateLinkEndpointMatcher{})
 		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
 		want.SetEnabled(true)
 
@@ -176,7 +176,7 @@ func TestAlertConfigurationToAtlas(t *testing.T) {
 		want := admin.GroupAlertsConfig{}
 		want.SetEventTypeName("TEST_EVENT_NO_SEVERITY_OVERRIDE")
 		want.SetEnabled(true)
-		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetMatchers([]admin.StreamsPrivateLinkEndpointMatcher{})
 		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
 
 		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))

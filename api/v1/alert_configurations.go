@@ -69,11 +69,11 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 		result.SetSeverityOverride(in.SeverityOverride)
 	}
 
-	matchers := make([]admin.StreamsMatcher, 0, len(in.Matchers))
+	matchers := make([]admin.StreamsPrivateLinkEndpointMatcher, 0, len(in.Matchers))
 	for _, m := range in.Matchers {
 		matchers = append(
 			matchers,
-			admin.StreamsMatcher{
+			admin.StreamsPrivateLinkEndpointMatcher{
 				FieldName: m.FieldName,
 				Operator:  m.Operator,
 				Value:     m.Value,
