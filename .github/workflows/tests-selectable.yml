@@ -40,6 +40,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branchName || github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Setup GO
         uses: actions/setup-go@v7
         with:
@@ -111,7 +112,8 @@ jobs:
       - name: Read binary version and image tag
         id: read_version
         run: |
-          VERSION=$(jq -r '.next' version.json)
+          make clbot
+          VERSION=$(./bin/clbot version)
           echo "version=${VERSION}" >> ${GITHUB_OUTPUT}
           echo "Read version: ${VERSION}"
           
@@ -149,6 +151,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Install devbox
         uses: jetify-com/devbox-install-action@v0.15.0
