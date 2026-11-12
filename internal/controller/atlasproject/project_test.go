@@ -381,7 +381,6 @@ func TestHandleProject(t *testing.T) {
 			},
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
@@ -482,7 +481,6 @@ func TestHandleProject(t *testing.T) {
 			},
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
@@ -592,7 +590,6 @@ func TestHandleProject(t *testing.T) {
 			},
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {
@@ -703,7 +700,6 @@ func TestHandleProject(t *testing.T) {
 			},
 			teamServiceMocker: func() teams.TeamsService {
 				service := translation.NewTeamsServiceMock(t)
-				service.EXPECT().ListProjectTeams(context.Background(), mock.Anything).Return([]teams.AssignedTeam{}, nil)
 				return service
 			},
 			encryptionAtRestMocker: func() encryptionatrest.EncryptionAtRestService {

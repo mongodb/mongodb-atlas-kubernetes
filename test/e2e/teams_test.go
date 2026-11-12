@@ -16,6 +16,7 @@ package e2e_test
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -119,8 +120,8 @@ func projectTeamsFlow(userData *model.TestDataProvider, teams []akov2.Team) {
 
 		Expect(userData.K8SClient.Update(userData.Context, userData.Project)).Should(Succeed())
 		Eventually(func(g Gomega) bool {
-			return ensureTeamsStatus(g, *userData, userData.Project.Spec.Teams, teamWasAssigned)
-		}).WithTimeout(5*time.Minute).WithPolling(10*time.Second).Should(BeTrue(), "Teams were not assigned")
+			return isTeamRoleUpdated(g, *userData)
+		}).WithTimeout(5*time.Minute).WithPolling(10*time.Second).Should(BeTrue(), "Team role was not updated")
 
 		actions.WaitForConditionsToBecomeTrue(userData, api.ProjectTeamsReadyType, api.ReadyType)
 	})
@@ -191,4 +192,20 @@ func teamWasDeAssigned(team *akov2.AtlasTeam, project *akov2.AtlasProject) bool 
 	}
 
 	return len(team.Finalizers) == 0
+}
+
+func isTeamRoleUpdated(g Gomega, userData model.TestDataProvider) bool {
+	team := &akov2.AtlasTeam{}
+	g.Expect(userData.K8SClient.Get(userData.Context,
+		types.NamespacedName{Name: userData.Project.Spec.Teams[0].TeamRef.Name, Namespace: userData.Resources.Namespace}, team)).Should(Succeed())
+	if team.Status.ID == "" {
+		return false
+	}
+
+	atlasClient := atlas.GetClientOrFail()
+	assignedTeam, _, err := atlasClient.Client.TeamsAPI.GetGroupTeam(userData.Context, userData.Project.ID(), team.Status.ID).Execute()
+	if err != nil {
+		return false
+	}
+	return slices.Contains(assignedTeam.GetRoleNames(), string(akov2.TeamRoleReadOnly))
 }

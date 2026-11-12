@@ -16,6 +16,7 @@ package atlasproject
 
 import (
 	"errors"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -38,6 +39,18 @@ type TeamDataContainer struct {
 }
 
 func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Context, teamsService teams.TeamsService, project *akov2.AtlasProject) workflow.DeprecatedResult {
+	if len(project.Spec.Teams) == 0 {
+		lastApplied, err := lastAppliedSpecFrom(project)
+		if err != nil {
+			workflowCtx.SetConditionFalse(api.ProjectTeamsReadyType)
+			return workflow.Terminate(workflow.Internal, fmt.Errorf("failed to get last applied configuration: %w", err))
+		}
+
+		if lastApplied == nil || len(lastApplied.Teams) == 0 {
+			return workflow.OK()
+		}
+	}
+
 	teamsToAssign := map[string]*akov2.Team{}
 	for _, entry := range project.Spec.Teams {
 		assignedTeam := entry
