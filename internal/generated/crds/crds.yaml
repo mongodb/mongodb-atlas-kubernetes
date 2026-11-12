@@ -9,7 +9,7 @@ metadata:
         spec:
           properties:
             v20250312:
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312028/admin
   name: groups.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -227,7 +227,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312028/admin
   name: clusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -296,17 +296,16 @@ spec:
                           in the ISO 8601 timestamp format in UTC.
                         type: string
                       adaptiveCapacity:
-                        description: Governs adaptive capacity behavior of Azure nodes
-                          in single-cloud Azure clusters or multi-cloud clusters that
-                          include Azure nodes. Adaptive capacity enables fallback
-                          hardware selection when the primary instance family is unavailable.
-                          ``ENABLED`` means the cluster explicitly opts in to adaptive
-                          capacity. ``DISABLED`` means the cluster explicitly opts
-                          out; the cluster receives capacity errors instead of being
-                          placed on fallback hardware. ``null`` means the field is
-                          unset; Azure clusters use adaptive capacity by default when
-                          the feature is enabled at the group level. Setting this
-                          field for single-cloud AWS or GCP clusters is a no-op.
+                        description: Governs adaptive capacity behavior of nodes in
+                          clusters on providers that support fallback hardware, including
+                          those providers' nodes in multi-cloud clusters. Adaptive
+                          capacity enables fallback hardware selection when the primary
+                          instance family is unavailable. ``ENABLED`` means the cluster
+                          explicitly opts in to adaptive capacity. ``DISABLED`` means
+                          the cluster explicitly opts out; the cluster receives capacity
+                          errors instead of being placed on fallback hardware. ``null``
+                          means the field is unset; clusters use adaptive capacity
+                          by default on a provider that supports it.
                         type: string
                       advancedConfiguration:
                         description: Group of settings that configures a subset of
@@ -330,9 +329,7 @@ spec:
                             type: array
                           minimumEnabledTlsProtocol:
                             description: Minimum Transport Layer Security (TLS) version
-                              that the cluster accepts for incoming connections. Clusters
-                              using TLS 1.0 or 1.1 should consider setting TLS 1.2
-                              as the minimum TLS protocol version.
+                              that the cluster accepts for incoming connections.
                             type: string
                           tlsCipherConfigMode:
                             description: The TLS cipher suite configuration mode.
@@ -342,13 +339,12 @@ spec:
                             type: string
                         type: object
                       backupEnabled:
-                        description: Flag that indicates whether the cluster can perform
-                          backups. If set to `true`, the cluster can perform backups.
-                          You must set this value to `true` for NVMe clusters. Backup
-                          uses Cloud Backups for dedicated clusters and [Shared Cluster
-                          Backups](https://docs.atlas.mongodb.com/backup/shared-tier/overview/)
-                          for tenant clusters. If set to `false`, the cluster doesn't
-                          use backups.
+                        description: |-
+                          Flag that indicates whether Atlas backs up the cluster.
+
+                          On Atlas Core clusters, dedicated clusters use [Cloud Backups](https://www.mongodb.com/docs/atlas/backup/cloud-backup/overview/) and Flex clusters use [Flex Cluster Backups](https://www.mongodb.com/docs/atlas/backup/cloud-backup/flex-cluster-backup/). Default value is `false`. For clusters that use local [NVMe SSDs](https://www.mongodb.com/docs/atlas/manage-clusters/#nvme-storage) for storage, you can't disable backup, so you must set `backupEnabled` to `true`.
+
+                          On Atlas Infinite clusters, the `backupEnabled` flag controls Additional Backup Retention, not whether backups run. To retain snapshots beyond the 24-hour window, set `backupEnabled` to `true`. For Atlas Infinite clusters, continuous cloud backups are enabled by default, always run, and include a 24-hour window in which you can restore to any point in time. Atlas then applies your snapshot retention policies. To keep only the included window under an Atlas-managed retention policy that you can't edit, set `backupEnabled` to `false`. A cluster covered by a Data Protection policy has this flag set to `true` regardless of the requested value. Default value is `true`.
                         type: boolean
                       biConnector:
                         description: Settings needed to configure the MongoDB Connector
@@ -502,8 +498,10 @@ spec:
                         description: Flag that indicates whether the cluster is paused.
                         type: boolean
                       pitEnabled:
-                        description: Flag that indicates whether the cluster uses
-                          continuous cloud backups.
+                        description: |-
+                          Flag that indicates whether the cluster uses continuous cloud backups.
+
+                          For Atlas Infinite clusters, continuous cloud backups always run. Omit this field or set it to `true`. Setting it to `false` returns an invalid attribute error.
                         type: boolean
                       redactClientLogData:
                         description: |-
@@ -1036,6 +1034,21 @@ spec:
                           cluster uses. MongoDB Cloud supports Internet Security Research
                           Group.
                         type: string
+                      searchAutoMigration:
+                        description: Configuration for automatically adding Dedicated
+                          Search Nodes on eligible Atlas Infinite clusters. This setting
+                          has no effect on Atlas Core clusters.
+                        properties:
+                          disabled:
+                            description: Flag that disables future automatic Search
+                              Node provisioning. Defaults to false on creation. Omission
+                              on update preserves the stored choice. Disabling retains
+                              existing Search Nodes and allows in-flight migrations
+                              to continue. Enabling does not bypass resource policies;
+                              if indexes exceed the migration threshold, the next
+                              eligible evaluation may start provisioning.
+                            type: boolean
+                        type: object
                       tags:
                         description: List that contains key-value pairs between 1
                           to 255 characters in length for tagging and categorizing
@@ -1156,17 +1169,16 @@ spec:
                   for version v20250312.
                 properties:
                   adaptiveCapacity:
-                    description: Governs adaptive capacity behavior of Azure nodes
-                      in single-cloud Azure clusters or multi-cloud clusters that
-                      include Azure nodes. Adaptive capacity enables fallback hardware
-                      selection when the primary instance family is unavailable. ``ENABLED``
-                      means the cluster explicitly opts in to adaptive capacity. ``DISABLED``
-                      means the cluster explicitly opts out; the cluster receives
-                      capacity errors instead of being placed on fallback hardware.
-                      ``null`` means the field is unset; Azure clusters use adaptive
-                      capacity by default when the feature is enabled at the group
-                      level. Setting this field for single-cloud AWS or GCP clusters
-                      is a no-op.
+                    description: Governs adaptive capacity behavior of nodes in clusters
+                      on providers that support fallback hardware, including those
+                      providers' nodes in multi-cloud clusters. Adaptive capacity
+                      enables fallback hardware selection when the primary instance
+                      family is unavailable. ``ENABLED`` means the cluster explicitly
+                      opts in to adaptive capacity. ``DISABLED`` means the cluster
+                      explicitly opts out; the cluster receives capacity errors instead
+                      of being placed on fallback hardware. ``null`` means the field
+                      is unset; clusters use adaptive capacity by default on a provider
+                      that supports it.
                     type: string
                   advancedConfiguration:
                     description: Group of settings that configures a subset of the
@@ -1188,9 +1200,7 @@ spec:
                         type: array
                       minimumEnabledTlsProtocol:
                         description: Minimum Transport Layer Security (TLS) version
-                          that the cluster accepts for incoming connections. Clusters
-                          using TLS 1.0 or 1.1 should consider setting TLS 1.2 as
-                          the minimum TLS protocol version.
+                          that the cluster accepts for incoming connections.
                         type: string
                       tlsCipherConfigMode:
                         description: The TLS cipher suite configuration mode. The
@@ -1221,14 +1231,17 @@ spec:
                             (AWS) interface endpoint. Each value identifies the related
                             `mongodb://` connection string that you use to connect
                             to MongoDB Cloud through the interface endpoint that the
-                            key names.
+                            key names. This field is deprecated. Use the Private Endpoint
+                            Connection Strings resource instead.
                           type: string
                         description: Private endpoint-aware connection strings that
                           use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink.
                           Each key identifies an Amazon Web Services (AWS) interface
                           endpoint. Each value identifies the related `mongodb://`
                           connection string that you use to connect to MongoDB Cloud
-                          through the interface endpoint that the key names.
+                          through the interface endpoint that the key names. This
+                          field is deprecated. Use the Private Endpoint Connection
+                          Strings resource instead.
                         type: object
                       awsPrivateLinkSrv:
                         additionalProperties:
@@ -1242,7 +1255,9 @@ spec:
                             contains the optimized connection string. If the cluster
                             has the non-optimized (legacy) connection string, `awsPrivateLinkSrv`
                             contains the non-optimized connection string even if an
-                            optimized connection string is also present.
+                            optimized connection string is also present. This field
+                            is deprecated. Use the Private Endpoint Connection Strings
+                            resource instead.
                           type: string
                         description: Private endpoint-aware connection strings that
                           use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink.
@@ -1254,7 +1269,9 @@ spec:
                           contains the optimized connection string. If the cluster
                           has the non-optimized (legacy) connection string, `awsPrivateLinkSrv`
                           contains the non-optimized connection string even if an
-                          optimized connection string is also present.
+                          optimized connection string is also present. This field
+                          is deprecated. Use the Private Endpoint Connection Strings
+                          resource instead.
                         type: object
                       private:
                         description: Network peering connection strings for each interface
@@ -1277,7 +1294,8 @@ spec:
                           that you can use to connect to this cluster through a private
                           endpoint. This parameter returns only if you deployed a
                           private endpoint to all regions to which you deployed this
-                          clusters' nodes.
+                          clusters' nodes. This field is deprecated. Use the Private
+                          Endpoint Connection Strings resource instead.
                         items:
                           description: Private endpoint-aware connection string that
                             you can use to connect to this cluster through a private
@@ -2191,6 +2209,21 @@ spec:
                   retainBackups:
                     description: Flag that indicates whether the cluster retains backups.
                     type: boolean
+                  searchAutoMigration:
+                    description: Configuration for automatically adding Dedicated
+                      Search Nodes on eligible Atlas Infinite clusters. This setting
+                      has no effect on Atlas Core clusters.
+                    properties:
+                      disabled:
+                        description: Flag that disables future automatic Search Node
+                          provisioning. Defaults to false on creation. Omission on
+                          update preserves the stored choice. Disabling retains existing
+                          Search Nodes and allows in-flight migrations to continue.
+                          Enabling does not bypass resource policies; if indexes exceed
+                          the migration threshold, the next eligible evaluation may
+                          start provisioning.
+                        type: boolean
+                    type: object
                   stateName:
                     description: |-
                       Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
@@ -2252,7 +2285,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312028/admin
   name: databaseusers.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2608,7 +2641,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312028/admin
   name: flexclusters.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com
@@ -2938,7 +2971,7 @@ metadata:
                       version: v1
                   x-openapi-mapping:
                     property: $.groupId
-              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312026/admin
+              x-atlas-sdk-version: go.mongodb.org/atlas-sdk/v20250312028/admin
   name: ipaccesslistentries.atlas.generated.mongodb.com
 spec:
   group: atlas.generated.mongodb.com

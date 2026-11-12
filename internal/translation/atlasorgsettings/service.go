@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/atlas-sdk/v20250312027/admin"
+	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/httputil"
 )

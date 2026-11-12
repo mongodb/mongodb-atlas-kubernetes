@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/atlas-sdk/v20250312027/admin"
+	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 )
 
 func TestServerlessMetricThreshold(t *testing.T) {
@@ -156,7 +156,7 @@ func TestAlertConfigurationToAtlas(t *testing.T) {
 		want := admin.GroupAlertsConfig{}
 		want.SetEventTypeName("TEST_EVENT")
 		want.SetSeverityOverride("CRITICAL")
-		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetMatchers([]admin.StreamsPrivateLinkEndpointMatcher{})
 		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
 		want.SetEnabled(true)
 
@@ -176,7 +176,7 @@ func TestAlertConfigurationToAtlas(t *testing.T) {
 		want := admin.GroupAlertsConfig{}
 		want.SetEventTypeName("TEST_EVENT_NO_SEVERITY_OVERRIDE")
 		want.SetEnabled(true)
-		want.SetMatchers([]admin.StreamsMatcher{})
+		want.SetMatchers([]admin.StreamsPrivateLinkEndpointMatcher{})
 		want.SetNotifications([]admin.AlertsNotificationRootForGroup{})
 
 		assert.True(t, reflect.DeepEqual(*out, want), cmp.Diff(*out, want))

@@ -4,7 +4,6 @@ package v1
 
 import (
 	k8s "github.com/crd2go/crd2go/k8s"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -70,27 +69,27 @@ type V20250312Entry struct {
 	// expresses its value in the ISO 8601 timestamp format in UTC.
 	AcceptDataRisksAndForceReplicaSetReconfig *string `json:"acceptDataRisksAndForceReplicaSetReconfig,omitempty"`
 
-	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
-	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
-	// Adaptive capacity enables fallback hardware selection when the primary instance
-	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
-	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
-	// cluster receives capacity errors instead of being placed on fallback hardware.
-	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
-	// default when the feature is enabled at the group level. Setting this field for
-	// single-cloud AWS or GCP clusters is a no-op.
+	// AdaptiveCapacity Governs adaptive capacity behavior of nodes in clusters on
+	// providers that support fallback hardware, including those providers' nodes in
+	// multi-cloud clusters. Adaptive capacity enables fallback hardware selection when
+	// the primary instance family is unavailable. ``ENABLED`` means the cluster
+	// explicitly opts in to adaptive capacity. ``DISABLED`` means the cluster
+	// explicitly opts out; the cluster receives capacity errors instead of being
+	// placed on fallback hardware. ``null`` means the field is unset; clusters use
+	// adaptive capacity by default on a provider that supports it.
 	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
 
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
 	// configuration details.
 	AdvancedConfiguration *AdvancedConfiguration `json:"advancedConfiguration,omitempty"`
 
-	// BackupEnabled Flag that indicates whether the cluster can perform backups. If
-	// set to `true`, the cluster can perform backups. You must set this value to
-	// `true` for NVMe clusters. Backup uses Cloud Backups for dedicated clusters and
-	// [Shared Cluster
-	// Backups](https://docs.atlas.mongodb.com/backup/shared-tier/overview/) for tenant
-	// clusters. If set to `false`, the cluster doesn't use backups.
+	/*
+	   BackupEnabled Flag that indicates whether Atlas backs up the cluster.
+
+	   On Atlas Core clusters, dedicated clusters use [Cloud Backups](https://www.mongodb.com/docs/atlas/backup/cloud-backup/overview/) and Flex clusters use [Flex Cluster Backups](https://www.mongodb.com/docs/atlas/backup/cloud-backup/flex-cluster-backup/). Default value is `false`. For clusters that use local [NVMe SSDs](https://www.mongodb.com/docs/atlas/manage-clusters/#nvme-storage) for storage, you can't disable backup, so you must set `backupEnabled` to `true`.
+
+	   On Atlas Infinite clusters, the `backupEnabled` flag controls Additional Backup Retention, not whether backups run. To retain snapshots beyond the 24-hour window, set `backupEnabled` to `true`. For Atlas Infinite clusters, continuous cloud backups are enabled by default, always run, and include a 24-hour window in which you can restore to any point in time. Atlas then applies your snapshot retention policies. To keep only the included window under an Atlas-managed retention policy that you can't edit, set `backupEnabled` to `false`. A cluster covered by a Data Protection policy has this flag set to `true` regardless of the requested value. Default value is `true`.
+	*/
 	BackupEnabled *bool `json:"backupEnabled,omitempty"`
 
 	// BiConnector Settings needed to configure the MongoDB Connector for Business
@@ -171,8 +170,11 @@ type V20250312Entry struct {
 	// Paused Flag that indicates whether the cluster is paused.
 	Paused *bool `json:"paused,omitempty"`
 
-	// PitEnabled Flag that indicates whether the cluster uses continuous cloud
-	// backups.
+	/*
+	   PitEnabled Flag that indicates whether the cluster uses continuous cloud backups.
+
+	   For Atlas Infinite clusters, continuous cloud backups always run. Omit this field or set it to `true`. Setting it to `false` returns an invalid attribute error.
+	*/
 	PitEnabled *bool `json:"pitEnabled,omitempty"`
 
 	/*
@@ -209,6 +211,11 @@ type V20250312Entry struct {
 	// Cloud supports Internet Security Research Group.
 	RootCertType *string `json:"rootCertType,omitempty"`
 
+	// SearchAutoMigration Configuration for automatically adding Dedicated Search
+	// Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas
+	// Core clusters.
+	SearchAutoMigration *SearchAutoMigration `json:"searchAutoMigration,omitempty"`
+
 	// Tags List that contains key-value pairs between 1 to 255 characters in length
 	// for tagging and categorizing the cluster.
 	Tags *[]Tags `json:"tags,omitempty"`
@@ -241,8 +248,7 @@ type AdvancedConfiguration struct {
 	CustomOpensslCipherConfigTls13 *[]string `json:"customOpensslCipherConfigTls13,omitempty"`
 
 	// MinimumEnabledTlsProtocol Minimum Transport Layer Security (TLS) version that
-	// the cluster accepts for incoming connections. Clusters using TLS 1.0 or 1.1
-	// should consider setting TLS 1.2 as the minimum TLS protocol version.
+	// the cluster accepts for incoming connections.
 	MinimumEnabledTlsProtocol *string `json:"minimumEnabledTlsProtocol,omitempty"`
 
 	// TlsCipherConfigMode The TLS cipher suite configuration mode. The default mode
@@ -378,7 +384,7 @@ type AnalyticsAutoScaling struct {
 	// `analyticsAutoScaling`, including when you send them as `null`. In a request
 	// that includes `replicationSpecs`, omitting `storageConfig` or sending it as
 	// `null` or `{}` clears the limit. Omitting `replicationSpecs` preserves it.
-	StorageConfig *apiextensionsv1.JSON `json:"storageConfig,omitempty"`
+	StorageConfig *StorageConfig `json:"storageConfig,omitempty"`
 }
 
 type Compute struct {
@@ -411,6 +417,26 @@ type DiskGB struct {
 	// maximum memory allowed for the selected cluster tier and the oplog size can
 	// limit storage auto-scaling.
 	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type StorageConfig struct {
+	// ShardSizeLimitGB Available in Public Preview: Maximum data size that MongoDB
+	// Cloud allows each shard of this cluster to reach, expressed in gigabytes.
+	// MongoDB Cloud rejects writes to a shard that reaches the limit that it enforces.
+	// In `replicationSpecs`, this field reports the limit that you configured, and
+	// MongoDB Cloud omits it when you never configured one. In
+	// `effectiveReplicationSpecs`, this field reports the limit that MongoDB Cloud
+	// enforces: usually the limit that you configured, otherwise the default limit
+	// that MongoDB Cloud assigns when it creates or updates the cluster. This value
+	// may differ from the limit that you configured due to system-managed changes.
+	// This limit applies to every shard of the cluster; set the same value on each
+	// region configuration's `autoScaling`, as MongoDB Cloud rejects requests that
+	// specify differing values. You can set this only on Atlas INFINITE clusters:
+	// MongoDB Cloud rejects any request that names this field, including as `null`,
+	// for a cluster or node type that doesn't support it. In a request that includes
+	// `replicationSpecs`, omitting `shardSizeLimitGB` or sending it as `null` clears
+	// the limit. Omitting `replicationSpecs` preserves it.
+	ShardSizeLimitGB *int `json:"shardSizeLimitGB,omitempty"`
 }
 
 type AnalyticsSpecs struct {
@@ -537,6 +563,15 @@ type ElectableSpecs struct {
 	NodeCount *int `json:"nodeCount,omitempty"`
 }
 
+type SearchAutoMigration struct {
+	// Disabled Flag that disables future automatic Search Node provisioning. Defaults
+	// to false on creation. Omission on update preserves the stored choice. Disabling
+	// retains existing Search Nodes and allows in-flight migrations to continue.
+	// Enabling does not bypass resource policies; if indexes exceed the migration
+	// threshold, the next eligible evaluation may start provisioning.
+	Disabled *bool `json:"disabled,omitempty"`
+}
+
 type ClusterStatus struct {
 	// Conditions Represents the latest available observations of a resource's current
 	// state.
@@ -548,15 +583,14 @@ type ClusterStatus struct {
 }
 
 type ClusterStatusV20250312 struct {
-	// AdaptiveCapacity Governs adaptive capacity behavior of Azure nodes in
-	// single-cloud Azure clusters or multi-cloud clusters that include Azure nodes.
-	// Adaptive capacity enables fallback hardware selection when the primary instance
-	// family is unavailable. ``ENABLED`` means the cluster explicitly opts in to
-	// adaptive capacity. ``DISABLED`` means the cluster explicitly opts out; the
-	// cluster receives capacity errors instead of being placed on fallback hardware.
-	// ``null`` means the field is unset; Azure clusters use adaptive capacity by
-	// default when the feature is enabled at the group level. Setting this field for
-	// single-cloud AWS or GCP clusters is a no-op.
+	// AdaptiveCapacity Governs adaptive capacity behavior of nodes in clusters on
+	// providers that support fallback hardware, including those providers' nodes in
+	// multi-cloud clusters. Adaptive capacity enables fallback hardware selection when
+	// the primary instance family is unavailable. ``ENABLED`` means the cluster
+	// explicitly opts in to adaptive capacity. ``DISABLED`` means the cluster
+	// explicitly opts out; the cluster receives capacity errors instead of being
+	// placed on fallback hardware. ``null`` means the field is unset; clusters use
+	// adaptive capacity by default on a provider that supports it.
 	AdaptiveCapacity *string `json:"adaptiveCapacity,omitempty"`
 
 	// AdvancedConfiguration Group of settings that configures a subset of the advanced
@@ -664,6 +698,11 @@ type ClusterStatusV20250312 struct {
 	// RetainBackups Flag that indicates whether the cluster retains backups.
 	RetainBackups *bool `json:"retainBackups,omitempty"`
 
+	// SearchAutoMigration Configuration for automatically adding Dedicated Search
+	// Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas
+	// Core clusters.
+	SearchAutoMigration *SearchAutoMigration `json:"searchAutoMigration,omitempty"`
+
 	/*
 	   StateName Human-readable label that indicates any current activity being taken on this cluster by the Atlas control plane. With the exception of CREATING and DELETING states, clusters should always be available and have a Primary node even when in states indicating ongoing activity.
 
@@ -681,7 +720,8 @@ type ConnectionStrings struct {
 	// clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an
 	// Amazon Web Services (AWS) interface endpoint. Each value identifies the related
 	// `mongodb://` connection string that you use to connect to MongoDB Cloud through
-	// the interface endpoint that the key names.
+	// the interface endpoint that the key names. This field is deprecated. Use the
+	// Private Endpoint Connection Strings resource instead.
 	AwsPrivateLink *map[string]string `json:"awsPrivateLink,omitempty"`
 
 	// AwsPrivateLinkSrv Private endpoint-aware connection strings that use AWS-hosted
@@ -692,7 +732,8 @@ type ConnectionStrings struct {
 	// connection string, `awsPrivateLinkSrv` contains the optimized connection string.
 	// If the cluster has the non-optimized (legacy) connection string,
 	// `awsPrivateLinkSrv` contains the non-optimized connection string even if an
-	// optimized connection string is also present.
+	// optimized connection string is also present. This field is deprecated. Use the
+	// Private Endpoint Connection Strings resource instead.
 	AwsPrivateLinkSrv *map[string]string `json:"awsPrivateLinkSrv,omitempty"`
 
 	// Private Network peering connection strings for each interface Virtual Private
@@ -711,7 +752,8 @@ type ConnectionStrings struct {
 	// PrivateEndpoint List of private endpoint-aware connection strings that you can
 	// use to connect to this cluster through a private endpoint. This parameter
 	// returns only if you deployed a private endpoint to all regions to which you
-	// deployed this clusters' nodes.
+	// deployed this clusters' nodes. This field is deprecated. Use the Private
+	// Endpoint Connection Strings resource instead.
 	PrivateEndpoint *[]PrivateEndpoint `json:"privateEndpoint,omitempty"`
 
 	// PrivateSrv Network peering connection strings for each interface Virtual Private

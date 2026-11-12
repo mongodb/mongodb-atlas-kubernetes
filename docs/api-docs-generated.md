@@ -414,6 +414,13 @@ When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel wi
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterspecv20250312entrysearchautomigration">searchAutoMigration</a></b></td>
+        <td>object</td>
+        <td>
+          Configuration for automatically adding Dedicated Search Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas Core clusters.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#clusterspecv20250312entrytagsindex">tags</a></b></td>
         <td>[]object</td>
         <td>
@@ -479,7 +486,7 @@ Group of settings that configures a subset of the advanced configuration details
         <td><b>minimumEnabledTlsProtocol</b></td>
         <td>string</td>
         <td>
-          Minimum Transport Layer Security (TLS) version that the cluster accepts for incoming connections. Clusters using TLS 1.0 or 1.1 should consider setting TLS 1.2 as the minimum TLS protocol version.<br/>
+          Minimum Transport Layer Security (TLS) version that the cluster accepts for incoming connections.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1340,6 +1347,33 @@ NVMe clusters require either `PROVISIONED` or `HIGH_PERFORMANCE`.<br/>
 </table>
 
 
+### Cluster.spec.v20250312.entry.searchAutoMigration
+<sup><sup>[↩ Parent](#clusterspecv20250312entry)</sup></sup>
+
+
+
+Configuration for automatically adding Dedicated Search Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas Core clusters.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>disabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that disables future automatic Search Node provisioning. Defaults to false on creation. Omission on update preserves the stored choice. Disabling retains existing Search Nodes and allows in-flight migrations to continue. Enabling does not bypass resource policies; if indexes exceed the migration threshold, the next eligible evaluation may start provisioning.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### Cluster.spec.v20250312.entry.tags[index]
 <sup><sup>[↩ Parent](#clusterspecv20250312entry)</sup></sup>
 
@@ -1676,6 +1710,13 @@ When configured as `NODE_TYPE`, Atlas scales your electable nodes in parallel wi
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#clusterstatusv20250312searchautomigration">searchAutoMigration</a></b></td>
+        <td>object</td>
+        <td>
+          Configuration for automatically adding Dedicated Search Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas Core clusters.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>stateName</b></td>
         <td>string</td>
         <td>
@@ -1726,7 +1767,7 @@ Group of settings that configures a subset of the advanced configuration details
         <td><b>minimumEnabledTlsProtocol</b></td>
         <td>string</td>
         <td>
-          Minimum Transport Layer Security (TLS) version that the cluster accepts for incoming connections. Clusters using TLS 1.0 or 1.1 should consider setting TLS 1.2 as the minimum TLS protocol version.<br/>
+          Minimum Transport Layer Security (TLS) version that the cluster accepts for incoming connections.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1760,14 +1801,14 @@ Collection of Uniform Resource Locators that point to the MongoDB database.
         <td><b>awsPrivateLink</b></td>
         <td>map[string]string</td>
         <td>
-          Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an Amazon Web Services (AWS) interface endpoint. Each value identifies the related `mongodb://` connection string that you use to connect to MongoDB Cloud through the interface endpoint that the key names.<br/>
+          Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an Amazon Web Services (AWS) interface endpoint. Each value identifies the related `mongodb://` connection string that you use to connect to MongoDB Cloud through the interface endpoint that the key names. This field is deprecated. Use the Private Endpoint Connection Strings resource instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>awsPrivateLinkSrv</b></td>
         <td>map[string]string</td>
         <td>
-          Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an Amazon Web Services (AWS) interface endpoint. Each value identifies the related `mongodb://` connection string that you use to connect to Atlas through the interface endpoint that the key names. If the cluster uses an optimized connection string, `awsPrivateLinkSrv` contains the optimized connection string. If the cluster has the non-optimized (legacy) connection string, `awsPrivateLinkSrv` contains the non-optimized connection string even if an optimized connection string is also present.<br/>
+          Private endpoint-aware connection strings that use AWS-hosted clusters with Amazon Web Services (AWS) PrivateLink. Each key identifies an Amazon Web Services (AWS) interface endpoint. Each value identifies the related `mongodb://` connection string that you use to connect to Atlas through the interface endpoint that the key names. If the cluster uses an optimized connection string, `awsPrivateLinkSrv` contains the optimized connection string. If the cluster has the non-optimized (legacy) connection string, `awsPrivateLinkSrv` contains the non-optimized connection string even if an optimized connection string is also present. This field is deprecated. Use the Private Endpoint Connection Strings resource instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1781,7 +1822,7 @@ Collection of Uniform Resource Locators that point to the MongoDB database.
         <td><b><a href="#clusterstatusv20250312connectionstringsprivateendpointindex">privateEndpoint</a></b></td>
         <td>[]object</td>
         <td>
-          List of private endpoint-aware connection strings that you can use to connect to this cluster through a private endpoint. This parameter returns only if you deployed a private endpoint to all regions to which you deployed this clusters' nodes.<br/>
+          List of private endpoint-aware connection strings that you can use to connect to this cluster through a private endpoint. This parameter returns only if you deployed a private endpoint to all regions to which you deployed this clusters' nodes. This field is deprecated. Use the Private Endpoint Connection Strings resource instead.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2979,6 +3020,33 @@ MongoDB employee granted access level and expiration for a cluster.
         <td>string</td>
         <td>
           Uniform Resource Locator (URL) that defines the semantic relationship between this resource and another API resource. This URL often begins with `https://cloud.mongodb.com/api/atlas`.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Cluster.status.v20250312.searchAutoMigration
+<sup><sup>[↩ Parent](#clusterstatusv20250312)</sup></sup>
+
+
+
+Configuration for automatically adding Dedicated Search Nodes on eligible Atlas Infinite clusters. This setting has no effect on Atlas Core clusters.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>disabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that disables future automatic Search Node provisioning. Defaults to false on creation. Omission on update preserves the stored choice. Disabling retains existing Search Nodes and allows in-flight migrations to continue. Enabling does not bypass resource policies; if indexes exceed the migration threshold, the next eligible evaluation may start provisioning.<br/>
         </td>
         <td>false</td>
       </tr></tbody>

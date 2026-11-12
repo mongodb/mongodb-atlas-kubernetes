@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.mongodb.org/atlas-sdk/v20250312027/admin"
+	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.uber.org/zap"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -69,11 +69,11 @@ func (in *AlertConfiguration) ToAtlas() (*admin.GroupAlertsConfig, error) {
 		result.SetSeverityOverride(in.SeverityOverride)
 	}
 
-	matchers := make([]admin.StreamsMatcher, 0, len(in.Matchers))
+	matchers := make([]admin.StreamsPrivateLinkEndpointMatcher, 0, len(in.Matchers))
 	for _, m := range in.Matchers {
 		matchers = append(
 			matchers,
-			admin.StreamsMatcher{
+			admin.StreamsPrivateLinkEndpointMatcher{
 				FieldName: m.FieldName,
 				Operator:  m.Operator,
 				Value:     m.Value,
