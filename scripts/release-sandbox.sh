@@ -46,10 +46,9 @@ export SANDBOX_MODE=true
 SANDBOX_REGISTRY_HOST=$(echo "${SANDBOX_REGISTRY}" | cut -d/ -f1)
 SANDBOX_USERNAME=$(echo "${SANDBOX_REGISTRY}" | cut -d/ -f2)
 
-# 3. Get NEXT_VERSION from version.json (defaults to current-test if not available)
-VERSION_FILE="${PROJECT_ROOT}/version.json"
-if [ -f "${VERSION_FILE}" ] && command -v jq >/dev/null 2>&1; then
-    NEXT_VERSION=$(jq -r .next "${VERSION_FILE}")
+# 3. Get NEXT_VERSION from clbot (defaults to unknown-test if not available)
+if NEXT_VERSION=$(cd "${PROJECT_ROOT}" && make -s clbot && ./bin/clbot version) && [ -n "${NEXT_VERSION}" ]; then
+    :
 else
     NEXT_VERSION="unknown-test"
 fi
@@ -104,4 +103,3 @@ export SKIP_SIGNATURE_VERIFY="${SKIP_SIGNATURE_VERIFY:-true}"
 
 # 9. Run the command with all sandbox environment variables set
 exec "$@"
-
