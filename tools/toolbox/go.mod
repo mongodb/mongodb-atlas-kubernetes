@@ -9,6 +9,7 @@ tool (
 	github.com/daixiang0/gci
 	github.com/icholy/gomajor
 	github.com/josvazg/gobump
+	github.com/josvazg/kuver
 	github.com/vektra/mockery/v2
 )
 
@@ -55,6 +56,7 @@ require (
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/josvazg/gobump v0.0.0-20260608144803-67f46bc53ed3 // indirect
+	github.com/josvazg/kuver v0.0.0-20260604173206-f501a7478ec3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
