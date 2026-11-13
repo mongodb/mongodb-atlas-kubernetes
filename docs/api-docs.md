@@ -14664,6 +14664,15 @@ AtlasThirdPartyIntegrationStatus holds the status of an integration
           ID of the third party integration resource in Atlas<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
