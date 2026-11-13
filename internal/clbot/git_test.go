@@ -32,9 +32,7 @@ func TestGitDataSourceReadsLatestTagAndCommitText(t *testing.T) {
 	seed := filepath.Join("testdata", "git-sandbox", "seed.txt")
 	seedContents, err := os.ReadFile(seed) // #nosec G304 -- seed is a fixed checked-in fixture path.
 	require.NoError(t, err)
-	repo, err := os.MkdirTemp("testdata", "git-sandbox-")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(repo) })
+	repo := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "seed.txt"), seedContents, 0o600)) // #nosec G703 -- output joins a test-generated temporary repo with a constant filename.
 	git(t, repo, "init", "-q")
 	git(t, repo, "config", "user.name", "CL Integration Test")
@@ -90,9 +88,7 @@ func TestGitDataSourceReadsLatestTagAndCommitText(t *testing.T) {
 }
 
 func TestGitDataSourceLatestReleaseIgnoresPrereleaseTags(t *testing.T) {
-	repo, err := os.MkdirTemp("testdata", "git-sandbox-")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.RemoveAll(repo) })
+	repo := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "seed.txt"), []byte("seed\n"), 0o600)) // #nosec G703 -- output joins a test-generated temporary repo with a constant filename.
 	git(t, repo, "init", "-q")
 	git(t, repo, "config", "user.name", "CL Integration Test")
