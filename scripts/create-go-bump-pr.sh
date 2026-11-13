@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Opens a pull request for a Go version bump after bump-go.sh has updated files.
-# Called by check-go-bump-policy.sh; can also be run standalone.
+# Opens a pull request for a Go version bump after gobump (invoked by
+# check-go-bump-policy.sh) has updated the go.mod files.
+# Can also be run standalone.
 #
 # Usage: create-go-bump-pr.sh <version>
 #   <version> is the exact go directive (e.g. 1.26.2), no "go" prefix.
@@ -59,10 +60,9 @@ gh pr create \
 
 Automated Go version bump triggered by the go-bump-policy schedule.
 
-The policy (see `scripts/check-go-bump-policy.sh`) bumps when a newer
-stable release is available on go.dev **and** its `.0` release is at
-least 90 days old (soak window). A 2-minor gap skips the soak and
-bumps immediately (past Go's N-1 support window).
+The policy (see `scripts/check-go-bump-policy.sh`) delegates to the
+`gobump` tool, which bumps when a newer stable release is available on
+go.dev **and** its soak window (default 90 days) has elapsed.
 
 ## Checklist
 

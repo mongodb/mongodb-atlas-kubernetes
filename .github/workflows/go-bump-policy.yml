@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       soak_days:
-        description: 'Override POLICY_SOAK_DAYS (days the latest minor .0 must age before we bump). Leave blank to use the script default (90).'
+        description: 'Override POLICY_SOAK_DAYS (days the latest stable release must age before gobump bumps). Leave blank to use the script default (90).'
         required: false
         type: string
         default: ''
@@ -30,9 +30,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          # Stable toolchain to run the policy script; bump-go.sh passes
-          # FULL_VERSION to update_go_version.sh so the target version's
-          # toolchain does not need to be installed.
+          # Stable toolchain to run gobump (via `go tool`) and the policy script.
           go-version: 'stable'
           cache: false
 
