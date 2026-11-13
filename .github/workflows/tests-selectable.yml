@@ -151,7 +151,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.15.0
+        uses: jetify-com/devbox-install-action@v0.16.0
         with:
           enable-cache: 'true'
       - name: Run integration test
@@ -192,7 +192,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.15.0
+        uses: jetify-com/devbox-install-action@v0.16.0
         with:
           enable-cache: 'true'
       - name: Set properties
@@ -259,7 +259,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.15.0
+        uses: jetify-com/devbox-install-action@v0.16.0
         with:
           enable-cache: 'true'
       - name: Run e2e test
