@@ -21,9 +21,20 @@ export CLBOT_ROOT
 # Version lookups happen while parsing the Makefile, so bootstrap clbot before
 # running them. The guarded nested make avoids recursing through these lookups.
 ifeq ($(CLBOT_BOOTSTRAP),)
-$(shell $(MAKE) -C "$(CLBOT_ROOT)" --no-print-directory CLBOT_BOOTSTRAP=1 clbot >/dev/null)
+# Bootstrap clbot, then fail loudly if any lookup yields nothing: a silent empty
+# value would otherwise produce a broken VERSION and mask the underlying error.
+CLBOT_BOOTSTRAP_RESULT := $(shell $(MAKE) -C "$(CLBOT_ROOT)" --no-print-directory CLBOT_BOOTSTRAP=1 clbot >/dev/null && echo ok)
+ifneq ($(CLBOT_BOOTSTRAP_RESULT),ok)
+$(error failed to build clbot; run 'make clbot' to see the build error)
+endif
 CURRENT_VERSION := $(shell "$(CLBOT_ROOT)/bin/clbot" latest)
 NEXT_VERSION := $(shell "$(CLBOT_ROOT)/bin/clbot" version)
+ifeq ($(CURRENT_VERSION),)
+$(error clbot latest returned no version; ensure a stable release tag exists and run 'make clbot latest')
+endif
+ifeq ($(NEXT_VERSION),)
+$(error clbot version returned no version; run 'make clbot version' to see the error)
+endif
 endif
 # Check if there are uncommitted changes
 GIT_DIRTY := $(shell git status --porcelain 2>/dev/null | grep -q . && echo "-dirty" || echo "")
