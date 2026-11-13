@@ -59,3 +59,17 @@ updates:
       tools-makejwt-deps:
         patterns:
           - "*"
+
+  - package-ecosystem: gomod
+    directory: "/tools/scaffolder"
+    schedule:
+      interval: weekly
+      day: tuesday
+    labels:
+      - dependencies
+      - tools_scaffolder
+      - go
+    groups:
+      tools-scaffolder-deps:
+        patterns:
+          - "*"
