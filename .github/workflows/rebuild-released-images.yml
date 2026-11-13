@@ -113,7 +113,7 @@ jobs:
           git fetch origin main --depth=1
           git checkout origin/main -- scripts/sign.sh scripts/sign-multiarch.sh scripts/verify.sh
       - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.15.0
+        uses: jetify-com/devbox-install-action@v0.16.0
         with:
           enable-cache: 'true'
 
