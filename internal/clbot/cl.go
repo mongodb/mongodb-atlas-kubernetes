@@ -89,7 +89,8 @@ func (g *GitDataSource) git(ctx context.Context, args ...string) ([]byte, error)
 }
 
 func (g *GitDataSource) LatestRelease(ctx context.Context) (string, error) {
-	output, err := g.git(ctx, "describe", "--tags", "--abbrev=0", "HEAD")
+	// Pre-release and RC tags contain a hyphen, so exclude them to return the latest stable release.
+	output, err := g.git(ctx, "describe", "--tags", "--abbrev=0", "--exclude", "*-*", "HEAD")
 	if err != nil {
 		return "", fmt.Errorf("find latest reachable release tag: %w", err)
 	}

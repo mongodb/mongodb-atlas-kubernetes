@@ -89,6 +89,33 @@ func TestGitDataSourceReadsLatestTagAndCommitText(t *testing.T) {
 	require.NoError(t, Validate(context.Background(), source, featureInput))
 }
 
+func TestGitDataSourceLatestReleaseIgnoresPrereleaseTags(t *testing.T) {
+	repo, err := os.MkdirTemp("testdata", "git-sandbox-")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(repo) })
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "seed.txt"), []byte("seed\n"), 0o600)) // #nosec G703 -- output joins a test-generated temporary repo with a constant filename.
+	git(t, repo, "init", "-q")
+	git(t, repo, "config", "user.name", "CL Integration Test")
+	git(t, repo, "config", "user.email", "cl-test@example.invalid")
+	git(t, repo, "add", "seed.txt")
+	git(t, repo, "commit", "-q", "-m", "Initial release")
+	git(t, repo, "tag", "v1.2.3")
+	git(t, repo, "commit", "--allow-empty", "-q", "-m", "[feature] Add thing")
+	git(t, repo, "tag", "v1.2.4")
+	git(t, repo, "commit", "--allow-empty", "-q", "-m", "[patch] Follow-up after release")
+	git(t, repo, "tag", "v1.2.5-pre-release")
+	git(t, repo, "commit", "--allow-empty", "-q", "-m", "[patch] Later patch")
+
+	source := NewGitDataSource(repo)
+	gotRelease, err := source.LatestRelease(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "v1.2.4", gotRelease)
+
+	gotVersion, err := NextVersion(context.Background(), source)
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.5", gotVersion)
+}
+
 func git(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.CommandContext(t.Context(), "git", append([]string{"-C", dir}, args...)...) // #nosec G204 -- git subprocess arguments are authored by this test.
