@@ -74,18 +74,13 @@ git fetch origin
 git checkout -f -b "${BRANCH}" origin/main || git checkout -f "${BRANCH}"
 git push -f origin "${BRANCH}"
 
-# Bump version.json (in released-branch, but output to current dir)
-echo "Bumping version.json..."
-(cd released-branch && devbox run -- make bump-version-file)
-cp released-branch/version.json .
-
 # Update Helm Charts on main
 echo "Updating Helm charts..."
 cp -r "${RELEASE_DIR}/helm-charts" .
 
 # Stage files and create signed commit
 echo "Staging files and creating signed commit..."
-git add -f "${RELEASE_DIR}" helm-charts version.json
+git add -f "${RELEASE_DIR}" helm-charts
 
 export REPO_OWNER="${REPO_OWNER:-mongodb}"
 export REPO_NAME="${REPO_NAME:-mongodb-atlas-kubernetes}"
@@ -116,4 +111,3 @@ else
 fi
 
 echo "✓ Release PR step complete"
-

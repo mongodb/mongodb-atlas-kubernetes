@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Generate GitHub App Token
         id: generate_token
         uses: actions/create-github-app-token@v3
@@ -68,4 +70,3 @@ jobs:
           gh pr create --head=${{ steps.generate_branch.outputs.BRANCH_NAME }} --title "Atlas SDK Dependency Update" \
           --body $'This PR contains the new updates to the Atlas Go SDK.\n\nIf this PR does not merge cleanly (build/test failures) or the bump touches public API behavior, follow the runbook: https://github.com/mongodb/mongodb-atlas-kubernetes/blob/main/docs/dev/atlas-sdk-breaking-changes.md' \
           && echo "Pull request created"
-

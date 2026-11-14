@@ -39,6 +39,8 @@ jobs:
     - scaffolder
     steps:
     - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
 
     - name: Install devbox
       uses: jetify-com/devbox-install-action@v0.16.0

@@ -15,12 +15,13 @@
 package helm
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,6 +30,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v3"
 
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/clbot"
 	cli "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/cli"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/config"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e/model"
@@ -299,21 +301,19 @@ func getVersionFromChartYAML(chartYAML []byte) (string, error) {
 }
 
 func GetDevelopmentMayorVersion() (string, error) {
-	fileBytes, err := os.ReadFile(config.VersionFile)
+	release, err := clbot.NewGitDataSource(".").LatestRelease(context.Background())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get latest release: %w", err)
 	}
 
-	type versionInfo struct {
-		Current string `json:"current"`
-		Next    string `json:"next"`
+	version := strings.TrimPrefix(release, "v")
+	parts := strings.Split(version, ".")
+	if len(parts) < 3 {
+		return "", fmt.Errorf("malformed latest release version %q: expected major.minor.patch", release)
 	}
-	var versions versionInfo
-	if err := json.Unmarshal(fileBytes, &versions); err != nil {
-		return "", fmt.Errorf("failed to parse JSON from '%s': %w", config.VersionFile, err)
+	if _, err := strconv.Atoi(parts[0]); err != nil {
+		return "", fmt.Errorf("malformed latest release version %q: major version must be numeric", release)
 	}
-
-	parts := strings.Split(versions.Current, ".")
 	return parts[0], nil
 }
 

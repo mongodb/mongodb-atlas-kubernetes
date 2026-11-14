@@ -96,15 +96,21 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ needs.image2commit.outputs.commit_sha }}
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version-file: "./go.mod"
+        cache: true
     - name: Read the next release version
       id: read_version
       env:
         INPUT_VERSION: ${{ github.event.inputs.version }}
         RELEASE_TYPE: ${{ env.RELEASE_TYPE }}
       run: |
-        VERSION=$(jq -r '.next' version.json)
+        make clbot
+        VERSION=$(./bin/clbot version)
         if [[ "$INPUT_VERSION" != "$VERSION" ]]; then
-          echo "::error::Input version '$INPUT_VERSION' does not match the expected 'next' version '$VERSION' from version.json."
+          echo "::error::Input version '$INPUT_VERSION' does not match the clbot-calculated version '$VERSION'."
           exit 1
         fi
         # Compute image version based on release type
@@ -130,6 +136,7 @@ jobs:
     - image2commit
     - compute-repo
     env:
+      CLBOT_ROOT: ${{ github.workspace }}
       VERSION: ${{ needs.compute-repo.outputs.version }}
       RELEASE_TAG: v${{ needs.compute-repo.outputs.image_version }}
       AUTHORS: ${{ github.event.inputs.authors }}
