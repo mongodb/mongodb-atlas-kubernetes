@@ -36,6 +36,7 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
+	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -48,8 +49,6 @@ const (
 	fakeURL = "https://example.com/fake"
 
 	fakeSecret = "fake-secret"
-
-	matchingFakeHash = "5842a3ca8c9cdff1f658a278930fb49d2d5a8c493380f28e39bc7ebbbe21872c"
 )
 
 var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
@@ -70,10 +69,8 @@ var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
 
 var sampleWebhookSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "webhook-secret",
-		Annotations: map[string]string{
-			AnnotationContentHash: matchingFakeHash,
-		},
+		Name:            "webhook-secret",
+		ResourceVersion: "secret-rv",
 	},
 	Data: map[string][]byte{
 		"url":    ([]byte)(fakeURL),
@@ -88,18 +85,16 @@ func TestHandleUpsert(t *testing.T) {
 	require.NoError(t, akov2.AddToScheme(scheme))
 	ctx := context.Background()
 
-	unannotatedSampleWebhookSecret := sampleWebhookSecret.DeepCopy()
-	unannotatedSampleWebhookSecret.Annotations = nil
-
 	for _, tc := range []struct {
-		name           string
-		state          constate.ResourceState
-		provider       atlas.Provider
-		serviceBuilder serviceBuilderFunc
-		input          *akov2.AtlasThirdPartyIntegration
-		objects        []client.Object
-		want           constate.Result
-		wantErr        string
+		name             string
+		state            constate.ResourceState
+		provider         atlas.Provider
+		serviceBuilder   serviceBuilderFunc
+		input            *akov2.AtlasThirdPartyIntegration
+		objects          []client.Object
+		reapplyTimestamp string
+		want             constate.Result
+		wantErr          string
 	}{
 		{
 			name:  "initial creates",
@@ -148,14 +143,11 @@ func TestHandleUpsert(t *testing.T) {
 						ID:                             fakeID,
 					}, nil)
 				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
-					Return(&thirdpartyintegration.ThirdPartyIntegration{
-						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             fakeID,
-					}, nil)
+					Return(&thirdpartyintegration.ThirdPartyIntegration{ID: fakeID}, nil)
 				return integrationsService
 			},
 			input:   &sampleWebhookIntegration,
-			objects: []client.Object{unannotatedSampleWebhookSecret},
+			objects: []client.Object{sampleWebhookSecret},
 			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
@@ -214,8 +206,9 @@ func TestHandleUpsert(t *testing.T) {
 		},
 
 		{
-			name:  "updated updates due unhashed secret",
-			state: constate.StateUpdated,
+			name:             "updated updates when integration matches",
+			state:            constate.StateUpdated,
+			reapplyTimestamp: "2025-01-02T03:04:05Z",
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
@@ -224,10 +217,7 @@ func TestHandleUpsert(t *testing.T) {
 						ID:                             fakeID,
 					}, nil)
 				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
-					Return(&thirdpartyintegration.ThirdPartyIntegration{
-						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             fakeID,
-					}, nil)
+					Return(&thirdpartyintegration.ThirdPartyIntegration{ID: fakeID}, nil)
 				return integrationsService
 			},
 			provider: &atlasmock.TestProvider{
@@ -238,7 +228,7 @@ func TestHandleUpsert(t *testing.T) {
 				},
 			},
 			input:   &sampleWebhookIntegration,
-			objects: []client.Object{unannotatedSampleWebhookSecret},
+			objects: []client.Object{sampleWebhookSecret},
 			want: constate.Result{
 				NextState: "Updated",
 				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
@@ -246,7 +236,7 @@ func TestHandleUpsert(t *testing.T) {
 		},
 
 		{
-			name:  "imported does not update",
+			name:  "imported updates",
 			state: constate.StateInitial,
 			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
@@ -259,37 +249,8 @@ func TestHandleUpsert(t *testing.T) {
 							Secret: fakeSecret,
 						},
 					}, nil)
-				return integrationsService
-			},
-			provider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{ProjectsAPI: mockFindFakeParentProject(t)},
-					}, nil
-				},
-			},
-			input:   &sampleWebhookIntegration,
-			objects: []client.Object{sampleWebhookSecret},
-			want: constate.Result{
-				NextState: "Created",
-				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
-			},
-		},
-
-		{
-			name:  "id diff does not update",
-			state: constate.StateUpdated,
-			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
-				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
-				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
-					Return(&thirdpartyintegration.ThirdPartyIntegration{
-						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
-						ID:                             "other-fake-id",
-						WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
-							URL:    fakeURL,
-							Secret: fakeSecret,
-						},
-					}, nil)
+				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
+					Return(&thirdpartyintegration.ThirdPartyIntegration{ID: fakeID}, nil)
 				return integrationsService
 			},
 			provider: &atlasmock.TestProvider{
@@ -303,7 +264,40 @@ func TestHandleUpsert(t *testing.T) {
 			objects: []client.Object{sampleWebhookSecret},
 			want: constate.Result{
 				NextState: "Updated",
-				StateMsg:  "Synced WEBHOOK Atlas Third Party Integration for testProjectID.",
+				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
+			},
+		},
+
+		{
+			name:  "id diff updates",
+			state: constate.StateUpdated,
+			serviceBuilder: func(_ *atlas.ClientSet) thirdpartyintegration.ThirdPartyIntegrationService {
+				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
+				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "WEBHOOK").
+					Return(&thirdpartyintegration.ThirdPartyIntegration{
+						AtlasThirdPartyIntegrationSpec: sampleWebhookIntegration.Spec,
+						ID:                             "other-fake-id",
+						WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
+							URL:    fakeURL,
+							Secret: fakeSecret,
+						},
+					}, nil)
+				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
+					Return(&thirdpartyintegration.ThirdPartyIntegration{ID: fakeID}, nil)
+				return integrationsService
+			},
+			provider: &atlasmock.TestProvider{
+				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+					return &atlas.ClientSet{
+						SdkClient20250312: &admin.APIClient{ProjectsAPI: mockFindFakeParentProject(t)},
+					}, nil
+				},
+			},
+			input:   &sampleWebhookIntegration,
+			objects: []client.Object{sampleWebhookSecret},
+			want: constate.Result{
+				NextState: "Updated",
+				StateMsg:  "Updated Atlas Third Party Integration for WEBHOOK.",
 			},
 		},
 
@@ -364,10 +358,8 @@ func TestHandleUpsert(t *testing.T) {
 			},
 			objects: []client.Object{&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "slack-secret",
-					Annotations: map[string]string{
-						AnnotationContentHash: "b651a9a05aa41a0555c56f3757d1ab44ae08a7cde4d8fe4477f729e3961cebc6",
-					},
+					Name:            "slack-secret",
+					ResourceVersion: "secret-rv",
 				},
 				Data: map[string][]byte{
 					"apiToken": ([]byte)("fake-token"),
@@ -380,6 +372,11 @@ func TestHandleUpsert(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			tc.input = tc.input.DeepCopy()
+			if tc.reapplyTimestamp != "" {
+				tc.input.Annotations = map[string]string{constate.AnnotationReapplyTimestamp: tc.reapplyTimestamp}
+			}
+			tc.input.Generation = 7
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(scheme).
 				WithObjects(append(tc.objects, &fakeAtlasSecret, &fakeProject, tc.input)...).
@@ -411,6 +408,69 @@ func TestHandleUpsert(t *testing.T) {
 				assert.ErrorContains(t, err, tc.wantErr)
 			}
 			assert.Equal(t, tc.want, got)
+
+			persisted := &akov2.AtlasThirdPartyIntegration{}
+			require.NoError(t, k8sClient.Get(ctx, client.ObjectKeyFromObject(tc.input), persisted))
+			if err == nil && (got.NextState == constate.StateCreated || got.NextState == constate.StateUpdated) {
+				assert.Equal(t, sampleWebhookSecret.ResourceVersion, persisted.Annotations[customresource.ReferencedSecretResourceVersion])
+				assert.Equal(t, tc.input.Annotations[constate.AnnotationReapplyTimestamp], persisted.Annotations[annotationLastReconciledReapplyTimestamp])
+				if got.NextState == constate.StateUpdated {
+					assert.Equal(t, tc.input.Generation, persisted.Status.ObservedGeneration)
+				}
+			} else if err != nil {
+				assert.NotContains(t, persisted.Annotations, customresource.ReferencedSecretResourceVersion)
+				assert.NotContains(t, persisted.Annotations, annotationLastReconciledReapplyTimestamp)
+			}
+		})
+	}
+}
+
+func TestUpsertSkipsOnlyWhenSecretVersionAndGenerationMatch(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, akov2.AddToScheme(scheme))
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		name               string
+		generation         int64
+		observedGeneration int64
+		annotation         string
+		reapplyTimestamp   string
+		handledTimestamp   string
+		wantSkip           bool
+	}{
+		{name: "matching version and observed generation", generation: 3, observedGeneration: 3, annotation: "secret-rv", reapplyTimestamp: "1", handledTimestamp: "1", wantSkip: true},
+		{name: "stale observed generation", generation: 3, observedGeneration: 2, annotation: "secret-rv"},
+		{name: "changed annotation", generation: 3, observedGeneration: 3, annotation: "old-rv"},
+		{name: "missing annotation", generation: 3, observedGeneration: 3},
+		{name: "changed reapply timestamp", generation: 3, observedGeneration: 3, annotation: "secret-rv", reapplyTimestamp: "2", handledTimestamp: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			integration := sampleWebhookIntegration.DeepCopy()
+			integration.Generation = tc.generation
+			integration.Status.ObservedGeneration = tc.observedGeneration
+			integration.Annotations = nil
+			if tc.annotation != "" || tc.reapplyTimestamp != "" || tc.handledTimestamp != "" {
+				integration.Annotations = map[string]string{
+					customresource.ReferencedSecretResourceVersion: tc.annotation,
+					constate.AnnotationReapplyTimestamp:            tc.reapplyTimestamp,
+					annotationLastReconciledReapplyTimestamp:       tc.handledTimestamp,
+				}
+			}
+			secret := sampleWebhookSecret.DeepCopy()
+			secret.ResourceVersion = "secret-rv"
+			k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(integration, secret).Build()
+			h := AtlasThirdPartyIntegrationHandler{AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient}}
+
+			result, err := h.upsert(ctx, constate.StateInitial, integration)
+			if tc.wantSkip {
+				require.NoError(t, err)
+				assert.Contains(t, result.StateMsg, "Spec and referenced Secret unchanged")
+				return
+			}
+			require.Error(t, err)
+			assert.NotContains(t, err.Error(), "resource version is unchanged")
 		})
 	}
 }

@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -93,6 +94,32 @@ func TestAtlasThirdPartyIntegrationHandlerFor(t *testing.T) {
 	obj, preds := handler.For()
 	assert.IsType(t, &akov2.AtlasThirdPartyIntegration{}, obj)
 	assert.NotNil(t, preds)
+}
+
+func TestSecretDataChangedPredicate(t *testing.T) {
+	pred := secretDataChangedPredicate()
+	oldSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "test", ResourceVersion: "1", Labels: map[string]string{"key": "old"}},
+		Data:       map[string][]byte{"key": []byte("old")},
+	}
+
+	t.Run("data changed", func(t *testing.T) {
+		newSecret := oldSecret.DeepCopy()
+		newSecret.ResourceVersion = "2"
+		newSecret.Data["key"] = []byte("new")
+		assert.True(t, pred.Update(event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}))
+	})
+	t.Run("metadata and resource version only changed", func(t *testing.T) {
+		newSecret := oldSecret.DeepCopy()
+		newSecret.ResourceVersion = "2"
+		newSecret.Labels["key"] = "new"
+		assert.False(t, pred.Update(event.UpdateEvent{ObjectOld: oldSecret, ObjectNew: newSecret}))
+	})
+	t.Run("create and delete allowed", func(t *testing.T) {
+		assert.True(t, pred.Create(event.CreateEvent{Object: oldSecret}))
+		assert.True(t, pred.Delete(event.DeleteEvent{Object: oldSecret}))
+		assert.True(t, pred.Generic(event.GenericEvent{Object: oldSecret}))
+	})
 }
 
 func TestSetupWithManager(t *testing.T) {

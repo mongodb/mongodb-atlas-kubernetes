@@ -17,6 +17,7 @@ package integrations
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/crd2go/constate"
 	"go.uber.org/zap"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -107,9 +109,19 @@ func (h *AtlasThirdPartyIntegrationHandler) SetupWithManager(mgr ctrl.Manager, r
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(h.integrationForSecretMapFunc()),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(secretDataChangedPredicate()),
 		).
 		WithOptions(defaultOptions).Complete(rec)
+}
+
+func secretDataChangedPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldSecret, oldOK := e.ObjectOld.(*corev1.Secret)
+			newSecret, newOK := e.ObjectNew.(*corev1.Secret)
+			return oldOK && newOK && !reflect.DeepEqual(oldSecret.Data, newSecret.Data)
+		},
+	}
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) integrationForProjectMapFunc() handler.MapFunc {
@@ -165,10 +177,12 @@ func (h *AtlasThirdPartyIntegrationHandler) integrationForSecretMapFunc() handle
 }
 
 type reconcileRequest struct {
-	ClientSet   *atlas.ClientSet
-	Project     *project.Project
-	Service     thirdpartyintegration.ThirdPartyIntegrationService
-	integration *akov2.AtlasThirdPartyIntegration
+	ClientSet             *atlas.ClientSet
+	Project               *project.Project
+	Service               thirdpartyintegration.ThirdPartyIntegrationService
+	integration           *akov2.AtlasThirdPartyIntegration
+	secretResourceVersion string
+	reapplyTimestamp      string
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) newReconcileRequest(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (*reconcileRequest, error) {

@@ -18,7 +18,8 @@ package status
 
 // AtlasThirdPartyIntegrationStatus holds the status of an integration
 type AtlasThirdPartyIntegrationStatus struct {
-	UnifiedStatus `json:",inline"`
+	UnifiedStatus      `json:",inline"`
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// ID of the third party integration resource in Atlas
 	ID string `json:"id,omitempty"`
