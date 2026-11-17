@@ -203,7 +203,7 @@ var _ = Describe("HELM charts", Ordered, func() {
 				Expect(err).Should(BeNil())
 				devMajorVersion, err := helm.GetDevelopmentMayorVersion()
 				Expect(err).Should(BeNil())
-				releaseMajorVersion := strings.Split(releasedVersion, ".")[0]
+				releaseMajorVersion, _, _ := strings.Cut(releasedVersion, ".")
 				if releaseMajorVersion != devMajorVersion {
 					skipped = true
 					Skip(fmt.Sprintf("cannot test upgrade from incompatible major release version %q to version %q",
