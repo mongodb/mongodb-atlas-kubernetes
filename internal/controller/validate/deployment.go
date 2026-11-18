@@ -243,15 +243,6 @@ func instanceSizeRangeForAdvancedDeployment(regionConfig *akov2.AdvancedRegionCo
 		}
 	}
 
-	if regionConfig.AnalyticsSpecs != nil {
-		if err := advancedInstanceSizeInRange(
-			regionConfig.AnalyticsSpecs.InstanceSize,
-			regionConfig.AutoScaling.Compute.MinInstanceSize,
-			regionConfig.AutoScaling.Compute.MaxInstanceSize); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
