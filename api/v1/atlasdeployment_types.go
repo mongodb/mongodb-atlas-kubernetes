@@ -344,7 +344,7 @@ type AdvancedReplicationSpec struct {
 	// Each regionConfigs object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region.
 	// Each regionConfigs object must have either an analyticsSpecs object, electableSpecs object, or readOnlySpecs object.
 	// Tenant clusters only require electableSpecs. Dedicated clusters can specify any of these specifications, but must have at least one electableSpecs object within a replicationSpec.
-	// Every hardware specification must use the same instanceSize.
+	// Analytics nodes can use a different instanceSize from electable and read-only nodes.
 	RegionConfigs []*AdvancedRegionConfig `json:"regionConfigs,omitempty"`
 }
 
@@ -355,10 +355,15 @@ type AdvancedRegionConfig struct {
 	ElectableSpecs *Specs `json:"electableSpecs,omitempty"`
 	// Hardware specifications for read only nodes deployed in the region.
 	ReadOnlySpecs *Specs `json:"readOnlySpecs,omitempty"`
-	// Options that determine how this cluster handles resource scaling.
+	// Options that determine how this cluster handles resource scaling for electable and read-only nodes.
+	// Atlas requires autoScaling settings to match across all regionConfigs in all replicationSpecs.
 	AutoScaling *AdvancedAutoScalingSpec `json:"autoScaling,omitempty"`
-	// Options that determine how this cluster handles resource scaling for analytics nodes specifically.
-	// When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.
+	// Options that determine how this cluster handles resource scaling for analytics nodes.
+	// These settings are independent of autoScaling and do not have to match it.
+	// Atlas requires analyticsAutoScaling settings to match across all regionConfigs in all replicationSpecs.
+	// Atlas validates analytics instance sizes against these settings, not the autoScaling limits.
+	// When compute.enabled is true, Atlas Kubernetes Operator does not revert analytics instance size changes made by Atlas auto-scaling.
+	// When compute.enabled is false, Atlas Kubernetes Operator reconciles the instance size specified in analyticsSpecs.
 	AnalyticsAutoScaling *AdvancedAutoScalingSpec `json:"analyticsAutoScaling,omitempty"`
 	// Cloud service provider on which the host for a multi-tenant deployment is provisioned.
 	// This setting only works when "providerName" : "TENANT" and "providerSetting.instanceSizeName" : M2 or M5.
@@ -388,7 +393,7 @@ type Specs struct {
 	EbsVolumeType string `json:"ebsVolumeType,omitempty"`
 	// Hardware specification for the instance sizes in this region.
 	// Each instance size has a default storage and memory capacity.
-	// The instance size you select applies to all the data-bearing hosts in your instance size.
+	// The instance size you select applies to all nodes of this type in this region.
 	InstanceSize string `json:"instanceSize,omitempty"`
 	// Number of nodes of the given type for MongoDB Cloud to deploy to the region.
 	NodeCount *int `json:"nodeCount,omitempty"`
@@ -433,15 +438,18 @@ type ComputeSpec struct {
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Flag that indicates whether the deployment tier may scale down. Atlas requires this parameter if "autoScaling.compute.enabled" : true.
+	// Flag that indicates whether the deployment tier may scale down.
+	// Atlas requires this parameter when enabled is true in the same compute configuration.
 	// +optional
 	ScaleDownEnabled *bool `json:"scaleDownEnabled,omitempty"`
 
-	// Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.
+	// Minimum instance size to which your deployment can automatically scale (such as M10).
+	// Atlas requires this parameter when scaleDownEnabled is true in the same compute configuration.
 	// +optional
 	MinInstanceSize string `json:"minInstanceSize,omitempty"`
 
-	// Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.
+	// Maximum instance size to which your deployment can automatically scale (such as M40).
+	// Atlas requires this parameter when enabled is true in the same compute configuration.
 	// +optional
 	MaxInstanceSize string `json:"maxInstanceSize,omitempty"`
 }
