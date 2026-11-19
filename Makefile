@@ -16,9 +16,26 @@ DOCKER_SBOM_PLUGIN_VERSION=0.6.1
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION_FILE=version.json
-CURRENT_VERSION := $(shell $(JQ) -r .current $(VERSION_FILE))
-NEXT_VERSION := $(shell $(JQ) -r .next $(VERSION_FILE))
+CLBOT_ROOT ?= $(shell git rev-parse --show-toplevel)
+export CLBOT_ROOT
+# Version lookups happen while parsing the Makefile, so bootstrap clbot before
+# running them. The guarded nested make avoids recursing through these lookups.
+ifeq ($(CLBOT_BOOTSTRAP),)
+# Bootstrap clbot, then fail loudly if any lookup yields nothing: a silent empty
+# value would otherwise produce a broken VERSION and mask the underlying error.
+CLBOT_BOOTSTRAP_RESULT := $(shell $(MAKE) -C "$(CLBOT_ROOT)" --no-print-directory CLBOT_BOOTSTRAP=1 clbot >/dev/null && echo ok)
+ifneq ($(CLBOT_BOOTSTRAP_RESULT),ok)
+$(error failed to build clbot; run 'make clbot' to see the build error)
+endif
+CURRENT_VERSION := $(shell "$(CLBOT_ROOT)/bin/clbot" latest)
+NEXT_VERSION := $(shell "$(CLBOT_ROOT)/bin/clbot" version)
+ifeq ($(CURRENT_VERSION),)
+$(error clbot latest returned no version; ensure a stable release tag exists and run 'make clbot latest')
+endif
+ifeq ($(NEXT_VERSION),)
+$(error clbot version returned no version; run 'make clbot version' to see the error)
+endif
+endif
 # Check if there are uncommitted changes
 GIT_DIRTY := $(shell git status --porcelain 2>/dev/null | grep -q . && echo "-dirty" || echo "")
 VERSION ?= $(CURRENT_VERSION)$(GIT_DIRTY)
@@ -36,6 +53,15 @@ VERSION=$(CURRENT_VERSION)
 endif
 
 VERSION_PACKAGE = github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version
+
+.PHONY: clbot changelog
+clbot: $(CLBOT_ROOT)/bin/clbot ## Build the changelog CLI
+
+$(CLBOT_ROOT)/bin/clbot: $(shell find "$(CLBOT_ROOT)/cmd/clbot" "$(CLBOT_ROOT)/internal/clbot" -type f -name '*.go') $(CLBOT_ROOT)/go.mod
+	cd "$(CLBOT_ROOT)" && mkdir -p bin && go build -o "$(CLBOT_ROOT)/bin/clbot" ./cmd/clbot
+
+changelog: clbot ## List changes since the latest release
+	"$(CLBOT_ROOT)/bin/clbot" list
 
 # LD_FLAGS
 LD_FLAGS := -X $(VERSION_PACKAGE).Version=$(VERSION)
@@ -534,7 +560,7 @@ test-docker-image: docker-image run-kind
 .PHONY: check-major-version
 check-major-version: ## Check that VERSION starts with MAJOR_VERSION
 	@VERSION_MAJOR=$$(echo "$(VERSION)" | cut -d. -f1 | sed 's/v//'); \
-	CURRENT_MAJOR=$$(jq -r '.current' $(VERSION_FILE) | cut -d. -f1); \
+	CURRENT_MAJOR=$$(echo "$(CURRENT_VERSION)" | cut -d. -f1 | sed 's/v//'); \
 	[ "$$VERSION_MAJOR" = "$$CURRENT_MAJOR" ] || \
 	(echo "Bad major version for $$VERSION expected $$CURRENT_MAJOR"; exit 1)
 
@@ -766,15 +792,6 @@ slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githu
 	@echo "Computing and sending deprecation report to Slack..."
 	set -o pipefail; GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep --text "javaMethod" \
 	| ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
-
-.PHONY: bump-version-file
-bump-version-file:
-	@echo "Bumping version in $(VERSION_FILE)..."
-
-	jq '(.next | split(".") | map(tonumber) | .[1] += 1 | .[2] = 0 | map(tostring) | join(".")) as $$new_next | .current = .next | .next = $$new_next' $(VERSION_FILE) > $(VERSION_FILE).tmp && mv $(VERSION_FILE).tmp $(VERSION_FILE)
-
-	@echo "Version updated successfully:"
-	@cat $(VERSION_FILE)
 
 .PHONY: api-docs
 api-docs: manifests
@@ -1038,7 +1055,7 @@ gen-all: gen-crds ## Generate all CRDs, Go types, and scaffolding
 	$(MAKE) fmt
 
 build-autogen: gen-all $(ALL_IN_ONE_CONFIG)
-	EXPERIMENTAL=1 VERSION=$(shell $(JQ) -r .next $(VERSION_FILE))-EXPERIMENTAL-${GITCOMMIT} $(MAKE) image
+	EXPERIMENTAL=1 VERSION=$(NEXT_VERSION)-EXPERIMENTAL-${GITCOMMIT} $(MAKE) image
 
 .PHONY: create-rh-repos
 create-rh-repos: ## Create the Red Hat repos

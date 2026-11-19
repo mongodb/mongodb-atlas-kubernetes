@@ -161,7 +161,7 @@ Key files:
 
 - `config/manifests-template/bases/` — hand-maintained CSV template. Edit this to change operator metadata or install modes.
 - `config/release/{dev,prod}/` — Kustomize overlays per environment (`ENV` variable, default `dev`).
-- `version.json` — source of truth for `current` (released) and `next` (upcoming) versions.
+- Version source of truth — Git tags and changelog markers, read via `clbot` (`clbot latest` reports the current released version, `clbot version` calculates the next). See `docs/dev/bundle.md`.
 - `bundle/` and `bundle.Dockerfile` — generated output, not checked in.
 
 ## CRD generation

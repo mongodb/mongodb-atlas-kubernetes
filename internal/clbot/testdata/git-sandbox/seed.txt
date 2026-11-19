@@ -1,0 +1,1 @@
+Seed file for the local Git integration sandbox.
