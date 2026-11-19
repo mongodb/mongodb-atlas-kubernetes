@@ -3695,7 +3695,7 @@ effective for a project may be lower (80 by default) and is validated by Atlas.<
 Each regionConfigs object describes the region's priority in elections and the number and type of MongoDB nodes that MongoDB Cloud deploys to the region.
 Each regionConfigs object must have either an analyticsSpecs object, electableSpecs object, or readOnlySpecs object.
 Tenant clusters only require electableSpecs. Dedicated clusters can specify any of these specifications, but must have at least one electableSpecs object within a replicationSpec.
-Every hardware specification must use the same instanceSize.<br/>
+Analytics nodes can use a different instanceSize from electable and read-only nodes.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3729,8 +3729,12 @@ Every hardware specification must use the same instanceSize.<br/>
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexanalyticsautoscaling">analyticsAutoScaling</a></b></td>
         <td>object</td>
         <td>
-          Options that determine how this cluster handles resource scaling for analytics nodes specifically.
-When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.<br/>
+          Options that determine how this cluster handles resource scaling for analytics nodes.
+These settings are independent of autoScaling and do not have to match it.
+Atlas requires analyticsAutoScaling settings to match across all regionConfigs in all replicationSpecs.
+Atlas validates analytics instance sizes against these settings, not the autoScaling limits.
+When compute.enabled is true, Atlas Kubernetes Operator does not revert analytics instance size changes made by Atlas auto-scaling.
+When compute.enabled is false, Atlas Kubernetes Operator reconciles the instance size specified in analyticsSpecs.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3744,7 +3748,8 @@ When set, must match across all regionConfigs. Atlas requires all autoScaling ob
         <td><b><a href="#atlasdeploymentspecdeploymentspecreplicationspecsindexregionconfigsindexautoscaling">autoScaling</a></b></td>
         <td>object</td>
         <td>
-          Options that determine how this cluster handles resource scaling.<br/>
+          Options that determine how this cluster handles resource scaling for electable and read-only nodes.
+Atlas requires autoScaling settings to match across all regionConfigs in all replicationSpecs.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3808,8 +3813,12 @@ The region you choose can affect network latency for clients accessing your data
 
 
 
-Options that determine how this cluster handles resource scaling for analytics nodes specifically.
-When set, must match across all regionConfigs. Atlas requires all autoScaling objects to be consistent.
+Options that determine how this cluster handles resource scaling for analytics nodes.
+These settings are independent of autoScaling and do not have to match it.
+Atlas requires analyticsAutoScaling settings to match across all regionConfigs in all replicationSpecs.
+Atlas validates analytics instance sizes against these settings, not the autoScaling limits.
+When compute.enabled is true, Atlas Kubernetes Operator does not revert analytics instance size changes made by Atlas auto-scaling.
+When compute.enabled is false, Atlas Kubernetes Operator reconciles the instance size specified in analyticsSpecs.
 
 <table>
     <thead>
@@ -3865,21 +3874,24 @@ Collection of settings that configure how a deployment might scale its deploymen
         <td><b>maxInstanceSize</b></td>
         <td>string</td>
         <td>
-          Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Maximum instance size to which your deployment can automatically scale (such as M40).
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>minInstanceSize</b></td>
         <td>string</td>
         <td>
-          Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.<br/>
+          Minimum instance size to which your deployment can automatically scale (such as M10).
+Atlas requires this parameter when scaleDownEnabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>scaleDownEnabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether the deployment tier may scale down. Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Flag that indicates whether the deployment tier may scale down.
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3956,7 +3968,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
+The instance size you select applies to all nodes of this type in this region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3975,7 +3987,8 @@ The instance size you select applies to all the data-bearing hosts in your insta
 
 
 
-Options that determine how this cluster handles resource scaling.
+Options that determine how this cluster handles resource scaling for electable and read-only nodes.
+Atlas requires autoScaling settings to match across all regionConfigs in all replicationSpecs.
 
 <table>
     <thead>
@@ -4031,21 +4044,24 @@ Collection of settings that configure how a deployment might scale its deploymen
         <td><b>maxInstanceSize</b></td>
         <td>string</td>
         <td>
-          Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Maximum instance size to which your deployment can automatically scale (such as M40).
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>minInstanceSize</b></td>
         <td>string</td>
         <td>
-          Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.<br/>
+          Minimum instance size to which your deployment can automatically scale (such as M10).
+Atlas requires this parameter when scaleDownEnabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>scaleDownEnabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether the deployment tier may scale down. Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Flag that indicates whether the deployment tier may scale down.
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -4122,7 +4138,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
+The instance size you select applies to all nodes of this type in this region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4178,7 +4194,7 @@ Set only if you selected AWS as your cloud service provider.<br/>
         <td>
           Hardware specification for the instance sizes in this region.
 Each instance size has a default storage and memory capacity.
-The instance size you select applies to all the data-bearing hosts in your instance size.<br/>
+The instance size you select applies to all nodes of this type in this region.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5065,21 +5081,24 @@ Collection of settings that configure how a deployment might scale its deploymen
         <td><b>maxInstanceSize</b></td>
         <td>string</td>
         <td>
-          Maximum instance size to which your deployment can automatically scale (such as M40). Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Maximum instance size to which your deployment can automatically scale (such as M40).
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>minInstanceSize</b></td>
         <td>string</td>
         <td>
-          Minimum instance size to which your deployment can automatically scale (such as M10). Atlas requires this parameter if "autoScaling.compute.scaleDownEnabled" : true.<br/>
+          Minimum instance size to which your deployment can automatically scale (such as M10).
+Atlas requires this parameter when scaleDownEnabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>scaleDownEnabled</b></td>
         <td>boolean</td>
         <td>
-          Flag that indicates whether the deployment tier may scale down. Atlas requires this parameter if "autoScaling.compute.enabled" : true.<br/>
+          Flag that indicates whether the deployment tier may scale down.
+Atlas requires this parameter when enabled is true in the same compute configuration.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
