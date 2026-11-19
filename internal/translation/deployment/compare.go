@@ -311,7 +311,14 @@ func regionConfigAreEqual(desired, current *akov2.AdvancedRegionConfig, autoscal
 		return false
 	}
 
-	if !nodeSpecAreEqual(desired.AnalyticsSpecs, current.AnalyticsSpecs, autoscalingEnabled) {
+	analyticsAutoscalingEnabled := autoscalingEnabled
+	if desired.AnalyticsAutoScaling != nil {
+		analyticsAutoscalingEnabled = desired.AnalyticsAutoScaling.Compute != nil &&
+			desired.AnalyticsAutoScaling.Compute.Enabled != nil &&
+			*desired.AnalyticsAutoScaling.Compute.Enabled
+	}
+
+	if !nodeSpecAreEqual(desired.AnalyticsSpecs, current.AnalyticsSpecs, analyticsAutoscalingEnabled) {
 		return false
 	}
 

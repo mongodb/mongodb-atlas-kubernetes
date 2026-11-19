@@ -2153,6 +2153,124 @@ func TestRegionConfigAreEqual(t *testing.T) {
 			autoscalingEnabled: false,
 			expected:           true,
 		},
+		"should return true when analytics instance size has changed and analytics compute autoscaling is enabled": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(3),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(true),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M20",
+					NodeCount:    new(3),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(true),
+					},
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           true,
+		},
+		"should return false when analytics instance size has changed and analytics compute autoscaling is disabled": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(true),
+					},
+				},
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(3),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(false),
+					},
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(true),
+					},
+				},
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M20",
+					NodeCount:    new(3),
+				},
+				AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+					Compute: &akov2.ComputeSpec{
+						Enabled: new(false),
+					},
+				},
+			},
+			autoscalingEnabled: true,
+			expected:           false,
+		},
+		"should return false when analytics instance size has changed and analyticsAutoScaling is unset": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(3),
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M20",
+					NodeCount:    new(3),
+				},
+			},
+			autoscalingEnabled: false,
+			expected:           false,
+		},
+		"should return true when analytics instance size has changed and analyticsAutoScaling is unset with autoscaling enabled": {
+			akoRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M10",
+					NodeCount:    new(3),
+				},
+			},
+			atlasRegionConfig: &akov2.AdvancedRegionConfig{
+				ProviderName: "AWS",
+				RegionName:   "EU_CENTRAL_1",
+				Priority:     new(7),
+				AnalyticsSpecs: &akov2.Specs{
+					InstanceSize: "M20",
+					NodeCount:    new(3),
+				},
+			},
+			autoscalingEnabled: true,
+			expected:           true,
+		},
 		"should return false when backing provider has changed for tenant instances": {
 			akoRegionConfig: &akov2.AdvancedRegionConfig{
 				ProviderName:        "TENANT",

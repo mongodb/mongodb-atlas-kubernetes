@@ -338,6 +338,41 @@ func TestRegularDeployment(t *testing.T) {
 			},
 			expectedError: "the instance size is below the minimum autoscaling configuration",
 		},
+		"Analytics instance size is out of the electable autoscaling range": {
+			spec: &akov2.AdvancedDeploymentSpec{
+				ReplicationSpecs: []*akov2.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*akov2.AdvancedRegionConfig{
+							{
+								ProviderName: "AWS",
+								RegionName:   "us-east-1",
+								ElectableSpecs: &akov2.Specs{
+									InstanceSize: "M20",
+								},
+								AutoScaling: &akov2.AdvancedAutoScalingSpec{
+									Compute: &akov2.ComputeSpec{
+										Enabled:         new(true),
+										MinInstanceSize: "M20",
+										MaxInstanceSize: "M80",
+									},
+								},
+								AnalyticsSpecs: &akov2.Specs{
+									InstanceSize: "M10",
+								},
+								AnalyticsAutoScaling: &akov2.AdvancedAutoScalingSpec{
+									Compute: &akov2.ComputeSpec{
+										Enabled:         new(true),
+										MinInstanceSize: "M10",
+										MaxInstanceSize: "M80",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: "",
+		},
 	}
 
 	for name, tt := range tests {
@@ -595,7 +630,7 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 			},
 			expectedError: "the instance size is above the maximum autoscaling configuration",
 		},
-		"AnalyticsSpecs instance size above maximum": {
+		"AnalyticsSpecs instance size is not validated against AutoScaling": {
 			regionConfig: &akov2.AdvancedRegionConfig{
 				AutoScaling: &akov2.AdvancedAutoScalingSpec{
 					Compute: &akov2.ComputeSpec{
@@ -606,7 +641,7 @@ func TestInstanceSizeRangeForAdvancedDeployment(t *testing.T) {
 				},
 				AnalyticsSpecs: &akov2.Specs{InstanceSize: "M50"},
 			},
-			expectedError: "the instance size is above the maximum autoscaling configuration",
+			expectedError: "",
 		},
 		"All specs within range": {
 			regionConfig: &akov2.AdvancedRegionConfig{
