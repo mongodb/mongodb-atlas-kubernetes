@@ -32,15 +32,15 @@ import (
 const annotationLastReconciledReapplyTimestamp = "mongodb.internal.com/last-reconciled-reapply-timestamp"
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleInitial(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateInitial, integration)
+	return h.upsert(ctx, constate.StateInitial, constate.StateCreated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleCreated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateCreated, integration)
+	return h.upsert(ctx, constate.StateCreated, constate.StateUpdated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleUpdated(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
-	return h.upsert(ctx, constate.StateUpdated, integration)
+	return h.upsert(ctx, constate.StateUpdated, constate.StateUpdated, integration)
 }
 
 func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.Context, integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
@@ -56,7 +56,7 @@ func (h *AtlasThirdPartyIntegrationHandler) HandleDeletionRequested(ctx context.
 	return h.unmanage(integration.Spec.Type)
 }
 
-func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState constate.ResourceState,
+func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentState, nextState constate.ResourceState,
 	integration *akov2.AtlasThirdPartyIntegration) (constate.Result, error) {
 	populated, err := h.populateIntegration(ctx, integration)
 	if err != nil {
@@ -68,7 +68,7 @@ func (h *AtlasThirdPartyIntegrationHandler) upsert(ctx context.Context, currentS
 	reapplyTimestamp := integration.Annotations[constate.AnnotationReapplyTimestamp]
 	lastReconciledReapplyTimestamp := integration.Annotations[annotationLastReconciledReapplyTimestamp]
 	if hasReferencedVersion && resourceVersion != "" && annotatedVersion == resourceVersion && integration.Status.ObservedGeneration == integration.Generation && reapplyTimestamp == lastReconciledReapplyTimestamp {
-		return constate.NextState(currentState, "Spec and referenced Secret unchanged")
+		return constate.NextState(nextState, "Spec and referenced Secret unchanged")
 	}
 	req, err := h.newReconcileRequest(ctx, integration)
 	if err != nil {

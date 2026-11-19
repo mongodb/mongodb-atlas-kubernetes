@@ -463,10 +463,11 @@ func TestUpsertSkipsOnlyWhenSecretVersionAndGenerationMatch(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(integration, secret).Build()
 			h := AtlasThirdPartyIntegrationHandler{AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient}}
 
-			result, err := h.upsert(ctx, constate.StateInitial, integration)
+			result, err := h.upsert(ctx, constate.StateInitial, constate.StateCreated, integration)
 			if tc.wantSkip {
 				require.NoError(t, err)
 				assert.Contains(t, result.StateMsg, "Spec and referenced Secret unchanged")
+				assert.Equal(t, constate.StateCreated, result.NextState)
 				return
 			}
 			require.Error(t, err)
