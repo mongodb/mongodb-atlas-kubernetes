@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -79,9 +78,8 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("dbuser-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("dbuser-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -346,7 +344,7 @@ var _ = Describe("DatabaseUser CRUD", Ordered, Label("databaseuser"), func() {
 
 			By("Wait for DatabaseUser to fail", func() {
 				dbUser := &generatedv1.DatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{Name: username, Namespace: testNamespace.Name},
+					Name: username, Namespace: testNamespace.Name,
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(dbUser), dbUser)).To(Succeed())
@@ -584,9 +582,8 @@ var _ = Describe("DatabaseUser with Deletion Protection", Ordered, Label("databa
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("dbuser-protect-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("dbuser-protect-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -720,12 +717,10 @@ func applyTestParamsToDBUser(dbUser *generatedv1.DatabaseUser, namespace, userna
 // newPasswordSecret creates a Kubernetes Secret containing a MongoDB user password.
 func newPasswordSecret(namespace, name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      name,
+		Namespace: namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		StringData: map[string]string{
 			"password": "Passw0rd!",

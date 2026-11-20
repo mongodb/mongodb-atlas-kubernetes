@@ -70,7 +70,7 @@ func newReconciler(t *testing.T, tp serviceaccounttoken.TokenProvider, objs ...c
 
 func TestReconcile_SkipsNonServiceAccountSecret(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "api-key-secret", Namespace: "ns"},
+		Name: "api-key-secret", Namespace: "ns",
 		Data: map[string][]byte{
 			"orgId":         []byte("org-123"),
 			"publicApiKey":  []byte("pub"),
@@ -81,7 +81,7 @@ func TestReconcile_SkipsNonServiceAccountSecret(t *testing.T) {
 	r, _ := newReconciler(t, tp, secret)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "api-key-secret", Namespace: "ns"},
+		Name: "api-key-secret", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -91,11 +91,9 @@ func TestReconcile_SkipsNonServiceAccountSecret(t *testing.T) {
 
 func TestReconcile_CreatesTokenSecretOnFirstRun(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-			UID:       types.UID("test-uid"),
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
+		UID:       types.UID("test-uid"),
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("my-client-id"),
@@ -107,7 +105,7 @@ func TestReconcile_CreatesTokenSecretOnFirstRun(t *testing.T) {
 	r, k8sClient := newReconciler(t, tp, secret)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -147,12 +145,10 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 	matchingHash := accesstoken.CredentialsHash("client-id", "client-secret")
 
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecretName,
-			Namespace: "ns",
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      tokenSecretName,
+		Namespace: "ns",
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"accessToken":     []byte("old-token"),
@@ -161,11 +157,9 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 		},
 	}
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-			UID:       types.UID("test-uid"),
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
+		UID:       types.UID("test-uid"),
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("client-id"),
@@ -178,7 +172,7 @@ func TestReconcile_RefreshesExpiredToken(t *testing.T) {
 	r, k8sClient := newReconciler(t, tp, credSecret, tokenSecret)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -201,12 +195,10 @@ func TestReconcile_SkipsRefreshWhenTokenStillValid(t *testing.T) {
 	matchingHash := accesstoken.CredentialsHash("client-id", "client-secret")
 
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecretName,
-			Namespace: "ns",
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      tokenSecretName,
+		Namespace: "ns",
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"accessToken":     []byte("valid-token"),
@@ -215,10 +207,8 @@ func TestReconcile_SkipsRefreshWhenTokenStillValid(t *testing.T) {
 		},
 	}
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("client-id"),
@@ -230,7 +220,7 @@ func TestReconcile_SkipsRefreshWhenTokenStillValid(t *testing.T) {
 	r, _ := newReconciler(t, tp, credSecret, tokenSecret)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -246,12 +236,10 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 
 	// Token Secret was minted from old credentials ("old-client-id"/"old-client-secret").
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecretName,
-			Namespace: "ns",
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      tokenSecretName,
+		Namespace: "ns",
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"accessToken":     []byte("stale-token"),
@@ -261,10 +249,8 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 	}
 	// Credential Secret now holds rotated credentials.
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("new-client-id"),
@@ -277,7 +263,7 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 	r, k8sClient := newReconciler(t, tp, credSecret, tokenSecret)
 
 	_, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, 1, tp.calls, "unexpired token with stale credentials hash must be refreshed")
@@ -295,10 +281,8 @@ func TestReconcile_RefreshesWhenCredentialsChange(t *testing.T) {
 
 func TestReconcile_HandleFetchTokenError(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("client-id"),
@@ -311,7 +295,7 @@ func TestReconcile_HandleFetchTokenError(t *testing.T) {
 	// Returning err (not Result{RequeueAfter}) lets controller-runtime apply
 	// its own exponential backoff rather than a constant 10s retry cadence.
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 
 	require.Error(t, err)
@@ -324,7 +308,7 @@ func TestReconcile_SecretNotFound(t *testing.T) {
 	r, _ := newReconciler(t, tp)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "nonexistent", Namespace: "ns"},
+		Name: "nonexistent", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -334,11 +318,9 @@ func TestReconcile_SecretNotFound(t *testing.T) {
 
 func TestReconcile_RecreatesTokenWhenMissing(t *testing.T) {
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-			UID:       types.UID("test-uid"),
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
+		UID:       types.UID("test-uid"),
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("client-id"),
@@ -351,7 +333,7 @@ func TestReconcile_RecreatesTokenWhenMissing(t *testing.T) {
 	r, k8sClient := newReconciler(t, tp, credSecret)
 
 	result, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 
 	require.NoError(t, err)
@@ -367,11 +349,9 @@ func TestReconcile_RecreatesTokenWhenMissing(t *testing.T) {
 
 func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 	credSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sa-creds",
-			Namespace: "ns",
-			UID:       types.UID("test-uid"),
-		},
+		Name:      "sa-creds",
+		Namespace: "ns",
+		UID:       types.UID("test-uid"),
 		Data: map[string][]byte{
 			"orgId":        []byte("org-123"),
 			"clientId":     []byte("client-id"),
@@ -384,13 +364,13 @@ func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 
 	// First reconcile creates the token.
 	_, err := r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 	require.NoError(t, err)
 
 	// Second reconcile sees the existing token and does not error.
 	_, err = r.Reconcile(context.Background(), ctrl.Request{
-		NamespacedName: types.NamespacedName{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	})
 	require.NoError(t, err, "duplicate reconcile must be idempotent")
 
@@ -404,12 +384,10 @@ func TestReconcile_IsIdempotentOnDuplicateEvent(t *testing.T) {
 func TestMapAccessTokenSecretToOwner_EnqueuesOwner(t *testing.T) {
 	tokenSecretName := accesstoken.DeriveSecretName("ns", "sa-creds")
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecretName,
-			Namespace: "ns",
-			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "v1", Kind: "Secret", Name: "sa-creds", Controller: new(true)},
-			},
+		Name:      tokenSecretName,
+		Namespace: "ns",
+		OwnerReferences: []metav1.OwnerReference{
+			{APIVersion: "v1", Kind: "Secret", Name: "sa-creds", Controller: new(true)},
 		},
 	}
 
@@ -424,7 +402,7 @@ func TestMapAccessTokenSecretToOwner_NoOwnerReturnsEmpty(t *testing.T) {
 	// must return no requests so we do not duplicate the enqueue the For()
 	// watch already produces.
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+		Name: "sa-creds", Namespace: "ns",
 	}
 
 	reqs := serviceaccounttoken.MapAccessTokenSecretToOwner(context.Background(), s)
@@ -437,12 +415,10 @@ func TestMapAccessTokenSecretToOwner_NonSecretOwnerIgnored(t *testing.T) {
 	// owner via this path — the map is only for Access Token Secrets owned by
 	// Connection Secrets.
 	s := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "some-other-secret",
-			Namespace: "ns",
-			OwnerReferences: []metav1.OwnerReference{
-				{APIVersion: "atlas.mongodb.com/v1", Kind: "AtlasProject", Name: "foo", Controller: new(true)},
-			},
+		Name:      "some-other-secret",
+		Namespace: "ns",
+		OwnerReferences: []metav1.OwnerReference{
+			{APIVersion: "atlas.mongodb.com/v1", Kind: "AtlasProject", Name: "foo", Controller: new(true)},
 		},
 	}
 

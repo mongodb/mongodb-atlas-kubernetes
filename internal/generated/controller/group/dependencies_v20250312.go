@@ -50,10 +50,9 @@ func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2genera
 		return nil, fmt.Errorf("failed to list Cluster objects: %w", err)
 	}
 	for _, item := range clusterList.Items {
-		dependents = append(dependents, reconcile.Request{NamespacedName: types.NamespacedName{
+		dependents = append(dependents, reconcile.Request{
 			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+			Namespace: item.Namespace})
 	}
 
 	databaseuserList := &akov2generated.DatabaseUserList{}
@@ -65,10 +64,9 @@ func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2genera
 		return nil, fmt.Errorf("failed to list DatabaseUser objects: %w", err)
 	}
 	for _, item := range databaseuserList.Items {
-		dependents = append(dependents, reconcile.Request{NamespacedName: types.NamespacedName{
+		dependents = append(dependents, reconcile.Request{
 			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+			Namespace: item.Namespace})
 	}
 
 	flexclusterList := &akov2generated.FlexClusterList{}
@@ -80,10 +78,9 @@ func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2genera
 		return nil, fmt.Errorf("failed to list FlexCluster objects: %w", err)
 	}
 	for _, item := range flexclusterList.Items {
-		dependents = append(dependents, reconcile.Request{NamespacedName: types.NamespacedName{
+		dependents = append(dependents, reconcile.Request{
 			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+			Namespace: item.Namespace})
 	}
 
 	ipaccesslistentryList := &akov2generated.IPAccessListEntryList{}
@@ -95,10 +92,9 @@ func (h *Handlerv20250312) getDependents(ctx context.Context, group *akov2genera
 		return nil, fmt.Errorf("failed to list IPAccessListEntry objects: %w", err)
 	}
 	for _, item := range ipaccesslistentryList.Items {
-		dependents = append(dependents, reconcile.Request{NamespacedName: types.NamespacedName{
+		dependents = append(dependents, reconcile.Request{
 			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+			Namespace: item.Namespace})
 	}
 
 	return dependents, nil

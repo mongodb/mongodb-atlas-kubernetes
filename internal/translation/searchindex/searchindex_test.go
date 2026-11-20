@@ -119,55 +119,51 @@ func Test_NewSearchIndexFromAKO(t *testing.T) {
 				},
 			},
 			want: &SearchIndex{
-				SearchIndex: akov2.SearchIndex{
-					Name:           "TestIndex",
-					DBName:         "TestDBName",
-					CollectionName: "TestCollectionName",
-					Type:           "search",
-					Search: &akov2.Search{
-						Synonyms: &([]akov2.Synonym{
-							{
-								Name:     "MySynonym",
-								Analyzer: "lucene.standard",
-								Source:   akov2.Source{Collection: "test-collection"},
-							},
-						}),
-						Mappings: &akov2.Mappings{
-							Dynamic: jsonMustEncode(true),
-							Fields: jsonMustEncode([]map[string]any{
-								{"test": "value"},
-							}),
-						},
-						SearchConfigurationRef: common.ResourceRefNamespaced{},
-					},
-					VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]any{
-						{"test": "value"},
-					})},
-				},
-				AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: new("lucene.standard"),
-					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+				Name:           "TestIndex",
+				DBName:         "TestDBName",
+				CollectionName: "TestCollectionName",
+				Type:           "search",
+				Search: &akov2.Search{
+					Synonyms: &([]akov2.Synonym{
 						{
-							Name: "MyAnalyzer",
-							TokenFilters: jsonMustEncode([]map[string]any{
-								{"token": "value"},
-							}),
-							CharFilters: jsonMustEncode([]map[string]any{
-								{"filter": "value"},
-							}),
-							Tokenizer: akov2.Tokenizer{
-								Type:           new("standard"),
-								MaxGram:        nil,
-								MinGram:        nil,
-								Group:          nil,
-								Pattern:        nil,
-								MaxTokenLength: new(255),
-							},
+							Name:     "MySynonym",
+							Analyzer: "lucene.standard",
+							Source:   akov2.Source{Collection: "test-collection"},
 						},
 					}),
-					SearchAnalyzer: new("lucene.standard"),
-					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
+					Mappings: &akov2.Mappings{
+						Dynamic: jsonMustEncode(true),
+						Fields: jsonMustEncode([]map[string]any{
+							{"test": "value"},
+						}),
+					},
+					SearchConfigurationRef: common.ResourceRefNamespaced{},
 				},
+				VectorSearch: &akov2.VectorSearch{Fields: jsonMustEncode([]map[string]any{
+					{"test": "value"},
+				})},
+				Analyzer: new("lucene.standard"),
+				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+					{
+						Name: "MyAnalyzer",
+						TokenFilters: jsonMustEncode([]map[string]any{
+							{"token": "value"},
+						}),
+						CharFilters: jsonMustEncode([]map[string]any{
+							{"filter": "value"},
+						}),
+						Tokenizer: akov2.Tokenizer{
+							Type:           new("standard"),
+							MaxGram:        nil,
+							MinGram:        nil,
+							Group:          nil,
+							Pattern:        nil,
+							MaxTokenLength: new(255),
+						},
+					},
+				}),
+				SearchAnalyzer: new("lucene.standard"),
+				StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 			},
 		},
 	}
@@ -246,55 +242,51 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 				},
 			},
 			want: &SearchIndex{
-				ID:     new("indexID"),
-				Status: new("ACTIVE"),
-				SearchIndex: akov2.SearchIndex{
-					Name:           "name",
-					DBName:         "db",
-					CollectionName: "collection",
-					Type:           "search",
-					Search: &akov2.Search{
-						Synonyms: &([]akov2.Synonym{
-							{
-								Name:     "name",
-								Analyzer: "analyzer",
-								Source:   akov2.Source{Collection: "collection"},
-							},
-						}),
-						Mappings: &akov2.Mappings{
-							Dynamic: jsonMustEncode(true),
-							Fields:  jsonMustEncodeMap(map[string]any{"field": "value"}),
-						},
-						SearchConfigurationRef: common.ResourceRefNamespaced{},
-					},
-					VectorSearch: &akov2.VectorSearch{
-						Fields: jsonMustEncode([]map[string]any{
-							{
-								"testKey": "testValue",
-							},
-						}),
-					},
-				},
-				AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-					Analyzer: new("lucene.standard"),
-					Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+				ID:             new("indexID"),
+				Status:         new("ACTIVE"),
+				Name:           "name",
+				DBName:         "db",
+				CollectionName: "collection",
+				Type:           "search",
+				Search: &akov2.Search{
+					Synonyms: &([]akov2.Synonym{
 						{
-							Name:         "name",
-							TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}}),
-							CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}}),
-							Tokenizer: akov2.Tokenizer{
-								MaxGram:        new(20),
-								MinGram:        new(10),
-								Type:           new("standard"),
-								Group:          new(10),
-								Pattern:        new("testRegex"),
-								MaxTokenLength: new(255),
-							},
+							Name:     "name",
+							Analyzer: "analyzer",
+							Source:   akov2.Source{Collection: "collection"},
 						},
 					}),
-					SearchAnalyzer: new("search-analyzer"),
-					StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
+					Mappings: &akov2.Mappings{
+						Dynamic: jsonMustEncode(true),
+						Fields:  jsonMustEncodeMap(map[string]any{"field": "value"}),
+					},
+					SearchConfigurationRef: common.ResourceRefNamespaced{},
 				},
+				VectorSearch: &akov2.VectorSearch{
+					Fields: jsonMustEncode([]map[string]any{
+						{
+							"testKey": "testValue",
+						},
+					}),
+				},
+				Analyzer: new("lucene.standard"),
+				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+					{
+						Name:         "name",
+						TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}}),
+						CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}}),
+						Tokenizer: akov2.Tokenizer{
+							MaxGram:        new(20),
+							MinGram:        new(10),
+							Type:           new("standard"),
+							Group:          new(10),
+							Pattern:        new("testRegex"),
+							MaxTokenLength: new(255),
+						},
+					},
+				}),
+				SearchAnalyzer: new("search-analyzer"),
+				StoredSource:   jsonMustEncodeMap(map[string]any{"include": "test"}),
 			},
 			wantErr: false,
 		},
@@ -317,82 +309,74 @@ func Test_NewSearchIndexFromAtlas(t *testing.T) {
 func TestSearchIndex_EqualTo(t *testing.T) {
 	t.Run("Indexes should be equal", func(t *testing.T) {
 		idx1 := &SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "",
-				DBName:         "",
-				CollectionName: "",
-				Type:           "",
-				Search: &akov2.Search{
-					Synonyms: &([]akov2.Synonym{}),
-					Mappings: &akov2.Mappings{
-						Dynamic: nil,
-						Fields:  nil,
-					},
-					SearchConfigurationRef: common.ResourceRefNamespaced{},
+			Name:           "",
+			DBName:         "",
+			CollectionName: "",
+			Type:           "",
+			Search: &akov2.Search{
+				Synonyms: &([]akov2.Synonym{}),
+				Mappings: &akov2.Mappings{
+					Dynamic: nil,
+					Fields:  nil,
 				},
-				VectorSearch: nil,
+				SearchConfigurationRef: common.ResourceRefNamespaced{},
 			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("analyzer"),
-				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
-					{
-						Name:         "test",
-						TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
-						CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
-						Tokenizer: akov2.Tokenizer{
-							Type:           new("type"),
-							MaxGram:        nil,
-							MinGram:        nil,
-							Group:          nil,
-							Pattern:        nil,
-							MaxTokenLength: nil,
-						},
+			VectorSearch: nil,
+			Analyzer:     new("analyzer"),
+			Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+				{
+					Name:         "test",
+					TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
+					CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
+					Tokenizer: akov2.Tokenizer{
+						Type:           new("type"),
+						MaxGram:        nil,
+						MinGram:        nil,
+						Group:          nil,
+						Pattern:        nil,
+						MaxTokenLength: nil,
 					},
-				}),
-				SearchAnalyzer: new("searchAnalyzer"),
-				StoredSource:   nil,
-			},
-			ID:     nil,
-			Status: nil,
+				},
+			}),
+			SearchAnalyzer: new("searchAnalyzer"),
+			StoredSource:   nil,
+			ID:             nil,
+			Status:         nil,
 		}
 		idx2 := &SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "",
-				DBName:         "",
-				CollectionName: "",
-				Type:           "",
-				Search: &akov2.Search{
-					Synonyms: &([]akov2.Synonym{}),
-					Mappings: &akov2.Mappings{
-						Dynamic: nil,
-						Fields:  nil,
-					},
-					SearchConfigurationRef: common.ResourceRefNamespaced{},
+			Name:           "",
+			DBName:         "",
+			CollectionName: "",
+			Type:           "",
+			Search: &akov2.Search{
+				Synonyms: &([]akov2.Synonym{}),
+				Mappings: &akov2.Mappings{
+					Dynamic: nil,
+					Fields:  nil,
 				},
-				VectorSearch: nil,
+				SearchConfigurationRef: common.ResourceRefNamespaced{},
 			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("analyzer"),
-				Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
-					{
-						Name:         "test",
-						TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
-						CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
-						Tokenizer: akov2.Tokenizer{
-							Type:           new("type"),
-							MaxGram:        nil,
-							MinGram:        nil,
-							Group:          nil,
-							Pattern:        nil,
-							MaxTokenLength: nil,
-						},
+			VectorSearch: nil,
+			Analyzer:     new("analyzer"),
+			Analyzers: &([]akov2.AtlasSearchIndexAnalyzer{
+				{
+					Name:         "test",
+					TokenFilters: jsonMustEncode([]map[string]any{{"token": "filter"}, {"token1": "filter1"}}),
+					CharFilters:  jsonMustEncode([]map[string]any{{"char": "filter"}, {"char1": "filter1"}}),
+					Tokenizer: akov2.Tokenizer{
+						Type:           new("type"),
+						MaxGram:        nil,
+						MinGram:        nil,
+						Group:          nil,
+						Pattern:        nil,
+						MaxTokenLength: nil,
 					},
-				}),
-				SearchAnalyzer: new("searchAnalyzer"),
-				StoredSource:   nil,
-			},
-			ID:     nil,
-			Status: nil,
+				},
+			}),
+			SearchAnalyzer: new("searchAnalyzer"),
+			StoredSource:   nil,
+			ID:             nil,
+			Status:         nil,
 		}
 		isEqual, err := idx1.EqualTo(idx2)
 		assert.Nil(t, err)

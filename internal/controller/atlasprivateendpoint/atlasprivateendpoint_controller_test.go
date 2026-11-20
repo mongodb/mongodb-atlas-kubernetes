@@ -29,7 +29,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -44,7 +43,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
@@ -82,12 +80,10 @@ func TestReconcile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			pe := &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-					},
+				Name:      "pe1",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -111,10 +107,8 @@ func TestReconcile(t *testing.T) {
 				WithObjects(pe).
 				Build()
 			r := &AtlasPrivateEndpointReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    zap.New(core).Sugar(),
-				},
+				Client: fakeClient,
+				Log:    zap.New(core).Sugar(),
 			}
 			result, _ := r.Reconcile(ctx, tt.request)
 			assert.Equal(t, tt.expectedResult, result)
@@ -143,12 +137,10 @@ func TestEnsureCustomResource(t *testing.T) {
 	}{
 		"skip custom resource reconciliation": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-					},
+				Name:      "pe1",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -172,12 +164,10 @@ func TestEnsureCustomResource(t *testing.T) {
 		},
 		"custom resource version is invalid": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-					Labels: map[string]string{
-						customresource.ResourceVersion: "wrong",
-					},
+				Name:      "pe1",
+				Namespace: "default",
+				Labels: map[string]string{
+					customresource.ResourceVersion: "wrong",
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -203,10 +193,8 @@ func TestEnsureCustomResource(t *testing.T) {
 		},
 		"custom resource is not supported": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -238,10 +226,8 @@ func TestEnsureCustomResource(t *testing.T) {
 		},
 		"failed to get project from atlas": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -280,10 +266,8 @@ func TestEnsureCustomResource(t *testing.T) {
 		},
 		"failed to get project from cluster": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -316,10 +300,8 @@ func TestEnsureCustomResource(t *testing.T) {
 		},
 		"custom resource is ready for reconciliation": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -383,10 +365,8 @@ func TestEnsureCustomResource(t *testing.T) {
 			fakeClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.atlasPrivateEndpoint, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-secret",
-						Namespace: "default",
-					},
+					Name:      "my-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -396,11 +376,9 @@ func TestEnsureCustomResource(t *testing.T) {
 				WithStatusSubresource(tt.atlasPrivateEndpoint).
 				Build()
 			r := &AtlasPrivateEndpointReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        fakeClient,
-					Log:           zap.New(core).Sugar(),
-					AtlasProvider: tt.provider,
-				},
+				Client:        fakeClient,
+				Log:           zap.New(core).Sugar(),
+				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.ensureCustomResource(ctx, tt.atlasPrivateEndpoint)
@@ -424,10 +402,8 @@ func TestFailManageFinalizer(t *testing.T) {
 	testScheme := runtime.NewScheme()
 	require.NoError(t, akov2.AddToScheme(testScheme))
 	pe := &akov2.AtlasPrivateEndpoint{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pe1",
-			Namespace: "default",
-		},
+		Name:      "pe1",
+		Namespace: "default",
 		Spec: akov2.AtlasPrivateEndpointSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -444,12 +420,10 @@ func TestFailManageFinalizer(t *testing.T) {
 		},
 	}
 	atlasPE := &privateendpoint.AWSService{
-		CommonEndpointService: privateendpoint.CommonEndpointService{
-			ID:            "pe-service-id",
-			CloudRegion:   "US_EAST_1",
-			ServiceStatus: "AVAILABLE",
-		},
-		ServiceName: "aws/service/name",
+		ID:            "pe-service-id",
+		CloudRegion:   "US_EAST_1",
+		ServiceStatus: "AVAILABLE",
+		ServiceName:   "aws/service/name",
 	}
 
 	fakeClient := fake.NewClientBuilder().
@@ -502,10 +476,8 @@ func TestFailManageFinalizer(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			r := &AtlasPrivateEndpointReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    zaptest.NewLogger(t).Sugar(),
-				},
+				Client: fakeClient,
+				Log:    zaptest.NewLogger(t).Sugar(),
 			}
 
 			_, err := tt.transition(r)

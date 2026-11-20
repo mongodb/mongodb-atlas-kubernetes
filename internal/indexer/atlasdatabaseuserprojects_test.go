@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -44,8 +43,8 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 			object: &akov2.AtlasStreamInstance{},
 			expectedLogs: []observer.LoggedEntry{
 				{
-					Context: []zapcore.Field{},
-					Entry:   zapcore.Entry{LoggerName: AtlasDatabaseUserByProject, Level: zap.ErrorLevel, Message: "expected *v1.AtlasDatabaseUser but got *v1.AtlasStreamInstance"},
+					Context:    []zapcore.Field{},
+					LoggerName: AtlasDatabaseUserByProject, Level: zap.ErrorLevel, Message: "expected *v1.AtlasDatabaseUser but got *v1.AtlasStreamInstance",
 				},
 			},
 		},
@@ -100,17 +99,15 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 			},
 			expectedLogs: []observer.LoggedEntry{
 				{
-					Context: []zapcore.Field{},
-					Entry:   zapcore.Entry{LoggerName: AtlasDatabaseUserByProject, Level: zap.ErrorLevel, Message: "unable to find project to index: atlasprojects.atlas.mongodb.com \"not-found-project\" not found"},
+					Context:    []zapcore.Field{},
+					LoggerName: AtlasDatabaseUserByProject, Level: zap.ErrorLevel, Message: "unable to find project to index: atlasprojects.atlas.mongodb.com \"not-found-project\" not found",
 				},
 			},
 		},
 		"should return project reference with database user namespace": {
 			object: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "ns",
-				},
+				Name:      "user",
+				Namespace: "ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -124,10 +121,8 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 		},
 		"should return project reference": {
 			object: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "nsUser",
-				},
+				Name:      "user",
+				Namespace: "nsUser",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -145,10 +140,8 @@ func TestAtlasDatabaseUserByProjectsIndexer(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "internal-project-id",
-					Namespace: "ns",
-				},
+				Name:      "internal-project-id",
+				Namespace: "ns",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "My Project",
 				},

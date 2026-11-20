@@ -99,9 +99,7 @@ func CredentialsIndexMapperFunc[L client.ObjectList](indexerName string, listGen
 // Most Reconciliable implementations may leverage it.
 func toRequest(obj client.Object) reconcile.Request {
 	return reconcile.Request{
-		NamespacedName: types.NamespacedName{
-			Name:      obj.GetName(),
-			Namespace: obj.GetNamespace(),
-		},
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
 	}
 }

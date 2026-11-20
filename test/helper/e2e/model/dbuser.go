@@ -48,10 +48,8 @@ const (
 
 func NewDBUser(userName string) *DBUser {
 	return &DBUser{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "atlas.mongodb.com/v1",
-			Kind:       "AtlasDatabaseUser",
-		},
+		APIVersion: "atlas.mongodb.com/v1",
+		Kind:       "AtlasDatabaseUser",
 		ObjectMeta: &metav1.ObjectMeta{
 			Name: "k-" + userName,
 		},

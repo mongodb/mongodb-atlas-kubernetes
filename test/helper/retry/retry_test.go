@@ -58,9 +58,9 @@ func TestRetryUpdateOnConflict(t *testing.T) {
 				Namespace: "bar",
 			},
 			objects: []client.Object{
-				&akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+				&akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 			},
-			want: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+			want: &akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 		},
 		{
 			name: "exhaust on conflict",
@@ -69,14 +69,14 @@ func TestRetryUpdateOnConflict(t *testing.T) {
 				Namespace: "bar",
 			},
 			objects: []client.Object{
-				&akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+				&akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 			},
 			interceptorFuncs: interceptor.Funcs{
 				Update: func(context.Context, client.WithWatch, client.Object, ...client.UpdateOption) error {
 					return &apierrors.StatusError{ErrStatus: metav1.Status{Reason: metav1.StatusReasonConflict, Message: "conflict"}}
 				},
 			},
-			want:    &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+			want:    &akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 			wantErr: "conflict",
 		},
 		{
@@ -86,14 +86,14 @@ func TestRetryUpdateOnConflict(t *testing.T) {
 				Namespace: "bar",
 			},
 			objects: []client.Object{
-				&akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+				&akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 			},
 			interceptorFuncs: interceptor.Funcs{
 				Update: func(context.Context, client.WithWatch, client.Object, ...client.UpdateOption) error {
 					return errors.New("boom")
 				},
 			},
-			want:    &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"}},
+			want:    &akov2.AtlasProject{Name: "foo", Namespace: "bar"},
 			wantErr: "boom",
 		},
 	} {

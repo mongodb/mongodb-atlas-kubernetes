@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -37,26 +36,20 @@ func TestResourceShouldBeLeftInAtlas(t *testing.T) {
 
 	t.Run("Other annotations", func(t *testing.T) {
 		assert.False(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"foo": "bar"},
-			},
+			Annotations: map[string]string{"foo": "bar"},
 		}))
 	})
 
 	t.Run("Annotation present, resources should be removed", func(t *testing.T) {
 		assert.False(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
-			ObjectMeta: metav1.ObjectMeta{
-				// Any other value except for "keep" is considered as "purge"
-				Annotations: map[string]string{ResourcePolicyAnnotation: "foobar"},
-			},
+			// Any other value except for "keep" is considered as "purge"
+			Annotations: map[string]string{ResourcePolicyAnnotation: "foobar"},
 		}))
 	})
 
 	t.Run("Annotation present, resources should be kept", func(t *testing.T) {
 		assert.True(t, IsResourcePolicyKeep(&akov2.AtlasDatabaseUser{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{ResourcePolicyAnnotation: ResourcePolicyKeep},
-			},
+			Annotations: map[string]string{ResourcePolicyAnnotation: ResourcePolicyKeep},
 		}))
 	})
 }
@@ -109,15 +102,11 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is LOWER than operator version",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.3.0",
-					},
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.3.0",
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -129,15 +118,11 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is EQUAL to the operator version",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.3.0",
-					},
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.3.0",
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -149,15 +134,11 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is GREATER than the operator version",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.5.0",
-					},
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.5.0",
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -169,18 +150,14 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is GREATER than the operator version with ALLOWED OVERRIDE",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.5.0",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.5.0",
-					},
-					Annotations: map[string]string{
-						ResourceVersionOverride: ResourceVersionAllow,
-					},
+				Annotations: map[string]string{
+					ResourceVersionOverride: ResourceVersionAllow,
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -192,18 +169,14 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is GREATER than the operator version with DISALLOWED OVERRIDE",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.5.0",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.5.0",
-					},
-					Annotations: map[string]string{
-						ResourceVersionOverride: "someValue",
-					},
+				Annotations: map[string]string{
+					ResourceVersionOverride: "someValue",
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -215,15 +188,11 @@ func TestResourceVersionIsValid(t *testing.T) {
 		{
 			name: "Resource version is INCORRECT, should return an error",
 			resource: &akov2.AtlasProject{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasProject",
-					APIVersion: "atlas.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "TestProject",
-					Labels: map[string]string{
-						ResourceVersion: "1.incorrect.semantic.version",
-					},
+				Kind:       "AtlasProject",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "TestProject",
+				Labels: map[string]string{
+					ResourceVersion: "1.incorrect.semantic.version",
 				},
 				Spec:   akov2.AtlasProjectSpec{},
 				Status: status.AtlasProjectStatus{},
@@ -261,7 +230,7 @@ func TestComputeSecret(t *testing.T) {
 		{
 			name: "nil project ignored if resource is set",
 			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
+				Namespace: "local",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},
@@ -318,7 +287,7 @@ func TestComputeSecret(t *testing.T) {
 				},
 			},
 			resource: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "local"},
+				Namespace: "local",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "local-secret"},

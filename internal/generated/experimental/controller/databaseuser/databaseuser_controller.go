@@ -81,12 +81,10 @@ func NewDatabaseUserReconciler(
 	}
 	// Create main handler dispatcher
 	databaseuserHandler := &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   atlasProvider,
-			Client:          c.GetClient(),
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
-		},
+		AtlasProvider:      atlasProvider,
+		Client:             c.GetClient(),
+		GlobalSecretRef:    globalSecretRef,
+		Log:                logger.Named("controllers").Named("AtlasDatabaseUser").Sugar(),
 		deletionProtection: deletionProtection,
 		handlerv20250312:   handlerv20250312Func,
 		predicates:         predicates,

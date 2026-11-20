@@ -21,7 +21,6 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
@@ -56,10 +55,8 @@ func TestMapDatafederationPrivateEndpoints(t *testing.T) {
 	}{
 		"failed to parse last config applied annotation": {
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: "wrong,",
-					},
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: "wrong,",
 				},
 			},
 			endpoints:      []*DatafederationPrivateEndpointEntry{},
@@ -144,11 +141,9 @@ func TestMapDatafederationPrivateEndpoints(t *testing.T) {
 		},
 		"map with last applied configuration": {
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: "{\"name\":\"\",\"privateEndpoints\":[{\"endpointId\":\"vpcpe-123456\"," +
-							"\"provider\":\"AWS\",\"type\":\"DATA_LAKE\"}]}",
-					},
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: "{\"name\":\"\",\"privateEndpoints\":[{\"endpointId\":\"vpcpe-123456\"," +
+						"\"provider\":\"AWS\",\"type\":\"DATA_LAKE\"}]}",
 				},
 				Spec: akov2.DataFederationSpec{
 					PrivateEndpoints: []akov2.DataFederationPE{

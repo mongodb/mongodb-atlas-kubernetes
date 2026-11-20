@@ -67,13 +67,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "successful api create",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -92,16 +90,14 @@ func TestIntegrationsCreate(t *testing.T) {
 				nil,
 			),
 			expected: &integration.ThirdPartyIntegration{
-				ID: testID,
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-						SendQueryStatsMetrics:        new("disabled"),
-						SendUserProvidedResourceTags: new("disabled"),
-					},
+				ID:   testID,
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
+					SendQueryStatsMetrics:        new("disabled"),
+					SendUserProvidedResourceTags: new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -113,13 +109,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "API failure gets passed through",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -136,13 +130,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "failure to parse config returns before calling API",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "BLAH",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "BLAH",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -155,13 +147,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "failure to parse API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -186,13 +176,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "failure to extract matching type from API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -222,13 +210,11 @@ func TestIntegrationsCreate(t *testing.T) {
 		{
 			title: "extracts matching type from API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("enabled"),
-						SendDatabaseMetrics:          new("disabled"),
-					},
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("enabled"),
+					SendDatabaseMetrics:          new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -254,15 +240,13 @@ func TestIntegrationsCreate(t *testing.T) {
 				nil,
 			),
 			expected: &integration.ThirdPartyIntegration{
-				ID: testID2,
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "DATADOG",
-					Datadog: &akov2.DatadogIntegration{
-						SendCollectionLatencyMetrics: new("disabled"),
-						SendDatabaseMetrics:          new("enabled"),
-						SendQueryStatsMetrics:        new("disabled"),
-						SendUserProvidedResourceTags: new("disabled"),
-					},
+				ID:   testID2,
+				Type: "DATADOG",
+				Datadog: &akov2.DatadogIntegration{
+					SendCollectionLatencyMetrics: new("disabled"),
+					SendDatabaseMetrics:          new("enabled"),
+					SendQueryStatsMetrics:        new("disabled"),
+					SendUserProvidedResourceTags: new("disabled"),
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: testAPIKey,
@@ -301,11 +285,9 @@ func TestIntegrationsgGet(t *testing.T) {
 				nil,
 			),
 			expected: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: testIntegrationType,
-					PagerDuty: &akov2.PagerDutyIntegration{
-						Region: testRegion,
-					},
+				Type: testIntegrationType,
+				PagerDuty: &akov2.PagerDutyIntegration{
+					Region: testRegion,
 				},
 				ID: testID,
 				PagerDutySecrets: &integration.PagerDutySecrets{
@@ -362,10 +344,8 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "successful api update returns success",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type:     "NEW_RELIC",
-					NewRelic: &akov2.NewRelicIntegration{},
-				},
+				Type:     "NEW_RELIC",
+				NewRelic: &akov2.NewRelicIntegration{},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
 					LicenseKey: testLicenseKey,
@@ -385,11 +365,9 @@ func TestIntegrationsUpdate(t *testing.T) {
 				nil,
 			),
 			expected: &integration.ThirdPartyIntegration{
-				ID: testID,
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type:     "NEW_RELIC",
-					NewRelic: &akov2.NewRelicIntegration{},
-				},
+				ID:       testID,
+				Type:     "NEW_RELIC",
+				NewRelic: &akov2.NewRelicIntegration{},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
 					LicenseKey: testLicenseKey,
@@ -403,10 +381,8 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "API failure gets passed through",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type:     "NEW_RELIC",
-					NewRelic: &akov2.NewRelicIntegration{},
-				},
+				Type:     "NEW_RELIC",
+				NewRelic: &akov2.NewRelicIntegration{},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
 					LicenseKey: testLicenseKey,
@@ -425,13 +401,11 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "failure to parse config returns before calling API",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type: "BLAH",
-					Datadog: &akov2.DatadogIntegration{
-						Region:                       testRegion,
-						SendCollectionLatencyMetrics: new("true"),
-						SendDatabaseMetrics:          nil,
-					},
+				Type: "BLAH",
+				Datadog: &akov2.DatadogIntegration{
+					Region:                       testRegion,
+					SendCollectionLatencyMetrics: new("true"),
+					SendDatabaseMetrics:          nil,
 				},
 				DatadogSecrets: &integration.DatadogSecrets{
 					APIKey: "",
@@ -444,10 +418,8 @@ func TestIntegrationsUpdate(t *testing.T) {
 		{
 			title: "failure to parse API reply",
 			integration: &integration.ThirdPartyIntegration{
-				AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-					Type:     "NEW_RELIC",
-					NewRelic: &akov2.NewRelicIntegration{},
-				},
+				Type:     "NEW_RELIC",
+				NewRelic: &akov2.NewRelicIntegration{},
 				NewRelicSecrets: &integration.NewRelicSecrets{
 					AccountID:  testAccount,
 					LicenseKey: testLicenseKey,

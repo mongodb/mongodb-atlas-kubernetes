@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -36,7 +35,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
@@ -50,10 +48,8 @@ const (
 )
 
 var fakeAtlasSecret = corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "atlas-credentials",
-		Namespace: "default",
-	},
+	Name:      "atlas-credentials",
+	Namespace: "default",
 	Data: map[string][]byte{
 		"orgId":         []byte(fakeOrgID),
 		"publicApiKey":  []byte(fakeAPIKey),
@@ -62,10 +58,8 @@ var fakeAtlasSecret = corev1.Secret{
 }
 
 var sampleAtlasOrgSettings = akov2.AtlasOrgSettings{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "sample-org-settings",
-		Namespace: "default",
-	},
+	Name:      "sample-org-settings",
+	Namespace: "default",
 	Spec: akov2.AtlasOrgSettingsSpec{
 		OrgID: fakeOrgID,
 		ConnectionSecretRef: &api.LocalObjectReference{
@@ -147,10 +141,8 @@ func TestNewReconcileContext(t *testing.T) {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "no-connection-secret",
-					Namespace: "default",
-				},
+				Name:      "no-connection-secret",
+				Namespace: "default",
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
 					// No ConnectionSecretRef - should use global secret
@@ -158,10 +150,8 @@ func TestNewReconcileContext(t *testing.T) {
 			},
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "global-atlas-credentials",
-						Namespace: "atlas-system",
-					},
+					Name:      "global-atlas-credentials",
+					Namespace: "atlas-system",
 					Data: map[string][]byte{
 						"orgId":         []byte(fakeOrgID),
 						"publicApiKey":  []byte(fakeAPIKey),
@@ -182,10 +172,8 @@ func TestNewReconcileContext(t *testing.T) {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "nil-connection-secret",
-					Namespace: "default",
-				},
+				Name:      "nil-connection-secret",
+				Namespace: "default",
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID:               fakeOrgID,
 					ConnectionSecretRef: nil,
@@ -193,10 +181,8 @@ func TestNewReconcileContext(t *testing.T) {
 			},
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "global-atlas-credentials",
-						Namespace: "atlas-system",
-					},
+					Name:      "global-atlas-credentials",
+					Namespace: "atlas-system",
 					Data: map[string][]byte{
 						"orgId":         []byte(fakeOrgID),
 						"publicApiKey":  []byte(fakeAPIKey),
@@ -217,10 +203,8 @@ func TestNewReconcileContext(t *testing.T) {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "empty-secret-name",
-					Namespace: "default",
-				},
+				Name:      "empty-secret-name",
+				Namespace: "default",
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
 					ConnectionSecretRef: &api.LocalObjectReference{
@@ -230,10 +214,8 @@ func TestNewReconcileContext(t *testing.T) {
 			},
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "global-atlas-credentials",
-						Namespace: "atlas-system",
-					},
+					Name:      "global-atlas-credentials",
+					Namespace: "atlas-system",
 					Data: map[string][]byte{
 						"orgId":         []byte(fakeOrgID),
 						"publicApiKey":  []byte(fakeAPIKey),
@@ -254,10 +236,8 @@ func TestNewReconcileContext(t *testing.T) {
 				return mocks.NewAtlasOrgSettingsServiceMock(t)
 			},
 			input: &akov2.AtlasOrgSettings{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "no-secret-org-settings",
-					Namespace: "default",
-				},
+				Name:      "no-secret-org-settings",
+				Namespace: "default",
 				Spec: akov2.AtlasOrgSettingsSpec{
 					OrgID: fakeOrgID,
 					ConnectionSecretRef: &api.LocalObjectReference{
@@ -288,13 +268,11 @@ func TestNewReconcileContext(t *testing.T) {
 				WithStatusSubresource(tt.input).Build()
 
 			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:          k8sClient,
-					AtlasProvider:   tt.provider,
-					Log:             zap.NewNop().Sugar(),
-					GlobalSecretRef: tt.globalSecret,
-				},
-				serviceBuilder: tt.serviceBuilder,
+				Client:          k8sClient,
+				AtlasProvider:   tt.provider,
+				Log:             zap.NewNop().Sugar(),
+				GlobalSecretRef: tt.globalSecret,
+				serviceBuilder:  tt.serviceBuilder,
 			}
 
 			reconcileCtx, err := h.newReconcileRequest(ctx, tt.input)
@@ -343,10 +321,8 @@ func TestUpsert(t *testing.T) {
 					},
 				}, nil,
 				&atlasorgsettings.AtlasOrgSettings{
-					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: new(true),
-					},
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: new(true),
 				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
@@ -362,16 +338,14 @@ func TestUpsert(t *testing.T) {
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t,
 				&atlasorgsettings.AtlasOrgSettings{
-					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-						OrgID:                                  fakeOrgID,
-						ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-						GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
-						MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
-						MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
-						RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
-						SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
-						StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
-					},
+					OrgID:                                  fakeOrgID,
+					ApiAccessListRequired:                  sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
+					GenAIFeaturesEnabled:                   sampleAtlasOrgSettings.Spec.GenAIFeaturesEnabled,
+					MaxServiceAccountSecretValidityInHours: sampleAtlasOrgSettings.Spec.MaxServiceAccountSecretValidityInHours,
+					MultiFactorAuthRequired:                sampleAtlasOrgSettings.Spec.MultiFactorAuthRequired,
+					RestrictEmployeeAccess:                 sampleAtlasOrgSettings.Spec.RestrictEmployeeAccess,
+					SecurityContact:                        sampleAtlasOrgSettings.Spec.SecurityContact,
+					StreamsCrossGroupEnabled:               sampleAtlasOrgSettings.Spec.StreamsCrossGroupEnabled,
 				}, nil, nil, nil, false), // No update expected
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
@@ -387,10 +361,8 @@ func TestUpsert(t *testing.T) {
 			provider:     createSuccessfulProvider(),
 			serviceBuilder: createServiceBuilder(t, nil, nil,
 				&atlasorgsettings.AtlasOrgSettings{
-					AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-						OrgID:                 fakeOrgID,
-						ApiAccessListRequired: sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
-					},
+					OrgID:                 fakeOrgID,
+					ApiAccessListRequired: sampleAtlasOrgSettings.Spec.ApiAccessListRequired,
 				}, nil, true),
 			input:   &sampleAtlasOrgSettings,
 			objects: []client.Object{&fakeAtlasSecret},
@@ -467,11 +439,9 @@ func TestUpsert(t *testing.T) {
 				WithStatusSubresource(tt.input).Build()
 
 			h := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tt.provider,
-					Log:           zap.NewNop().Sugar(),
-				},
+				Client:         k8sClient,
+				AtlasProvider:  tt.provider,
+				Log:            zap.NewNop().Sugar(),
 				serviceBuilder: tt.serviceBuilder,
 			}
 
@@ -547,10 +517,8 @@ func setupHandlerTest(t *testing.T, scheme *runtime.Scheme) (*AtlasOrgSettingsHa
 			},
 		}, nil,
 		&atlasorgsettings.AtlasOrgSettings{
-			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-				OrgID:                 fakeOrgID,
-				ApiAccessListRequired: new(true),
-			},
+			OrgID:                 fakeOrgID,
+			ApiAccessListRequired: new(true),
 		}, nil, true)
 
 	k8sClient := fake.NewClientBuilder().
@@ -559,11 +527,9 @@ func setupHandlerTest(t *testing.T, scheme *runtime.Scheme) (*AtlasOrgSettingsHa
 		WithStatusSubresource(&sampleAtlasOrgSettings).Build()
 
 	h := &AtlasOrgSettingsHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			AtlasProvider: provider,
-			Log:           zap.NewNop().Sugar(),
-		},
+		Client:         k8sClient,
+		AtlasProvider:  provider,
+		Log:            zap.NewNop().Sugar(),
 		serviceBuilder: serviceBuilder,
 	}
 
@@ -632,10 +598,8 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 		provider := createSuccessfulProvider()
 		serviceBuilder := createServiceBuilder(t, nil, nil, // nil current settings
 			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: new(true),
-				},
+				OrgID:                 fakeOrgID,
+				ApiAccessListRequired: new(true),
 			}, nil, true)
 
 		k8sClient := fake.NewClientBuilder().
@@ -644,11 +608,9 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
 
 		h := &AtlasOrgSettingsHandler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client:        k8sClient,
-				AtlasProvider: provider,
-				Log:           zap.NewNop().Sugar(),
-			},
+			Client:         k8sClient,
+			AtlasProvider:  provider,
+			Log:            zap.NewNop().Sugar(),
 			serviceBuilder: serviceBuilder,
 		}
 
@@ -671,10 +633,8 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 				},
 			}, nil,
 			&atlasorgsettings.AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                 fakeOrgID,
-					ApiAccessListRequired: new(true),
-				},
+				OrgID:                 fakeOrgID,
+				ApiAccessListRequired: new(true),
 			}, nil, true)
 
 		k8sClient := fake.NewClientBuilder().
@@ -683,11 +643,9 @@ func TestEqualMethodBehaviorInUpsert(t *testing.T) {
 			WithStatusSubresource(&sampleAtlasOrgSettings).Build()
 
 		h := &AtlasOrgSettingsHandler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client:        k8sClient,
-				AtlasProvider: provider,
-				Log:           zap.NewNop().Sugar(),
-			},
+			Client:         k8sClient,
+			AtlasProvider:  provider,
+			Log:            zap.NewNop().Sugar(),
 			serviceBuilder: serviceBuilder,
 		}
 

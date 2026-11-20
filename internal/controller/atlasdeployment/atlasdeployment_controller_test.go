@@ -32,7 +32,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -47,7 +46,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -58,10 +56,8 @@ import (
 func TestCleanupBindings(t *testing.T) {
 	t.Run("without backup references, nothing happens on cleanup", func(t *testing.T) {
 		r := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:    testLog(t),
-				Client: testK8sClient(),
-			},
+			Log:    testLog(t),
+			Client: testK8sClient(),
 		}
 		d := testDeployment("cluster", nil)
 
@@ -71,10 +67,8 @@ func TestCleanupBindings(t *testing.T) {
 
 	t.Run("with unreferenced backups, still nothing happens on cleanup", func(t *testing.T) {
 		r := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:    testLog(t),
-				Client: testK8sClient(),
-			},
+			Log:    testLog(t),
+			Client: testK8sClient(),
 		}
 		d := testDeployment("cluster", nil)
 		require.NoError(t, r.Client.Create(context.Background(), d))
@@ -101,11 +95,9 @@ func TestCleanupBindings(t *testing.T) {
 			},
 		}
 		r := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:           testLog(t),
-				Client:        testK8sClient(),
-				AtlasProvider: atlasProvider,
-			},
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment -> schedule -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -135,11 +127,9 @@ func TestCleanupBindings(t *testing.T) {
 			},
 		}
 		r := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:           testLog(t),
-				Client:        testK8sClient(),
-				AtlasProvider: atlasProvider,
-			},
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment + deployment2 -> schedule -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -174,11 +164,9 @@ func TestCleanupBindings(t *testing.T) {
 			},
 		}
 		r := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log:           testLog(t),
-				Client:        testK8sClient(),
-				AtlasProvider: atlasProvider,
-			},
+			Log:           testLog(t),
+			Client:        testK8sClient(),
+			AtlasProvider: atlasProvider,
 		}
 		policy := testBackupPolicy() // deployment -> schedule + schedule2 -> policy
 		require.NoError(t, r.Client.Create(context.Background(), policy))
@@ -219,11 +207,9 @@ func TestCleanupBindings(t *testing.T) {
 
 func TestBackupScheduleDeploymentKeyIsNamespaceQualified(t *testing.T) {
 	r := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
-		},
+		Log:           testLog(t),
+		Client:        testK8sClient(),
+		AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
 	}
 	ctx := context.Background()
 
@@ -252,11 +238,9 @@ func TestBackupScheduleDeploymentKeyIsNamespaceQualified(t *testing.T) {
 
 func TestBackupScheduleLegacyKeyIsCollected(t *testing.T) {
 	r := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
-		},
+		Log:           testLog(t),
+		Client:        testK8sClient(),
+		AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
 	}
 	ctx := context.Background()
 
@@ -280,11 +264,9 @@ func TestBackupScheduleLegacyKeyIsCollected(t *testing.T) {
 
 func TestBackupScheduleLegacyKeyIsMigratedOnReconcile(t *testing.T) {
 	r := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Log:           testLog(t),
-			Client:        testK8sClient(),
-			AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
-		},
+		Log:           testLog(t),
+		Client:        testK8sClient(),
+		AtlasProvider: &atlasmock.TestProvider{IsSupportedFunc: func() bool { return true }},
 	}
 	ctx := context.Background()
 
@@ -337,7 +319,7 @@ func testDeploymentName(suffix string) types.NamespacedName {
 func testDeployment(suffix string, schedule *akov2.AtlasBackupSchedule) *akov2.AtlasDeployment {
 	dn := testDeploymentName(suffix)
 	d := &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{Name: dn.Name, Namespace: dn.Namespace},
+		Name: dn.Name, Namespace: dn.Namespace,
 		Spec: akov2.AtlasDeploymentSpec{
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name: fmt.Sprintf("atlas-%s", dn.Name),
@@ -357,11 +339,9 @@ func testDeployment(suffix string, schedule *akov2.AtlasBackupSchedule) *akov2.A
 
 func testBackupSchedule(suffix string, policy *akov2.AtlasBackupPolicy) *akov2.AtlasBackupSchedule {
 	return &akov2.AtlasBackupSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
+		Name:       fmt.Sprintf("test-backup-schedule%s", suffix),
+		Namespace:  "test-namespace",
+		Finalizers: []string{customresource.FinalizerLabel},
 		Spec: akov2.AtlasBackupScheduleSpec{
 			PolicyRef: common.ResourceRefNamespaced{Name: policy.Name, Namespace: policy.Namespace},
 		},
@@ -370,11 +350,9 @@ func testBackupSchedule(suffix string, policy *akov2.AtlasBackupPolicy) *akov2.A
 
 func testBackupPolicy() *akov2.AtlasBackupPolicy {
 	return &akov2.AtlasBackupPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test-backup-policy",
-			Namespace:  "test-namespace",
-			Finalizers: []string{customresource.FinalizerLabel},
-		},
+		Name:       "test-backup-policy",
+		Namespace:  "test-namespace",
+		Finalizers: []string{customresource.FinalizerLabel},
 		Spec: akov2.AtlasBackupPolicySpec{
 			Items: []akov2.AtlasBackupPolicyItem{
 				{
@@ -390,12 +368,10 @@ func testBackupPolicy() *akov2.AtlasBackupPolicy {
 
 func TestRegularClusterReconciliation(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api-secret",
-			Namespace: "default",
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
+		Name:      "api-secret",
+		Namespace: "default",
+		Labels: map[string]string{
+			"atlas.mongodb.com/type": "credentials",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("1234567890"),
@@ -405,10 +381,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		Type: "Opaque",
 	}
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-project",
-			Namespace: "default",
-		},
+		Name:      "my-project",
+		Namespace: "default",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "MyProject",
 			ConnectionSecret: &common.ResourceRefNamespaced{
@@ -419,10 +393,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		Status: status.AtlasProjectStatus{ID: "abc123"},
 	}
 	bPolicy := &akov2.AtlasBackupPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-policy",
-			Namespace: project.Namespace,
-		},
+		Name:      "my-policy",
+		Namespace: project.Namespace,
 		Spec: akov2.AtlasBackupPolicySpec{
 			Items: []akov2.AtlasBackupPolicyItem{
 				{
@@ -435,10 +407,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		},
 	}
 	bSchedule := &akov2.AtlasBackupSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-schedule",
-			Namespace: project.Namespace,
-		},
+		Name:      "my-schedule",
+		Namespace: project.Namespace,
 		Spec: akov2.AtlasBackupScheduleSpec{
 			PolicyRef: common.ResourceRefNamespaced{
 				Name:      bPolicy.Name,
@@ -602,11 +572,9 @@ func TestRegularClusterReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			Log:           logger.Sugar(),
-			AtlasProvider: atlasProvider,
-		},
+		Client:                      k8sClient,
+		Log:                         logger.Sugar(),
+		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -616,10 +584,8 @@ func TestRegularClusterReconciliation(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			ctx,
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: d.Namespace,
-					Name:      d.Name,
-				},
+				Namespace: d.Namespace,
+				Name:      d.Name,
 			},
 		)
 		assert.NoError(t, err)
@@ -630,12 +596,10 @@ func TestRegularClusterReconciliation(t *testing.T) {
 func TestServerlessInstanceReconciliation(t *testing.T) {
 	ctx := context.Background()
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api-secret",
-			Namespace: "default",
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
+		Name:      "api-secret",
+		Namespace: "default",
+		Labels: map[string]string{
+			"atlas.mongodb.com/type": "credentials",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("1234567890"),
@@ -645,10 +609,8 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 		Type: "Opaque",
 	}
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-project",
-			Namespace: "default",
-		},
+		Name:      "my-project",
+		Namespace: "default",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "MyProject",
 			ConnectionSecret: &common.ResourceRefNamespaced{
@@ -725,11 +687,9 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			Log:           logger.Sugar(),
-			AtlasProvider: atlasProvider,
-		},
+		Client:                      k8sClient,
+		Log:                         logger.Sugar(),
+		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -739,10 +699,8 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			ctx,
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: d.Namespace,
-					Name:      d.Name,
-				},
+				Namespace: d.Namespace,
+				Name:      d.Name,
 			},
 		)
 		assert.NoError(t, err)
@@ -753,12 +711,10 @@ func TestServerlessInstanceReconciliation(t *testing.T) {
 func TestFlexClusterReconciliation(t *testing.T) {
 	ctx := context.Background()
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api-secret",
-			Namespace: "default",
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
+		Name:      "api-secret",
+		Namespace: "default",
+		Labels: map[string]string{
+			"atlas.mongodb.com/type": "credentials",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("1234567890"),
@@ -768,10 +724,8 @@ func TestFlexClusterReconciliation(t *testing.T) {
 		Type: "Opaque",
 	}
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-project",
-			Namespace: "default",
-		},
+		Name:      "my-project",
+		Namespace: "default",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "MyProject",
 			ConnectionSecret: &common.ResourceRefNamespaced{
@@ -851,11 +805,9 @@ func TestFlexClusterReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			Log:           logger.Sugar(),
-			AtlasProvider: atlasProvider,
-		},
+		Client:                      k8sClient,
+		Log:                         logger.Sugar(),
+		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -865,10 +817,8 @@ func TestFlexClusterReconciliation(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			ctx,
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: d.Namespace,
-					Name:      d.Name,
-				},
+				Namespace: d.Namespace,
+				Name:      d.Name,
 			},
 		)
 		assert.NoError(t, err)
@@ -878,12 +828,10 @@ func TestFlexClusterReconciliation(t *testing.T) {
 
 func TestDeletionReconciliation(t *testing.T) {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api-secret",
-			Namespace: "default",
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
+		Name:      "api-secret",
+		Namespace: "default",
+		Labels: map[string]string{
+			"atlas.mongodb.com/type": "credentials",
 		},
 		Data: map[string][]byte{
 			"orgId":         []byte("1234567890"),
@@ -893,10 +841,8 @@ func TestDeletionReconciliation(t *testing.T) {
 		Type: "Opaque",
 	}
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-project",
-			Namespace: "default",
-		},
+		Name:      "my-project",
+		Namespace: "default",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "MyProject",
 			ConnectionSecret: &common.ResourceRefNamespaced{
@@ -907,10 +853,8 @@ func TestDeletionReconciliation(t *testing.T) {
 		Status: status.AtlasProjectStatus{ID: "abc123"},
 	}
 	bPolicy := &akov2.AtlasBackupPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-policy",
-			Namespace: project.Namespace,
-		},
+		Name:      "my-policy",
+		Namespace: project.Namespace,
 		Spec: akov2.AtlasBackupPolicySpec{
 			Items: []akov2.AtlasBackupPolicyItem{
 				{
@@ -923,10 +867,8 @@ func TestDeletionReconciliation(t *testing.T) {
 		},
 	}
 	bSchedule := &akov2.AtlasBackupSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-schedule",
-			Namespace: project.Namespace,
-		},
+		Name:      "my-schedule",
+		Namespace: project.Namespace,
 		Spec: akov2.AtlasBackupScheduleSpec{
 			PolicyRef: common.ResourceRefNamespaced{
 				Name:      bPolicy.Name,
@@ -1027,11 +969,9 @@ func TestDeletionReconciliation(t *testing.T) {
 	}
 
 	reconciler := &AtlasDeploymentReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			Log:           logger,
-			AtlasProvider: atlasProvider,
-		},
+		Client:                      k8sClient,
+		Log:                         logger,
+		AtlasProvider:               atlasProvider,
 		EventRecorder:               record.NewFakeRecorder(10),
 		ObjectDeletionProtection:    false,
 		SubObjectDeletionProtection: false,
@@ -1042,10 +982,8 @@ func TestDeletionReconciliation(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: d.Namespace,
-					Name:      d.Name,
-				},
+				Namespace: d.Namespace,
+				Name:      d.Name,
 			},
 		)
 		assert.NoError(t, err)
@@ -1057,9 +995,7 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 	t.Run("should fail when watching wrong object", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
 		reconciler := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log: zap.New(core).Sugar(),
-			},
+			Log: zap.New(core).Sugar(),
 		}
 
 		assert.Nil(t, reconciler.findDeploymentsForSearchIndexConfig(context.Background(), &akov2.AtlasProject{}))
@@ -1070,10 +1006,8 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 
 	t.Run("should return slice of requests for instances", func(t *testing.T) {
 		instance1 := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance1",
-				Namespace: "default",
-			},
+			Name:      "instance1",
+			Namespace: "default",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					SearchIndexes: []akov2.SearchIndex{
@@ -1090,10 +1024,8 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 			},
 		}
 		instance2 := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance2",
-				Namespace: "other-ns",
-			},
+			Name:      "instance2",
+			Namespace: "other-ns",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					SearchIndexes: []akov2.SearchIndex{
@@ -1110,10 +1042,8 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 			},
 		}
 		connection := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "index1",
-				Namespace: "default",
-			},
+			Name:      "index1",
+			Namespace: "default",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -1128,10 +1058,8 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 			).
 			Build()
 		reconciler := &AtlasDeploymentReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Client: k8sClient,
-				Log:    zaptest.NewLogger(t).Sugar(),
-			},
+			Client: k8sClient,
+			Log:    zaptest.NewLogger(t).Sugar(),
 		}
 
 		requests := reconciler.findDeploymentsForSearchIndexConfig(context.Background(), connection)
@@ -1139,16 +1067,12 @@ func TestFindDeploymentsForSearchIndexConfig(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Namespace: "default",
-						Name:      "instance1",
-					},
+					Namespace: "default",
+					Name:      "instance1",
 				},
 				{
-					NamespacedName: types.NamespacedName{
-						Namespace: "other-ns",
-						Name:      "instance2",
-					},
+					Namespace: "other-ns",
+					Name:      "instance2",
 				},
 			},
 			requests,
@@ -1171,44 +1095,44 @@ func TestFindDeploymentsForBackupPolicy(t *testing.T) {
 		{
 			name: "transitive dependency",
 			obj: &akov2.AtlasBackupPolicy{
-				ObjectMeta: metav1.ObjectMeta{Name: "some-policy", Namespace: "ns1"},
+				Name: "some-policy", Namespace: "ns1",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasBackupSchedule{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-schedule", Namespace: "ns2"},
+					Name: "some-schedule", Namespace: "ns2",
 					Spec: akov2.AtlasBackupScheduleSpec{
 						PolicyRef: common.ResourceRefNamespaced{Name: "some-policy", Namespace: "ns1"},
 					},
 				},
 				&akov2.AtlasBackupSchedule{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-schedule2", Namespace: "ns2"},
+					Name: "some-schedule2", Namespace: "ns2",
 					Spec: akov2.AtlasBackupScheduleSpec{
 						PolicyRef: common.ResourceRefNamespaced{Name: "some-policy", Namespace: "ns1"},
 					},
 				},
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment", Namespace: "ns3"},
+					Name: "some-deployment", Namespace: "ns3",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
 					},
 				},
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment2", Namespace: "ns4"},
+					Name: "some-deployment2", Namespace: "ns4",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
 					},
 				},
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment3", Namespace: "ns5"},
+					Name: "some-deployment3", Namespace: "ns5",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule2", Namespace: "ns2"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "some-deployment", Namespace: "ns3"}},
-				{NamespacedName: types.NamespacedName{Name: "some-deployment2", Namespace: "ns4"}},
-				{NamespacedName: types.NamespacedName{Name: "some-deployment3", Namespace: "ns5"}},
+				{Name: "some-deployment", Namespace: "ns3"},
+				{Name: "some-deployment2", Namespace: "ns4"},
+				{Name: "some-deployment3", Namespace: "ns5"},
 			},
 		},
 	} { //nolint:dupl
@@ -1224,10 +1148,8 @@ func TestFindDeploymentsForBackupPolicy(t *testing.T) {
 				WithIndex(deploymentIndexer.Object(), deploymentIndexer.Name(), deploymentIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Log:    zaptest.NewLogger(t).Sugar(),
-					Client: k8sClient,
-				},
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
 			}
 			got := reconciler.findDeploymentsForBackupPolicy(context.Background(), tc.obj)
 			if !reflect.DeepEqual(got, tc.want) {
@@ -1252,31 +1174,31 @@ func TestFindDeploymentsForBackupSchedule(t *testing.T) {
 		{
 			name: "transitive dependency",
 			obj: &akov2.AtlasBackupSchedule{
-				ObjectMeta: metav1.ObjectMeta{Name: "some-schedule", Namespace: "ns2"},
+				Name: "some-schedule", Namespace: "ns2",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment", Namespace: "ns3"},
+					Name: "some-deployment", Namespace: "ns3",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
 					},
 				},
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment2", Namespace: "ns4"},
+					Name: "some-deployment2", Namespace: "ns4",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule", Namespace: "ns2"},
 					},
 				},
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{Name: "some-deployment3", Namespace: "ns5"},
+					Name: "some-deployment3", Namespace: "ns5",
 					Spec: akov2.AtlasDeploymentSpec{
 						BackupScheduleRef: common.ResourceRefNamespaced{Name: "some-schedule2", Namespace: "ns2"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "some-deployment", Namespace: "ns3"}},
-				{NamespacedName: types.NamespacedName{Name: "some-deployment2", Namespace: "ns4"}},
+				{Name: "some-deployment", Namespace: "ns3"},
+				{Name: "some-deployment2", Namespace: "ns4"},
 			},
 		},
 	} { //nolint:dupl
@@ -1292,10 +1214,8 @@ func TestFindDeploymentsForBackupSchedule(t *testing.T) {
 				WithIndex(deploymentIndexer.Object(), deploymentIndexer.Name(), deploymentIndexer.Keys).
 				Build()
 			reconciler := &AtlasDeploymentReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Log:    zaptest.NewLogger(t).Sugar(),
-					Client: k8sClient,
-				},
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
 			}
 			got := reconciler.findDeploymentsForBackupSchedule(context.Background(), tc.obj)
 			if !reflect.DeepEqual(got, tc.want) {
@@ -1313,10 +1233,8 @@ func TestChangeDeploymentType(t *testing.T) {
 	}{
 		"should fail when existing cluster is regular but manifest defines a serverless instance": { //nolint:dupl
 			deployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -1395,10 +1313,8 @@ func TestChangeDeploymentType(t *testing.T) {
 		},
 		"should fail when existing cluster is regular but manifest defines a flex instance": { //nolint:dupl
 			deployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -1477,10 +1393,8 @@ func TestChangeDeploymentType(t *testing.T) {
 		},
 		"should fail when existing cluster is flex instance but manifest defines a regular deployment": {
 			deployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -1552,12 +1466,10 @@ func TestChangeDeploymentType(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "api-secret",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "api-secret",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"orgId":         []byte("1234567890"),
@@ -1567,10 +1479,8 @@ func TestChangeDeploymentType(t *testing.T) {
 				Type: "Opaque",
 			}
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "MyProject",
 					ConnectionSecret: &common.ResourceRefNamespaced{
@@ -1596,20 +1506,16 @@ func TestChangeDeploymentType(t *testing.T) {
 				Build()
 
 			r := &AtlasDeploymentReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					Log:           logger.Sugar(),
-					AtlasProvider: tt.atlasProvider,
-				},
+				Client:        k8sClient,
+				Log:           logger.Sugar(),
+				AtlasProvider: tt.atlasProvider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			_, err := r.Reconcile(
 				ctx,
 				ctrl.Request{
-					NamespacedName: types.NamespacedName{
-						Namespace: tt.deployment.Namespace,
-						Name:      tt.deployment.Name,
-					},
+					Namespace: tt.deployment.Namespace,
+					Name:      tt.deployment.Name,
 				},
 			)
 

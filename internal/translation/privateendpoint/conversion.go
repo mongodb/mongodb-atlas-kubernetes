@@ -172,37 +172,31 @@ func NewPrivateEndpoint(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint) Endpoint
 	switch akoPrivateEndpoint.Spec.Provider {
 	case ProviderAWS:
 		return &AWSService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            akoPrivateEndpoint.Status.ServiceID,
-				CloudRegion:   akoPrivateEndpoint.Spec.Region,
-				ServiceStatus: akoPrivateEndpoint.Status.ServiceStatus,
-				Error:         akoPrivateEndpoint.Status.Error,
-				Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
-			},
+			ID:               akoPrivateEndpoint.Status.ServiceID,
+			CloudRegion:      akoPrivateEndpoint.Spec.Region,
+			ServiceStatus:    akoPrivateEndpoint.Status.ServiceStatus,
+			Error:            akoPrivateEndpoint.Status.Error,
+			Interfaces:       newPrivateEndpointInterface(akoPrivateEndpoint),
 			ServiceName:      akoPrivateEndpoint.Status.ServiceName,
 			SupportedRegions: akoPrivateEndpoint.Spec.SupportedRegions,
 		}
 	case ProviderAzure:
 		return &AzureService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            akoPrivateEndpoint.Status.ServiceID,
-				CloudRegion:   akoPrivateEndpoint.Spec.Region,
-				ServiceStatus: akoPrivateEndpoint.Status.ServiceStatus,
-				Error:         akoPrivateEndpoint.Status.Error,
-				Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
-			},
-			ServiceName: akoPrivateEndpoint.Status.ServiceName,
-			ResourceID:  akoPrivateEndpoint.Status.ResourceID,
+			ID:            akoPrivateEndpoint.Status.ServiceID,
+			CloudRegion:   akoPrivateEndpoint.Spec.Region,
+			ServiceStatus: akoPrivateEndpoint.Status.ServiceStatus,
+			Error:         akoPrivateEndpoint.Status.Error,
+			Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
+			ServiceName:   akoPrivateEndpoint.Status.ServiceName,
+			ResourceID:    akoPrivateEndpoint.Status.ResourceID,
 		}
 	case ProviderGCP:
 		return &GCPService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            akoPrivateEndpoint.Status.ServiceID,
-				CloudRegion:   akoPrivateEndpoint.Spec.Region,
-				ServiceStatus: akoPrivateEndpoint.Status.ServiceStatus,
-				Error:         akoPrivateEndpoint.Status.Error,
-				Interfaces:    newPrivateEndpointInterface(akoPrivateEndpoint),
-			},
+			ID:                 akoPrivateEndpoint.Status.ServiceID,
+			CloudRegion:        akoPrivateEndpoint.Spec.Region,
+			ServiceStatus:      akoPrivateEndpoint.Status.ServiceStatus,
+			Error:              akoPrivateEndpoint.Status.Error,
+			Interfaces:         newPrivateEndpointInterface(akoPrivateEndpoint),
 			AttachmentNames:    akoPrivateEndpoint.Status.ServiceAttachmentNames,
 			PortMappingEnabled: akoPrivateEndpoint.Spec.PortMappingEnabled,
 		}
@@ -271,9 +265,7 @@ func newPrivateEndpointInterface(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint)
 	case ProviderAWS:
 		for _, endpoint := range akoPrivateEndpoint.Spec.AWSConfiguration {
 			ep := &AWSInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID: endpoint.ID,
-				},
+				ID: endpoint.ID,
 			}
 
 			for _, epStatus := range akoPrivateEndpoint.Status.Endpoints {
@@ -288,9 +280,7 @@ func newPrivateEndpointInterface(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint)
 	case ProviderAzure:
 		for _, endpoint := range akoPrivateEndpoint.Spec.AzureConfiguration {
 			ep := &AzureInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID: endpoint.ID,
-				},
+				ID: endpoint.ID,
 				IP: endpoint.IP,
 			}
 
@@ -318,9 +308,7 @@ func newPrivateEndpointInterface(akoPrivateEndpoint *akov2.AtlasPrivateEndpoint)
 			}
 
 			ep := &GCPInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID: endpoint.GroupName,
-				},
+				ID:        endpoint.GroupName,
 				Endpoints: gcpEPs,
 			}
 
@@ -354,37 +342,31 @@ func serviceFromAtlas(peService *admin.EndpointService, endpoints EndpointInterf
 	switch peService.GetCloudProvider() {
 	case ProviderAWS:
 		return &AWSService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            peService.GetId(),
-				CloudRegion:   peService.GetRegionName(),
-				ServiceStatus: peService.GetStatus(),
-				Error:         peService.GetErrorMessage(),
-				Interfaces:    endpoints,
-			},
+			ID:               peService.GetId(),
+			CloudRegion:      peService.GetRegionName(),
+			ServiceStatus:    peService.GetStatus(),
+			Error:            peService.GetErrorMessage(),
+			Interfaces:       endpoints,
 			ServiceName:      peService.GetEndpointServiceName(),
 			SupportedRegions: peService.GetSupportedRemoteRegions(),
 		}
 	case ProviderAzure:
 		return &AzureService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            peService.GetId(),
-				CloudRegion:   peService.GetRegionName(),
-				ServiceStatus: peService.GetStatus(),
-				Error:         peService.GetErrorMessage(),
-				Interfaces:    endpoints,
-			},
-			ServiceName: peService.GetPrivateLinkServiceName(),
-			ResourceID:  peService.GetPrivateLinkServiceResourceId(),
+			ID:            peService.GetId(),
+			CloudRegion:   peService.GetRegionName(),
+			ServiceStatus: peService.GetStatus(),
+			Error:         peService.GetErrorMessage(),
+			Interfaces:    endpoints,
+			ServiceName:   peService.GetPrivateLinkServiceName(),
+			ResourceID:    peService.GetPrivateLinkServiceResourceId(),
 		}
 	case ProviderGCP:
 		return &GCPService{
-			CommonEndpointService: CommonEndpointService{
-				ID:            peService.GetId(),
-				CloudRegion:   peService.GetRegionName(),
-				ServiceStatus: peService.GetStatus(),
-				Error:         peService.GetErrorMessage(),
-				Interfaces:    endpoints,
-			},
+			ID:                 peService.GetId(),
+			CloudRegion:        peService.GetRegionName(),
+			ServiceStatus:      peService.GetStatus(),
+			Error:              peService.GetErrorMessage(),
+			Interfaces:         endpoints,
 			AttachmentNames:    peService.GetServiceAttachmentNames(),
 			PortMappingEnabled: peService.GetPortMappingEnabled(),
 		}
@@ -425,21 +407,17 @@ func interfaceFromAtlas(peInterface *admin.PrivateLinkEndpoint) EndpointInterfac
 	switch peInterface.GetCloudProvider() {
 	case ProviderAWS:
 		return &AWSInterface{
-			CommonEndpointInterface: CommonEndpointInterface{
-				ID:              peInterface.GetInterfaceEndpointId(),
-				InterfaceStatus: peInterface.GetConnectionStatus(),
-				Error:           peInterface.GetErrorMessage(),
-			},
+			ID:              peInterface.GetInterfaceEndpointId(),
+			InterfaceStatus: peInterface.GetConnectionStatus(),
+			Error:           peInterface.GetErrorMessage(),
 		}
 	case ProviderAzure:
 		return &AzureInterface{
-			CommonEndpointInterface: CommonEndpointInterface{
-				ID:              peInterface.GetPrivateEndpointResourceId(),
-				InterfaceStatus: peInterface.GetStatus(),
-				Error:           peInterface.GetErrorMessage(),
-			},
-			IP:             peInterface.GetPrivateEndpointIPAddress(),
-			ConnectionName: peInterface.GetPrivateEndpointConnectionName(),
+			ID:              peInterface.GetPrivateEndpointResourceId(),
+			InterfaceStatus: peInterface.GetStatus(),
+			Error:           peInterface.GetErrorMessage(),
+			IP:              peInterface.GetPrivateEndpointIPAddress(),
+			ConnectionName:  peInterface.GetPrivateEndpointConnectionName(),
 		}
 	case ProviderGCP:
 		endpoints := make([]GCPInterfaceEndpoint, 0, len(peInterface.GetEndpoints()))
@@ -455,12 +433,10 @@ func interfaceFromAtlas(peInterface *admin.PrivateLinkEndpoint) EndpointInterfac
 		}
 
 		return &GCPInterface{
-			CommonEndpointInterface: CommonEndpointInterface{
-				ID:              peInterface.GetEndpointGroupName(),
-				InterfaceStatus: peInterface.GetStatus(),
-				Error:           peInterface.GetErrorMessage(),
-			},
-			Endpoints: endpoints,
+			ID:              peInterface.GetEndpointGroupName(),
+			InterfaceStatus: peInterface.GetStatus(),
+			Error:           peInterface.GetErrorMessage(),
+			Endpoints:       endpoints,
 		}
 	}
 

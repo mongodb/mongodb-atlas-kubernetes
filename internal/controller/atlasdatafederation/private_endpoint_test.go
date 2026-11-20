@@ -77,10 +77,8 @@ func TestEnsurePrivateEndpoints(t *testing.T) {
 			},
 			project: &akov2.AtlasProject{},
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"mongodb.com/last-applied-configuration": "{wrongJson",
-					},
+				Annotations: map[string]string{
+					"mongodb.com/last-applied-configuration": "{wrongJson",
 				},
 			},
 			wantOK: false,
@@ -276,9 +274,8 @@ func TestEnsurePrivateEndpoints(t *testing.T) {
 			},
 			project: &akov2.AtlasProject{},
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"mongodb.com/last-applied-configuration": `
+				Annotations: map[string]string{
+					"mongodb.com/last-applied-configuration": `
 {
   "privateEndpoints": [
    {
@@ -288,7 +285,6 @@ func TestEnsurePrivateEndpoints(t *testing.T) {
    }
   ]
  }`,
-					},
 				},
 			},
 			wantOK:         true,
@@ -307,9 +303,8 @@ func TestEnsurePrivateEndpoints(t *testing.T) {
 			},
 			project: &akov2.AtlasProject{},
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"mongodb.com/last-applied-configuration": `
+				Annotations: map[string]string{
+					"mongodb.com/last-applied-configuration": `
 {
   "privateEndpoints": [
    {
@@ -319,7 +314,6 @@ func TestEnsurePrivateEndpoints(t *testing.T) {
    }
   ]
  }`,
-					},
 				},
 			},
 			wantOK: false,

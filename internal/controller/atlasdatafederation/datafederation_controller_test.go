@@ -25,7 +25,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -57,10 +56,10 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		{
 			name: "no finalizer",
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
+				Name: "foo", Namespace: "bar",
 			},
 			wantDataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
+				Name: "foo", Namespace: "bar",
 			},
 			wantSecrets: []corev1.Secret{},
 			wantResult:  workflow.OK(),
@@ -68,18 +67,14 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 		{
 			name: "finalizer set and deletion protection is enabled",
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					Finalizers:  []string{customresource.FinalizerLabel},
-					Annotations: map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep},
-				},
+				Name: "foo", Namespace: "bar",
+				Finalizers:  []string{customresource.FinalizerLabel},
+				Annotations: map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep},
 			},
 			wantDataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					// Finalizers removed
-					Annotations: map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep},
-				},
+				Name: "foo", Namespace: "bar",
+				// Finalizers removed
+				Annotations: map[string]string{customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep},
 			},
 			wantSecrets: []corev1.Secret{},
 			wantResult:  workflow.OK(),
@@ -91,14 +86,12 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 				return serviceMock
 			},
 			atlasProject: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
+				Name: "fooProject", Namespace: "bar",
 			},
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
-				Spec: akov2.DataFederationSpec{Project: common.ResourceRefNamespaced{Name: "fooProject"}},
+				Name: "foo", Namespace: "bar",
+				Finalizers: []string{customresource.FinalizerLabel},
+				Spec:       akov2.DataFederationSpec{Project: common.ResourceRefNamespaced{Name: "fooProject"}},
 			},
 			wantDataFederation: &akov2.AtlasDataFederation{
 				ObjectMeta: metav1.ObjectMeta{
@@ -117,14 +110,12 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 				return serviceMock
 			},
 			atlasProject: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "fooProject", Namespace: "bar"},
-				Status:     status.AtlasProjectStatus{ID: "123"},
+				Name: "fooProject", Namespace: "bar",
+				Status: status.AtlasProjectStatus{ID: "123"},
 			},
 			dataFederation: &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo", Namespace: "bar",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name: "foo", Namespace: "bar",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.DataFederationSpec{
 					Name:    "data-federation-name",
 					Project: common.ResourceRefNamespaced{Name: "fooProject"},
@@ -142,35 +133,29 @@ func TestDeleteConnectionSecrets(t *testing.T) {
 			},
 			connectionSecrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "fooSecret", Namespace: "bar",
-						Labels: map[string]string{
-							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-							secretservice.ProjectLabelKey: "123",
-							secretservice.ClusterLabelKey: "data-federation-name",
-						},
+					Name: "fooSecret", Namespace: "bar",
+					Labels: map[string]string{
+						secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+						secretservice.ProjectLabelKey: "123",
+						secretservice.ClusterLabelKey: "data-federation-name",
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "keepSecret", Namespace: "bar",
-						Labels: map[string]string{
-							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-							secretservice.ProjectLabelKey: "123",
-							secretservice.ClusterLabelKey: "some-cluster",
-						},
+					Name: "keepSecret", Namespace: "bar",
+					Labels: map[string]string{
+						secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+						secretservice.ProjectLabelKey: "123",
+						secretservice.ClusterLabelKey: "some-cluster",
 					},
 				},
 			},
 			wantSecrets: []corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "keepSecret", Namespace: "bar",
-						Labels: map[string]string{
-							secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-							secretservice.ProjectLabelKey: "123",
-							secretservice.ClusterLabelKey: "some-cluster",
-						},
+					Name: "keepSecret", Namespace: "bar",
+					Labels: map[string]string{
+						secretservice.TypeLabelKey:    secretservice.CredLabelVal,
+						secretservice.ProjectLabelKey: "123",
+						secretservice.ClusterLabelKey: "some-cluster",
 					},
 				},
 			},
@@ -247,28 +232,28 @@ func TestFindAtlasDataFederationForProjects(t *testing.T) {
 		{
 			name: "same namespace",
 			obj: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns"},
+				Name: "project", Namespace: "ns",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasDataFederation{
-					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Name: "adf1", Namespace: "ns",
 					Spec: akov2.DataFederationSpec{
 						Project: common.ResourceRefNamespaced{Name: "project"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "adf1", Namespace: "ns"}},
+				{Name: "adf1", Namespace: "ns"},
 			},
 		},
 		{
 			name: "different namespace",
 			obj: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "ns2"},
+				Name: "project", Namespace: "ns2",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasDataFederation{
-					ObjectMeta: metav1.ObjectMeta{Name: "adf1", Namespace: "ns"},
+					Name: "adf1", Namespace: "ns",
 					Spec: akov2.DataFederationSpec{
 						Project: common.ResourceRefNamespaced{Name: "project"},
 					},

@@ -25,7 +25,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -57,12 +56,10 @@ type AtlasNetworkPeeringReconciler struct {
 
 func NewAtlasNetworkPeeringsReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasNetworkPeeringReconciler {
 	return &AtlasNetworkPeeringReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("AtlasNetworkPeering").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
+		Client:                   c.GetClient(),
+		Log:                      logger.Named("controllers").Named("AtlasNetworkPeering").Sugar(),
+		GlobalSecretRef:          globalSecretRef,
+		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasPrivateEndpoint"),
 		GlobalPredicates:         predicates,
@@ -173,10 +170,8 @@ func (r *AtlasNetworkPeeringReconciler) networkPeeringForContainerByIDMapFunc() 
 		requests := make([]reconcile.Request, 0, len(list.Items))
 		for _, peering := range list.Items {
 			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      peering.Name,
-					Namespace: peering.Namespace,
-				},
+				Name:      peering.Name,
+				Namespace: peering.Namespace,
 			})
 		}
 		return requests

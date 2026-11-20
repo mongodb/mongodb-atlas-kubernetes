@@ -269,10 +269,8 @@ func (p AtlasDatabaseUser) GetScopes(scopeType ScopeType) []string {
 
 func NewDBUser(namespace, name, dbUserName, projectName string) *AtlasDatabaseUser {
 	return &AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: AtlasDatabaseUserSpec{
 			Username: dbUserName,
 			ProjectDualReference: ProjectDualReference{

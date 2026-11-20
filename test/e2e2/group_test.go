@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -68,9 +67,8 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("group-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("group-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -189,7 +187,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 			By("Wait for Group to fail", func() {
 				testGroup = &generatedv1.Group{
-					ObjectMeta: metav1.ObjectMeta{Name: groupName, Namespace: testNamespace.Name},
+					Name: groupName, Namespace: testNamespace.Name,
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(testGroup), testGroup)).To(Succeed())
@@ -281,7 +279,7 @@ var _ = Describe("Group CRUD", Ordered, Label("group"), func() {
 
 			By("Wait for Group to be Ready", func() {
 				testGroup := &generatedv1.Group{
-					ObjectMeta: metav1.ObjectMeta{Name: groupName, Namespace: testNamespace.Name},
+					Name: groupName, Namespace: testNamespace.Name,
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(resources.CheckResourceReady(ctx, kubeClient, testGroup)).To(Succeed())
@@ -384,9 +382,8 @@ var _ = Describe("Group with Deletion Protection", Ordered, Label("group"), func
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("group-protect-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("group-protect-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(

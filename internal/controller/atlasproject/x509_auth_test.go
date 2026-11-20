@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -55,7 +54,7 @@ func userSecurityWithCAs(cas string) *admin.UserSecurity {
 
 func projectWithoutCertRef(authModes authmode.AuthModes) *akov2.AtlasProject {
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "default"},
+		Name: "project", Namespace: "default",
 	}
 	project.Status.ID = testProjectID
 	project.Status.AuthModes = authModes
@@ -168,8 +167,8 @@ func TestEnsureX509_SkipsUpdateWhenCertAlreadyMatches(t *testing.T) {
 	ldapAPI := ldapAPIReturningCAs(t, testCA)
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "x509-cert", Namespace: "default"},
-		Data:       map[string][]byte{"ca.crt": []byte(testCA)},
+		Name: "x509-cert", Namespace: "default",
+		Data: map[string][]byte{"ca.crt": []byte(testCA)},
 	}
 
 	scheme := runtime.NewScheme()
@@ -212,7 +211,7 @@ func TestReadX509CertFromSecretDoesNotLeakValues(t *testing.T) {
 	const privateKeyValue = "super-secret-private-api-key"
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "atlas-creds", Namespace: "operator-ns"},
+		Name: "atlas-creds", Namespace: "operator-ns",
 		Data: map[string][]byte{
 			"orgId":         []byte("5f4c1b2a3d4e5f6a7b8c9d0e"),
 			"publicApiKey":  []byte("abcdefgh"),
@@ -246,7 +245,7 @@ func TestEnsureX509_ConditionMessageDoesNotLeakSecret(t *testing.T) {
 	const privateKeyValue = "super-secret-private-api-key"
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "atlas-creds", Namespace: "operator-ns"},
+		Name: "atlas-creds", Namespace: "operator-ns",
 		Data: map[string][]byte{
 			"orgId":         []byte("5f4c1b2a3d4e5f6a7b8c9d0e"),
 			"privateApiKey": []byte(privateKeyValue),
@@ -254,7 +253,7 @@ func TestEnsureX509_ConditionMessageDoesNotLeakSecret(t *testing.T) {
 	}
 
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{Name: "project", Namespace: "tenant-ns"},
+		Name: "project", Namespace: "tenant-ns",
 		Spec: akov2.AtlasProjectSpec{
 			X509CertRef: &common.ResourceRefNamespaced{Name: "atlas-creds", Namespace: "operator-ns"},
 		},

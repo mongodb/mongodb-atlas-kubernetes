@@ -21,7 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -62,10 +61,8 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 	It("Configures a backup compliance policy", func(ctx context.Context) {
 		By("Creating a deployment with a non-compliant backup policy and backup schedule", func() {
 			backupPolicy := &akov2.AtlasBackupPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-bkp-policy", testData.Project.Name),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-bkp-policy", testData.Project.Name),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasBackupPolicySpec{
 					Items: []akov2.AtlasBackupPolicyItem{
 						{
@@ -80,10 +77,8 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 			Expect(testData.K8SClient.Create(testData.Context, backupPolicy)).Should(Succeed())
 
 			backupSchedule := &akov2.AtlasBackupSchedule{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-bkp-schedule", testData.Project.Name),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-bkp-schedule", testData.Project.Name),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasBackupScheduleSpec{
 					PolicyRef: common.ResourceRefNamespaced{
 						Name:      backupPolicy.Name,
@@ -103,10 +98,8 @@ var _ = Describe("Backup Compliance Configuration", Label("backup-compliance"), 
 
 		By("Creating a backup compliance policy in kubernetes", func() {
 			backupCompliancePolicy = &akov2.AtlasBackupCompliancePolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-bcp", testData.Project.Name),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-bcp", testData.Project.Name),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasBackupCompliancePolicySpec{
 					AuthorizedEmail:         "test@example.com",
 					AuthorizedUserFirstName: "John",

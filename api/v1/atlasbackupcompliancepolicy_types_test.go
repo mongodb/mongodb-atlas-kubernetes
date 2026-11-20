@@ -21,18 +21,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestBackupCompliancePolicyToAtlas(t *testing.T) {
 	t.Run("Can convert Compliance Policy to Atlas", func(t *testing.T) {
 		in := AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "test-ns",
-				Labels: map[string]string{
-					"test": "label",
-				},
+			Name:      "my-bcp",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				"test": "label",
 			},
 			Spec: AtlasBackupCompliancePolicySpec{
 				AuthorizedEmail:         "example@test.com",
@@ -192,12 +189,10 @@ func TestBackupCompliancePolicyFromAtlasNilOndemandPolicy(t *testing.T) {
 func TestBackupCompliancePolicyToAtlasNilOndemandPolicy(t *testing.T) {
 	t.Run("Can convert to Atlas when OndemandPolicyItem is nil", func(t *testing.T) {
 		in := AtlasBackupCompliancePolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-bcp",
-				Namespace: "test-ns",
-				Labels: map[string]string{
-					"test": "label",
-				},
+			Name:      "my-bcp",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				"test": "label",
 			},
 			Spec: AtlasBackupCompliancePolicySpec{
 				AuthorizedEmail:         "example@test.com",

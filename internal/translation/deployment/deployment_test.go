@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -905,9 +904,7 @@ func atlasAPIError(code string) *admin.GenericOpenAPIError {
 
 func geoShardedCluster() *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "cluster0",
-		},
+		Name: "cluster0",
 		Spec: akov2.AtlasDeploymentSpec{
 			DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 				Name:                         "cluster0",
@@ -1558,9 +1555,7 @@ func atlasGeoShardedCluster() *admin.ClusterDescription20240805 {
 
 func serverlessInstance() *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "instance0",
-		},
+		Name: "instance0",
 		Spec: akov2.AtlasDeploymentSpec{
 			ServerlessSpec: &akov2.ServerlessSpec{
 				Name: "instance0",

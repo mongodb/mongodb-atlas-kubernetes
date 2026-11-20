@@ -36,7 +36,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/privateendpoint"
@@ -60,10 +59,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		"failed to retrieve private endpoint": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -95,10 +92,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		"failed to create private endpoint service": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -128,12 +123,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"unmanage already deleted private endpoint": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pe1",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "pe1",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -160,14 +153,12 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"unmanage protected private endpoint": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pe1",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-					},
+				Name:              "pe1",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -196,12 +187,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		"failed to delete private endpoint": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "pe1",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "pe1",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -219,12 +208,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -244,10 +231,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"private endpoint service is initiating": { //nolint:dupl
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -265,12 +250,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "INITIATING",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "INITIATING",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -289,10 +272,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"private endpoint service is pending": { //nolint:dupl
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -310,12 +291,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "PENDING",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "PENDING",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -335,10 +314,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		"private endpoint service was rejected": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -356,13 +333,11 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "REJECTED",
-						Error:         "atlas could not connect the private endpoint",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "REJECTED",
+					Error:         "atlas could not connect the private endpoint",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -380,10 +355,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"private endpoint service is being deleted": { //nolint:dupl
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -401,12 +374,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "DELETING",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "DELETING",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -425,10 +396,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"update AWS supported regions": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -447,20 +416,16 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				atlasService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 				updatedService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:               "pe-service-id",
+					CloudRegion:      "US_EAST_1",
+					ServiceStatus:    "AVAILABLE",
+					Interfaces:       privateendpoint.EndpointInterfaces{},
 					SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
 				}
 
@@ -484,10 +449,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		"fail to update AWS supported regions": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -506,12 +469,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				atlasService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -533,10 +494,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 		},
 		"private endpoint service is available": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -554,12 +513,10 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 			},
 			peClient: func() privateendpoint.PrivateEndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{},
-					},
+					ID:            "pe-service-id",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{},
 				}
 
 				c := translation.NewPrivateEndpointServiceMock(t)
@@ -588,10 +545,8 @@ func TestHandlePrivateEndpointService(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := &AtlasPrivateEndpointReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    logger,
-				},
+				Client:        fakeClient,
+				Log:           logger,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			workflowCtx := workflow.Context{
@@ -636,10 +591,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		"failed to create private endpoint interface": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -684,9 +637,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						Interfaces: privateendpoint.EndpointInterfaces{},
-					},
+					Interfaces: privateendpoint.EndpointInterfaces{},
 				}
 
 				return awsService
@@ -708,10 +659,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		},
 		"create private endpoint interface": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -775,9 +724,7 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						Interfaces: privateendpoint.EndpointInterfaces{},
-					},
+					Interfaces: privateendpoint.EndpointInterfaces{},
 				}
 
 				return awsService
@@ -808,10 +755,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		"failed to configure private endpoint interface": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -862,16 +807,12 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				awsInterface := &privateendpoint.AWSInterface{
-					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-						ID:              "vpcpe-123456",
-						InterfaceStatus: "REJECTED",
-						Error:           "failed to configure private endpoint interface",
-					},
+					ID:              "vpcpe-123456",
+					InterfaceStatus: "REJECTED",
+					Error:           "failed to configure private endpoint interface",
 				}
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
-					},
+					Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
 				}
 
 				return awsService
@@ -891,10 +832,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		"failed to delete private endpoint interface": {
 			wantErr: true,
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -940,15 +879,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				awsInterface := &privateendpoint.AWSInterface{
-					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-						ID:              "vpcpe-123456",
-						InterfaceStatus: "AVAILABLE",
-					},
+					ID:              "vpcpe-123456",
+					InterfaceStatus: "AVAILABLE",
 				}
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
-					},
+					Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
 				}
 
 				return awsService
@@ -970,10 +905,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		},
 		"delete private endpoint interface": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -1017,15 +950,11 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				awsInterface := &privateendpoint.AWSInterface{
-					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-						ID:              "vpcpe-123456",
-						InterfaceStatus: "AVAILABLE",
-					},
+					ID:              "vpcpe-123456",
+					InterfaceStatus: "AVAILABLE",
 				}
 				awsService := &privateendpoint.AWSService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
-					},
+					Interfaces: privateendpoint.EndpointInterfaces{awsInterface},
 				}
 
 				return awsService
@@ -1048,10 +977,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		},
 		"private endpoints are in progress": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{ //nolint:dupl
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -1102,22 +1029,18 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				azureInterface := &privateendpoint.AzureInterface{
-					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-						ID:              "azure/resource/id",
-						InterfaceStatus: "INITIATING",
-					},
-					IP:             "10.0.0.2",
-					ConnectionName: "atlas-connection-name",
+					ID:              "azure/resource/id",
+					InterfaceStatus: "INITIATING",
+					IP:              "10.0.0.2",
+					ConnectionName:  "atlas-connection-name",
 				}
 				azureService := &privateendpoint.AzureService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "GERMANY_NORTH",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{azureInterface},
-					},
-					ServiceName: "atlas/azure/service/name",
-					ResourceID:  "atlas/azure/resource/id",
+					ID:            "pe-service-id",
+					CloudRegion:   "GERMANY_NORTH",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{azureInterface},
+					ServiceName:   "atlas/azure/service/name",
+					ResourceID:    "atlas/azure/resource/id",
 				}
 
 				return azureService
@@ -1137,10 +1060,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 		},
 		"private endpoints are ready": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{ //nolint:dupl
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -1191,22 +1112,18 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 			},
 			atlasPEService: func() privateendpoint.EndpointService {
 				azureInterface := &privateendpoint.AzureInterface{
-					CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-						ID:              "azure/resource/id",
-						InterfaceStatus: "AVAILABLE",
-					},
-					IP:             "10.0.0.2",
-					ConnectionName: "atlas-connection-name",
+					ID:              "azure/resource/id",
+					InterfaceStatus: "AVAILABLE",
+					IP:              "10.0.0.2",
+					ConnectionName:  "atlas-connection-name",
 				}
 				azureService := &privateendpoint.AzureService{
-					CommonEndpointService: privateendpoint.CommonEndpointService{
-						ID:            "pe-service-id",
-						CloudRegion:   "GERMANY_NORTH",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    privateendpoint.EndpointInterfaces{azureInterface},
-					},
-					ServiceName: "atlas/azure/service/name",
-					ResourceID:  "atlas/azure/resource/id",
+					ID:            "pe-service-id",
+					CloudRegion:   "GERMANY_NORTH",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    privateendpoint.EndpointInterfaces{azureInterface},
+					ServiceName:   "atlas/azure/service/name",
+					ResourceID:    "atlas/azure/resource/id",
 				}
 
 				return azureService
@@ -1234,10 +1151,8 @@ func TestHandlePrivateEndpointInterfaces(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := &AtlasPrivateEndpointReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    logger,
-				},
+				Client:        fakeClient,
+				Log:           logger,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			workflowCtx := workflow.Context{
@@ -1285,10 +1200,8 @@ func TestGetPrivateEndpointService(t *testing.T) {
 	}{
 		"failed to list private endpoint to match": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -1311,10 +1224,8 @@ func TestGetPrivateEndpointService(t *testing.T) {
 		},
 		"match private endpoint from the list": {
 			atlasPrivateEndpoint: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe1",
-					Namespace: "default",
-				},
+				Name:      "pe1",
+				Namespace: "default",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -1332,18 +1243,14 @@ func TestGetPrivateEndpointService(t *testing.T) {
 					Return(
 						[]privateendpoint.EndpointService{
 							&privateendpoint.AWSService{
-								CommonEndpointService: privateendpoint.CommonEndpointService{
-									ID:            "pe-service-id-1",
-									CloudRegion:   "EU_CENTRAL_1",
-									ServiceStatus: "AVAILABLE",
-								},
+								ID:            "pe-service-id-1",
+								CloudRegion:   "EU_CENTRAL_1",
+								ServiceStatus: "AVAILABLE",
 							},
 							&privateendpoint.AWSService{
-								CommonEndpointService: privateendpoint.CommonEndpointService{
-									ID:            "pe-service-id-2",
-									CloudRegion:   "US_EAST_1",
-									ServiceStatus: "AVAILABLE",
-								},
+								ID:            "pe-service-id-2",
+								CloudRegion:   "US_EAST_1",
+								ServiceStatus: "AVAILABLE",
 							},
 						},
 						nil,
@@ -1352,11 +1259,9 @@ func TestGetPrivateEndpointService(t *testing.T) {
 				return c
 			},
 			expectedResult: &privateendpoint.AWSService{
-				CommonEndpointService: privateendpoint.CommonEndpointService{
-					ID:            "pe-service-id-2",
-					CloudRegion:   "US_EAST_1",
-					ServiceStatus: "AVAILABLE",
-				},
+				ID:            "pe-service-id-2",
+				CloudRegion:   "US_EAST_1",
+				ServiceStatus: "AVAILABLE",
 			},
 		},
 	}
@@ -1385,17 +1290,13 @@ func TestDeletePrivateEndpoint(t *testing.T) {
 	}{
 		"failed to delete private endpoint interface": {
 			peService: &privateendpoint.AWSService{
-				CommonEndpointService: privateendpoint.CommonEndpointService{
-					ID:            "pe-service-id",
-					CloudRegion:   "US_EAST_1",
-					ServiceStatus: "AVAILABLE",
-					Interfaces: privateendpoint.EndpointInterfaces{
-						&privateendpoint.AWSInterface{
-							CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-								ID:              "vpcpe-123456",
-								InterfaceStatus: "AVAILABLE",
-							},
-						},
+				ID:            "pe-service-id",
+				CloudRegion:   "US_EAST_1",
+				ServiceStatus: "AVAILABLE",
+				Interfaces: privateendpoint.EndpointInterfaces{
+					&privateendpoint.AWSInterface{
+						ID:              "vpcpe-123456",
+						InterfaceStatus: "AVAILABLE",
 					},
 				},
 			},
@@ -1410,17 +1311,13 @@ func TestDeletePrivateEndpoint(t *testing.T) {
 		},
 		"delete private endpoint interface": {
 			peService: &privateendpoint.AWSService{
-				CommonEndpointService: privateendpoint.CommonEndpointService{
-					ID:            "pe-service-id",
-					CloudRegion:   "US_EAST_1",
-					ServiceStatus: "AVAILABLE",
-					Interfaces: privateendpoint.EndpointInterfaces{
-						&privateendpoint.AWSInterface{
-							CommonEndpointInterface: privateendpoint.CommonEndpointInterface{
-								ID:              "vpcpe-123456",
-								InterfaceStatus: "AVAILABLE",
-							},
-						},
+				ID:            "pe-service-id",
+				CloudRegion:   "US_EAST_1",
+				ServiceStatus: "AVAILABLE",
+				Interfaces: privateendpoint.EndpointInterfaces{
+					&privateendpoint.AWSInterface{
+						ID:              "vpcpe-123456",
+						InterfaceStatus: "AVAILABLE",
 					},
 				},
 			},

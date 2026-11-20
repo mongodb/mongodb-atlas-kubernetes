@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/test/helper/e2e2/yml"
@@ -40,13 +39,9 @@ func TestParseObjects(t *testing.T) {
 	assert.Len(t, objs, 2)
 	assert.IsType(t, &corev1.Secret{}, objs[0])
 	assert.Equal(t, &akov2.AtlasProject{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AtlasProject",
-			APIVersion: "atlas.mongodb.com/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "atlas-project",
-		},
+		Kind:       "AtlasProject",
+		APIVersion: "atlas.mongodb.com/v1",
+		Name:       "atlas-project",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "atlas-project",
 		},

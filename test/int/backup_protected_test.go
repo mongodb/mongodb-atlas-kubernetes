@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -109,16 +108,12 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 			var bsSchedule *akov2.AtlasBackupSchedule
 			By("Creating AtlasBackupPolicy resource", func() {
 				bsPolicy = &akov2.AtlasBackupPolicy{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "atlas.mongodb.com/v1",
-						APIVersion: "AtlasBackupPolicy",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "bs-policy",
-						Namespace:   testNamespace.Name,
-						Labels:      map[string]string{},
-						Annotations: map[string]string{},
-					},
+					Kind:        "atlas.mongodb.com/v1",
+					APIVersion:  "AtlasBackupPolicy",
+					Name:        "bs-policy",
+					Namespace:   testNamespace.Name,
+					Labels:      map[string]string{},
+					Annotations: map[string]string{},
 					Spec: akov2.AtlasBackupPolicySpec{
 						Items: []akov2.AtlasBackupPolicyItem{
 							{
@@ -135,14 +130,10 @@ var _ = Describe("AtlasBackupSchedule Deletion Protected",
 
 			By("Creating AtlasBackupSchedule resource", func() {
 				bsSchedule = &akov2.AtlasBackupSchedule{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "atlas.mongodb.com/v1",
-						APIVersion: "AtlasBackupSchedule",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bs-schedule",
-						Namespace: testNamespace.Name,
-					},
+					Kind:       "atlas.mongodb.com/v1",
+					APIVersion: "AtlasBackupSchedule",
+					Name:       "bs-schedule",
+					Namespace:  testNamespace.Name,
 					Spec: akov2.AtlasBackupScheduleSpec{
 						AutoExportEnabled: false,
 						PolicyRef: common.ResourceRefNamespaced{
