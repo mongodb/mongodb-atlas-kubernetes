@@ -1,0 +1,50 @@
+name: Go Dependency Bump
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Every Monday at 08:00 UTC
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled]
+    branches:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - 'tools/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  gobump:
+    name: Bump Go dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: ./tools/toolbox/go.mod
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run gobump
+        run: make gobump
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: gobump-update
+          base: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+          commit-message: "chore: bump Go dependencies"
+          title: "chore: bump Go dependencies"
+          body: |
+            This automated pull request updates Go dependencies using `make gobump`.
+
+            Please review the dependency changes and CI results before merging.

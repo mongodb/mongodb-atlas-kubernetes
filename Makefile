@@ -208,6 +208,7 @@ endif
 
 # GO TOOLS
 CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
+GOBUMP := go tool -modfile=tools/toolbox/go.mod gobump
 
 # LOCAL TOOLS
 OPENAPI2CRD := go tool -modfile=tools/toolbox/go.mod openapi2crd
@@ -766,6 +767,11 @@ slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githu
 	@echo "Computing and sending deprecation report to Slack..."
 	set -o pipefail; GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep --text "javaMethod" \
 	| ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
+
+# Bump Go module versions across the repository; pass optional flags with GOBUMP_ARGS.
+.PHONY: gobump
+gobump:
+	$(GOBUMP) ./... $(GOBUMP_ARGS)
 
 .PHONY: bump-version-file
 bump-version-file:
