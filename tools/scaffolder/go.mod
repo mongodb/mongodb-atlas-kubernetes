@@ -1,6 +1,6 @@
 module github.com/mongodb/mongodb-atlas-kubernetes/tools/scaffolder
 
-go 1.26.11
+go 1.27.4
 
 // replace github.com/josvazg/crd2go => ../crd2go
 
@@ -8,13 +8,10 @@ require (
 	github.com/dave/jennifer v1.7.1
 	// github.com/josvazg/crd2go v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.10.2
-	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.37.2
-)
-
-require (
 	github.com/stretchr/testify v1.12.1
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.37.2
+	k8s.io/apimachinery v0.37.2
 )
 
 require (

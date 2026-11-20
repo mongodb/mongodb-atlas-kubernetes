@@ -1,6 +1,6 @@
 module tools/scandeprecations
 
-go 1.26.11
+go 1.27.4
 
 require go.uber.org/zap v1.27.0
 
