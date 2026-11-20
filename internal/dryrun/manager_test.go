@@ -154,10 +154,8 @@ func TestManagerStart(t *testing.T) {
 
 func TestDryRunReportError(t *testing.T) {
 	obj := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "bar",
-		},
+		Name:      "foo",
+		Namespace: "bar",
 	}
 
 	for _, tc := range []struct {
@@ -291,16 +289,12 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "AtlasProject",
-						APIVersion: "atlas.mongodb.com/v1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test",
-					},
-					Spec:   akov2.AtlasProjectSpec{},
-					Status: status.AtlasProjectStatus{},
+					Kind:       "AtlasProject",
+					APIVersion: "atlas.mongodb.com/v1",
+					Name:       "test",
+					Namespace:  "test",
+					Spec:       akov2.AtlasProjectSpec{},
+					Status:     status.AtlasProjectStatus{},
 				},
 			},
 			wantEvents: []*corev1.Event{
@@ -320,16 +314,12 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "AtlasProject",
-						APIVersion: "atlas.mongodb.com/v1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test",
-					},
-					Spec:   akov2.AtlasProjectSpec{},
-					Status: status.AtlasProjectStatus{},
+					Kind:       "AtlasProject",
+					APIVersion: "atlas.mongodb.com/v1",
+					Name:       "test",
+					Namespace:  "test",
+					Spec:       akov2.AtlasProjectSpec{},
+					Status:     status.AtlasProjectStatus{},
 				},
 			},
 			wantEvents: []*corev1.Event{
@@ -353,10 +343,8 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test",
-					},
+					Name:      "test",
+					Namespace: "test",
 					Spec: akov2.AtlasProjectSpec{
 						AlertConfigurations: []akov2.AlertConfiguration{
 							{
@@ -390,28 +378,20 @@ func TestManager_dryRunReconcilers(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "AtlasProject",
-						APIVersion: "atlas.mongodb.com/v1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test",
-					},
-					Spec:   akov2.AtlasProjectSpec{},
-					Status: status.AtlasProjectStatus{},
+					Kind:       "AtlasProject",
+					APIVersion: "atlas.mongodb.com/v1",
+					Name:       "test",
+					Namespace:  "test",
+					Spec:       akov2.AtlasProjectSpec{},
+					Status:     status.AtlasProjectStatus{},
 				},
 				&akov2.AtlasProject{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "AtlasProject",
-						APIVersion: "atlas.mongodb.com/v1",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test2",
-						Namespace: "ignored",
-					},
-					Spec:   akov2.AtlasProjectSpec{},
-					Status: status.AtlasProjectStatus{},
+					Kind:       "AtlasProject",
+					APIVersion: "atlas.mongodb.com/v1",
+					Name:       "test2",
+					Namespace:  "ignored",
+					Spec:       akov2.AtlasProjectSpec{},
+					Status:     status.AtlasProjectStatus{},
 				},
 			},
 			namespaces: []string{"test"},

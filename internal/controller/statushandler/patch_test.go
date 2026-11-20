@@ -34,10 +34,8 @@ import (
 
 func Test_PatchUpdateStatus(t *testing.T) {
 	existingProject := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "some-project",
-			Namespace: "test-ns",
-		},
+		Name:      "some-project",
+		Namespace: "test-ns",
 		Status: status.AtlasProjectStatus{
 			Common: api.Common{Conditions: []api.Condition{{
 				Type:   api.IPAccessListReadyType,

@@ -57,17 +57,15 @@ func NewFromAtlas(orgID string, atlasSpec *admin.OrganizationSettings) *AtlasOrg
 	}
 
 	return &AtlasOrgSettings{
-		AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-			OrgID:                                  orgID,
-			ConnectionSecretRef:                    nil,
-			ApiAccessListRequired:                  atlasSpec.ApiAccessListRequired,
-			GenAIFeaturesEnabled:                   atlasSpec.GenAIFeaturesEnabled,
-			MaxServiceAccountSecretValidityInHours: atlasSpec.MaxServiceAccountSecretValidityInHours,
-			MultiFactorAuthRequired:                atlasSpec.MultiFactorAuthRequired,
-			RestrictEmployeeAccess:                 atlasSpec.RestrictEmployeeAccess,
-			SecurityContact:                        atlasSpec.SecurityContact,
-			StreamsCrossGroupEnabled:               atlasSpec.StreamsCrossGroupEnabled,
-		},
+		OrgID:                                  orgID,
+		ConnectionSecretRef:                    nil,
+		ApiAccessListRequired:                  atlasSpec.ApiAccessListRequired,
+		GenAIFeaturesEnabled:                   atlasSpec.GenAIFeaturesEnabled,
+		MaxServiceAccountSecretValidityInHours: atlasSpec.MaxServiceAccountSecretValidityInHours,
+		MultiFactorAuthRequired:                atlasSpec.MultiFactorAuthRequired,
+		RestrictEmployeeAccess:                 atlasSpec.RestrictEmployeeAccess,
+		SecurityContact:                        atlasSpec.SecurityContact,
+		StreamsCrossGroupEnabled:               atlasSpec.StreamsCrossGroupEnabled,
 	}
 }
 

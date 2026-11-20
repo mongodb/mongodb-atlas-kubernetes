@@ -27,9 +27,7 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,7 +38,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/version"
 )
@@ -57,10 +54,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"failed to retrieve custom role": {
 			isSupported: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-				},
+				Name:      "role",
+				Namespace: "default",
 				Spec: akov2.AtlasCustomRoleSpec{
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -101,10 +96,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"custom role is not found": {
 			isSupported: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role-not-found",
-					Namespace: "default",
-				},
+				Name:      "role-not-found",
+				Namespace: "default",
 				Spec: akov2.AtlasCustomRoleSpec{
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -140,12 +133,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"custom role has invalid version": {
 			isSupported: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "9.0.0",
-					},
+				Name:      "role",
+				Namespace: "default",
+				Labels: map[string]string{
+					"mongodb.com/atlas-resource-version": "9.0.0",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
 					Role: akov2.CustomRole{
@@ -182,10 +173,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"custom role resource unsupported": {
 			isSupported: false,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-				},
+				Name:      "role",
+				Namespace: "default",
 				Spec: akov2.AtlasCustomRoleSpec{
 					Role: akov2.CustomRole{
 						Name: "TestRoleName",
@@ -221,12 +210,10 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"custom role has skip annotation": {
 			isSupported: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"mongodb.com/atlas-reconciliation-policy": "skip",
-					},
+				Name:      "role",
+				Namespace: "default",
+				Annotations: map[string]string{
+					"mongodb.com/atlas-reconciliation-policy": "skip",
 				},
 				Spec: akov2.AtlasCustomRoleSpec{
 					Role: akov2.CustomRole{
@@ -263,10 +250,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 		"custom role processing": {
 			isSupported: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-				},
+				Name:      "role",
+				Namespace: "default",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
@@ -304,10 +289,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 			isSupported:    true,
 			sdkShouldError: true,
 			akoCustomRole: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "role",
-					Namespace: "default",
-				},
+				Name:      "role",
+				Namespace: "default",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "test"},
@@ -351,10 +334,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.akoCustomRole, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "default",
-					},
+					Name:      "test",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -364,47 +345,45 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			r := &AtlasCustomRoleReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    zap.S(),
-					AtlasProvider: &atlasmocks.TestProvider{
-						SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-							if tt.sdkShouldError {
-								return nil, fmt.Errorf("failed to create sdk")
-							}
-							cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
-							cdrAPI.EXPECT().GetCustomDbRole(mock.Anything, "testProjectID", "TestRoleName").
-								Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
-							cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
-								Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
-							cdrAPI.EXPECT().CreateCustomDbRole(mock.Anything, "testProjectID",
-								mock.AnythingOfType("*admin.UserCustomDBRole")).
-								Return(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI})
-							cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
-								Return(nil, nil, nil)
+				Client: k8sClient,
+				Log:    zap.S(),
+				AtlasProvider: &atlasmocks.TestProvider{
+					SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+						if tt.sdkShouldError {
+							return nil, fmt.Errorf("failed to create sdk")
+						}
+						cdrAPI := mockadmin.NewCustomDatabaseRolesAPI(t)
+						cdrAPI.EXPECT().GetCustomDbRole(mock.Anything, "testProjectID", "TestRoleName").
+							Return(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI})
+						cdrAPI.EXPECT().GetCustomDbRoleExecute(admin.GetCustomDbRoleApiRequest{ApiService: cdrAPI}).
+							Return(&admin.UserCustomDBRole{}, &http.Response{StatusCode: http.StatusNotFound}, nil)
+						cdrAPI.EXPECT().CreateCustomDbRole(mock.Anything, "testProjectID",
+							mock.AnythingOfType("*admin.UserCustomDBRole")).
+							Return(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI})
+						cdrAPI.EXPECT().CreateCustomDbRoleExecute(admin.CreateCustomDbRoleApiRequest{ApiService: cdrAPI}).
+							Return(nil, nil, nil)
 
-							pAPI := mockadmin.NewProjectsAPI(t)
-							if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
-								grp := &admin.Group{
-									Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
-									Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
-								}
-								pAPI.EXPECT().GetGroup(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
-									Return(admin.GetGroupApiRequest{ApiService: pAPI})
-								pAPI.EXPECT().GetGroupExecute(admin.GetGroupApiRequest{ApiService: pAPI}).
-									Return(grp, nil, nil)
+						pAPI := mockadmin.NewProjectsAPI(t)
+						if tt.akoCustomRole.Spec.ExternalProjectRef != nil {
+							grp := &admin.Group{
+								Id:   &tt.akoCustomRole.Spec.ExternalProjectRef.ID,
+								Name: tt.akoCustomRole.Spec.ExternalProjectRef.ID,
 							}
-							return &atlas.ClientSet{SdkClient20250312: &admin.APIClient{
-								CustomDatabaseRolesAPI: cdrAPI,
-								ProjectsAPI:            pAPI,
-							}}, nil
-						},
-						IsCloudGovFunc: func() bool {
-							return false
-						},
-						IsSupportedFunc: func() bool {
-							return tt.isSupported
-						},
+							pAPI.EXPECT().GetGroup(context.Background(), tt.akoCustomRole.Spec.ExternalProjectRef.ID).
+								Return(admin.GetGroupApiRequest{ApiService: pAPI})
+							pAPI.EXPECT().GetGroupExecute(admin.GetGroupApiRequest{ApiService: pAPI}).
+								Return(grp, nil, nil)
+						}
+						return &atlas.ClientSet{SdkClient20250312: &admin.APIClient{
+							CustomDatabaseRolesAPI: cdrAPI,
+							ProjectsAPI:            pAPI,
+						}}, nil
+					},
+					IsCloudGovFunc: func() bool {
+						return false
+					},
+					IsSupportedFunc: func() bool {
+						return tt.isSupported
 					},
 				},
 				Scheme:        testScheme,
@@ -412,10 +391,8 @@ func TestAtlasCustomRoleReconciler_Reconcile(t *testing.T) {
 			}
 
 			result, err := r.Reconcile(context.Background(), ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "role",
-					Namespace: "default",
-				},
+				Name:      "role",
+				Namespace: "default",
 			})
 			if tt.wantErr {
 				assert.Error(t, err)

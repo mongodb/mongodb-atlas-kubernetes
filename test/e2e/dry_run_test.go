@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,10 +93,8 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 	It("would create a project in Atlas if it does not exist", func(ctx context.Context) {
 		By("creating an AtlasProject resource")
 		prj := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "dry-run",
-				Namespace:    testData.Resources.Namespace,
-			},
+			GenerateName: "dry-run",
+			Namespace:    testData.Resources.Namespace,
 			Spec: akov2.AtlasProjectSpec{
 				Name: uuid.New().String()[0:6],
 			},
@@ -120,10 +117,8 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 	It("would change a project in Atlas", func(ctx context.Context) {
 		By("creating an AtlasProject resource including changes")
 		prj := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "dry-run",
-				Namespace:    testData.Resources.Namespace,
-			},
+			GenerateName: "dry-run",
+			Namespace:    testData.Resources.Namespace,
 			Spec: akov2.AtlasProjectSpec{
 				Name: projectName,
 				MaintenanceWindow: project.MaintenanceWindow{
@@ -157,10 +152,8 @@ var _ = When("running in dry run mode", Label("dry-run"), Ordered, func() {
 	It("would create a deployment in Atlas", func(ctx context.Context) {
 		By("creating an AtlasDeployment resource")
 		deployment := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "dry-run",
-				Namespace:    testData.Resources.Namespace,
-			},
+			GenerateName: "dry-run",
+			Namespace:    testData.Resources.Namespace,
 			Spec: akov2.AtlasDeploymentSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ExternalProjectRef: &akov2.ExternalProjectReference{

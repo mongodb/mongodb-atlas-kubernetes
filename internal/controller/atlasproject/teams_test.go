@@ -210,9 +210,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "projectName",
-				},
+				Name: "projectName",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "projectName",
 					Teams: []akov2.Team{
@@ -251,9 +249,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 				},
 			}
 			team1 := &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "teamName_1",
-				},
+				Name: "teamName_1",
 				Spec: akov2.TeamSpec{
 					Name: "teamName_1",
 				},
@@ -268,9 +264,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 				},
 			}
 			team2 := &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "teamName_2",
-				},
+				Name: "teamName_2",
 				Spec: akov2.TeamSpec{
 					Name: "teamName_2",
 				},
@@ -285,9 +279,7 @@ func TestSyncAssignedTeams(t *testing.T) {
 				},
 			}
 			team3 := &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "teamName_3",
-				},
+				Name: "teamName_3",
 				Spec: akov2.TeamSpec{
 					Name: "teamName_3",
 				},
@@ -615,11 +607,9 @@ func newEnsureAssignedTeamsFixture(t *testing.T, annotations map[string]string, 
 	t.Helper()
 
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "projectName",
-			Namespace:   "testNS",
-			Annotations: annotations,
-		},
+		Name:        "projectName",
+		Namespace:   "testNS",
+		Annotations: annotations,
 		Spec: akov2.AtlasProjectSpec{
 			Name:  "projectName",
 			Teams: desiredTeams,
@@ -630,7 +620,7 @@ func newEnsureAssignedTeamsFixture(t *testing.T, annotations map[string]string, 
 		},
 	}
 	team := &akov2.AtlasTeam{
-		ObjectMeta: metav1.ObjectMeta{Name: "teamName_1", Namespace: "testNS"},
+		Name: "teamName_1", Namespace: "testNS",
 		Status: status.TeamStatus{
 			ID:       "teamID_1",
 			Projects: []status.TeamProject{{ID: "projectID", Name: "projectName"}},
@@ -672,10 +662,8 @@ func TestUpdateTeamState(t *testing.T) {
 	}{
 		"should add project to team status": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testTeam",
-					Namespace: "testNS",
-				},
+				Name:      "testTeam",
+				Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 				},
@@ -690,10 +678,8 @@ func TestUpdateTeamState(t *testing.T) {
 		},
 		"should not duplicate projects already listed on status": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testTeam",
-					Namespace: "testNS",
-				},
+				Name:      "testTeam",
+				Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 					Projects: []status.TeamProject{
@@ -714,10 +700,8 @@ func TestUpdateTeamState(t *testing.T) {
 		},
 		"should remove project from team status": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testTeam",
-					Namespace: "testNS",
-				},
+				Name:      "testTeam",
+				Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 				},
@@ -727,7 +711,7 @@ func TestUpdateTeamState(t *testing.T) {
 		},
 		"should deduplicate pre-existing entries for the current project": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{Name: "testTeam", Namespace: "testNS"},
+				Name: "testTeam", Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 					Projects: []status.TeamProject{
@@ -744,7 +728,7 @@ func TestUpdateTeamState(t *testing.T) {
 		},
 		"should deduplicate pre-existing entries for other projects": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{Name: "testTeam", Namespace: "testNS"},
+				Name: "testTeam", Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 					Projects: []status.TeamProject{
@@ -761,10 +745,8 @@ func TestUpdateTeamState(t *testing.T) {
 		},
 		"should not modify status of other assigned projects": {
 			team: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testTeam",
-					Namespace: "testNS",
-				},
+				Name:      "testTeam",
+				Namespace: "testNS",
 				Status: status.TeamStatus{
 					ID: "testTeamStatus",
 					Projects: []status.TeamProject{
@@ -792,9 +774,7 @@ func TestUpdateTeamState(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "my-secret",
-				},
+				Name: "my-secret",
 				Data: map[string][]byte{
 					"orgId":         []byte("0987654321"),
 					"publicApiKey":  []byte("api-pub-key"),
@@ -869,8 +849,8 @@ func TestSyncAssignedTeamsSteadyStateDeduplication(t *testing.T) {
 	// Team carries three copies of the same project — the residue left by the
 	// prior accumulation bug after an operator upgrade.
 	team := &akov2.AtlasTeam{
-		ObjectMeta: metav1.ObjectMeta{Name: "teamName_1", Namespace: "testNS"},
-		Spec:       akov2.TeamSpec{Name: "teamName_1"},
+		Name: "teamName_1", Namespace: "testNS",
+		Spec: akov2.TeamSpec{Name: "teamName_1"},
 		Status: status.TeamStatus{
 			ID: "teamID_1",
 			Projects: []status.TeamProject{
@@ -881,7 +861,7 @@ func TestSyncAssignedTeamsSteadyStateDeduplication(t *testing.T) {
 		},
 	}
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "testNS"},
+		Name: "projectName", Namespace: "testNS",
 		Spec: akov2.AtlasProjectSpec{
 			Name: "projectName",
 			Teams: []akov2.Team{

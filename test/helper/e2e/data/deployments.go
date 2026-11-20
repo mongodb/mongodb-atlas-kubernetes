@@ -15,8 +15,6 @@
 package data
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/provider"
@@ -42,9 +40,7 @@ func CreateDeploymentWithKeepPolicy(name string) *akov2.AtlasDeployment {
 
 func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -93,9 +89,7 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 
 func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -115,9 +109,7 @@ func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 
 func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 	deployment := &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -153,10 +145,8 @@ func CreateDeploymentWithBackup(name string) *akov2.AtlasDeployment {
 
 func NewDeploymentWithBackupSpec() akov2.AtlasDeploymentSpec {
 	return akov2.AtlasDeploymentSpec{
-		ProjectDualReference: akov2.ProjectDualReference{
-			ProjectRef: &common.ResourceRefNamespaced{
-				Name: ProjectName,
-			},
+		ProjectRef: &common.ResourceRefNamespaced{
+			Name: ProjectName,
 		},
 		DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 			Name:          "deployment-backup",
@@ -210,9 +200,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 	}
 
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -258,9 +246,7 @@ func CreateDeploymentWithMultiregion(name string, providerName provider.Provider
 
 func CreateFreeAdvancedDeployment(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -320,9 +306,7 @@ func autoscalingSpec(minSize, maxSize string) *akov2.AdvancedAutoScalingSpec {
 // second region later and exercise the AUTO_SCALINGS_MUST_MATCH code path.
 func CreateDeploymentWithAutoscaling(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{
@@ -379,9 +363,7 @@ func UpdateDeploymentAddReadOnlyRegion(d *akov2.AtlasDeployment) {
 
 func CreateAdvancedDeployment(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{

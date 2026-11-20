@@ -80,10 +80,9 @@ func NewIPAccessListEntryByGroupMapFunc(kubeClient client.Client) handler.MapFun
 
 		requests := make([]reconcile.Request, 0, len(list.Items))
 		for _, item := range list.Items {
-			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
+			requests = append(requests, reconcile.Request{
 				Name:      item.Name,
-				Namespace: item.Namespace,
-			}})
+				Namespace: item.Namespace})
 		}
 
 		return requests

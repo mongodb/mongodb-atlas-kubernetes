@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -32,7 +31,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 )
 
 const (
@@ -75,10 +73,8 @@ func TestReconcile(t *testing.T) {
 				WithObjects(testNetworkContainer()).
 				Build()
 			r := &AtlasNetworkContainerReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    zap.New(core).Sugar(),
-				},
+				Client: fakeClient,
+				Log:    zap.New(core).Sugar(),
 			}
 			result, _ := r.Reconcile(ctx, tc.request)
 			assert.Equal(t, tc.expectedResult, result)
@@ -92,12 +88,10 @@ func TestReconcile(t *testing.T) {
 
 func testNetworkContainer() *akov2.AtlasNetworkContainer {
 	return &akov2.AtlasNetworkContainer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nc1",
-			Namespace: "default",
-			Annotations: map[string]string{
-				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-			},
+		Name:      "nc1",
+		Namespace: "default",
+		Annotations: map[string]string{
+			customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 		},
 		Spec: akov2.AtlasNetworkContainerSpec{
 			ProjectDualReference: akov2.ProjectDualReference{

@@ -81,12 +81,10 @@ func NewFlexClusterReconciler(
 	}
 	// Create main handler dispatcher
 	flexclusterHandler := &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   atlasProvider,
-			Client:          c.GetClient(),
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Named("controllers").Named("AtlasFlexCluster").Sugar(),
-		},
+		AtlasProvider:      atlasProvider,
+		Client:             c.GetClient(),
+		GlobalSecretRef:    globalSecretRef,
+		Log:                logger.Named("controllers").Named("AtlasFlexCluster").Sugar(),
 		deletionProtection: deletionProtection,
 		handlerv20250312:   handlerv20250312Func,
 		predicates:         predicates,

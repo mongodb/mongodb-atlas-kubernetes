@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -204,16 +203,12 @@ func fillKMSforAWS(ctx context.Context, userData *model.TestDataProvider, encAtR
 	Expect(CustomerMasterKeyID).NotTo(Equal(""))
 
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "aws-secret",
-			Namespace: userData.Resources.Namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Kind:       "Secret",
+		APIVersion: "v1",
+		Name:       "aws-secret",
+		Namespace:  userData.Resources.Namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"CustomerMasterKeyID": []byte(CustomerMasterKeyID),
@@ -241,16 +236,12 @@ func fillVaultforAzure(userData *model.TestDataProvider, encAtRest *akov2.Encryp
 	Expect(err).ToNot(HaveOccurred())
 
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "az-secret",
-			Namespace: userData.Resources.Namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Kind:       "Secret",
+		APIVersion: "v1",
+		Name:       "az-secret",
+		Namespace:  userData.Resources.Namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"KeyIdentifier":  []byte(keyID),
@@ -279,16 +270,12 @@ func fillKMSforGCP(ctx context.Context, userData *model.TestDataProvider, encAtR
 	Expect(err).ToNot(HaveOccurred())
 
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gcp-secret",
-			Namespace: userData.Resources.Namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Kind:       "Secret",
+		APIVersion: "v1",
+		Name:       "gcp-secret",
+		Namespace:  userData.Resources.Namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"ServiceAccountKey":    []byte(os.Getenv("GCP_SA_CRED")),

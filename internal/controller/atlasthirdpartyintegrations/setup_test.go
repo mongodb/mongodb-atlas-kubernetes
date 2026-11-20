@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -44,16 +43,13 @@ import (
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
 )
 
 var fakeAtlasSecret = corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: "fake-atlas-secret",
-	},
+	Name: "fake-atlas-secret",
 	Data: map[string][]byte{
 		"orgId":         ([]byte)("fake-org"),
 		"publicApiKey":  ([]byte)("pubkey"),
@@ -62,7 +58,7 @@ var fakeAtlasSecret = corev1.Secret{
 }
 
 var fakeProject = akov2.AtlasProject{
-	ObjectMeta: metav1.ObjectMeta{Name: "fake-project"},
+	Name: "fake-project",
 	Spec: v1.AtlasProjectSpec{
 		Name: "fake-project",
 	},
@@ -99,8 +95,8 @@ func TestAtlasThirdPartyIntegrationHandlerFor(t *testing.T) {
 func TestSecretDataChangedPredicate(t *testing.T) {
 	pred := secretDataChangedPredicate()
 	oldSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", ResourceVersion: "1", Labels: map[string]string{"key": "old"}},
-		Data:       map[string][]byte{"key": []byte("old")},
+		Name: "test", ResourceVersion: "1", Labels: map[string]string{"key": "old"},
+		Data: map[string][]byte{"key": []byte("old")},
 	}
 
 	t.Run("data changed", func(t *testing.T) {
@@ -136,13 +132,11 @@ func TestSetupWithManager(t *testing.T) {
 	}
 
 	handler := &AtlasThirdPartyIntegrationHandler{
-		StateHandler: nil,
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   nil,
-			Client:          fakeMgr.GetClient(),
-			Log:             &zap.SugaredLogger{},
-			GlobalSecretRef: client.ObjectKey{},
-		},
+		StateHandler:       nil,
+		AtlasProvider:      nil,
+		Client:             fakeMgr.GetClient(),
+		Log:                &zap.SugaredLogger{},
+		GlobalSecretRef:    client.ObjectKey{},
 		deletionProtection: false,
 	}
 
@@ -171,19 +165,17 @@ func TestNewReconcileRequest(t *testing.T) {
 		WithObjects(&fakeAtlasSecret, &fakeProject, &integration).Build()
 
 	h := AtlasThirdPartyIntegrationHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			AtlasProvider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					projectAPI := mockFindFakeParentProject(t)
-					integrationsAPI := mockadmin.NewThirdPartyIntegrationsAPI(t)
-					return &atlas.ClientSet{
-						SdkClient20250312: &admin.APIClient{
-							ProjectsAPI:               projectAPI,
-							ThirdPartyIntegrationsAPI: integrationsAPI,
-						},
-					}, nil
-				},
+		Client: k8sClient,
+		AtlasProvider: &atlasmock.TestProvider{
+			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+				projectAPI := mockFindFakeParentProject(t)
+				integrationsAPI := mockadmin.NewThirdPartyIntegrationsAPI(t)
+				return &atlas.ClientSet{
+					SdkClient20250312: &admin.APIClient{
+						ProjectsAPI:               projectAPI,
+						ThirdPartyIntegrationsAPI: integrationsAPI,
+					},
+				}, nil
 			},
 		},
 		deletionProtection: false,
@@ -216,9 +208,7 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 			name: "empty on non-linked secret",
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-secret",
-					},
+					Name: "test-secret",
 				},
 			},
 			want: []reconcile.Request{},
@@ -227,14 +217,10 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 			name: "hit on linked credential",
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-credential",
-					},
+					Name: "test-credential",
 				},
 				&akov2.AtlasThirdPartyIntegration{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "integration",
-					},
+					Name: "integration",
 					Spec: akov2.AtlasThirdPartyIntegrationSpec{
 						ProjectDualReference: v1.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -245,21 +231,17 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "integration"}},
+				{Name: "integration"},
 			},
 		},
 		{
 			name: "hit on linked credential",
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-prometheus-secret",
-					},
+					Name: "test-prometheus-secret",
 				},
 				&akov2.AtlasThirdPartyIntegration{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "integration-2",
-					},
+					Name: "integration-2",
 					Spec: akov2.AtlasThirdPartyIntegrationSpec{
 						Type: "PROMETHEUS",
 						Prometheus: &akov2.PrometheusIntegration{
@@ -271,7 +253,7 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "integration-2"}},
+				{Name: "integration-2"},
 			},
 		},
 	} {
@@ -287,10 +269,8 @@ func TestIntegrationForSecretMapFunc(t *testing.T) {
 				Build()
 
 			handler := &AtlasThirdPartyIntegrationHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    logger.Sugar(),
-				},
+				Client: fakeClient,
+				Log:    logger.Sugar(),
 			}
 			mapper := handler.integrationForSecretMapFunc()
 

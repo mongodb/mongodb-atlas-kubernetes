@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -110,14 +109,10 @@ var _ = Describe("Atlas Search Index", Label("atlas-search-index"), func() {
 
 		By("Creating a simple search index configuration", func() {
 			searchIndexConfig = &akov2.AtlasSearchIndexConfig{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AtlasSearchIndexConfig",
-					APIVersion: "atlas.mongodb.com/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-search-index-config",
-					Namespace: testData.InitialDeployments[0].Namespace,
-				},
+				Kind:       "AtlasSearchIndexConfig",
+				APIVersion: "atlas.mongodb.com/v1",
+				Name:       "test-search-index-config",
+				Namespace:  testData.InitialDeployments[0].Namespace,
 				Spec: akov2.AtlasSearchIndexConfigSpec{
 					Analyzer:       new("lucene.standard"),
 					SearchAnalyzer: new("lucene.standard"),

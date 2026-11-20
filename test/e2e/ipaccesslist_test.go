@@ -19,7 +19,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -98,10 +97,8 @@ var _ = Describe("Migrate ip access list from sub-resources to separate custom r
 
 		By("Migrate ip access list as separate custom resource", func() {
 			ial = &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ial-" + testData.Resources.TestID,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      "ial-" + testData.Resources.TestID,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{

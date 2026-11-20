@@ -54,12 +54,10 @@ func TestReconcile(t *testing.T) {
 			name: "should skip reconciliation when annotation is set",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bcp",
-						Namespace: "default",
-						Annotations: map[string]string{
-							customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-						},
+					Name:      "bcp",
+					Namespace: "default",
+					Annotations: map[string]string{
+						customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 					},
 				},
 			},
@@ -69,12 +67,10 @@ func TestReconcile(t *testing.T) {
 			name: "should transition to error state when resource version is invalid",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bcp",
-						Namespace: "default",
-						Labels: map[string]string{
-							customresource.ResourceVersion: "blah",
-						},
+					Name:      "bcp",
+					Namespace: "default",
+					Labels: map[string]string{
+						customresource.ResourceVersion: "blah",
 					},
 				},
 			},
@@ -97,10 +93,8 @@ func TestReconcile(t *testing.T) {
 			name: "should transition to error state when resource is unsupported",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bcp",
-						Namespace: "default",
-					},
+					Name:      "bcp",
+					Namespace: "default",
 				},
 			},
 			isSupported: false,
@@ -121,10 +115,8 @@ func TestReconcile(t *testing.T) {
 			name: "should lock when there are references",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bcp",
-						Namespace: "default",
-					},
+					Name:      "bcp",
+					Namespace: "default",
 					Spec: akov2.AtlasBackupCompliancePolicySpec{
 						AuthorizedEmail:         "test@example.com",
 						AuthorizedUserFirstName: "John",
@@ -167,10 +159,8 @@ func TestReconcile(t *testing.T) {
 			name: "should lock when there are references",
 			objects: []client.Object{
 				&akov2.AtlasBackupCompliancePolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "bcp",
-						Namespace: "default",
-					},
+					Name:      "bcp",
+					Namespace: "default",
 					Spec: akov2.AtlasBackupCompliancePolicySpec{
 						AuthorizedEmail:         "test@example.com",
 						AuthorizedUserFirstName: "John",
@@ -236,10 +226,8 @@ func TestReconcile(t *testing.T) {
 			_, err := reconciler.Reconcile(
 				context.Background(),
 				ctrl.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      "bcp",
-						Namespace: "default",
-					},
+					Name:      "bcp",
+					Namespace: "default",
 				},
 			)
 
@@ -277,7 +265,7 @@ func TestFindBCPForProjects(t *testing.T) {
 		{
 			name:         "should return a slice of requests for BCP",
 			project:      akov2.NewProject("test-project", "default", "connection-secret").WithBackupCompliancePolicyNamespaced("bcp1", "other-ns"),
-			wantRequests: []ctrl.Request{{NamespacedName: types.NamespacedName{Name: "bcp1", Namespace: "other-ns"}}},
+			wantRequests: []ctrl.Request{{Name: "bcp1", Namespace: "other-ns"}},
 		},
 		{
 			name:         "should return nil when no BCP specified in project",

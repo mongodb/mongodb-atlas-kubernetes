@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -83,10 +82,8 @@ var _ = Describe("Operator to run db-user with the OIDC feature flags disabled",
 		})
 		By("Creating a FedAuth resource and verify it is ready", func() {
 			fedAuth := &akov2.AtlasFederatedAuth{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-fedauth", testData.Project.Name),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-fedauth", testData.Project.Name),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasFederatedAuthSpec{
 					Enabled:                     true,
 					DataAccessIdentityProviders: &[]string{"abc"},

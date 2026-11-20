@@ -37,10 +37,8 @@ func NewCatalogSource(imageURL string) CatalogSource {
 	name := strings.Split(imageURL, ":")[1]
 	name = strings.ToLower(name)
 	return CatalogSource{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "operators.coreos.com/v1alpha1",
-			Kind:       "CatalogSource",
-		},
+		APIVersion: "operators.coreos.com/v1alpha1",
+		Kind:       "CatalogSource",
 		ObjectMeta: &metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "openshift-marketplace",

@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -35,7 +34,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/deployment"
@@ -101,10 +99,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"create a new cluster in atlas": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -244,10 +240,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"update a cluster in atlas": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -343,10 +337,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"cluster is updating in atlas": { //nolint:dupl
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -411,10 +403,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"cluster was deleted in atlas": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -475,10 +465,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"cluster has an unknown state in atlas": { //nolint:dupl
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -542,10 +530,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"fail to update a cluster process args": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -636,10 +622,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"update a cluster process args": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "default",
-				},
+				Name:      "cluster0",
+				Namespace: "default",
 				Spec: akov2.AtlasDeploymentSpec{
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 						Name:        "cluster0",
@@ -832,10 +816,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"watch upgrade progress": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "test",
-				},
+				Name:      "cluster0",
+				Namespace: "test",
 				Spec: akov2.AtlasDeploymentSpec{
 					UpgradeToDedicated: true,
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -890,10 +872,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"upgrade a flex to dedicated cluster": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "test",
-				},
+				Name:      "cluster0",
+				Namespace: "test",
 				Spec: akov2.AtlasDeploymentSpec{
 					UpgradeToDedicated: true,
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -950,10 +930,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 		},
 		"upgradeToDedicated set while the deployment does not exist in Atlas": {
 			atlasDeployment: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "cluster0",
-					Namespace: "test",
-				},
+				Name:      "cluster0",
+				Namespace: "test",
 				Spec: akov2.AtlasDeploymentSpec{
 					UpgradeToDedicated: true,
 					DeploymentSpec: &akov2.AdvancedDeploymentSpec{
@@ -1006,10 +984,8 @@ func TestHandleAdvancedDeployment(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			reconciler := &AtlasDeploymentReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client: k8sClient,
+				Log:    logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),

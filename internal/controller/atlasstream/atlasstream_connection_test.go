@@ -26,7 +26,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,10 +42,8 @@ import (
 func TestHandleConnectionRegistry(t *testing.T) {
 	t.Run("should handle connection registry transitions", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -55,10 +52,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -78,30 +73,24 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamConnection1 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection1",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection1",
 				ConnectionType: "Sample",
 			},
 		}
 		streamConnection2 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection2",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection2",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection2",
 				ConnectionType: "Sample",
 			},
 		}
 		streamConnection4 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection4",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection4",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection4",
 				ConnectionType: "Sample",
@@ -204,10 +193,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 
 	t.Run("should transition to terminate state when failing to sort operations", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -216,10 +203,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -288,10 +273,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 
 	t.Run("should transition to terminate state when failing to create connections", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -300,10 +283,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -315,10 +296,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection",
 				ConnectionType: "Sample",
@@ -375,10 +354,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 
 	t.Run("should transition to terminate state when failing to update connections", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -387,10 +364,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -402,10 +377,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection",
 				ConnectionType: "Sample",
@@ -471,10 +444,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 
 	t.Run("should transition to terminate state when failing to delete connections", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -483,10 +454,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 			},
@@ -553,10 +522,8 @@ func TestHandleConnectionRegistry(t *testing.T) {
 func TestSortConnectionRegistryTasks(t *testing.T) {
 	t.Run("should return error when unable to retrieve resource from kube", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -593,10 +560,8 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 
 	t.Run("should sort operation to transition connections", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -612,20 +577,16 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			},
 		}
 		streamConnection1 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection1",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection1",
 				ConnectionType: "Sample",
 			},
 		}
 		streamConnection2 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection2",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection2",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection2",
 				ConnectionType: "Sample",
@@ -663,11 +624,9 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			t,
 			[]*akov2.AtlasStreamConnection{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "my-sample-connection1",
-						Namespace:       "default",
-						ResourceVersion: "999",
-					},
+					Name:            "my-sample-connection1",
+					Namespace:       "default",
+					ResourceVersion: "999",
 					Spec: akov2.AtlasStreamConnectionSpec{
 						Name:           "sample-connection1",
 						ConnectionType: "Sample",
@@ -680,11 +639,9 @@ func TestSortConnectionRegistryTasks(t *testing.T) {
 			t,
 			[]*akov2.AtlasStreamConnection{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "my-sample-connection2",
-						Namespace:       "default",
-						ResourceVersion: "999",
-					},
+					Name:            "my-sample-connection2",
+					Namespace:       "default",
+					ResourceVersion: "999",
 					Spec: akov2.AtlasStreamConnectionSpec{
 						Name:           "sample-connection2",
 						ConnectionType: "Sample",
@@ -771,10 +728,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.NoError(t, corev1.AddToScheme(testScheme))
 
 		secretCreds := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-creds",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-creds",
 			Data: map[string][]byte{
 				"username": []byte("my-user"),
 				"password": []byte("my-pass"),
@@ -782,10 +737,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 			Type: "opaque",
 		}
 		secretCert := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-cert",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-cert",
 			Data: map[string][]byte{
 				"certificate": []byte("hash"),
 			},
@@ -855,10 +808,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.NoError(t, corev1.AddToScheme(testScheme))
 
 		secretCreds := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-creds",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-creds",
 			Data: map[string][]byte{
 				"username":    []byte("my-user"),
 				"misspelling": []byte("my-pass"),
@@ -866,10 +817,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 			Type: "opaque",
 		}
 		secretCert := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-cert",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-cert",
 			Data: map[string][]byte{
 				"certificate": []byte("hash"),
 			},
@@ -919,10 +868,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 		assert.NoError(t, corev1.AddToScheme(testScheme))
 
 		secretCreds := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-creds",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-creds",
 			Data: map[string][]byte{
 				"username": []byte("my-user"),
 				"password": []byte("my-pass"),
@@ -930,10 +877,8 @@ func TestStreamConnectionToAtlas(t *testing.T) {
 			Type: "opaque",
 		}
 		secretCert := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-kafka-cert",
-			},
+			Namespace: "default",
+			Name:      "my-kafka-cert",
 			Data: map[string][]byte{
 				"misspelling": []byte("hash"),
 			},
@@ -999,10 +944,8 @@ func TestGetSecretData(t *testing.T) {
 		assert.NoError(t, corev1.AddToScheme(testScheme))
 
 		secret := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-secret",
-			},
+			Namespace: "default",
+			Name:      "my-secret",
 			Data: map[string][]byte{
 				"wrong-key": {'a'},
 			},
@@ -1025,10 +968,8 @@ func TestGetSecretData(t *testing.T) {
 		assert.NoError(t, corev1.AddToScheme(testScheme))
 
 		secret := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "default",
-				Name:      "my-secret",
-			},
+			Namespace: "default",
+			Name:      "my-secret",
 			Data: map[string][]byte{
 				"certificate": []byte("hash"),
 			},

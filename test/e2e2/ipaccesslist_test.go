@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -77,9 +76,8 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("ipal-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("ipal-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -360,7 +358,7 @@ var _ = Describe("IPAccessList CRUD", Ordered, Label("ipaccesslist"), func() {
 
 			By("Wait for IPAccessList to report an error condition", func() {
 				ial := &generatedv1.IPAccessListEntry{
-					ObjectMeta: metav1.ObjectMeta{Name: entryName, Namespace: testNamespace.Name},
+					Name: entryName, Namespace: testNamespace.Name,
 				}
 				Eventually(func(g Gomega) {
 					g.Expect(kubeClient.Get(ctx, client.ObjectKeyFromObject(ial), ial)).To(Succeed())
@@ -421,9 +419,8 @@ var _ = Describe("IPAccessList with Deletion Protection", Ordered, Label("ipacce
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("ipal-protect-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("ipal-protect-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(

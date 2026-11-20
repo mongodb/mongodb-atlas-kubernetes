@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -88,9 +87,8 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 		By("Should create namespace and copy credentials", func() {
 			Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 
-			testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("cluster-ns-%s", rand.String(6)),
-			}}
+			testNamespace = &corev1.Namespace{
+				Name: fmt.Sprintf("cluster-ns-%s", rand.String(6))}
 			Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 			Expect(resources.CopyCredentialsToNamespace(
 				ctx,
@@ -367,10 +365,8 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 //nolint:unparam // false positive: groupId is used via the value-taking new(groupId) builtin
 func newReplicaSetCluster(name, namespace, groupId, secretName string) *generatedv1.Cluster {
 	return &generatedv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.ClusterSpec{
 			ConnectionSecretRef: &k8s.LocalReference{
 				Name: secretName,
@@ -403,10 +399,8 @@ func newReplicaSetCluster(name, namespace, groupId, secretName string) *generate
 
 func newSharedCluster(name, namespace, groupRefName string) *generatedv1.Cluster {
 	return &generatedv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.ClusterSpec{
 			V20250312: &generatedv1.ClusterSpecV20250312{
 				GroupRef: &k8s.LocalReference{

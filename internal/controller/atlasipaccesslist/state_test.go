@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -336,10 +335,8 @@ func TestHandleCustomResource(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -350,10 +347,8 @@ func TestHandleCustomResource(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(project, &tt.ipAccessList, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-secret",
-						Namespace: "default",
-					},
+					Name:      "my-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -367,11 +362,9 @@ func TestHandleCustomResource(t *testing.T) {
 				Context: context.Background(),
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					Log:           logger,
-					AtlasProvider: tt.provider,
-				},
+				Client:        k8sClient,
+				Log:           logger,
+				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.handleCustomResource(ctx.Context, &tt.ipAccessList)
@@ -407,10 +400,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		"should fail to parse ip access list from crd": {
 			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -434,10 +425,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		"should fail to list from atlas": {
 			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 			},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -455,12 +444,10 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should release ip access list for deletion": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ip-access-list",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "ip-access-list",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 			},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -473,12 +460,10 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should keep atlas entries and release resource for deletion when global deletion protection is enabled": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ip-access-list",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "ip-access-list",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 			},
 			globalDeletionProtection: true,
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
@@ -492,14 +477,12 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should keep atlas entries and release resource for deletion when resource policy is keep": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ip-access-list",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-					},
+				Name:              "ip-access-list",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
 			},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
@@ -513,12 +496,10 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should delete ip access list from atlas": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "ip-access-list",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "ip-access-list",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 			},
 			ipAccessListService: func() ipaccesslist.IPAccessListService {
 				s := translation.NewIPAccessListServiceMock(t)
@@ -533,10 +514,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should add ip access list in atlas": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -565,10 +544,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		"should fail to add an expired entry": {
 			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -599,10 +576,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should delete ip access list entry in atlas": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -631,10 +606,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		"should fail to get status": {
 			expectError: true,
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -661,10 +634,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should be in pending state": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -692,10 +663,8 @@ func TestHandleIPAccessList(t *testing.T) {
 		},
 		"should be in ready state": {
 			akoIPAccessList: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					Entries: []akov2.IPAccessEntry{
 						{
@@ -734,10 +703,8 @@ func TestHandleIPAccessList(t *testing.T) {
 				Log:     logger,
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client:                   k8sClient,
+				Log:                      logger,
 				ObjectDeletionProtection: tt.globalDeletionProtection,
 			}
 			result, err := r.handleIPAccessList(ctx, tt.ipAccessListService(), "", tt.akoIPAccessList)

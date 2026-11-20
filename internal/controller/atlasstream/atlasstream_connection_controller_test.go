@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,10 +58,8 @@ func TestConnectionReconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "connection",
-					Namespace: "default",
-				},
+				Name:      "connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -73,12 +70,10 @@ func TestConnectionReconcile(t *testing.T) {
 func TestEnsureAtlasStreamConnection(t *testing.T) {
 	t.Run("should skip reconciliation when annotation is set", func(t *testing.T) {
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-connection",
-				Namespace: "default",
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-				},
+			Name:      "my-stream-processing-connection",
+			Namespace: "default",
+			Annotations: map[string]string{
+				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
@@ -100,10 +95,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -113,14 +106,12 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 	t.Run("should unset finalizer and delete if reconciliation is skipped", func(t *testing.T) {
 		now := metav1.Now()
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "my-stream-processing-connection",
-				Namespace:         "default",
-				DeletionTimestamp: &now,
-				Finalizers:        []string{"mongodbatlas/finalizer"},
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-				},
+			Name:              "my-stream-processing-connection",
+			Namespace:         "default",
+			DeletionTimestamp: &now,
+			Finalizers:        []string{"mongodbatlas/finalizer"},
+			Annotations: map[string]string{
+				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
@@ -142,10 +133,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -157,14 +146,12 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 	t.Run("should terminate upon failed patching when unsetting finalizer", func(t *testing.T) {
 		now := metav1.Now()
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "my-stream-processing-connection",
-				Namespace:         "default",
-				DeletionTimestamp: &now,
-				Finalizers:        []string{"mongodbatlas/finalizer"},
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-				},
+			Name:              "my-stream-processing-connection",
+			Namespace:         "default",
+			DeletionTimestamp: &now,
+			Finalizers:        []string{"mongodbatlas/finalizer"},
+			Annotations: map[string]string{
+				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
@@ -189,10 +176,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -200,12 +185,10 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 
 	t.Run("should transition to invalid state when resource version is invalid", func(t *testing.T) {
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-connection",
-				Namespace: "default",
-				Labels: map[string]string{
-					customresource.ResourceVersion: "no-semver",
-				},
+			Name:      "my-stream-processing-connection",
+			Namespace: "default",
+			Labels: map[string]string{
+				customresource.ResourceVersion: "no-semver",
 			},
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
@@ -229,10 +212,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -251,10 +232,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 
 	t.Run("should transition to unsupported state when resource is not supported by platform", func(t *testing.T) {
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-connection",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
 				ConnectionType: "Sample",
@@ -282,10 +261,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -304,10 +281,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 
 	t.Run("should transition to terminate state when failed to list instances", func(t *testing.T) {
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-connection",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
 				ConnectionType: "Sample",
@@ -344,10 +319,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -364,10 +337,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 
 	t.Run("should transition to lock state when referred by an instance", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -379,10 +350,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 			},
 		}
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-connection",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
 				ConnectionType: "Sample",
@@ -416,10 +385,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -437,11 +404,9 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 
 	t.Run("should transition to release state when not referred by any instance", func(t *testing.T) {
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "my-stream-processing-connection",
-				Namespace:  "default",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "my-stream-processing-connection",
+			Namespace:  "default",
+			Finalizers: []string{customresource.FinalizerLabel},
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-conn",
 				ConnectionType: "Sample",
@@ -475,10 +440,8 @@ func TestEnsureAtlasStreamConnection(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-connection",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-connection",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -510,10 +473,8 @@ func TestFindStreamConnectionsForStreamInstances(t *testing.T) {
 
 	t.Run("should return slice of requests for instances", func(t *testing.T) {
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance1",
-				Namespace: "default",
-			},
+			Name:      "instance1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -544,16 +505,12 @@ func TestFindStreamConnectionsForStreamInstances(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Name:      "connection1",
-						Namespace: "default",
-					},
+					Name:      "connection1",
+					Namespace: "default",
 				},
 				{
-					NamespacedName: types.NamespacedName{
-						Name:      "connection2",
-						Namespace: "other-ns",
-					},
+					Name:      "connection2",
+					Namespace: "other-ns",
 				},
 			},
 			requests,
@@ -564,9 +521,7 @@ func TestFindStreamConnectionsForStreamInstances(t *testing.T) {
 func TestLock(t *testing.T) {
 	t.Run("should transition to ready when finalizer is already set", func(t *testing.T) {
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		reconciler := &AtlasStreamsConnectionReconciler{
 			Log: zaptest.NewLogger(t).Sugar(),
@@ -586,10 +541,8 @@ func TestLock(t *testing.T) {
 
 	t.Run("should transition to terminate when failed to set finalizer", func(t *testing.T) {
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "conn1",
-				Namespace: "default",
-			},
+			Name:      "conn1",
+			Namespace: "default",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -623,10 +576,8 @@ func TestLock(t *testing.T) {
 
 	t.Run("should transition to ready when setting finalizer", func(t *testing.T) {
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "conn1",
-				Namespace: "default",
-			},
+			Name:      "conn1",
+			Namespace: "default",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -676,11 +627,9 @@ func TestRelease(t *testing.T) {
 
 	t.Run("should transition to terminate when failed to unset finalizer", func(t *testing.T) {
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "conn1",
-				Namespace:  "default",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "conn1",
+			Namespace:  "default",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -714,11 +663,9 @@ func TestRelease(t *testing.T) {
 
 	t.Run("should transition to ready when unsetting finalizer", func(t *testing.T) {
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "conn1",
-				Namespace:  "default",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "conn1",
+			Namespace:  "default",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))

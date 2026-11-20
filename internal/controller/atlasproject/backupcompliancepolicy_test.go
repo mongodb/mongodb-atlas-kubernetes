@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -38,10 +37,8 @@ import (
 
 func TestEnsureBackupCompliance(t *testing.T) {
 	testBCP := &akov2.AtlasBackupCompliancePolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-bcp",
-			Namespace: "test-namespace",
-		},
+		Name:      "test-bcp",
+		Namespace: "test-namespace",
 		Spec: akov2.AtlasBackupCompliancePolicySpec{
 			AuthorizedEmail:         "test@example.com",
 			AuthorizedUserFirstName: "John",

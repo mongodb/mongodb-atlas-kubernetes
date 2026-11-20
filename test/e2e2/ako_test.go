@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -59,14 +58,13 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 		Expect(err).To(Succeed())
 		kubeClient = client
 		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: v1.ObjectMeta{Name: AtlasProjectCRDName},
+			Name: AtlasProjectCRDName,
 		})).To(Succeed())
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("ako-ns"),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: utils.RandomName("ako-ns")}
 		Expect(kubeClient.Create(ctx, testNamespace))
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
@@ -82,10 +80,8 @@ var _ = Describe("Atlas Operator Start and Stop test", Ordered, Label("ako-start
 
 	It("AKO running", func() {
 		testProject := akov2.AtlasProject{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "test-project",
-				Namespace: testNamespace.Name,
-			},
+			Name:      "test-project",
+			Namespace: testNamespace.Name,
 			Spec: akov2.AtlasProjectSpec{
 				Name: utils.RandomName("test-project"),
 			},

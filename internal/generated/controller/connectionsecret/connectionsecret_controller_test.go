@@ -27,7 +27,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -117,10 +116,8 @@ func TestConnectionSecretReconciler_Reconcile(t *testing.T) {
 			}
 
 			req := reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testUserName,
-					Namespace: testNamespace,
-				},
+				Name:      testUserName,
+				Namespace: testNamespace,
 			}
 
 			result, err := r.Reconcile(context.Background(), req)
@@ -246,10 +243,8 @@ func createTestScheme(t *testing.T) *runtime.Scheme {
 //nolint:unparam
 func newDatabaseUser(name, namespace string, modifiers ...func(*generatedv1.DatabaseUser)) *generatedv1.DatabaseUser {
 	user := &generatedv1.DatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.DatabaseUserSpec{
 			V20250312: &generatedv1.DatabaseUserSpecV20250312{
 				GroupRef: &k8s.LocalReference{Name: testGroupName},
@@ -288,10 +283,8 @@ func withReadyCondition(u *generatedv1.DatabaseUser) {
 
 func newGroup(name, namespace, id string) *generatedv1.Group {
 	return &generatedv1.Group{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Status: generatedv1.GroupStatus{
 			V20250312: &generatedv1.GroupStatusV20250312{
 				Id: &id,

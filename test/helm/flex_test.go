@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -51,10 +50,8 @@ func TestFlexSpec(t *testing.T) {
 	gotDeployment.Labels = nil
 
 	wantDeployment := &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "flex-instance",
-			Namespace: "default",
-		},
+		Name:      "flex-instance",
+		Namespace: "default",
 		Spec: akov2.AtlasDeploymentSpec{
 			FlexSpec: &akov2.FlexSpec{
 				Name: "flex-instance",

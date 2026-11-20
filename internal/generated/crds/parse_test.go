@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestParseCRD(t *testing.T) {
@@ -98,9 +97,7 @@ func validCRDObject(t *testing.T) *apiextensionsv1.CustomResourceDefinition {
 	t.Helper()
 
 	return &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "tests.example.com",
-		},
+		Name: "tests.example.com",
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: "example.com",
 			Names: apiextensionsv1.CustomResourceDefinitionNames{

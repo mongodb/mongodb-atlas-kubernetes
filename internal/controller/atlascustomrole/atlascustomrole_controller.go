@@ -58,12 +58,10 @@ type AtlasCustomRoleReconciler struct {
 
 func NewAtlasCustomRoleReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasCustomRoleReconciler {
 	return &AtlasCustomRoleReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
+		Client:                   c.GetClient(),
+		Log:                      logger.Named("controllers").Named("AtlasCustomRoles").Sugar(),
+		GlobalSecretRef:          globalSecretRef,
+		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasCustomRoles"),
 		GlobalPredicates:         predicates,

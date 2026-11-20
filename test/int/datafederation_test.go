@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -55,12 +54,10 @@ var _ = Describe("AtlasDataFederation", Label("AtlasDataFederation"), func() {
 		manualDeletion = false
 
 		connectionSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      ConnectionSecretName,
-				Namespace: namespace.Name,
-				Labels: map[string]string{
-					secretservice.TypeLabelKey: secretservice.CredLabelVal,
-				},
+			Name:      ConnectionSecretName,
+			Namespace: namespace.Name,
+			Labels: map[string]string{
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 			StringData: secretData(),
 		}

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -80,7 +79,7 @@ func (r *AtlasProjectReconciler) ensureAssignedTeams(workflowCtx *workflow.Conte
 		teamReconciler := r.teamReconcile(team, workflowCtx, teamsService)
 		_, err := teamReconciler(
 			workflowCtx.Context,
-			controllerruntime.Request{NamespacedName: types.NamespacedName{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace}},
+			controllerruntime.Request{Name: assignedTeam.TeamRef.Name, Namespace: assignedTeam.TeamRef.Namespace},
 		)
 		if err != nil {
 			workflowCtx.Log.Warnf("unable to reconcile team %s. skipping assignment. %s", assignedTeam.TeamRef.GetObject(""), err.Error())

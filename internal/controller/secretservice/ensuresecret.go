@@ -22,7 +22,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/kube"
@@ -64,10 +63,9 @@ type PrivateLinkConnURLs struct {
 // created.
 func Ensure(ctx context.Context, client client.Client, namespace, projectName, projectID, clusterName string, data ConnectionData) (string, error) {
 	var getError error
-	s := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+	s := &corev1.Secret{
 		Name:      formatSecretName(projectName, clusterName, data.DBUserName),
-		Namespace: namespace,
-	}}
+		Namespace: namespace}
 	if getError = client.Get(ctx, kube.ObjectKeyFromObject(s), s); getError != nil && !apierrors.IsNotFound(getError) {
 		return "", getError
 	}

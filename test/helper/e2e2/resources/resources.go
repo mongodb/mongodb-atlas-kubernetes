@@ -56,13 +56,11 @@ func copySecretToNamespace(ctx context.Context, kubeClient client.Client, key cl
 		return nil, fmt.Errorf("failed to load original secret %v: %w", key, err)
 	}
 	return &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: targetNamespace,
-			Labels:    secret.Labels,
-		},
-		Data: secret.Data,
+		Kind: "Secret", APIVersion: "v1",
+		Name:      key.Name,
+		Namespace: targetNamespace,
+		Labels:    secret.Labels,
+		Data:      secret.Data,
 	}, nil
 }
 

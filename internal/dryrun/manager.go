@@ -111,14 +111,12 @@ func (m *Manager) eventf(ctx context.Context, object runtime.Object, eventType, 
 	}
 
 	ev := &corev1.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%v.%x", ref.Name, t.UnixNano()),
-			Namespace: namespace,
-			// Note: labels are not encouraged on events as filtering events by labels can overload API-server,
-			// see https://github.com/kubernetes/kubernetes/pull/115058.
-			Annotations: map[string]string{
-				DryRunInstance: m.instanceUID,
-			},
+		Name:      fmt.Sprintf("%v.%x", ref.Name, t.UnixNano()),
+		Namespace: namespace,
+		// Note: labels are not encouraged on events as filtering events by labels can overload API-server,
+		// see https://github.com/kubernetes/kubernetes/pull/115058.
+		Annotations: map[string]string{
+			DryRunInstance: m.instanceUID,
 		},
 		InvolvedObject:      *ref,
 		Reason:              reason,
@@ -271,10 +269,8 @@ func (m *Manager) reportError(ctx context.Context, obj runtime.Object, err error
 
 func (m *Manager) object() runtime.Object {
 	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      os.Getenv("JOB_NAME"),
-			Namespace: os.Getenv("JOB_NAMESPACE"),
-		},
+		Name:      os.Getenv("JOB_NAME"),
+		Namespace: os.Getenv("JOB_NAMESPACE"),
 	}
 }
 

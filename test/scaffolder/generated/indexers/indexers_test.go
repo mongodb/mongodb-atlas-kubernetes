@@ -62,10 +62,8 @@ func TestChildByParentIndexer_Keys(t *testing.T) {
 		{
 			name: "child with parentRef returns key",
 			object: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-child",
-					Namespace: "default",
-				},
+				Name:      "test-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -77,21 +75,17 @@ func TestChildByParentIndexer_Keys(t *testing.T) {
 		{
 			name: "child without V20250312 returns nil",
 			object: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-child",
-					Namespace: "default",
-				},
-				Spec: v1.ChildSpec{},
+				Name:      "test-child",
+				Namespace: "default",
+				Spec:      v1.ChildSpec{},
 			},
 			wantKeys: nil,
 		},
 		{
 			name: "child with nil parentRef returns nil",
 			object: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-child",
-					Namespace: "default",
-				},
+				Name:      "test-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentId: new("some-id"),
@@ -104,10 +98,8 @@ func TestChildByParentIndexer_Keys(t *testing.T) {
 		{
 			name: "child with empty parentRef name returns nil",
 			object: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-child",
-					Namespace: "default",
-				},
+				Name:      "test-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: ""},
@@ -119,10 +111,8 @@ func TestChildByParentIndexer_Keys(t *testing.T) {
 		{
 			name: "child in different namespace",
 			object: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-child",
-					Namespace: "production",
-				},
+				Name:      "test-child",
+				Namespace: "production",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "prod-parent"},
@@ -164,21 +154,17 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent without integrations returns nil",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
-				Spec: v1.ParentSpec{},
+				Name:      "test-parent",
+				Namespace: "default",
+				Spec:      v1.ParentSpec{},
 			},
 			wantKeys: nil,
 		},
 		{
 			name: "parent with empty integrations returns nil",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{},
 				},
@@ -188,10 +174,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent with single secret ref",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -208,10 +192,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent with multiple secrets across integrations",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -235,10 +217,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent with nil credentials slice returns nil",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -253,10 +233,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent with nil secretRef in credentials returns nil",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -273,10 +251,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent with empty secretRef name returns nil",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "default",
-				},
+				Name:      "test-parent",
+				Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -293,10 +269,8 @@ func TestParentBySecretIndexer_Keys(t *testing.T) {
 		{
 			name: "parent in different namespace",
 			object: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-parent",
-					Namespace: "production",
-				},
+				Name:      "test-parent",
+				Namespace: "production",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{
@@ -327,17 +301,13 @@ func TestChildByParentMapFunc(t *testing.T) {
 
 	// Create test data: one parent with two children referencing it
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-parent",
-			Namespace: "default",
-		},
+		Name:      "my-parent",
+		Namespace: "default",
 	}
 
 	child1 := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-1",
-			Namespace: "default",
-		},
+		Name:      "child-1",
+		Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{
 				ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -346,10 +316,8 @@ func TestChildByParentMapFunc(t *testing.T) {
 	}
 
 	child2 := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-2",
-			Namespace: "default",
-		},
+		Name:      "child-2",
+		Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{
 				ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -359,10 +327,8 @@ func TestChildByParentMapFunc(t *testing.T) {
 
 	// Child referencing a different parent
 	childOther := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-other",
-			Namespace: "default",
-		},
+		Name:      "child-other",
+		Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{
 				ParentRef: &k8s.LocalReference{Name: "other-parent"},
@@ -399,10 +365,8 @@ func TestParentBySecretMapFunc(t *testing.T) {
 
 	// Create test data: two parents referencing the same secret
 	parent1 := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "parent-1",
-			Namespace: "default",
-		},
+		Name:      "parent-1",
+		Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{
@@ -415,10 +379,8 @@ func TestParentBySecretMapFunc(t *testing.T) {
 	}
 
 	parent2 := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "parent-2",
-			Namespace: "default",
-		},
+		Name:      "parent-2",
+		Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{
@@ -432,10 +394,8 @@ func TestParentBySecretMapFunc(t *testing.T) {
 
 	// Parent referencing a different secret
 	parentOther := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "parent-other",
-			Namespace: "default",
-		},
+		Name:      "parent-other",
+		Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{
@@ -459,10 +419,8 @@ func TestParentBySecretMapFunc(t *testing.T) {
 
 	// Simulate a Secret object being the trigger
 	secretObj := &metav1.PartialObjectMetadata{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "shared-secret",
-			Namespace: "default",
-		},
+		Name:      "shared-secret",
+		Namespace: "default",
 	}
 
 	mapFunc := NewParentBySecretMapFunc(fakeClient)

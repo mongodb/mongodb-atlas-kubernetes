@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
@@ -134,7 +133,7 @@ func TestSyncProjectTags(t *testing.T) {
 			}
 
 			atlasProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "my-project", Namespace: "default"},
+				Name: "my-project", Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 					Tags: tt.specTags,

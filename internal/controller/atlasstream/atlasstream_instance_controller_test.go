@@ -30,7 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,10 +63,8 @@ func TestReconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "instance",
-					Namespace: "default",
-				},
+				Name:      "instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -78,12 +75,10 @@ func TestReconcile(t *testing.T) {
 func TestEnsureAtlasStreamsInstance(t *testing.T) {
 	t.Run("should skip reconciliation when annotation is set", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-				},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
+			Annotations: map[string]string{
+				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
@@ -113,10 +108,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -125,12 +118,10 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to invalid state when resource version is invalid", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-				Labels: map[string]string{
-					customresource.ResourceVersion: "no-semver",
-				},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
+			Labels: map[string]string{
+				customresource.ResourceVersion: "no-semver",
 			},
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
@@ -166,10 +157,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -188,10 +177,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to unsupported state when resource is not supported by platform", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -232,10 +219,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -258,10 +243,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to terminate state when project resource is not found", func(t *testing.T) {
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -301,10 +284,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -325,10 +306,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to terminate state when unable to configure sdk client", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -337,10 +316,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -364,10 +341,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -398,10 +373,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -422,10 +395,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to terminate state when Atlas API fails", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -434,10 +405,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -461,10 +430,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -503,10 +470,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.Error(t, err)
@@ -527,10 +492,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to ready state when everything is in sync", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -539,10 +502,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -566,10 +527,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -635,10 +594,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -659,10 +616,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to in-progress state when creating new instance", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -671,10 +626,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -694,10 +647,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -765,10 +716,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -791,10 +740,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition succeed when deleting an instance", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -803,12 +750,10 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "my-stream-processing-instance",
-				Namespace:         "default",
-				Finalizers:        []string{customresource.FinalizerLabel},
-				DeletionTimestamp: new(metav1.Now()),
-			},
+			Name:              "my-stream-processing-instance",
+			Namespace:         "default",
+			Finalizers:        []string{customresource.FinalizerLabel},
+			DeletionTimestamp: new(metav1.Now()),
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -832,10 +777,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -897,10 +840,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -911,10 +852,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 
 	t.Run("should transition to ready state when updating an instance", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -923,10 +862,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -950,10 +887,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		k8sClient := fake.NewClientBuilder().
 			WithScheme(testScheme).
 			WithObjects(project, streamInstance, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -1028,10 +963,8 @@ func TestEnsureAtlasStreamsInstance(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "my-stream-processing-instance",
-					Namespace: "default",
-				},
+				Name:      "my-stream-processing-instance",
+				Namespace: "default",
 			},
 		)
 		assert.NoError(t, err)
@@ -1068,10 +1001,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 
 	t.Run("should return slice of requests for instances", func(t *testing.T) {
 		instance1 := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance1",
-				Namespace: "default",
-			},
+			Name:      "instance1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1083,10 +1014,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			},
 		}
 		instance2 := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance2",
-				Namespace: "other-ns",
-			},
+			Name:      "instance2",
+			Namespace: "other-ns",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance2",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1098,10 +1027,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			},
 		}
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection",
-				Namespace: "default",
-			},
+			Name:      "connection",
+			Namespace: "default",
 			Status: status.AtlasStreamConnectionStatus{
 				Instances: []common.ResourceRefNamespaced{
 					{
@@ -1137,16 +1064,12 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Namespace: "default",
-						Name:      "instance1",
-					},
+					Namespace: "default",
+					Name:      "instance1",
 				},
 				{
-					NamespacedName: types.NamespacedName{
-						Namespace: "other-ns",
-						Name:      "instance2",
-					},
+					Namespace: "other-ns",
+					Name:      "instance2",
 				},
 			},
 			requests,
@@ -1155,10 +1078,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 
 	t.Run("should return no keys if listing fails", func(t *testing.T) {
 		instance1 := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance1",
-				Namespace: "default",
-			},
+			Name:      "instance1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1170,10 +1091,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			},
 		}
 		instance2 := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance2",
-				Namespace: "other-ns",
-			},
+			Name:      "instance2",
+			Namespace: "other-ns",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance2",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1185,10 +1104,8 @@ func TestFindStreamInstancesForStreamConnection(t *testing.T) {
 			},
 		}
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection",
-				Namespace: "default",
-			},
+			Name:      "connection",
+			Namespace: "default",
 			Status: status.AtlasStreamConnectionStatus{
 				Instances: []common.ResourceRefNamespaced{
 					{
@@ -1241,20 +1158,16 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 
 	t.Run("should return no keys if listing fails", func(t *testing.T) {
 		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-credentials",
-				Namespace: "default",
-			},
+			Name:      "connection-credentials",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"username": []byte("my-user"),
 				"password": []byte("my-pass"),
 			},
 		}
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection",
-				Namespace: "default",
-			},
+			Name:      "connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "connection1",
 				ConnectionType: "Kafka",
@@ -1269,10 +1182,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
-				Namespace: "default",
-			},
+			Name:      "instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1315,20 +1226,16 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 
 	t.Run("should return no keys if no connections have been found", func(t *testing.T) {
 		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-credentials",
-				Namespace: "default",
-			},
+			Name:      "connection-credentials",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"username": []byte("my-user"),
 				"password": []byte("my-pass"),
 			},
 		}
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
-				Namespace: "default",
-			},
+			Name:      "instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1368,20 +1275,16 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 
 	t.Run("should return slice of requests for instances for related credentials secret", func(t *testing.T) {
 		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-credentials",
-				Namespace: "default",
-			},
+			Name:      "connection-credentials",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"username": []byte("my-user"),
 				"password": []byte("my-pass"),
 			},
 		}
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection",
-				Namespace: "default",
-			},
+			Name:      "connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "connection1",
 				ConnectionType: "Kafka",
@@ -1396,10 +1299,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
-				Namespace: "default",
-			},
+			Name:      "instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1439,10 +1340,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Name:      "instance",
-						Namespace: "default",
-					},
+					Name:      "instance",
+					Namespace: "default",
 				},
 			},
 			requests,
@@ -1451,19 +1350,15 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 
 	t.Run("should return slice of requests for instances for related certificate secret", func(t *testing.T) {
 		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-certificate",
-				Namespace: "default",
-			},
+			Name:      "connection-certificate",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"certificate": []byte("hash"),
 			},
 		}
 		connection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection",
-				Namespace: "default",
-			},
+			Name:      "connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "connection1",
 				ConnectionType: "Kafka",
@@ -1479,10 +1374,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
-				Namespace: "default",
-			},
+			Name:      "instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1522,10 +1415,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Name:      "instance",
-						Namespace: "default",
-					},
+					Name:      "instance",
+					Namespace: "default",
 				},
 			},
 			requests,
@@ -1534,10 +1425,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 
 	t.Run("should return slice of requests for instances when there are multiple referrals", func(t *testing.T) {
 		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-secrets",
-				Namespace: "default",
-			},
+			Name:      "connection-secrets",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"username":    []byte("my-user"),
 				"password":    []byte("my-pass"),
@@ -1545,10 +1434,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		connection1 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-1",
-				Namespace: "default",
-			},
+			Name:      "connection-1",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "connection1",
 				ConnectionType: "Kafka",
@@ -1563,10 +1450,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		connection2 := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-2",
-				Namespace: "default",
-			},
+			Name:      "connection-2",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "connection2",
 				ConnectionType: "Kafka",
@@ -1582,10 +1467,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			},
 		}
 		instance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
-				Namespace: "default",
-			},
+			Name:      "instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance1",
 				ConnectionRegistry: []common.ResourceRefNamespaced{
@@ -1629,10 +1512,8 @@ func TestFindStreamInstancesForSecret(t *testing.T) {
 			t,
 			[]ctrl.Request{
 				{
-					NamespacedName: types.NamespacedName{
-						Name:      "instance",
-						Namespace: "default",
-					},
+					Name:      "instance",
+					Namespace: "default",
 				},
 			},
 			requests,

@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -57,10 +56,8 @@ func TestAtlasProjectByTeamIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "bar",
-				},
+				Name:      "foo",
+				Namespace: "bar",
 				Spec: akov2.AtlasProjectSpec{
 					Teams: []akov2.Team{
 						{TeamRef: common.ResourceRefNamespaced{Name: "test-team"}},

@@ -27,9 +27,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,12 +49,10 @@ func TestReconcile(t *testing.T) {
 		projectID := "abc123"
 		fedSettingsID := "651438d6cda56304464dd128" //nolint:gosec
 		secret := corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "api-secret",
-				Namespace: "default",
-				Labels: map[string]string{
-					"atlas.mongodb.com/type": "credentials",
-				},
+			Name:      "api-secret",
+			Namespace: "default",
+			Labels: map[string]string{
+				"atlas.mongodb.com/type": "credentials",
 			},
 			Data: map[string][]byte{
 				"orgId":         []byte(orgID),
@@ -66,20 +62,16 @@ func TestReconcile(t *testing.T) {
 			Type: "Opaque",
 		}
 		project := akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "MyProject",
 			},
 			Status: status.AtlasProjectStatus{ID: projectID},
 		}
 		fedAuth := akov2.AtlasFederatedAuth{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-fed-auth",
-				Namespace: "default",
-			},
+			Name:      "my-fed-auth",
+			Namespace: "default",
 			Spec: akov2.AtlasFederatedAuthSpec{
 				Enabled: true,
 				ConnectionSecretRef: common.ResourceRefNamespaced{
@@ -195,10 +187,8 @@ func TestReconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: fedAuth.Namespace,
-					Name:      fedAuth.Name,
-				},
+				Namespace: fedAuth.Namespace,
+				Name:      fedAuth.Name,
 			},
 		)
 		assert.NoError(t, err)
@@ -246,45 +236,45 @@ func TestFindAtlasFederatedAuthForSecret(t *testing.T) {
 		{
 			name: "same namespace",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns"},
+				Name: "name", Namespace: "ns",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasFederatedAuth{
-					ObjectMeta: metav1.ObjectMeta{Name: "auth1", Namespace: "ns"},
+					Name: "auth1", Namespace: "ns",
 					Spec: akov2.AtlasFederatedAuthSpec{
 						ConnectionSecretRef: common.ResourceRefNamespaced{Name: "name"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "auth1", Namespace: "ns"}},
+				{Name: "auth1", Namespace: "ns"},
 			},
 		},
 		{
 			name: "different namespace",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns2"},
+				Name: "name", Namespace: "ns2",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasFederatedAuth{
-					ObjectMeta: metav1.ObjectMeta{Name: "auth1", Namespace: "ns"},
+					Name: "auth1", Namespace: "ns",
 					Spec: akov2.AtlasFederatedAuthSpec{
 						ConnectionSecretRef: common.ResourceRefNamespaced{Name: "name", Namespace: "ns2"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "auth1", Namespace: "ns"}},
+				{Name: "auth1", Namespace: "ns"},
 			},
 		},
 		{
 			name: "different reference",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns2"},
+				Name: "name", Namespace: "ns2",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasFederatedAuth{
-					ObjectMeta: metav1.ObjectMeta{Name: "auth1", Namespace: "ns"},
+					Name: "auth1", Namespace: "ns",
 					Spec: akov2.AtlasFederatedAuthSpec{
 						ConnectionSecretRef: common.ResourceRefNamespaced{Name: "name"},
 					},

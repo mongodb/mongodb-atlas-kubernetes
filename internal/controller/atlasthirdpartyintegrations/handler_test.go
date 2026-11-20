@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -37,7 +36,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/thirdpartyintegration"
@@ -52,7 +50,7 @@ const (
 )
 
 var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
-	ObjectMeta: metav1.ObjectMeta{Name: "webhook-test"},
+	Name: "webhook-test",
 	Spec: akov2.AtlasThirdPartyIntegrationSpec{
 		ProjectDualReference: referenceFakeProject,
 		Type:                 "WEBHOOK",
@@ -68,10 +66,8 @@ var sampleWebhookIntegration = akov2.AtlasThirdPartyIntegration{
 }
 
 var sampleWebhookSecret = &corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:            "webhook-secret",
-		ResourceVersion: "secret-rv",
-	},
+	Name:            "webhook-secret",
+	ResourceVersion: "secret-rv",
 	Data: map[string][]byte{
 		"url":    ([]byte)(fakeURL),
 		"secret": ([]byte)(fakeSecret),
@@ -308,13 +304,11 @@ func TestHandleUpsert(t *testing.T) {
 				integrationsService := mocks.NewThirdPartyIntegrationServiceMock(t)
 				integrationsService.EXPECT().Get(mock.Anything, "testProjectID", "SLACK").
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
-						AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-							ProjectDualReference: referenceFakeProject,
-							Type:                 "SLACK",
-							Slack: &akov2.SlackIntegration{
-								ChannelName: "other-channel",
-								TeamName:    "other-team",
-							},
+						ProjectDualReference: referenceFakeProject,
+						Type:                 "SLACK",
+						Slack: &akov2.SlackIntegration{
+							ChannelName: "other-channel",
+							TeamName:    "other-team",
 						},
 						ID: fakeID,
 						SlackSecrets: &thirdpartyintegration.SlackSecrets{
@@ -323,13 +317,11 @@ func TestHandleUpsert(t *testing.T) {
 					}, nil)
 				integrationsService.EXPECT().Update(mock.Anything, "testProjectID", mock.Anything).
 					Return(&thirdpartyintegration.ThirdPartyIntegration{
-						AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-							ProjectDualReference: referenceFakeProject,
-							Type:                 "SLACK",
-							Slack: &akov2.SlackIntegration{
-								ChannelName: "spec-channel",
-								TeamName:    "spec-team",
-							},
+						ProjectDualReference: referenceFakeProject,
+						Type:                 "SLACK",
+						Slack: &akov2.SlackIntegration{
+							ChannelName: "spec-channel",
+							TeamName:    "spec-team",
 						},
 						ID: fakeID,
 					}, nil)
@@ -343,7 +335,7 @@ func TestHandleUpsert(t *testing.T) {
 				},
 			},
 			input: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: metav1.ObjectMeta{Name: "slack-integration"},
+				Name: "slack-integration",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					ProjectDualReference: referenceFakeProject,
 					Type:                 "SLACK",
@@ -357,10 +349,8 @@ func TestHandleUpsert(t *testing.T) {
 				},
 			},
 			objects: []client.Object{&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "slack-secret",
-					ResourceVersion: "secret-rv",
-				},
+				Name:            "slack-secret",
+				ResourceVersion: "secret-rv",
 				Data: map[string][]byte{
 					"apiToken": ([]byte)("fake-token"),
 				},
@@ -382,10 +372,8 @@ func TestHandleUpsert(t *testing.T) {
 				WithObjects(append(tc.objects, &fakeAtlasSecret, &fakeProject, tc.input)...).
 				WithStatusSubresource(tc.input).Build()
 			h := AtlasThirdPartyIntegrationHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-				},
+				Client:             k8sClient,
+				AtlasProvider:      tc.provider,
 				deletionProtection: false,
 				serviceBuilder:     tc.serviceBuilder,
 			}
@@ -461,7 +449,7 @@ func TestUpsertSkipsOnlyWhenSecretVersionAndGenerationMatch(t *testing.T) {
 			secret := sampleWebhookSecret.DeepCopy()
 			secret.ResourceVersion = "secret-rv"
 			k8sClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(integration, secret).Build()
-			h := AtlasThirdPartyIntegrationHandler{AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient}}
+			h := AtlasThirdPartyIntegrationHandler{Client: k8sClient}
 
 			result, err := h.upsert(ctx, constate.StateInitial, constate.StateCreated, integration)
 			if tc.wantSkip {
@@ -592,10 +580,8 @@ func TestHandleDeletion(t *testing.T) {
 				WithObjects(append(tc.objects, &fakeAtlasSecret, &fakeProject, tc.input)...).
 				WithStatusSubresource(tc.input).Build()
 			h := AtlasThirdPartyIntegrationHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					AtlasProvider: tc.provider,
-				},
+				Client:             k8sClient,
+				AtlasProvider:      tc.provider,
 				deletionProtection: tc.deletionProtection,
 				serviceBuilder:     tc.serviceBuilder,
 			}

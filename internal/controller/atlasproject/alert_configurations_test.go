@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -52,10 +51,8 @@ func TestEnsureAlertConfigurations(t *testing.T) {
 		{
 			name: "Alert configuration sync disabled",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					AlertConfigurationSyncEnabled: false,
 				},
@@ -66,10 +63,8 @@ func TestEnsureAlertConfigurations(t *testing.T) {
 		{
 			name: "Empty alert configurations with sync enabled",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					AlertConfigurationSyncEnabled: true,
 					AlertConfigurations:           []akov2.AlertConfiguration{},
@@ -81,10 +76,8 @@ func TestEnsureAlertConfigurations(t *testing.T) {
 		{
 			name: "Alert configuration with missing secret should fail",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					AlertConfigurationSyncEnabled: true,
 					AlertConfigurations: []akov2.AlertConfiguration{
@@ -161,10 +154,8 @@ func TestReadAlertConfigurationsSecretsData(t *testing.T) {
 		{
 			name: "Successfully read API token secret",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 			},
 			alertConfigs: []akov2.AlertConfiguration{
 				{
@@ -177,10 +168,8 @@ func TestReadAlertConfigurationsSecretsData(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "api-token",
-						Namespace: "default",
-					},
+					Name:      "api-token",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"APIToken": []byte("test-api-token"),
 					},
@@ -191,10 +180,8 @@ func TestReadAlertConfigurationsSecretsData(t *testing.T) {
 		{
 			name: "Secret not found",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 			},
 			alertConfigs: []akov2.AlertConfiguration{
 				{
@@ -212,10 +199,8 @@ func TestReadAlertConfigurationsSecretsData(t *testing.T) {
 		{
 			name: "Successfully read multiple secret types",
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-project",
-					Namespace: "default",
-				},
+				Name:      "test-project",
+				Namespace: "default",
 			},
 			alertConfigs: []akov2.AlertConfiguration{
 				{
@@ -240,46 +225,36 @@ func TestReadAlertConfigurationsSecretsData(t *testing.T) {
 			},
 			secrets: []runtime.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "datadog-secret",
-						Namespace: "default",
-					},
+					Name:      "datadog-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"DatadogAPIKey": []byte("dd-key"),
 					},
 				},
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "flowdock-secret",
-						Namespace: "default",
-					},
+					Name:      "flowdock-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"FlowdockAPIToken": []byte("flow-token"),
 					},
 				},
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "opsgenie-secret",
-						Namespace: "default",
-					},
+					Name:      "opsgenie-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"OpsGenieAPIKey": []byte("ops-key"),
 					},
 				},
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "service-secret",
-						Namespace: "default",
-					},
+					Name:      "service-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"ServiceKey": []byte("service-key"),
 					},
 				},
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "victorops-secret",
-						Namespace: "default",
-					},
+					Name:      "victorops-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"VictorOpsAPIKey":     []byte("victor-api-key"),
 						"VictorOpsRoutingKey": []byte("victor-routing-key"),
@@ -345,10 +320,8 @@ func TestReadNotificationSecret(t *testing.T) {
 			parentNamespace: "default",
 			fieldName:       "APIToken",
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-secret",
-					Namespace: "default",
-				},
+				Name:      "test-secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"APIToken": []byte("test-token-value"),
 				},
@@ -365,10 +338,8 @@ func TestReadNotificationSecret(t *testing.T) {
 			parentNamespace: "default",
 			fieldName:       "APIToken",
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-secret",
-					Namespace: "other-namespace",
-				},
+				Name:      "test-secret",
+				Namespace: "other-namespace",
 				Data: map[string][]byte{
 					"APIToken": []byte("cross-ns-token"),
 				},
@@ -384,10 +355,8 @@ func TestReadNotificationSecret(t *testing.T) {
 			parentNamespace: "default",
 			fieldName:       "MissingField",
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-secret",
-					Namespace: "default",
-				},
+				Name:      "test-secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"APIToken": []byte("test-token-value"),
 				},
@@ -403,10 +372,8 @@ func TestReadNotificationSecret(t *testing.T) {
 			parentNamespace: "default",
 			fieldName:       "EmptyField",
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-secret",
-					Namespace: "default",
-				},
+				Name:      "test-secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"EmptyField": []byte(""),
 				},

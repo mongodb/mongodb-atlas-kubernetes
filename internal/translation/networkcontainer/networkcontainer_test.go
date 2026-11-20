@@ -75,12 +75,10 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAWS),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID:        testContainerID,
-				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
+				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
@@ -102,11 +100,9 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAWS),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID: testContainerID,
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -129,11 +125,9 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAzure),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID: testContainerID,
+				Provider:                    string(provider.ProviderAzure),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
 				AzureStatus: &networkcontainer.AzureContainerStatus{
 					AzureSubscriptionID: testAzureSubcriptionID,
 					VnetName:            testVnet,
@@ -158,11 +152,9 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAzure),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID: testContainerID,
+				Provider:                    string(provider.ProviderAzure),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -184,11 +176,9 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderGCP),
-					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
-				},
-				ID: testContainerID,
+				Provider:  string(provider.ProviderGCP),
+				CIDRBlock: "1.1.1.1/2",
+				ID:        testContainerID,
 				GCPStatus: &networkcontainer.GCPContainerStatus{
 					GCPProjectID: testGCPProjectID,
 					NetworkName:  testNetworkName,
@@ -212,11 +202,9 @@ func TestNetworkContainerCreate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderGCP),
-					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{CIDRBlock: "1.1.1.1/2"},
-				},
-				ID: testContainerID,
+				Provider:  string(provider.ProviderGCP),
+				CIDRBlock: "1.1.1.1/2",
+				ID:        testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -263,12 +251,10 @@ func TestNetworkContainerGet(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAWS),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID:        testContainerID,
-				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
+				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
@@ -325,12 +311,10 @@ func TestNetworkContainerFind(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAWS),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID:        testContainerID,
-				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
+				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},
@@ -366,10 +350,8 @@ func TestNetworkContainerFind(t *testing.T) {
 		{
 			title: "successful find on GCP",
 			cfg: &networkcontainer.NetworkContainerConfig{
-				Provider: string(provider.ProviderGCP),
-				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-					CIDRBlock: "18.18.192.0/18",
-				},
+				Provider:  string(provider.ProviderGCP),
+				CIDRBlock: "18.18.192.0/18",
 			},
 			api: testFindNetworkContainerAPI(
 				[]admin.CloudProviderContainer{
@@ -385,13 +367,9 @@ func TestNetworkContainerFind(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider: string(provider.ProviderGCP),
-					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-						CIDRBlock: "18.18.192.0/18",
-					},
-				},
-				ID: testContainerID,
+				Provider:  string(provider.ProviderGCP),
+				CIDRBlock: "18.18.192.0/18",
+				ID:        testContainerID,
 				GCPStatus: &networkcontainer.GCPContainerStatus{
 					GCPProjectID: testGCPProjectID,
 					NetworkName:  testNetworkName,
@@ -403,11 +381,9 @@ func TestNetworkContainerFind(t *testing.T) {
 		{
 			title: "successful find on Azure",
 			cfg: &networkcontainer.NetworkContainerConfig{
-				Provider: string(provider.ProviderAzure),
-				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-					CIDRBlock: "11.11.0.0/16",
-					Region:    "US_EAST_2",
-				},
+				Provider:  string(provider.ProviderAzure),
+				CIDRBlock: "11.11.0.0/16",
+				Region:    "US_EAST_2",
 			},
 			api: testFindNetworkContainerAPI(
 				[]admin.CloudProviderContainer{
@@ -422,14 +398,10 @@ func TestNetworkContainerFind(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider: string(provider.ProviderAzure),
-					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-						CIDRBlock: "11.11.0.0/16",
-						Region:    "US_EAST_2",
-					},
-				},
-				ID: testContainerID,
+				Provider:  string(provider.ProviderAzure),
+				CIDRBlock: "11.11.0.0/16",
+				Region:    "US_EAST_2",
+				ID:        testContainerID,
 			},
 			expectedError: nil,
 		},
@@ -437,11 +409,9 @@ func TestNetworkContainerFind(t *testing.T) {
 		{
 			title: "not found on Azure",
 			cfg: &networkcontainer.NetworkContainerConfig{
-				Provider: string(provider.ProviderAzure),
-				AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-					CIDRBlock: "11.11.0.0/16",
-					Region:    "US_CENTRAL_5",
-				},
+				Provider:  string(provider.ProviderAzure),
+				CIDRBlock: "11.11.0.0/16",
+				Region:    "US_CENTRAL_5",
 			},
 			api: testFindNetworkContainerAPI(
 				[]admin.CloudProviderContainer{
@@ -495,12 +465,10 @@ func TestNetworkContainerUpdate(t *testing.T) {
 				nil,
 			),
 			expectedContainer: &networkcontainer.NetworkContainer{
-				NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-					Provider:                    string(provider.ProviderAWS),
-					AtlasNetworkContainerConfig: testContainerConfig(),
-				},
-				ID:        testContainerID,
-				AWSStatus: &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
+				Provider:                    string(provider.ProviderAWS),
+				AtlasNetworkContainerConfig: testContainerConfig(),
+				ID:                          testContainerID,
+				AWSStatus:                   &networkcontainer.AWSContainerStatus{VpcID: testVpcID},
 			},
 			expectedError: nil,
 		},

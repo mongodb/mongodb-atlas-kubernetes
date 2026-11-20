@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -271,7 +270,7 @@ func (r *AtlasPrivateEndpointReconciler) privateEndpointForProjectMapFunc() hand
 
 		requests := make([]reconcile.Request, 0, len(peList.Items))
 		for _, item := range peList.Items {
-			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{Name: item.Name, Namespace: item.Namespace}})
+			requests = append(requests, reconcile.Request{Name: item.Name, Namespace: item.Namespace})
 		}
 
 		return requests
@@ -290,12 +289,10 @@ func (r *AtlasPrivateEndpointReconciler) privateEndpointForCredentialMapFunc() h
 
 func NewAtlasPrivateEndpointReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasPrivateEndpointReconciler {
 	return &AtlasPrivateEndpointReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
+		Client:                   c.GetClient(),
+		Log:                      logger.Named("controllers").Named("AtlasPrivateEndpoint").Sugar(),
+		GlobalSecretRef:          globalSecretRef,
+		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasPrivateEndpoint"),
 		GlobalPredicates:         predicates,

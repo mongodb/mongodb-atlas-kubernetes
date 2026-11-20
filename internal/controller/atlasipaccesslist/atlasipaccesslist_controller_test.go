@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -37,7 +36,6 @@ import (
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 )
@@ -104,19 +102,15 @@ func TestReconcile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
 			}
 			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -139,10 +133,8 @@ func TestReconcile(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(project, ipAccessList, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-secret",
-						Namespace: "default",
-					},
+					Name:      "my-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -156,11 +148,9 @@ func TestReconcile(t *testing.T) {
 				Context: context.Background(),
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					Log:           logger,
-					AtlasProvider: tt.provider,
-				},
+				Client:        k8sClient,
+				Log:           logger,
+				AtlasProvider: tt.provider,
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 			result, err := r.Reconcile(ctx.Context, tt.request)
