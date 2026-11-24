@@ -167,10 +167,10 @@ normalize_version() {
 check_openshift_version() {
   echo "Checking OpenShift cluster version matches expected version..."
   
-  # Read expected version from kubernetes-versions.json
-  local k8s_versions_file="${REPO_ROOT}/kubernetes-versions.json"
+  # Read expected version from .kuver.json
+  local k8s_versions_file="${REPO_ROOT}/.kuver.json"
   if [ ! -f "$k8s_versions_file" ]; then
-    echo "Error: kubernetes-versions.json not found at $k8s_versions_file"
+    echo "Error: .kuver.json not found at $k8s_versions_file"
     exit 1
   fi
   
@@ -197,14 +197,14 @@ check_openshift_version() {
   local actual_norm
   actual_norm=$(normalize_version "$actual_raw")
   
-  echo "Expected OpenShift version (from kubernetes-versions.json): $expected_raw (normalized: $expected_norm)"
+  echo "Expected OpenShift version (from .kuver.json): $expected_raw (normalized: $expected_norm)"
   echo "Actual OpenShift cluster version: $actual_raw (normalized: $actual_norm)"
   
   if [ "$expected_norm" != "$actual_norm" ]; then
     echo "ERROR: OpenShift version mismatch!"
     echo "  Expected: $expected_raw ($expected_norm)"
     echo "  Actual:   $actual_raw ($actual_norm)"
-    echo "  Please update kubernetes-versions.json to match the actual cluster version, or update the cluster."
+    echo "  Please update .kuver.json to match the actual cluster version, or update the cluster."
     exit 1
   fi
   

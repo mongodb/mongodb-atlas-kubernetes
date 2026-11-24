@@ -1,6 +1,6 @@
 # Updating Kubernetes Versions
 
-When the Kubernetes versions check alert triggers, it indicates that the supported Kubernetes version range in `kubernetes-versions.json` needs to be updated. This document outlines the steps required to update the test infrastructure accordingly.
+When the Kubernetes versions check alert triggers, it indicates that the supported Kubernetes version range in `.kuver.json` needs to be updated. This document outlines the steps required to update the test infrastructure accordingly.
 
 For the original support policy, see [Kubernetes Operators Versioning](https://wiki.corp.mongodb.com/spaces/MMS/pages/193108905/Kubernetes+Operators+Versioning).
 
@@ -10,7 +10,7 @@ The Kubernetes versions check runs weekly and validates that our supported versi
 
 1. Update the test version matrices in GitHub Actions workflows (if Kubernetes versions changed)
 2. Coordinate with the wider MCK team to upgrade the OpenShift cluster (if OpenShift version changed)
-3. Update `kubernetes-versions.json` to reflect the actual supported versions after infrastructure is ready
+3. Update `.kuver.json` to reflect the actual supported versions after infrastructure is ready
 
 ## Step 1: Update Test Version Matrices
 
@@ -62,24 +62,24 @@ Update the `Compute test matrix for k8s versions` step in the `compute` job:
     echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 ```
 
-**Note:** Replace `<MIN_VERSION>` and `<MAX_VERSION>` with the actual version numbers from `kubernetes-versions.json` (e.g., `1.32`, `1.34`). The format should be `v<version>-kind` (e.g., `v1.32.8-kind`, `v1.34.0-kind`).
+**Note:** Replace `<MIN_VERSION>` and `<MAX_VERSION>` with the actual version numbers from `.kuver.json` (e.g., `1.32`, `1.34`). The format should be `v<version>-kind` (e.g., `v1.32.8-kind`, `v1.34.0-kind`).
 
-**Tip:** If only Kubernetes versions changed (not OpenShift), steps 1 and 3 can be done in the same PR - update the workflow matrices and `kubernetes-versions.json` together.
+**Tip:** If only Kubernetes versions changed (not OpenShift), steps 1 and 3 can be done in the same PR - update the workflow matrices and `.kuver.json` together.
 
 ## Step 2: Coordinate OpenShift Cluster Upgrade
 
-The OpenShift version specified in `kubernetes-versions.json` needs to be supported by our test infrastructure. **This requires coordination with the wider MCK (MongoDB Controllers for Kubernetes) team** before making changes.
+The OpenShift version specified in `.kuver.json` needs to be supported by our test infrastructure. **This requires coordination with the wider MCK (MongoDB Controllers for Kubernetes) team** before making changes.
 
-**Important:** The OpenShift cluster upgrade happens out of the repo. Ensure to update `kubernetes-versions.json` as soon as the upgrade of the cluster is completed.
+**Important:** The OpenShift cluster upgrade happens out of the repo. Ensure to update `.kuver.json` as soon as the upgrade of the cluster is completed.
 
 For detailed instructions on updating the ROSA cluster, see [Updating the ROSA cluster](release.md#updating-the-rosa-cluster) in the release documentation.
 
-## Step 3: Update kubernetes-versions.json
+## Step 3: Update .kuver.json
 
-After completing steps 1 and/or 2, update `kubernetes-versions.json` to reflect the actual supported versions. This file should be kept in sync with the reality of what versions are actually tested and supported in the infrastructure.
+After completing steps 1 and/or 2, update `.kuver.json` to reflect the actual supported versions. This file should be kept in sync with the reality of what versions are actually tested and supported in the infrastructure.
 
 **Important:** 
-- `kubernetes-versions.json` should reflect what is actually supported and tested, not what we plan to support
+- `.kuver.json` should reflect what is actually supported and tested, not what we plan to support
 - For OpenShift upgrades, this file is what registers the new version (the upgrade itself happens offline)
 - If only Kubernetes versions changed (not OpenShift), this step can be combined with step 1 in the same PR
 
@@ -99,16 +99,15 @@ After completing steps 1 and/or 2, update `kubernetes-versions.json` to reflect 
    }
    ```
 3. **Verify the changes**:
-   - Run the check script locally: `./scripts/check-kube-versions.sh`
-   - Verify the version matrices match the range in `kubernetes-versions.json`
+   - Run the check locally: `make check-kubernetes-versions` (or `devbox run -- 'make check-kubernetes-versions'` if not in a devbox shell)
+   - Verify the version matrices match the range in `.kuver.json`
    - Ensure all three workflow files are updated consistently (if Kubernetes versions changed)
 4. **Test and commit**:
    - Test the workflows on a branch before merging to main
-   - Commit the changes (workflow updates and `kubernetes-versions.json` can be in the same PR if only Kubernetes versions changed)
+   - Commit the changes (workflow updates and `.kuver.json` can be in the same PR if only Kubernetes versions changed)
 
 ## Related Files
 
-- `kubernetes-versions.json` - Source of truth for supported versions
-- `scripts/check-kube-versions.sh` - Version check script
-- `.github/workflows/check-kubernetes-versions.yaml` - Weekly check workflow
+- `.kuver.json` - Source of truth for supported versions (checked via the `make check-kubernetes-versions` Make target)
+- `.github/workflows/check-kubernetes-versions.yml` - Weekly check workflow
 

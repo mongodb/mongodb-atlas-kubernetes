@@ -189,7 +189,7 @@ The [`sync-helm-charts.yaml`](../../.github/workflows/sync-helm-charts.yaml) wor
 
 ### Kubernetes Version Monitoring
 
-The [`check-kubernetes-versions.yaml`](../../.github/workflows/check-kubernetes-versions.yaml) workflow monitors Kubernetes and OpenShift version support policy compliance:
+The [`check-kubernetes-versions.yml`](../../.github/workflows/check-kubernetes-versions.yml) workflow monitors Kubernetes and OpenShift version support policy compliance:
 
 - Runs on a weekly schedule (every Monday at midnight UTC)
 - Can be manually dispatched

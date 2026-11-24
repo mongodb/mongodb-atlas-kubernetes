@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script to get Kubernetes min or max version from kubernetes-versions.json
+# Script to get Kubernetes min or max version from .kuver.json
 # Usage: ./scripts/get-k8s-version.sh [min|max]
 # Returns the full version including patch (e.g., "1.33.7") formatted as "v1.33.7-kind"
 
@@ -21,7 +21,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-VERSION_FILE="${VERSION_FILE:-$REPO_ROOT/kubernetes-versions.json}"
+VERSION_FILE="${VERSION_FILE:-$REPO_ROOT/.kuver.json}"
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 [min|max]" >&2
