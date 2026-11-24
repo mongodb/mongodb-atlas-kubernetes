@@ -64,7 +64,7 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 								RegionName:   "US_EAST_1",
 								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
-									InstanceSize: InstanceSizeM10,
+									InstanceSize: InstanceSizeM30,
 									NodeCount:    new(3),
 								},
 							},
@@ -79,7 +79,7 @@ func CreateAdvancedGeoshardedDeployment(name string) *akov2.AtlasDeployment {
 								RegionName:   "EUROPE_NORTH",
 								Priority:     new(7),
 								ElectableSpecs: &akov2.Specs{
-									InstanceSize: InstanceSizeM10,
+									InstanceSize: InstanceSizeM30,
 									NodeCount:    new(3),
 								},
 							},

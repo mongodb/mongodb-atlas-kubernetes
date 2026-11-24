@@ -245,8 +245,8 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			rc.AutoScaling = &generatedv1.AnalyticsAutoScaling{
 				Compute: &generatedv1.Compute{
 					Enabled:          new(true),
-					MaxInstanceSize:  new("M30"),
-					MinInstanceSize:  new("M10"),
+					MaxInstanceSize:  new("M40"),
+					MinInstanceSize:  new("M30"),
 					ScaleDownEnabled: new(true),
 				},
 				DiskGB: &generatedv1.DiskGB{
@@ -275,14 +275,14 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 						RegionName:   new("US_EAST_1"),
 						Priority:     new(7),
 						ElectableSpecs: &generatedv1.ElectableSpecs{
-							InstanceSize: new("M10"),
+							InstanceSize: new("M30"),
 							NodeCount:    new(3),
 						},
 						AutoScaling: &generatedv1.AnalyticsAutoScaling{
 							Compute: &generatedv1.Compute{
 								Enabled:          new(true),
-								MaxInstanceSize:  new("M30"),
-								MinInstanceSize:  new("M10"),
+								MaxInstanceSize:  new("M40"),
+								MinInstanceSize:  new("M30"),
 								ScaleDownEnabled: new(true),
 							},
 							DiskGB: &generatedv1.DiskGB{
@@ -324,11 +324,11 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 			}
 
 			shard1RC := &(*(*entry.ReplicationSpecs)[0].RegionConfigs)[0]
-			shard1RC.ElectableSpecs.InstanceSize = new("M10")
+			shard1RC.ElectableSpecs.InstanceSize = new("M30")
 			shard1RC.ElectableSpecs.DiskSizeGB = new(30.0)
 
 			shard2RC := &(*(*entry.ReplicationSpecs)[1].RegionConfigs)[0]
-			shard2RC.ElectableSpecs.InstanceSize = new("M20")
+			shard2RC.ElectableSpecs.InstanceSize = new("M40")
 			shard2RC.ElectableSpecs.DiskSizeGB = new(40.0)
 
 			Expect(kubeClient.Update(ctx, cluster)).To(Succeed())
@@ -349,11 +349,11 @@ var _ = Describe("Cluster Generated v1", Ordered, func() {
 
 			specs[0].ZoneName = new("Zone 1")
 			(*specs[0].RegionConfigs)[0].RegionName = new("US_EAST_1")
-			(*specs[0].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M10")
+			(*specs[0].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M30")
 
 			specs[1].ZoneName = new("Zone 2")
 			(*specs[1].RegionConfigs)[0].RegionName = new("EU_WEST_1")
-			(*specs[1].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M10")
+			(*specs[1].RegionConfigs)[0].ElectableSpecs.InstanceSize = new("M30")
 
 			Expect(kubeClient.Update(ctx, cluster)).To(Succeed())
 
@@ -388,7 +388,7 @@ func newReplicaSetCluster(name, namespace, groupId, secretName string) *generate
 									RegionName:   new("US_EAST_1"),
 									Priority:     new(7),
 									ElectableSpecs: &generatedv1.ElectableSpecs{
-										InstanceSize: new("M10"),
+										InstanceSize: new("M30"),
 										NodeCount:    new(3),
 									},
 								},
