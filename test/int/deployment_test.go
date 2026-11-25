@@ -327,7 +327,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
-	Describe("Create deployment & change it to GEOSHARDED", Label("focus-geosharded", "focus-slow"), func() {
+	Describe("Create deployment & change it to GEOSHARDED", Label("geosharded", "focus-slow"), func() {
 		It("Should Succeed", func(ctx context.Context) {
 			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
 
@@ -394,6 +394,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 				doDeploymentStatusChecks()
 				checkAtlasState()
 			})
+		})
+
+		AfterEach(func() {
+			// Keep Atlas resources available for debugging before the enclosing cleanup runs.
+			time.Sleep(45 * time.Minute)
 		})
 	})
 
