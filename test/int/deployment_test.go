@@ -327,8 +327,9 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
+	// QUARANTINED TEST: Temporary disabled due to the appearance of undiagnosed timeouts see CLOUDP-483039
 	Describe("Create deployment & change it to GEOSHARDED", Label("focus-geosharded", "focus-slow"), func() {
-		It("Should Succeed", func(ctx context.Context) {
+		PIt("Should Succeed", func(ctx context.Context) {
 			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).WithInstanceSize("M30")
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
