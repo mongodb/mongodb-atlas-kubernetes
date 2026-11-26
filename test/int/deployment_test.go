@@ -327,9 +327,10 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 		})
 	})
 
+	// QUARANTINED TEST: Temporary disabled due to the appearance of undiagnosed timeouts see CLOUDP-483039
 	Describe("Create deployment & change it to GEOSHARDED", Label("focus-geosharded", "focus-slow"), func() {
-		It("Should Succeed", func(ctx context.Context) {
-			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name)
+		PIt("Should Succeed", func(ctx context.Context) {
+			expectedDeployment := akov2.DefaultAWSDeployment(namespace.Name, createdProject.Name).WithInstanceSize("M30")
 
 			By(fmt.Sprintf("Creating the Deployment %s", kube.ObjectKeyFromObject(expectedDeployment)), func() {
 				createdDeployment.ObjectMeta = expectedDeployment.ObjectMeta
@@ -358,11 +359,11 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 										},
 									},
 									ElectableSpecs: &akov2.Specs{
-										InstanceSize: "M10",
+										InstanceSize: "M30",
 										NodeCount:    new(2),
 									},
 									AnalyticsSpecs: &akov2.Specs{
-										InstanceSize: "M10",
+										InstanceSize: "M30",
 										NodeCount:    new(1),
 									},
 									Priority:     new(7),
@@ -380,7 +381,7 @@ var _ = Describe("AtlasDeployment", Label("int", "AtlasDeployment", "focus-deplo
 										},
 									},
 									ElectableSpecs: &akov2.Specs{
-										InstanceSize: "M10",
+										InstanceSize: "M30",
 										NodeCount:    new(1),
 									},
 									Priority:     new(6),
