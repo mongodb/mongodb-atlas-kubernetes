@@ -29,7 +29,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -42,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 )
@@ -56,10 +54,8 @@ func TestReconcile(t *testing.T) {
 	}{
 		"failed to retrieve user": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -83,10 +79,8 @@ func TestReconcile(t *testing.T) {
 		},
 		"user was not found": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user2",
-					Namespace: "default",
-				},
+				Name:      "user2",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -106,12 +100,10 @@ func TestReconcile(t *testing.T) {
 		},
 		"skip reconciliation": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"mongodb.com/atlas-reconciliation-policy": "skip",
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Annotations: map[string]string{
+					"mongodb.com/atlas-reconciliation-policy": "skip",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -132,10 +124,8 @@ func TestReconcile(t *testing.T) {
 		},
 		"handle user": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -164,15 +154,13 @@ func TestReconcile(t *testing.T) {
 				WithInterceptorFuncs(tt.interceptors).
 				Build()
 			r := &AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client:        k8sClient,
-					Log:           zaptest.NewLogger(t).Sugar(),
-					AtlasProvider: DefaultTestProvider(t),
-				},
+				Client:        k8sClient,
+				Log:           zaptest.NewLogger(t).Sugar(),
+				AtlasProvider: DefaultTestProvider(t),
 				EventRecorder: record.NewFakeRecorder(10),
 			}
 
-			result, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "default"}})
+			result, err := r.Reconcile(context.Background(), ctrl.Request{Name: "user1", Namespace: "default"})
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -187,9 +175,7 @@ func TestSkip(t *testing.T) {
 	t.Run("skip reconciliation of custom resource", func(t *testing.T) {
 		core, logs := observer.New(zap.DebugLevel)
 		c := &AtlasDatabaseUserReconciler{
-			AtlasReconciler: reconciler.AtlasReconciler{
-				Log: zap.New(core).Sugar(),
-			},
+			Log: zap.New(core).Sugar(),
 		}
 
 		res, err := c.skip()
@@ -215,10 +201,8 @@ func TestTerminate(t *testing.T) {
 	}{
 		"terminates reconciliation with retry": {
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "ns-test",
-				},
+				Name:      "my-project",
+				Namespace: "ns-test",
 			},
 			condition: api.ProjectReadyType,
 			reason:    workflow.Internal,
@@ -231,10 +215,8 @@ func TestTerminate(t *testing.T) {
 		},
 		"terminates reconciliation without retry": {
 			object: &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "ns-test",
-				},
+				Name:      "my-project",
+				Namespace: "ns-test",
 			},
 			condition: api.StreamInstanceReadyType,
 			reason:    workflow.StreamConnectionNotCreated,
@@ -250,9 +232,7 @@ func TestTerminate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			core, logs := observer.New(zap.DebugLevel)
 			c := &AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Log: zap.New(core).Sugar(),
-				},
+				Log: zap.New(core).Sugar(),
 			}
 
 			res, err := c.terminate(&workflow.Context{}, tt.object, tt.condition, tt.reason, tt.retry, tt.err)
@@ -287,10 +267,8 @@ func TestReady(t *testing.T) {
 	}{
 		"fail to set finalizer": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -324,10 +302,8 @@ func TestReady(t *testing.T) {
 		},
 		"fail to set last applied config": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -364,10 +340,8 @@ func TestReady(t *testing.T) {
 		},
 		"don't requeue when it's a linked resource": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -394,10 +368,8 @@ func TestReady(t *testing.T) {
 		},
 		"requeue when it's a standalone resource": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -440,10 +412,8 @@ func TestReady(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			c := &AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client:                k8sClient,
+				Log:                   logger,
 				independentSyncPeriod: 10 * time.Minute,
 			}
 			ctx := &workflow.Context{
@@ -481,28 +451,28 @@ func TestFindAtlasDatabaseUserForSecret(t *testing.T) {
 		{
 			name: "same namespace",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "secret", Namespace: "ns"},
+				Name: "secret", Namespace: "ns",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{Name: "user1", Namespace: "ns"},
+					Name: "user1", Namespace: "ns",
 					Spec: akov2.AtlasDatabaseUserSpec{
 						PasswordSecret: &common.ResourceRef{Name: "secret"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "user1", Namespace: "ns"}},
+				{Name: "user1", Namespace: "ns"},
 			},
 		},
 		{
 			name: "different namespace",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns2"},
+				Name: "name", Namespace: "ns2",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{Name: "user1", Namespace: "ns"},
+					Name: "user1", Namespace: "ns",
 					Spec: akov2.AtlasDatabaseUserSpec{
 						PasswordSecret: &common.ResourceRef{Name: "secret"},
 					},
@@ -521,10 +491,8 @@ func TestFindAtlasDatabaseUserForSecret(t *testing.T) {
 				WithIndex(secretsIndexer.Object(), secretsIndexer.Name(), secretsIndexer.Keys).
 				Build()
 			reconciler := &AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Log:    zaptest.NewLogger(t).Sugar(),
-					Client: k8sClient,
-				},
+				Log:    zaptest.NewLogger(t).Sugar(),
+				Client: k8sClient,
 			}
 			got := reconciler.findAtlasDatabaseUserForSecret(context.Background(), tc.obj)
 			if !reflect.DeepEqual(got, tc.want) {

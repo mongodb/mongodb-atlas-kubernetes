@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -57,7 +56,7 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 	)
 
 	BeforeEach(func() {
-		namespace = corev1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "test"}}
+		namespace = corev1.Namespace{GenerateName: "test"}
 		Expect(k8sClient.Create(context.Background(), &namespace)).ToNot(HaveOccurred())
 
 		createdDBUser = &akov2.AtlasDatabaseUser{}
@@ -112,10 +111,10 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 	Describe("Create user and deployment in different namespaces", func() {
 		It("Should Succeed", func() {
-			deploymentNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-deployment"}}
+			deploymentNS := corev1.Namespace{Name: namespace.Name + "-other-deployment"}
 			Expect(k8sClient.Create(context.Background(), &deploymentNS)).ToNot(HaveOccurred())
 
-			userNS := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace.Name + "-other-user"}}
+			userNS := corev1.Namespace{Name: namespace.Name + "-other-user"}
 			Expect(k8sClient.Create(context.Background(), &userNS)).ToNot(HaveOccurred())
 
 			By(fmt.Sprintf("Creating password Secret %s", UserPasswordSecret))
@@ -149,12 +148,10 @@ var _ = Describe("clusterwide", Label("int", "clusterwide"), func() {
 
 func buildConnectionSecret(name string) corev1.Secret {
 	return corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace.Name,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      name,
+		Namespace: namespace.Name,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		StringData: map[string]string{"orgId": orgID, "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
@@ -162,12 +159,10 @@ func buildConnectionSecret(name string) corev1.Secret {
 
 func buildPasswordSecret(namespace, name, password string) corev1.Secret {
 	return corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      name,
+		Namespace: namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		StringData: map[string]string{"password": password},
 	}

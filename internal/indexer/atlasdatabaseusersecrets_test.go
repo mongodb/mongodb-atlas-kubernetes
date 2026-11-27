@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -52,10 +51,8 @@ func TestAtlasDatabaseUserBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return database user namespace",
 			object: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "ns",
-				},
+				Name:      "user",
+				Namespace: "ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					PasswordSecret: &common.ResourceRef{
 						Name: "someSecret",

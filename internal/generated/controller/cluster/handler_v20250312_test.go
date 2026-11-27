@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -160,14 +159,10 @@ func testCluster() *akov2generated.Cluster {
 	name := testClusterName
 
 	return &akov2generated.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Cluster",
-			APIVersion: "atlas.generated.mongodb.com/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testClusterName,
-			Namespace: testNamespace,
-		},
+		Kind:       "Cluster",
+		APIVersion: "atlas.generated.mongodb.com/v1",
+		Name:       testClusterName,
+		Namespace:  testNamespace,
 		Spec: akov2generated.ClusterSpec{
 			V20250312: &akov2generated.ClusterSpecV20250312{
 				GroupId: &groupID,

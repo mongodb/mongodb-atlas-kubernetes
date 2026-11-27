@@ -264,10 +264,8 @@ func (p *AtlasProject) X509SecretObjectKey() *client.ObjectKey {
 
 func NewProject(namespace, name, nameInAtlas string) *AtlasProject {
 	return &AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: AtlasProjectSpec{
 			Name: nameInAtlas,
 		},

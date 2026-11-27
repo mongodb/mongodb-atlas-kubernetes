@@ -30,9 +30,7 @@ func (r *AtlasProjectReconciler) fromAKO(ctx context.Context, project *akov2.Atl
 
 	for _, i := range project.Spec.Integrations {
 		tpi := &integration.ThirdPartyIntegration{
-			AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-				Type: i.Type,
-			},
+			Type: i.Type,
 		}
 		switch i.Type {
 		case "DATADOG":

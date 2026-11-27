@@ -31,14 +31,12 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
 )
@@ -81,10 +79,8 @@ func newSchemeWithCoreV1(t *testing.T) *runtime.Scheme {
 
 func newCredentialSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-		},
+		Name:      name,
+		Namespace: "default",
 		Data: map[string][]byte{
 			"orgId":         []byte("test-org"),
 			"publicApiKey":  []byte("test-public-key"),
@@ -102,12 +98,10 @@ func buildHandler(
 ) *Handler {
 	logger := zap.NewNop()
 	return &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   provider,
-			Client:          kubeClient,
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Sugar(),
-		},
+		AtlasProvider:      provider,
+		Client:             kubeClient,
+		GlobalSecretRef:    globalSecretRef,
+		Log:                logger.Sugar(),
 		deletionProtection: false,
 		translators:        translators,
 		handlerv20250312:   handlerv20250312Func,
@@ -132,7 +126,7 @@ func TestGetHandlerForResource(t *testing.T) {
 		{
 			name: "selects v20250312 handler when V20250312 spec is set",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+				Name: "test-child", Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -147,8 +141,8 @@ func TestGetHandlerForResource(t *testing.T) {
 		{
 			name: "returns error when no spec version is set",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
-				Spec:       v1.ChildSpec{},
+				Name: "test-child", Namespace: "default",
+				Spec: v1.ChildSpec{},
 			},
 			translators: map[string]crapi.Translator{
 				"v20250312": &mockTranslator{},
@@ -159,7 +153,7 @@ func TestGetHandlerForResource(t *testing.T) {
 		{
 			name: "returns error when translator not found for version",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+				Name: "test-child", Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{},
 				},
@@ -224,8 +218,8 @@ func TestGetSDKClientSet(t *testing.T) {
 		{
 			name: "uses global secret when no connectionSecretRef",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
-				Spec:       v1.ChildSpec{},
+				Name: "test-child", Namespace: "default",
+				Spec: v1.ChildSpec{},
 			},
 			objects:  []client.Object{globalSecret},
 			provider: &mockProvider{clientSet: expectedClientSet},
@@ -234,7 +228,7 @@ func TestGetSDKClientSet(t *testing.T) {
 		{
 			name: "uses per-resource secret when connectionSecretRef is set",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+				Name: "test-child", Namespace: "default",
 				Spec: v1.ChildSpec{
 					ConnectionSecretRef: &k8s.LocalReference{Name: "resource-secret"},
 				},
@@ -246,7 +240,7 @@ func TestGetSDKClientSet(t *testing.T) {
 		{
 			name: "returns error when secret not found",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+				Name: "test-child", Namespace: "default",
 				Spec: v1.ChildSpec{
 					ConnectionSecretRef: &k8s.LocalReference{Name: "nonexistent-secret"},
 				},
@@ -259,8 +253,8 @@ func TestGetSDKClientSet(t *testing.T) {
 		{
 			name: "returns error when provider fails",
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
-				Spec:       v1.ChildSpec{},
+				Name: "test-child", Namespace: "default",
+				Spec: v1.ChildSpec{},
 			},
 			objects: []client.Object{globalSecret},
 			provider: &mockProvider{
@@ -303,7 +297,7 @@ func TestHandlerStateTransitions(t *testing.T) {
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	child := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+		Name: "test-child", Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{},
 		},
@@ -363,8 +357,8 @@ func TestHandlerStateTransitions_NoVersion(t *testing.T) {
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	child := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
-		Spec:       v1.ChildSpec{},
+		Name: "test-child", Namespace: "default",
+		Spec: v1.ChildSpec{},
 	}
 
 	fakeClient := fake.NewClientBuilder().
@@ -418,7 +412,7 @@ func TestGetDependents_Child(t *testing.T) {
 	ctx := context.Background()
 
 	child := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+		Name: "test-child", Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{
 				ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -467,7 +461,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-parent", Namespace: "default"},
+		Name: "my-parent", Namespace: "default",
 	}
 
 	fakeClient := fake.NewClientBuilder().
@@ -484,7 +478,7 @@ func TestHandlerWithRealTranslator(t *testing.T) {
 	handler := buildHandler(fakeClient, provider, globalSecretRef, translators)
 
 	child := &v1.Child{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-child", Namespace: "default"},
+		Name: "test-child", Namespace: "default",
 		Spec: v1.ChildSpec{
 			V20250312: &v1.V20250312{
 				ParentRef: &k8s.LocalReference{Name: "my-parent"},

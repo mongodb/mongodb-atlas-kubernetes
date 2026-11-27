@@ -15,17 +15,13 @@
 package atlasdeployment
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 )
 
 func CreateBasicDeployment(name string) *akov2.AtlasDeployment {
 	return &akov2.AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+		Name: name,
 		Spec: akov2.AtlasDeploymentSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{

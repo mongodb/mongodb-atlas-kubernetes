@@ -30,7 +30,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -181,10 +180,8 @@ func prepareControllers(deletionProtection bool) (*corev1.Namespace, context.Can
 	ctx, cancel := context.WithCancel(context.Background())
 	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "test",
-			GenerateName: "test",
-		},
+		Namespace:    "test",
+		GenerateName: "test",
 	}
 
 	By("Creating the namespace " + namespace.GenerateName + "...")
@@ -222,10 +219,8 @@ func prepareControllersWithSyncPeriod(deletionProtection bool, syncPeriod time.D
 	ctx, cancel := context.WithCancel(context.Background())
 	managerCancelFunc = cancel
 	namespace = corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "test",
-			GenerateName: "test",
-		},
+		Namespace:    "test",
+		GenerateName: "test",
 	}
 
 	By("Creating the namespace " + namespace.GenerateName + "...")

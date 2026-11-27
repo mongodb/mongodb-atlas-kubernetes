@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/generated/v1"
@@ -78,9 +77,8 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 		orgID = control.MustEnvVar("MCLI_ORG_ID")
 
 		By("Create namespace and credentials for shared test Group", func() {
-			sharedGroupNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-				Name: resources.GenerateName("flex-shared-grp-ns"),
-			}}
+			sharedGroupNamespace = &corev1.Namespace{
+				Name: resources.GenerateName("flex-shared-grp-ns")}
 			Expect(kubeClient.Create(ctx, sharedGroupNamespace)).To(Succeed())
 			Expect(resources.CopyCredentialsToNamespace(ctx, kubeClient, DefaultGlobalCredentials, control.MustEnvVar("OPERATOR_NAMESPACE"), sharedGroupNamespace.Name, GinkGoFieldOwner)).To(Succeed())
 		})
@@ -135,9 +133,8 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: resources.GenerateName("flexcluster-ns"),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: resources.GenerateName("flexcluster-ns")}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
@@ -199,7 +196,7 @@ var _ = Describe("FlexCluster CRUD", Ordered, Label("flexcluster"), func() {
 				for _, obj := range createdObjects {
 					if group, ok := obj.(*apiv1.Group); ok {
 						groupObj := &apiv1.Group{
-							ObjectMeta: metav1.ObjectMeta{Name: group.Name, Namespace: testNamespace.Name},
+							Name: group.Name, Namespace: testNamespace.Name,
 						}
 						Eventually(func(g Gomega) {
 							g.Expect(resources.CheckResourceReady(ctx, kubeClient, groupObj)).To(Succeed())
@@ -344,14 +341,10 @@ func updateFlexClusterTerminationProtection(cluster *apiv1.FlexCluster) {
 
 func freshFlexCluster(cluster *apiv1.FlexCluster) *apiv1.FlexCluster {
 	return &apiv1.FlexCluster{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "atlas.generated.mongodb.com/v1",
-			Kind:       "FlexCluster",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cluster.Name,
-			Namespace: cluster.Namespace,
-		},
-		Spec: cluster.Spec,
+		APIVersion: "atlas.generated.mongodb.com/v1",
+		Kind:       "FlexCluster",
+		Name:       cluster.Name,
+		Namespace:  cluster.Namespace,
+		Spec:       cluster.Spec,
 	}
 }

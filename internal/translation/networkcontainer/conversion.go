@@ -103,14 +103,10 @@ func fromAtlasNoStatus(container *admin.CloudProviderContainer) *NetworkContaine
 		region = container.GetRegionName()
 	}
 	return &NetworkContainer{
-		NetworkContainerConfig: NetworkContainerConfig{
-			Provider: container.GetProviderName(),
-			AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-				CIDRBlock: container.GetAtlasCidrBlock(),
-				Region:    region,
-			},
-		},
-		ID: container.GetId(),
+		Provider:  container.GetProviderName(),
+		CIDRBlock: container.GetAtlasCidrBlock(),
+		Region:    region,
+		ID:        container.GetId(),
 	}
 }
 

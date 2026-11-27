@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -47,15 +46,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "aws-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "aws-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -91,15 +86,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "aws-secret",
-					Namespace: "test-fallback-ns",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "aws-secret",
+				Namespace:  "test-fallback-ns",
 			},
 		}...).Build()
 
@@ -132,15 +123,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "aws-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "aws-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -170,15 +157,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gcp-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "gcp-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -209,15 +192,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gcp-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "gcp-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -248,15 +227,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "azure-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "azure-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -292,15 +267,11 @@ func TestReadEncryptionAtRestSecrets(t *testing.T) {
 
 		kk := fake.NewClientBuilder().WithRuntimeObjects([]runtime.Object{
 			&v1.Secret{
-				Data: secretData,
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "gcp-secret",
-					Namespace: "test",
-				},
+				Data:       secretData,
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "gcp-secret",
+				Namespace:  "test",
 			},
 		}...).Build()
 
@@ -358,12 +329,10 @@ func TestNormalizeAwsKmsDoesNotLeakRoleID(t *testing.T) {
 	}
 
 	awsKms := &encryptionatrest.AwsKms{
-		AwsKms: akov2.AwsKms{
-			Enabled: new(true),
-			SecretRef: common.ResourceRefNamespaced{
-				Name:      "ear-secret",
-				Namespace: "victim-ns",
-			},
+		Enabled: new(true),
+		SecretRef: common.ResourceRefNamespaced{
+			Name:      "ear-secret",
+			Namespace: "victim-ns",
 		},
 		RoleID: victimRoleARN,
 	}

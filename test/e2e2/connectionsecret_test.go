@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -72,9 +71,8 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("connsecret-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("connsecret-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -679,10 +677,8 @@ var _ = Describe("ConnectionSecret", Ordered, Label("connectionsecret"), func() 
 
 func newDBUserWithScopes(namespace, username, groupRefName, passwordSecretName string, scopes []generatedv1.Scopes) *generatedv1.DatabaseUser {
 	dbUser := &generatedv1.DatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      username,
-			Namespace: namespace,
-		},
+		Name:      username,
+		Namespace: namespace,
 		Spec: generatedv1.DatabaseUserSpec{
 			V20250312: &generatedv1.DatabaseUserSpecV20250312{
 				GroupRef: &k8s.LocalReference{Name: groupRefName},
@@ -708,10 +704,8 @@ func newDBUserWithScopes(namespace, username, groupRefName, passwordSecretName s
 // The reason for this is that Atlas only allows only one M0 cluster per project
 func newDedicatedCluster(name, namespace, groupRefName string) *generatedv1.Cluster {
 	return &generatedv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.ClusterSpec{
 			V20250312: &generatedv1.ClusterSpecV20250312{
 				GroupRef: &k8s.LocalReference{
@@ -743,10 +737,8 @@ func newDedicatedCluster(name, namespace, groupRefName string) *generatedv1.Clus
 
 func newSharedFlexCluster(name, namespace, groupRefName string) *generatedv1.FlexCluster {
 	return &generatedv1.FlexCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.FlexClusterSpec{
 			V20250312: &generatedv1.FlexClusterSpecV20250312{
 				GroupRef: &k8s.LocalReference{

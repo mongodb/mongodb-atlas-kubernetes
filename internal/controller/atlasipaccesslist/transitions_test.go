@@ -24,14 +24,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/ipaccesslist"
@@ -85,10 +83,8 @@ func TestCreate(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
@@ -102,10 +98,8 @@ func TestCreate(t *testing.T) {
 				Log:     logger,
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client: k8sClient,
+				Log:    logger,
 			}
 			result, err := r.create(ctx, tt.ipAccessListService(), ipAccessList, "", tt.akoIPAccessList)
 			if tt.expectError {
@@ -163,10 +157,8 @@ func TestDeleteAll(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
@@ -180,10 +172,8 @@ func TestDeleteAll(t *testing.T) {
 				Log:     logger,
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client: k8sClient,
+				Log:    logger,
 			}
 			result, err := r.deleteAll(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
 			if tt.expectError {
@@ -247,10 +237,8 @@ func TestDeletePartial(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ipAccessList := &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ip-access-list",
-					Namespace: "default",
-				},
+				Name:      "ip-access-list",
+				Namespace: "default",
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
@@ -264,10 +252,8 @@ func TestDeletePartial(t *testing.T) {
 				Log:     logger,
 			}
 			r := &AtlasIPAccessListReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client: k8sClient,
+				Log:    logger,
 			}
 			result, err := r.deletePartial(ctx, tt.ipAccessListService(), ipAccessList, "", tt.atlasIPAccessList)
 			if tt.expectError {

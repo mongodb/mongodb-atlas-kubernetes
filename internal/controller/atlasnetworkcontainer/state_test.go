@@ -41,7 +41,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -74,14 +73,12 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should skip reconciliation",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-					},
-					Finalizers: []string{customresource.FinalizerLabel},
+				Name:      "network-container",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 				},
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -99,12 +96,10 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail to validate resource",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
-					Labels: map[string]string{
-						customresource.ResourceVersion: "wrong",
-					},
+				Name:      "network-container",
+				Namespace: "default",
+				Labels: map[string]string{
+					customresource.ResourceVersion: "wrong",
 				},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					Provider: "AWS",
@@ -127,10 +122,8 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail when not supported",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
-				},
+				Name:      "network-container",
+				Namespace: "default",
 				Spec: akov2.AtlasNetworkContainerSpec{
 					Provider: "AWS",
 					AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -158,11 +151,9 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail to resolve credentials and remove finalizer",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "network-container",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name:       "network-container",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -195,10 +186,8 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail to create sdk",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-container",
-					Namespace: "default",
-				},
+				Name:      "network-container",
+				Namespace: "default",
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -233,11 +222,9 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail to resolve project and remove finalizers",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "network-container",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name:       "network-container",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -279,12 +266,10 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should handle network container with unmanage",
 			networkContainer: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "network-container",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: &deletionTime,
-				},
+				Name:              "network-container",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: &deletionTime,
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -343,10 +328,8 @@ func TestHandleCustomResource(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
@@ -354,10 +337,8 @@ func TestHandleCustomResource(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(project, tc.networkContainer, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-secret",
-						Namespace: "default",
-					},
+					Name:      "my-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -401,9 +382,7 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
-					},
+					Name: "test-container",
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -419,13 +398,9 @@ func TestHandle(t *testing.T) {
 					)
 					ncs.EXPECT().Create(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: false,
 						},
@@ -448,9 +423,7 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
-					},
+					Name: "test-container",
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -484,10 +457,8 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "test-container",
-						Finalizers: []string{customresource.FinalizerLabel},
-					},
+					Name:       "test-container",
+					Finalizers: []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -500,13 +471,9 @@ func TestHandle(t *testing.T) {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
 					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: true,
 						}, nil,
@@ -528,10 +495,8 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "test-container",
-						Finalizers: []string{customresource.FinalizerLabel},
-					},
+					Name:       "test-container",
+					Finalizers: []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -545,13 +510,9 @@ func TestHandle(t *testing.T) {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
 					ncs.EXPECT().Get(mock.Anything, testProjectID, testContainerID).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: true,
 						}, nil,
@@ -573,9 +534,7 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
-					},
+					Name: "test-container",
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -588,32 +547,22 @@ func TestHandle(t *testing.T) {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
 					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: true,
 						}, nil,
 					)
 					ncs.EXPECT().Update(mock.Anything, testProjectID, testContainerID, &networkcontainer.NetworkContainerConfig{
-						Provider: "AWS",
-						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-							Region:    "US_EAST_1",
-							CIDRBlock: "10.12.0.0/21",
-						},
+						Provider:  "AWS",
+						Region:    "US_EAST_1",
+						CIDRBlock: "10.12.0.0/21",
 					}).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.12.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.12.0.0/21",
 							ID:          testContainerID,
 							Provisioned: false,
 						}, nil,
@@ -635,9 +584,7 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-container",
-					},
+					Name: "test-container",
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -650,13 +597,9 @@ func TestHandle(t *testing.T) {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
 					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region:    "US_EAST_1",
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider:    "AWS",
+							Region:      "US_EAST_1",
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: true,
 						}, nil,
@@ -680,11 +623,9 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "test-container",
-						Finalizers:        []string{customresource.FinalizerLabel},
-						DeletionTimestamp: &deletionTime,
-					},
+					Name:              "test-container",
+					Finalizers:        []string{customresource.FinalizerLabel},
+					DeletionTimestamp: &deletionTime,
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -697,14 +638,10 @@ func TestHandle(t *testing.T) {
 					ncs := akomock.NewNetworkContainerServiceMock(t)
 					ncs.EXPECT().Find(mock.Anything, testProjectID, mock.Anything).Return(
 						&networkcontainer.NetworkContainer{
-							NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-								Provider: "AWS",
-								AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-									Region: "US_EAST_1",
-									// different CIDR, but it should not matter as we are removing
-									CIDRBlock: "10.11.0.0/21",
-								},
-							},
+							Provider: "AWS",
+							Region:   "US_EAST_1",
+							// different CIDR, but it should not matter as we are removing
+							CIDRBlock:   "10.11.0.0/21",
 							ID:          testContainerID,
 							Provisioned: true,
 						}, nil,
@@ -725,11 +662,9 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "test-another-container",
-						Finalizers:        []string{customresource.FinalizerLabel},
-						DeletionTimestamp: &deletionTime,
-					},
+					Name:              "test-another-container",
+					Finalizers:        []string{customresource.FinalizerLabel},
+					DeletionTimestamp: &deletionTime,
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "Azure",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -767,10 +702,8 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "test-container",
-						Finalizers: []string{customresource.FinalizerLabel},
-					},
+					Name:       "test-container",
+					Finalizers: []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -800,10 +733,8 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "test-container",
-						Finalizers: []string{customresource.FinalizerLabel},
-					},
+					Name:       "test-container",
+					Finalizers: []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -834,10 +765,8 @@ func TestHandle(t *testing.T) {
 			req: &reconcileRequest{
 				projectID: testProjectID,
 				networkContainer: &akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:       "test-container",
-						Finalizers: []string{customresource.FinalizerLabel},
-					},
+					Name:       "test-container",
+					Finalizers: []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasNetworkContainerSpec{
 						Provider: "AWS",
 						AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
@@ -916,11 +845,9 @@ func getConditions(networkContainer *akov2.AtlasNetworkContainer) []api.Conditio
 
 func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *zap.Logger) *AtlasNetworkContainerReconciler {
 	return &AtlasNetworkContainerReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:        k8sClient,
-			Log:           logger.Sugar(),
-			AtlasProvider: provider,
-		},
+		Client:        k8sClient,
+		Log:           logger.Sugar(),
+		AtlasProvider: provider,
 		EventRecorder: record.NewFakeRecorder(10),
 	}
 }

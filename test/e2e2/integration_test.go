@@ -27,7 +27,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -70,14 +69,13 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		Expect(err).To(Succeed())
 		kubeClient = client
 		Expect(kube.AssertCRDs(ctx, kubeClient, &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: v1.ObjectMeta{Name: AtlasThirdPartyIntegrationsCRDName},
+			Name: AtlasThirdPartyIntegrationsCRDName,
 		})).To(Succeed())
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("integrations-ctrl-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("integrations-ctrl-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace))
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
@@ -106,7 +104,7 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 			})
 
 			integration := akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Name: wantReady, Namespace: testNamespace.Name},
+				Name: wantReady, Namespace: testNamespace.Name,
 			}
 			By("Wait integration to be Ready", func() {
 				Eventually(func(g Gomega) bool {
@@ -207,9 +205,9 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 	It("Can handle isolated integrations", func() {
 		project := akov2.AtlasProject{
-			TypeMeta:   v1.TypeMeta{Kind: "AtlasProject", APIVersion: akov2.GroupVersion.String()},
-			ObjectMeta: v1.ObjectMeta{Name: "atlas-project", Namespace: testNamespace.Name},
-			Spec:       akov2.AtlasProjectSpec{Name: fmt.Sprintf("atlas-project-%s", rand.String(6))},
+			Kind: "AtlasProject", APIVersion: akov2.GroupVersion.String(),
+			Name: "atlas-project", Namespace: testNamespace.Name,
+			Spec: akov2.AtlasProjectSpec{Name: fmt.Sprintf("atlas-project-%s", rand.String(6))},
 		}
 		projectID := ""
 
@@ -234,21 +232,19 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 		})
 
 		integrationSecret := corev1.Secret{
-			TypeMeta: v1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "victor-ops-secret",
-				Namespace: testNamespace.Name,
-				Labels: map[string]string{
-					secretservice.TypeLabelKey: secretservice.CredLabelVal,
-				},
+			Kind: "Secret", APIVersion: "v1",
+			Name:      "victor-ops-secret",
+			Namespace: testNamespace.Name,
+			Labels: map[string]string{
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 			Data: map[string][]byte{
 				"apiKey": ([]byte)("00000000-0000-0000-0000-000000000000"),
 			},
 		}
 		integration := akov2.AtlasThirdPartyIntegration{
-			TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String()},
-			ObjectMeta: v1.ObjectMeta{Name: "test-victor-ops-integration", Namespace: testNamespace.Name},
+			Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String(),
+			Name: "test-victor-ops-integration", Namespace: testNamespace.Name,
 			Spec: akov2.AtlasThirdPartyIntegrationSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -296,9 +292,9 @@ var _ = Describe("Atlas Third-Party Integrations Controller", Ordered, Label("in
 
 		By("Update integration", func() {
 			updatedIntegration := akov2.AtlasThirdPartyIntegration{
-				TypeMeta:   v1.TypeMeta{Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String()},
-				ObjectMeta: v1.ObjectMeta{Name: "test-victor-ops-integration", Namespace: testNamespace.Name},
-				Spec:       integration.Spec,
+				Kind: "AtlasThirdPartyIntegration", APIVersion: akov2.GroupVersion.String(),
+				Name: "test-victor-ops-integration", Namespace: testNamespace.Name,
+				Spec: integration.Spec,
 			}
 			updatedIntegration.Spec.VictorOps.RoutingKey = "another-routing-key"
 			Expect(
@@ -352,12 +348,10 @@ func copySecretToNamespace(ctx context.Context, kubeClient client.Client, key cl
 		return nil, fmt.Errorf("failed to load original secret %v: %w", key, err)
 	}
 	return &corev1.Secret{
-		TypeMeta: v1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: ns,
-			Labels:    secret.Labels,
-		},
-		Data: secret.Data,
+		Kind: "Secret", APIVersion: "v1",
+		Name:      key.Name,
+		Namespace: ns,
+		Labels:    secret.Labels,
+		Data:      secret.Data,
 	}, nil
 }

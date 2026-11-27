@@ -31,9 +31,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -101,10 +99,8 @@ func TestRenconcile(t *testing.T) {
 				}
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -131,10 +127,8 @@ func TestRenconcile(t *testing.T) {
 			k8sClient := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(tt.project, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
-						Namespace: "default",
-					},
+					Name:      "secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"orgId":         []byte("orgId"),
 						"publicApiKey":  []byte("publicApiKey"),
@@ -173,7 +167,7 @@ func TestRenconcile(t *testing.T) {
 				},
 			}
 
-			result, err := reconciler.Reconcile(context.Background(), reconcile.Request{NamespacedName: types.NamespacedName{Name: "my-project", Namespace: "default"}})
+			result, err := reconciler.Reconcile(context.Background(), reconcile.Request{Name: "my-project", Namespace: "default"})
 			atlasProject := akov2.AtlasProject{}
 			require.NoError(t, k8sClient.Get(context.Background(), client.ObjectKeyFromObject(tt.project), &atlasProject))
 			require.NoError(t, err)
@@ -206,31 +200,31 @@ func TestFindProjectsForBCP(t *testing.T) {
 		{
 			name: "test",
 			obj: &akov2.AtlasBackupCompliancePolicy{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-bcp", Namespace: "ns1"},
+				Name: "test-bcp", Namespace: "ns1",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns2"},
+					Name: "test-project", Namespace: "ns2",
 					Spec: akov2.AtlasProjectSpec{
 						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "test-bcp", Namespace: "ns1"},
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns247"},
+					Name: "test-project-2", Namespace: "ns247",
 					Spec: akov2.AtlasProjectSpec{
 						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "test-bcp", Namespace: "ns1"},
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns1"},
+					Name: "test-project-3", Namespace: "ns1",
 					Spec: akov2.AtlasProjectSpec{
 						BackupCompliancePolicyRef: &common.ResourceRefNamespaced{Name: "different-test-bcp", Namespace: "ns1"},
 					},
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns2"}},
-				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns247"}},
+				{Name: "test-project", Namespace: "ns2"},
+				{Name: "test-project-2", Namespace: "ns247"},
 			},
 		},
 	} {
@@ -268,11 +262,11 @@ func TestFindProjectsForConnectionSecret(t *testing.T) {
 		{
 			name: "test",
 			obj: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-secret", Namespace: "ns1"},
+				Name: "test-secret", Namespace: "ns1",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns1"},
+					Name: "test-project", Namespace: "ns1",
 					Spec: akov2.AtlasProjectSpec{
 						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
 						AlertConfigurations: []akov2.AlertConfiguration{
@@ -291,19 +285,19 @@ func TestFindProjectsForConnectionSecret(t *testing.T) {
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns2"},
+					Name: "test-project-2", Namespace: "ns2",
 					Spec: akov2.AtlasProjectSpec{
 						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret", Namespace: "ns1"},
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns3"},
+					Name: "test-project-3", Namespace: "ns3",
 					Spec: akov2.AtlasProjectSpec{
 						ConnectionSecret: &common.ResourceRefNamespaced{Name: "test-secret"},
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-4", Namespace: "ns4"},
+					Name: "test-project-4", Namespace: "ns4",
 					Spec: akov2.AtlasProjectSpec{
 						AlertConfigurations: []akov2.AlertConfiguration{
 							{
@@ -319,9 +313,9 @@ func TestFindProjectsForConnectionSecret(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns1"}},
-				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns2"}},
-				{NamespacedName: types.NamespacedName{Name: "test-project-4", Namespace: "ns4"}},
+				{Name: "test-project", Namespace: "ns1"},
+				{Name: "test-project-2", Namespace: "ns2"},
+				{Name: "test-project-4", Namespace: "ns4"},
 			},
 		},
 	} {
@@ -360,11 +354,11 @@ func TestFindProjectsForTeams(t *testing.T) {
 		{
 			name: "test",
 			obj: &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-team", Namespace: "ns1"},
+				Name: "test-team", Namespace: "ns1",
 			},
 			initObjs: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns1"},
+					Name: "test-project", Namespace: "ns1",
 					Spec: akov2.AtlasProjectSpec{
 						Teams: []akov2.Team{
 							{TeamRef: common.ResourceRefNamespaced{Name: "test-team"}},
@@ -372,7 +366,7 @@ func TestFindProjectsForTeams(t *testing.T) {
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-2", Namespace: "ns2"},
+					Name: "test-project-2", Namespace: "ns2",
 					Spec: akov2.AtlasProjectSpec{
 						Teams: []akov2.Team{
 							{TeamRef: common.ResourceRefNamespaced{Name: "test-team", Namespace: "ns1"}},
@@ -380,7 +374,7 @@ func TestFindProjectsForTeams(t *testing.T) {
 					},
 				},
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{Name: "test-project-3", Namespace: "ns3"},
+					Name: "test-project-3", Namespace: "ns3",
 					Spec: akov2.AtlasProjectSpec{
 						Teams: []akov2.Team{
 							{TeamRef: common.ResourceRefNamespaced{Name: "test-team"}},
@@ -389,8 +383,8 @@ func TestFindProjectsForTeams(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "test-project", Namespace: "ns1"}},
-				{NamespacedName: types.NamespacedName{Name: "test-project-2", Namespace: "ns2"}},
+				{Name: "test-project", Namespace: "ns1"},
+				{Name: "test-project-2", Namespace: "ns2"},
 			},
 		},
 	} {
@@ -449,11 +443,9 @@ func TestLastSpecFrom(t *testing.T) {
 func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 	ctx := context.Background()
 	prj := akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "test-project",
-			Namespace:   "test-ns",
-			Annotations: map[string]string{},
-		},
+		Name:        "test-project",
+		Namespace:   "test-ns",
+		Annotations: map[string]string{},
 		Spec: akov2.AtlasProjectSpec{
 			Name:                      "test-project",
 			PrivateEndpoints:          []akov2.PrivateEndpoint{{}},
@@ -485,10 +477,9 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 		WithStatusSubresource(&prj).
 		Build()
 
-	req := ctrl.Request{NamespacedName: types.NamespacedName{
+	req := ctrl.Request{
 		Name:      prj.Name,
-		Namespace: prj.Namespace,
-	}}
+		Namespace: prj.Namespace}
 	r := AtlasProjectReconciler{
 		Client:        k8sClient,
 		Log:           zaptest.NewLogger(t).Sugar(),
@@ -533,11 +524,9 @@ func TestSkipClearsMigratedResourcesLastConfig(t *testing.T) {
 func TestSkipClearsMigratedResourcesLastConfigDoesNotPanic(t *testing.T) {
 	ctx := context.Background()
 	prj := akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "test-project",
-			Namespace:   "test-ns",
-			Annotations: map[string]string{},
-		},
+		Name:        "test-project",
+		Namespace:   "test-ns",
+		Annotations: map[string]string{},
 		Spec: akov2.AtlasProjectSpec{
 			Name: "test-project",
 		},
@@ -552,10 +541,9 @@ func TestSkipClearsMigratedResourcesLastConfigDoesNotPanic(t *testing.T) {
 		WithStatusSubresource(&prj).
 		Build()
 
-	req := ctrl.Request{NamespacedName: types.NamespacedName{
+	req := ctrl.Request{
 		Name:      prj.Name,
-		Namespace: prj.Namespace,
-	}}
+		Namespace: prj.Namespace}
 	r := AtlasProjectReconciler{
 		Client:        k8sClient,
 		Log:           zaptest.NewLogger(t).Sugar(),

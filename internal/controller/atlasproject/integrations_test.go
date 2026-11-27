@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -108,32 +107,26 @@ func TestFromAKO(t *testing.T) {
 			wantErr: false,
 			wantIntegrations: []*thirdpartyintegration.ThirdPartyIntegration{
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type: "DATADOG",
-						Datadog: &akov2.DatadogIntegration{
-							Region:                       "EU",
-							SendCollectionLatencyMetrics: new("disabled"),
-							SendDatabaseMetrics:          new("disabled"),
-						},
+					Type: "DATADOG",
+					Datadog: &akov2.DatadogIntegration{
+						Region:                       "EU",
+						SendCollectionLatencyMetrics: new("disabled"),
+						SendDatabaseMetrics:          new("disabled"),
 					},
 					DatadogSecrets: &thirdpartyintegration.DatadogSecrets{
 						APIKey: "my-secret-password",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type:           "MICROSOFT_TEAMS",
-						MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{},
-					},
+					Type:           "MICROSOFT_TEAMS",
+					MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{},
 					MicrosoftTeamsSecrets: &thirdpartyintegration.MicrosoftTeamsSecrets{
 						WebhookUrl: "https://example.com/webhook",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type:     "NEW_RELIC",
-						NewRelic: &akov2.NewRelicIntegration{},
-					},
+					Type:     "NEW_RELIC",
+					NewRelic: &akov2.NewRelicIntegration{},
 					NewRelicSecrets: &thirdpartyintegration.NewRelicSecrets{
 						AccountID:  "1234567890",
 						LicenseKey: "my-secret-password",
@@ -142,32 +135,26 @@ func TestFromAKO(t *testing.T) {
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type: "OPS_GENIE",
-						OpsGenie: &akov2.OpsGenieIntegration{
-							Region: "US",
-						},
+					Type: "OPS_GENIE",
+					OpsGenie: &akov2.OpsGenieIntegration{
+						Region: "US",
 					},
 					OpsGenieSecrets: &thirdpartyintegration.OpsGenieSecrets{
 						APIKey: "my-secret-password",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type:      "PAGER_DUTY",
-						PagerDuty: &akov2.PagerDutyIntegration{Region: "US"},
-					},
+					Type:      "PAGER_DUTY",
+					PagerDuty: &akov2.PagerDutyIntegration{Region: "US"},
 					PagerDutySecrets: &thirdpartyintegration.PagerDutySecrets{
 						ServiceKey: "my-secret-password",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type: "PROMETHEUS",
-						Prometheus: &akov2.PrometheusIntegration{
-							Enabled:          new("enabled"),
-							ServiceDiscovery: "http",
-						},
+					Type: "PROMETHEUS",
+					Prometheus: &akov2.PrometheusIntegration{
+						Enabled:          new("enabled"),
+						ServiceDiscovery: "http",
 					},
 					PrometheusSecrets: &thirdpartyintegration.PrometheusSecrets{
 						Username: "user",
@@ -175,32 +162,26 @@ func TestFromAKO(t *testing.T) {
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type: "SLACK",
-						Slack: &akov2.SlackIntegration{
-							ChannelName: "ako",
-						},
+					Type: "SLACK",
+					Slack: &akov2.SlackIntegration{
+						ChannelName: "ako",
 					},
 					SlackSecrets: &thirdpartyintegration.SlackSecrets{
 						APIToken: "my-secret-password",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type: "VICTOR_OPS",
-						VictorOps: &akov2.VictorOpsIntegration{
-							RoutingKey: "my-secret-password",
-						},
+					Type: "VICTOR_OPS",
+					VictorOps: &akov2.VictorOpsIntegration{
+						RoutingKey: "my-secret-password",
 					},
 					VictorOpsSecrets: &thirdpartyintegration.VictorOpsSecrets{
 						APIKey: "my-secret-password",
 					},
 				},
 				{
-					AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-						Type:    "WEBHOOK",
-						Webhook: &akov2.WebhookIntegration{},
-					},
+					Type:    "WEBHOOK",
+					Webhook: &akov2.WebhookIntegration{},
 					WebhookSecrets: &thirdpartyintegration.WebhookSecrets{
 						URL:    "https://example.com/webhook",
 						Secret: "my-secret-password",
@@ -223,22 +204,18 @@ func TestFromAKO(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			atlasProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name:         "My Project",
 					Integrations: tt.integrations,
 				},
 			}
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "integration-secret",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "integration-secret",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -507,12 +484,10 @@ func TestEnsureIntegration(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			atlasProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: tt.lastAppliedIntegration,
-					},
+				Name:      "my-project",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: tt.lastAppliedIntegration,
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name:         "My Project",
@@ -523,12 +498,10 @@ func TestEnsureIntegration(t *testing.T) {
 				},
 			}
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "integration-secret",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "integration-secret",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -613,8 +586,8 @@ func TestIntegrationReconcile(t *testing.T) {
 				s.EXPECT().List(context.Background(), "0123456789").
 					Return(
 						[]*thirdpartyintegration.ThirdPartyIntegration{
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "NEW_RELIC"}},
+							{Type: "DATADOG"},
+							{Type: "NEW_RELIC"},
 						},
 						nil,
 					)
@@ -632,7 +605,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				s.EXPECT().List(context.Background(), "0123456789").
 					Return(
 						[]*thirdpartyintegration.ThirdPartyIntegration{
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+							{Type: "DATADOG"},
 						},
 						nil,
 					)
@@ -655,7 +628,7 @@ func TestIntegrationReconcile(t *testing.T) {
 					context.Background(),
 					"0123456789",
 					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
-				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "SLACK"}}, nil)
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{Type: "SLACK"}, nil)
 
 				return s
 			},
@@ -690,7 +663,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				s.EXPECT().List(context.Background(), "0123456789").
 					Return(
 						[]*thirdpartyintegration.ThirdPartyIntegration{
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+							{Type: "DATADOG"},
 						},
 						nil,
 					)
@@ -698,7 +671,7 @@ func TestIntegrationReconcile(t *testing.T) {
 					context.Background(),
 					"0123456789",
 					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
-				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}}, nil)
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{Type: "DATADOG"}, nil)
 
 				return s
 			},
@@ -714,7 +687,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				s.EXPECT().List(context.Background(), "0123456789").
 					Return(
 						[]*thirdpartyintegration.ThirdPartyIntegration{
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "DATADOG"}},
+							{Type: "DATADOG"},
 						},
 						nil,
 					)
@@ -738,7 +711,7 @@ func TestIntegrationReconcile(t *testing.T) {
 				s.EXPECT().List(context.Background(), "0123456789").
 					Return(
 						[]*thirdpartyintegration.ThirdPartyIntegration{
-							{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "PROMETHEUS"}},
+							{Type: "PROMETHEUS"},
 						},
 						nil,
 					)
@@ -746,7 +719,7 @@ func TestIntegrationReconcile(t *testing.T) {
 					context.Background(),
 					"0123456789",
 					mock.AnythingOfType("*thirdpartyintegration.ThirdPartyIntegration"),
-				).Return(&thirdpartyintegration.ThirdPartyIntegration{AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{Type: "PROMETHEUS"}}, nil)
+				).Return(&thirdpartyintegration.ThirdPartyIntegration{Type: "PROMETHEUS"}, nil)
 
 				return s
 			},
@@ -757,10 +730,8 @@ func TestIntegrationReconcile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			atlasProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "My Project",
 				},

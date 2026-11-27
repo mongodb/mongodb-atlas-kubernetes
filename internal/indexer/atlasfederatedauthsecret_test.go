@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -53,7 +52,7 @@ func TestAtlasFederatedAuthBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return project namespace if name is set only",
 			object: &akov2.AtlasFederatedAuth{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns"},
+				Name: "name", Namespace: "ns",
 				Spec: akov2.AtlasFederatedAuthSpec{
 					ConnectionSecretRef: common.ResourceRefNamespaced{Name: "someSecret"},
 				},
@@ -63,7 +62,7 @@ func TestAtlasFederatedAuthBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return secret namespace and name if set",
 			object: &akov2.AtlasFederatedAuth{
-				ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "ns"},
+				Name: "name", Namespace: "ns",
 				Spec: akov2.AtlasFederatedAuthSpec{
 					ConnectionSecretRef: common.ResourceRefNamespaced{Name: "someSecret", Namespace: "secretNamespace"},
 				},

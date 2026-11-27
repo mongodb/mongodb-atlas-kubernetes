@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -525,12 +524,10 @@ func TestCleanupStaleSecrets(t *testing.T) {
 //nolint:unparam
 func newConnectionSecret(name, namespace string, labels, annotations map[string]string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Labels:      labels,
-			Annotations: annotations,
-		},
+		Name:        name,
+		Namespace:   namespace,
+		Labels:      labels,
+		Annotations: annotations,
 		Data: map[string][]byte{
 			"username": []byte("test-user"),
 			"password": []byte("test-pass"),
@@ -604,10 +601,8 @@ func TestHandleBatchUpsert(t *testing.T) {
 		{
 			name: "user with nil spec entry returns error",
 			user: &generatedv1.DatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      testUserName,
-					Namespace: testNamespace,
-				},
+				Name:      testUserName,
+				Namespace: testNamespace,
 				Spec: generatedv1.DatabaseUserSpec{
 					V20250312: &generatedv1.DatabaseUserSpecV20250312{},
 				},
@@ -772,10 +767,8 @@ func TestHandleBatchUpsert(t *testing.T) {
 
 			ctx := context.Background()
 			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testUserName,
-					Namespace: testNamespace,
-				},
+				Name:      testUserName,
+				Namespace: testNamespace,
 			}
 
 			result, err := r.handleBatchUpsert(ctx, req, tc.user, testProjectID, tc.targets)
@@ -837,10 +830,8 @@ func TestHandleBatchUpsert(t *testing.T) {
 
 func newTestDatabaseUser(name, namespace, projectID string) *generatedv1.DatabaseUser {
 	return &generatedv1.DatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: generatedv1.DatabaseUserSpec{
 			V20250312: &generatedv1.DatabaseUserSpecV20250312{
 				GroupId: &projectID,
@@ -882,10 +873,8 @@ func newTestDatabaseUserWithExpiry(name, namespace, projectID, deleteAfterDate s
 //nolint:unparam
 func newTestPasswordSecret(namespace string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "password-secret",
-			Namespace: namespace,
-		},
+		Name:      "password-secret",
+		Namespace: namespace,
 		Data: map[string][]byte{
 			"password": []byte("test-password"),
 		},
@@ -895,10 +884,8 @@ func newTestPasswordSecret(namespace string) *corev1.Secret {
 //nolint:unparam
 func newTestCredentialsSecret(name, namespace string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Data: map[string][]byte{
 			"orgId":         []byte("test-org-id"),
 			"publicApiKey":  []byte("test-public-key"),

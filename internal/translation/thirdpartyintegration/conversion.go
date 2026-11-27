@@ -255,10 +255,8 @@ func toAtlas(tpi *ThirdPartyIntegration) (*admin.ThirdPartyIntegration, error) {
 
 func fromAtlas(ai *admin.ThirdPartyIntegration) (*ThirdPartyIntegration, error) {
 	tpi := &ThirdPartyIntegration{
-		AtlasThirdPartyIntegrationSpec: akov2.AtlasThirdPartyIntegrationSpec{
-			Type: ai.GetType(),
-		},
-		ID: ai.GetId(),
+		Type: ai.GetType(),
+		ID:   ai.GetId(),
 	}
 	switch ai.GetType() {
 	case "DATADOG":

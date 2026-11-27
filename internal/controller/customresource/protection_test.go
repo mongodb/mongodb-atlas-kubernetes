@@ -175,7 +175,7 @@ func TestApplyLastConfigApplied(t *testing.T) {
 
 func sampleProjectWithAlerts() *akov2.AtlasProject {
 	return &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns"},
+		Name: "test-project", Namespace: "ns",
 		Spec: akov2.AtlasProjectSpec{
 			Name:                          "atlas-project-name",
 			ProjectIPAccessList:           []project.IPAccessList{{CIDRBlock: "10.0.0.0/8"}},
@@ -267,8 +267,8 @@ func TestPatchLastConfigApplied(t *testing.T) {
 		{
 			title: "spec without changes is a noop",
 			object: &akov2.AtlasProject{
-				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
-				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
+				Kind: "AtlasProject", APIVersion: "atlas.mongodb.com",
+				Name: "test-project", Namespace: "ns", Annotations: map[string]string{},
 				Spec: akov2.AtlasProjectSpec{
 					Name:                "atlas-project-name",
 					ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
@@ -294,8 +294,8 @@ func TestPatchLastConfigApplied(t *testing.T) {
 		{
 			title: "cleared spec is applied with no other changes",
 			object: &akov2.AtlasProject{
-				TypeMeta:   metav1.TypeMeta{Kind: "AtlasProject", APIVersion: "atlas.mongodb.com"},
-				ObjectMeta: metav1.ObjectMeta{Name: "test-project", Namespace: "ns", Annotations: map[string]string{}},
+				Kind: "AtlasProject", APIVersion: "atlas.mongodb.com",
+				Name: "test-project", Namespace: "ns", Annotations: map[string]string{},
 				Spec: akov2.AtlasProjectSpec{
 					Name:                "atlas-project-name",
 					ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
@@ -387,10 +387,8 @@ func TestParseLastConfigApplied(t *testing.T) {
 		{
 			title: "broken JSON in annotation renders error",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: "bad-json",
-					},
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: "bad-json",
 				},
 			},
 			wantErrorMsg: "error parsing JSON annotation value into a v1.AtlasProjectSpec",
@@ -398,10 +396,8 @@ func TestParseLastConfigApplied(t *testing.T) {
 		{
 			title: "proper but empty JSON renders empty spec",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: "{}",
-					},
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: "{}",
 				},
 			},
 			want: &akov2.AtlasProjectSpec{},
@@ -409,19 +405,17 @@ func TestParseLastConfigApplied(t *testing.T) {
 		{
 			title: "sample JSON spec renders original",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: jsonize(
-							akov2.AtlasProjectSpec{
-								Name:                "atlas-project-name",
-								ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
-								CustomRoles:         []akov2.CustomRole{{}},
-								ProjectIPAccessList: []project.IPAccessList{{}},
-								PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
-								NetworkPeers:        []akov2.NetworkPeer{{}},
-								Teams:               []akov2.Team{{}},
-							}),
-					},
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: jsonize(
+						akov2.AtlasProjectSpec{
+							Name:                "atlas-project-name",
+							ConnectionSecret:    &common.ResourceRefNamespaced{Name: "secret-name"},
+							CustomRoles:         []akov2.CustomRole{{}},
+							ProjectIPAccessList: []project.IPAccessList{{}},
+							PrivateEndpoints:    []akov2.PrivateEndpoint{{}},
+							NetworkPeers:        []akov2.NetworkPeer{{}},
+							Teams:               []akov2.Team{{}},
+						}),
 				},
 			},
 			want: &akov2.AtlasProjectSpec{

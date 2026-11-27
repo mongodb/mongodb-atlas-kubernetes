@@ -104,10 +104,8 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -139,11 +137,9 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "my-project",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name:       "my-project",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 					Tags: []*akov2.TagSpec{{Key: "env", Value: "dev"}},
@@ -179,10 +175,8 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -228,12 +222,10 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-project",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "my-project",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -258,12 +250,10 @@ func TestHandleProject(t *testing.T) {
 				return nil
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-project",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "my-project",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -294,12 +284,10 @@ func TestHandleProject(t *testing.T) {
 				},
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-project",
-					Namespace:         "default",
-					DeletionTimestamp: &deletionTime,
-					Finalizers:        []string{customresource.FinalizerLabel},
-				},
+				Name:              "my-project",
+				Namespace:         "default",
+				DeletionTimestamp: &deletionTime,
+				Finalizers:        []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -390,11 +378,9 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "my-project",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name:       "my-project",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasProjectSpec{
 					Name:        "my-project",
 					X509CertRef: &common.ResourceRefNamespaced{Name: "invalid-ref"},
@@ -491,19 +477,17 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "my-project",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-					Annotations: map[string]string{
-						// no skipped config, but some fake applied condig on network peerings
-						customresource.AnnotationLastAppliedConfiguration: func() string {
-							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
-								NetworkPeers: []akov2.NetworkPeer{{}},
-							})
-							return string(d)
-						}(),
-					},
+				Name:       "my-project",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
+				Annotations: map[string]string{
+					// no skipped config, but some fake applied condig on network peerings
+					customresource.AnnotationLastAppliedConfiguration: func() string {
+						d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+							NetworkPeers: []akov2.NetworkPeer{{}},
+						})
+						return string(d)
+					}(),
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -601,19 +585,17 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "my-project",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-					// no skipped config, but some fake applied condig on network peerings
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: func() string {
-							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
-								NetworkPeers: []akov2.NetworkPeer{{}},
-							})
-							return string(d)
-						}(),
-					},
+				Name:       "my-project",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
+				// no skipped config, but some fake applied condig on network peerings
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: func() string {
+						d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+							NetworkPeers: []akov2.NetworkPeer{{}},
+						})
+						return string(d)
+					}(),
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -712,19 +694,17 @@ func TestHandleProject(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "my-project",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-					// no skipped config, but some fake applied condig on network peerings
-					Annotations: map[string]string{
-						customresource.AnnotationLastAppliedConfiguration: func() string {
-							d, _ := json.Marshal(&akov2.AtlasProjectSpec{
-								NetworkPeers: []akov2.NetworkPeer{{}},
-							})
-							return string(d)
-						}(),
-					},
+				Name:       "my-project",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
+				// no skipped config, but some fake applied condig on network peerings
+				Annotations: map[string]string{
+					customresource.AnnotationLastAppliedConfiguration: func() string {
+						d, _ := json.Marshal(&akov2.AtlasProjectSpec{
+							NetworkPeers: []akov2.NetworkPeer{{}},
+						})
+						return string(d)
+					}(),
 				},
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
@@ -824,10 +804,8 @@ func TestCreate(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
@@ -852,10 +830,8 @@ func TestCreate(t *testing.T) {
 				return errors.New("failed to patch project with finalizers")
 			}},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
@@ -880,10 +856,8 @@ func TestCreate(t *testing.T) {
 				return nil
 			}},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
@@ -900,10 +874,8 @@ func TestCreate(t *testing.T) {
 				return service
 			},
 			project: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			},
 			result: reconcile.Result{RequeueAfter: workflow.DefaultRetry},
 			conditions: []api.Condition{
@@ -996,15 +968,13 @@ func TestDelete(t *testing.T) {
 			}},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "my-project",
-						Namespace:         "default",
-						Finalizers:        []string{customresource.FinalizerLabel},
-						DeletionTimestamp: &deletionTime,
-					},
+					Name:              "my-project",
+					Namespace:         "default",
+					Finalizers:        []string{customresource.FinalizerLabel},
+					DeletionTimestamp: &deletionTime,
 				},
-				&akov2.AtlasStreamInstance{ObjectMeta: metav1.ObjectMeta{Name: "instance0"}},
-				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
+				&akov2.AtlasStreamInstance{Name: "instance0"},
+				&akov2.AtlasTeam{Name: teamName},
 			},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
@@ -1026,18 +996,14 @@ func TestDelete(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "my-project",
-						Namespace:         "default",
-						Finalizers:        []string{customresource.FinalizerLabel},
-						DeletionTimestamp: &deletionTime,
-					},
+					Name:              "my-project",
+					Namespace:         "default",
+					Finalizers:        []string{customresource.FinalizerLabel},
+					DeletionTimestamp: &deletionTime,
 				},
 				&akov2.AtlasStreamInstance{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "instance-0",
-						Namespace: "default",
-					},
+					Name:      "instance-0",
+					Namespace: "default",
 					Spec: akov2.AtlasStreamInstanceSpec{
 						Project: common.ResourceRefNamespaced{
 							Name:      "my-project",
@@ -1045,7 +1011,7 @@ func TestDelete(t *testing.T) {
 						},
 					},
 				},
-				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
+				&akov2.AtlasTeam{Name: teamName},
 			},
 			conditions: []api.Condition{
 				api.FalseCondition(api.ProjectReadyType).
@@ -1067,18 +1033,16 @@ func TestDelete(t *testing.T) {
 			deletionProtection: true,
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "my-project",
-						Namespace:         "default",
-						DeletionTimestamp: &deletionTime,
-						Finalizers:        []string{customresource.FinalizerLabel},
-						Annotations: map[string]string{
-							customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-						},
+					Name:              "my-project",
+					Namespace:         "default",
+					DeletionTimestamp: &deletionTime,
+					Finalizers:        []string{customresource.FinalizerLabel},
+					Annotations: map[string]string{
+						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 					},
 				},
-				&akov2.AtlasStreamInstance{ObjectMeta: metav1.ObjectMeta{Name: "instance0"}},
-				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
+				&akov2.AtlasStreamInstance{Name: "instance0"},
+				&akov2.AtlasTeam{Name: teamName},
 			},
 			result: reconcile.Result{},
 		},
@@ -1094,18 +1058,16 @@ func TestDelete(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "my-project",
-						Namespace:         "default",
-						DeletionTimestamp: &deletionTime,
-						Finalizers:        []string{customresource.FinalizerLabel},
-						Annotations: map[string]string{
-							customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-						},
+					Name:              "my-project",
+					Namespace:         "default",
+					DeletionTimestamp: &deletionTime,
+					Finalizers:        []string{customresource.FinalizerLabel},
+					Annotations: map[string]string{
+						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 					},
 				},
-				&akov2.AtlasStreamInstance{ObjectMeta: metav1.ObjectMeta{Name: "instance0"}},
-				&akov2.AtlasTeam{ObjectMeta: metav1.ObjectMeta{Name: teamName}},
+				&akov2.AtlasStreamInstance{Name: "instance0"},
+				&akov2.AtlasTeam{Name: teamName},
 			},
 		},
 		"should update team status when project is deleted": {
@@ -1136,12 +1098,10 @@ func TestDelete(t *testing.T) {
 			},
 			objects: []client.Object{
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "my-project",
-						Namespace:         "default",
-						DeletionTimestamp: &deletionTime,
-						Finalizers:        []string{customresource.FinalizerLabel},
-					},
+					Name:              "my-project",
+					Namespace:         "default",
+					DeletionTimestamp: &deletionTime,
+					Finalizers:        []string{customresource.FinalizerLabel},
 					Spec: akov2.AtlasProjectSpec{
 						Teams: []akov2.Team{
 							{
@@ -1168,12 +1128,10 @@ func TestDelete(t *testing.T) {
 						},
 					},
 				},
-				&akov2.AtlasStreamInstance{ObjectMeta: metav1.ObjectMeta{Name: "instance0"}},
+				&akov2.AtlasStreamInstance{Name: "instance0"},
 				&akov2.AtlasTeam{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      teamName,
-						Namespace: "default",
-					},
+					Name:      teamName,
+					Namespace: "default",
 					Spec: akov2.TeamSpec{
 						Name: "teamName",
 					},
@@ -1255,10 +1213,8 @@ func TestDelete(t *testing.T) {
 func TestHasDependencies(t *testing.T) {
 	t.Run("should return error when unable to list stream instances", func(t *testing.T) {
 		p := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 		}
 		testScheme := runtime.NewScheme()
 		require.NoError(t, akov2.AddToScheme(testScheme))
@@ -1283,10 +1239,8 @@ func TestHasDependencies(t *testing.T) {
 
 	t.Run("should return false when project has no dependencies", func(t *testing.T) {
 		p := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 		}
 		ctx := &workflow.Context{
 			Context: context.Background(),
@@ -1315,16 +1269,12 @@ func TestHasDependencies(t *testing.T) {
 
 	t.Run("should return true when project has streams as dependencies", func(t *testing.T) {
 		p := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 		}
 		streamsInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance-0",
-				Namespace: "default",
-			},
+			Name:      "instance-0",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Project: common.ResourceRefNamespaced{
 					Name:      "my-project",
@@ -1357,16 +1307,12 @@ func TestHasDependencies(t *testing.T) {
 
 	t.Run("should return true when project has private endpoints as dependencies", func(t *testing.T) {
 		p := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 		}
 		pe := &akov2.AtlasPrivateEndpoint{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pe-0",
-				Namespace: "default",
-			},
+			Name:      "pe-0",
+			Namespace: "default",
 			Spec: akov2.AtlasPrivateEndpointSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ProjectRef: &common.ResourceRefNamespaced{

@@ -684,10 +684,8 @@ type FlexProviderSettings struct {
 
 func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
 	return &AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: AtlasDeploymentSpec{
 			DeploymentSpec: &AdvancedDeploymentSpec{
 				ClusterType: "REPLICASET",
@@ -716,10 +714,8 @@ func NewDeployment(namespace, name, nameInAtlas string) *AtlasDeployment {
 
 func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasDeployment {
 	return &AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: AtlasDeploymentSpec{
 			ServerlessSpec: &ServerlessSpec{
 				Name: nameInAtlas,
@@ -735,10 +731,8 @@ func newServerlessInstance(namespace, name, nameInAtlas, backingProviderName, re
 
 func newFlexInstance(namespace, name, nameInAtlas, backingProviderName, regionName string) *AtlasDeployment {
 	return &AtlasDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: AtlasDeploymentSpec{
 			FlexSpec: &FlexSpec{
 				Name: nameInAtlas,

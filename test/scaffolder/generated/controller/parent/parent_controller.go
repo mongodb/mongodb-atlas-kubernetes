@@ -81,12 +81,10 @@ func NewParentReconciler(
 	}
 	// Create main handler dispatcher
 	parentHandler := &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   atlasProvider,
-			Client:          c.GetClient(),
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Named("controllers").Named("AtlasParent").Sugar(),
-		},
+		AtlasProvider:       atlasProvider,
+		Client:              c.GetClient(),
+		GlobalSecretRef:     globalSecretRef,
+		Log:                 logger.Named("controllers").Named("AtlasParent").Sugar(),
 		deletionProtection:  deletionProtection,
 		handlerintegrations: handlerintegrationsFunc,
 		predicates:          predicates,

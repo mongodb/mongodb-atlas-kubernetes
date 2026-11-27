@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -38,17 +37,14 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/indexer"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation/atlasorgsettings"
 )
 
 var testAtlasSecret = corev1.Secret{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "test-atlas-secret",
-		Namespace: "default",
-	},
+	Name:      "test-atlas-secret",
+	Namespace: "default",
 	Data: map[string][]byte{
 		"orgId":         []byte("test-org-id"),
 		"publicApiKey":  []byte("test-public-key"),
@@ -93,12 +89,10 @@ func TestSetupWithManager(t *testing.T) {
 	}
 
 	handler := &AtlasOrgSettingsHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   nil,
-			Client:          fakeMgr.GetClient(),
-			Log:             &zap.SugaredLogger{},
-			GlobalSecretRef: client.ObjectKey{},
-		},
+		AtlasProvider:   nil,
+		Client:          fakeMgr.GetClient(),
+		Log:             &zap.SugaredLogger{},
+		GlobalSecretRef: client.ObjectKey{},
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 			return nil
 		},
@@ -128,10 +122,8 @@ func TestFindSecretsForOrgSettings(t *testing.T) {
 			name: "empty on non-linked secret",
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-secret",
-						Namespace: "default",
-					},
+					Name:      "test-secret",
+					Namespace: "default",
 				},
 			},
 			want: []reconcile.Request{},
@@ -140,16 +132,12 @@ func TestFindSecretsForOrgSettings(t *testing.T) {
 			name: "hit on linked credential secret",
 			objects: []client.Object{
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-credential",
-						Namespace: "default",
-					},
+					Name:      "test-credential",
+					Namespace: "default",
 				},
 				&akov2.AtlasOrgSettings{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "org-settings",
-						Namespace: "default",
-					},
+					Name:      "org-settings",
+					Namespace: "default",
 					Spec: akov2.AtlasOrgSettingsSpec{
 						OrgID: "test-org-id",
 						ConnectionSecretRef: &api.LocalObjectReference{
@@ -159,7 +147,7 @@ func TestFindSecretsForOrgSettings(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: "org-settings", Namespace: "default"}},
+				{Name: "org-settings", Namespace: "default"},
 			},
 		},
 	}
@@ -175,10 +163,8 @@ func TestFindSecretsForOrgSettings(t *testing.T) {
 				Build()
 
 			handler := &AtlasOrgSettingsHandler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: fakeClient,
-					Log:    logger.Sugar(),
-				},
+				Client: fakeClient,
+				Log:    logger.Sugar(),
 			}
 			mapper := handler.findSecretsForOrgSettings()
 
@@ -195,10 +181,8 @@ func TestAtlasOrgSettingsHandler_NewReconcileContext(t *testing.T) {
 	require.NoError(t, akov2.AddToScheme(scheme))
 
 	orgSettings := &akov2.AtlasOrgSettings{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-org-settings",
-			Namespace: "default",
-		},
+		Name:      "test-org-settings",
+		Namespace: "default",
 		Spec: akov2.AtlasOrgSettingsSpec{
 			OrgID: "test-org-id",
 			ConnectionSecretRef: &api.LocalObjectReference{
@@ -215,12 +199,10 @@ func TestAtlasOrgSettingsHandler_NewReconcileContext(t *testing.T) {
 		WithObjects(&testAtlasSecret, orgSettings).Build()
 
 	handler := &AtlasOrgSettingsHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			AtlasProvider: &atlasmock.TestProvider{
-				SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
-					return &atlas.ClientSet{}, nil
-				},
+		Client: k8sClient,
+		AtlasProvider: &atlasmock.TestProvider{
+			SdkClientSetFunc: func(ctx context.Context, creds *atlas.Credentials, log *zap.SugaredLogger) (*atlas.ClientSet, error) {
+				return &atlas.ClientSet{}, nil
 			},
 		},
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {

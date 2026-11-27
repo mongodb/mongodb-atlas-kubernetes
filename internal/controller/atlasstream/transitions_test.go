@@ -43,10 +43,8 @@ import (
 func TestCreate(t *testing.T) {
 	t.Run("should transition to in-progress state when creates a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -55,10 +53,8 @@ func TestCreate(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -79,10 +75,8 @@ func TestCreate(t *testing.T) {
 			},
 		}
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection",
 				ConnectionType: "Sample",
@@ -149,10 +143,8 @@ func TestCreate(t *testing.T) {
 
 	t.Run("should transition to a terminate state when fail to create a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -161,10 +153,8 @@ func TestCreate(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -185,10 +175,8 @@ func TestCreate(t *testing.T) {
 			},
 		}
 		streamConnection := &akov2.AtlasStreamConnection{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-sample-connection",
-				Namespace: "default",
-			},
+			Name:      "my-sample-connection",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamConnectionSpec{
 				Name:           "sample-connection",
 				ConnectionType: "Sample",
@@ -239,10 +227,8 @@ func TestDelete(t *testing.T) {
 	t.Run("should handle deletion when deletion protection is disabled", func(t *testing.T) {
 		t.Run("should successfully transition when deleting a stream instance in Atlas", func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -251,12 +237,10 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			streamInstance := &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-stream-processing-instance",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: new(metav1.Now()),
-				},
+				Name:              "my-stream-processing-instance",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: new(metav1.Now()),
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
 					Config: akov2.Config{
@@ -327,10 +311,8 @@ func TestDelete(t *testing.T) {
 
 		t.Run("should successfully transition when keep resource annotation is set", func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -339,14 +321,12 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			streamInstance := &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-stream-processing-instance",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: new(metav1.Now()),
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-					},
+				Name:              "my-stream-processing-instance",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: new(metav1.Now()),
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
@@ -403,10 +383,8 @@ func TestDelete(t *testing.T) {
 
 		t.Run("should fail transition when unable to delete a stream instance in Atlas", func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -415,12 +393,10 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			streamInstance := &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-stream-processing-instance",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: new(metav1.Now()),
-				},
+				Name:              "my-stream-processing-instance",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: new(metav1.Now()),
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
 					Config: akov2.Config{
@@ -497,10 +473,8 @@ func TestDelete(t *testing.T) {
 	t.Run("should handle deletion when deletion protection is enabled", func(t *testing.T) {
 		t.Run("should successfully transition when delete resource annotation is set", func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -509,14 +483,12 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			streamInstance := &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-stream-processing-instance",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: new(metav1.Now()),
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete,
-					},
+				Name:              "my-stream-processing-instance",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: new(metav1.Now()),
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyDelete,
 				},
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
@@ -589,10 +561,8 @@ func TestDelete(t *testing.T) {
 
 		t.Run("should successfully transition when deleting a stream instance in Atlas", func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -601,14 +571,12 @@ func TestDelete(t *testing.T) {
 				},
 			}
 			streamInstance := &akov2.AtlasStreamInstance{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "my-stream-processing-instance",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: new(metav1.Now()),
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-					},
+				Name:              "my-stream-processing-instance",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: new(metav1.Now()),
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
 				Spec: akov2.AtlasStreamInstanceSpec{
 					Name: "instance-0",
@@ -667,10 +635,8 @@ func TestDelete(t *testing.T) {
 
 	t.Run("should fail transition when unable to clean finalizer", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -679,14 +645,12 @@ func TestDelete(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "my-stream-processing-instance",
-				Namespace:         "default",
-				Finalizers:        []string{customresource.FinalizerLabel},
-				DeletionTimestamp: new(metav1.Now()),
-				Annotations: map[string]string{
-					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-				},
+			Name:              "my-stream-processing-instance",
+			Namespace:         "default",
+			Finalizers:        []string{customresource.FinalizerLabel},
+			DeletionTimestamp: new(metav1.Now()),
+			Annotations: map[string]string{
+				customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 			},
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
@@ -749,10 +713,8 @@ func TestDelete(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	t.Run("should update a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -761,10 +723,8 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -858,10 +818,8 @@ func TestUpdate(t *testing.T) {
 
 	t.Run("should transition to in-progress state when fail to update a stream instance in Atlas", func(t *testing.T) {
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -870,10 +828,8 @@ func TestUpdate(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -972,10 +928,8 @@ func TestCreateConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -984,10 +938,8 @@ func TestCreateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1013,10 +965,8 @@ func TestCreateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1050,10 +1000,8 @@ func TestCreateConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1062,10 +1010,8 @@ func TestCreateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1091,10 +1037,8 @@ func TestCreateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1114,10 +1058,8 @@ func TestCreateConnections(t *testing.T) {
 	t.Run("should return error when fail mapping an instance connection", func(t *testing.T) { //nolint:dupl
 		ctx := &workflow.Context{}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1126,10 +1068,8 @@ func TestCreateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1155,10 +1095,8 @@ func TestCreateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1198,10 +1136,8 @@ func TestUpdateConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1210,10 +1146,8 @@ func TestUpdateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1239,10 +1173,8 @@ func TestUpdateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1276,10 +1208,8 @@ func TestUpdateConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1288,10 +1218,8 @@ func TestUpdateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1317,10 +1245,8 @@ func TestUpdateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1340,10 +1266,8 @@ func TestUpdateConnections(t *testing.T) {
 	t.Run("should return error when fail mapping an instance connection", func(t *testing.T) { //nolint:dupl
 		ctx := &workflow.Context{}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1352,10 +1276,8 @@ func TestUpdateConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1381,10 +1303,8 @@ func TestUpdateConnections(t *testing.T) {
 		}
 		connections := []*akov2.AtlasStreamConnection{
 			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-sample-connection",
-					Namespace: "default",
-				},
+				Name:      "my-sample-connection",
+				Namespace: "default",
 				Spec: akov2.AtlasStreamConnectionSpec{
 					Name:           "sample-connection",
 					ConnectionType: "Sample",
@@ -1420,10 +1340,8 @@ func TestDeleteConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1432,10 +1350,8 @@ func TestDeleteConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{
@@ -1487,10 +1403,8 @@ func TestDeleteConnections(t *testing.T) {
 			},
 		}
 		project := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-project",
-				Namespace: "default",
-			},
+			Name:      "my-project",
+			Namespace: "default",
 			Spec: akov2.AtlasProjectSpec{
 				Name: "my-project",
 			},
@@ -1499,10 +1413,8 @@ func TestDeleteConnections(t *testing.T) {
 			},
 		}
 		streamInstance := &akov2.AtlasStreamInstance{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-stream-processing-instance",
-				Namespace: "default",
-			},
+			Name:      "my-stream-processing-instance",
+			Namespace: "default",
 			Spec: akov2.AtlasStreamInstanceSpec{
 				Name: "instance-0",
 				Config: akov2.Config{

@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -55,7 +54,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the datadog secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "DATADOG",
 					Datadog: &akov2.DatadogIntegration{
@@ -70,7 +69,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the microsoft teams secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "MICROSOFT_TEAMS",
 					MicrosoftTeams: &akov2.MicrosoftTeamsIntegration{
@@ -85,7 +84,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the new relic secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "NEW_RELIC",
 					NewRelic: &akov2.NewRelicIntegration{
@@ -100,7 +99,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the ops genie secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "OPS_GENIE",
 					OpsGenie: &akov2.OpsGenieIntegration{
@@ -115,7 +114,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the pager duty secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PAGER_DUTY",
 					PagerDuty: &akov2.PagerDutyIntegration{
@@ -130,7 +129,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the prometheus secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "PROMETHEUS",
 					Prometheus: &akov2.PrometheusIntegration{
@@ -145,7 +144,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the slack secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "SLACK",
 					Slack: &akov2.SlackIntegration{
@@ -160,7 +159,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the victor ops secret name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "VICTOR_OPS",
 					VictorOps: &akov2.VictorOpsIntegration{
@@ -175,7 +174,7 @@ func TestAtlasThirdPartyIntgerationBySecretsIndexer(t *testing.T) {
 		{
 			name: "should return the webhook api key name",
 			object: &akov2.AtlasThirdPartyIntegration{
-				ObjectMeta: v1.ObjectMeta{Namespace: "ns"},
+				Namespace: "ns",
 				Spec: akov2.AtlasThirdPartyIntegrationSpec{
 					Type: "WEBHOOK",
 					Webhook: &akov2.WebhookIntegration{

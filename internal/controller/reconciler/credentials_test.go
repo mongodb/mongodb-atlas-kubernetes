@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -55,10 +54,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			title: "local connection secret reference",
 			// given an AtlasIPAccessList referencing a local connection secret directly
 			input: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-list",
-					Namespace: "project-namespace",
-				},
+				Name:      "test-list",
+				Namespace: "project-namespace",
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "some-secret"},
@@ -67,10 +64,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			},
 			// and a local secret in the same namespace
 			objects: []client.Object{&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "some-secret",
-					Namespace: "project-namespace",
-				},
+				Name:      "some-secret",
+				Namespace: "project-namespace",
 				Data: map[string][]byte{
 					"orgId": []byte("some"), "publicApiKey": []byte("local"), "privateApiKey": []byte("secret"),
 				},
@@ -82,10 +77,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			title: "project reference",
 			// given an AtlasIPAccessList referencing an AtlasProject resource
 			input: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-list",
-					Namespace: "project-namespace",
-				},
+				Name:      "test-list",
+				Namespace: "project-namespace",
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -98,10 +91,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			objects: []client.Object{
 				// and the AtlasProject resource referencing a local connection secret
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "project",
-						Namespace: "project-ns",
-					},
+					Name:      "project",
+					Namespace: "project-ns",
 					Spec: akov2.AtlasProjectSpec{
 						ConnectionSecret: &common.ResourceRefNamespaced{
 							Name:      "project-secret",
@@ -111,10 +102,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 				},
 				// and a local secret
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "project-secret",
-						Namespace: "project-ns",
-					},
+					Name:      "project-secret",
+					Namespace: "project-ns",
 					Data: map[string][]byte{
 						"orgId":         []byte("some"),
 						"publicApiKey":  []byte("local"),
@@ -129,10 +118,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			title: "project reference without namespace",
 			// given an AtlasIPAccessList referencing an AtlasProject without specifying a namespace
 			input: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-list",
-					Namespace: "project-namespace",
-				},
+				Name:      "test-list",
+				Namespace: "project-namespace",
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -144,10 +131,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			objects: []client.Object{
 				// and the AtlasProject in the "project-namespace" namespace referencing a local connection secret
 				&akov2.AtlasProject{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "project",
-						Namespace: "project-namespace",
-					},
+					Name:      "project",
+					Namespace: "project-namespace",
 					Spec: akov2.AtlasProjectSpec{
 						ConnectionSecret: &common.ResourceRefNamespaced{
 							Name:      "project-secret",
@@ -157,10 +142,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 				},
 				// and a local secret
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "project-secret",
-						Namespace: "project-ns",
-					},
+					Name:      "project-secret",
+					Namespace: "project-ns",
 					Data: map[string][]byte{
 						"orgId":         []byte("some"),
 						"publicApiKey":  []byte("local"),
@@ -175,10 +158,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			title: "project reference to non-existing project",
 			// given an AtlasIPAccessList referencing an AtlasProject that does not exist
 			input: &akov2.AtlasIPAccessList{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-list",
-					Namespace: "project-namespace",
-				},
+				Name:      "test-list",
+				Namespace: "project-namespace",
 				Spec: akov2.AtlasIPAccessListSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -193,10 +174,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 		{
 			title: "local connection secret reference if external project reference is set",
 			input: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-role",
-					Namespace: "test-ns",
-				},
+				Name:      "test-role",
+				Namespace: "test-ns",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{ID: "testProjectID"},
@@ -207,10 +186,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			objects: []client.Object{
 				// and a local secret
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "local-secret",
-						Namespace: "test-ns",
-					},
+					Name:      "local-secret",
+					Namespace: "test-ns",
 					Data: map[string][]byte{
 						"orgId":         []byte("some"),
 						"publicApiKey":  []byte("local"),
@@ -223,10 +200,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 		{
 			title: "favor local connection secret over project reference",
 			input: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-role",
-					Namespace: "test-ns",
-				},
+				Name:      "test-role",
+				Namespace: "test-ns",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -240,10 +215,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 			objects: []client.Object{
 				// and a local secret
 				&corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "local-secret",
-						Namespace: "test-ns",
-					},
+					Name:      "local-secret",
+					Namespace: "test-ns",
 					Data: map[string][]byte{
 						"orgId":         []byte("some"),
 						"publicApiKey":  []byte("local"),
@@ -257,10 +230,8 @@ func TestResolveConnectionConfig(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			fakeClient := newFakeKubeClient(t, append(tc.objects, tc.input, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("global"),
 					"publicApiKey":  []byte("global"),
@@ -295,7 +266,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 
 	saCredSecret := func(clientID, clientSecret string) *corev1.Secret {
 		return &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: "sa-creds", Namespace: "ns"},
+			Name: "sa-creds", Namespace: "ns",
 			Data: map[string][]byte{
 				"orgId":        []byte("org-123"),
 				"clientId":     []byte(clientID),
@@ -305,7 +276,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 	}
 	tokenSecret := func(accessToken, expiry, hash string) *corev1.Secret {
 		return &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{Name: tokenSecretName, Namespace: "ns"},
+			Name: tokenSecretName, Namespace: "ns",
 			Data: map[string][]byte{
 				"accessToken":     []byte(accessToken),
 				"expiry":          []byte(expiry),
@@ -341,7 +312,7 @@ func TestGetConnectionConfig_ServiceAccount(t *testing.T) {
 		{
 			name: "secret with both API keys and service account credentials is rejected",
 			credSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "bad-creds", Namespace: "ns"},
+				Name: "bad-creds", Namespace: "ns",
 				Data: map[string][]byte{
 					"orgId":         []byte("org-123"),
 					"publicApiKey":  []byte("pub"),

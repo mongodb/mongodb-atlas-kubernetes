@@ -48,7 +48,7 @@ func AssertCRDNames(ctx context.Context, kubeClient client.Client, crdNames ...s
 	crds := make([]*apiextensionsv1.CustomResourceDefinition, 0, len(crdNames))
 	for _, crdName := range crdNames {
 		crd := &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{Name: crdName},
+			Name: crdName,
 		}
 		crds = append(crds, crd)
 	}

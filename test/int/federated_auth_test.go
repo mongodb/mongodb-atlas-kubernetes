@@ -23,7 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -145,10 +144,8 @@ var _ = Describe("AtlasFederatedAuth test", Label("AtlasFederatedAuth", "focus-f
 			)
 
 			fedAuth := &akov2.AtlasFederatedAuth{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      resourceName,
-					Namespace: testNamespace.Name,
-				},
+				Name:      resourceName,
+				Namespace: testNamespace.Name,
 				Spec: akov2.AtlasFederatedAuthSpec{
 					Enabled: true,
 					ConnectionSecretRef: common.ResourceRefNamespaced{

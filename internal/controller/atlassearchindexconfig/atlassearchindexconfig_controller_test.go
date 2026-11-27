@@ -22,9 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,10 +55,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "testSearchIndexConfig",
-					Namespace: "mongodb-atlas-system",
-				},
+				Name:      "testSearchIndexConfig",
+				Namespace: "mongodb-atlas-system",
 			},
 		)
 		assert.NoError(t, err)
@@ -69,12 +65,10 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should skip reconciliation when annotation is set for AtlasSearchIndexConfig resource", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-				Annotations: map[string]string{
-					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-				},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
+			Annotations: map[string]string{
+				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 			},
 		}
 		testScheme := runtime.NewScheme()
@@ -92,10 +86,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.NoError(t, err)
@@ -104,12 +96,10 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to invalid state when resource version is invalid", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-				Labels: map[string]string{
-					customresource.ResourceVersion: "SomeRandomVersion",
-				},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
+			Labels: map[string]string{
+				customresource.ResourceVersion: "SomeRandomVersion",
 			},
 		}
 		testScheme := runtime.NewScheme()
@@ -129,10 +119,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.Error(t, err)
@@ -151,10 +139,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to unsupported state when resource is not supported by platform", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -178,10 +164,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.NoError(t, err)
@@ -200,10 +184,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to terminate state when failed to list instances", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -236,10 +218,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		_, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.Error(t, err)
@@ -256,16 +236,12 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to lock state when referred by an instance", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		atlasDeployment := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testAtlasDeployment",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testAtlasDeployment",
+			Namespace: "mongodb-atlas-system",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					SearchIndexes: []akov2.SearchIndex{
@@ -311,10 +287,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.NoError(t, err)
@@ -332,11 +306,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to release state when not referred by any instance", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "testSearchIndexConfig",
-				Namespace:  "mongodb-atlas-system",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "testSearchIndexConfig",
+			Namespace:  "mongodb-atlas-system",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -366,10 +338,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 		result, err := reconciler.Reconcile(
 			context.Background(),
 			ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      searchIndexConfig.GetName(),
-					Namespace: searchIndexConfig.GetNamespace(),
-				},
+				Name:      searchIndexConfig.GetName(),
+				Namespace: searchIndexConfig.GetNamespace(),
 			},
 		)
 		assert.NoError(t, err)
@@ -387,11 +357,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to ready when finalizer is already set", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "testSearchIndexConfig",
-				Namespace:  "mongodb-atlas-system",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "testSearchIndexConfig",
+			Namespace:  "mongodb-atlas-system",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		reconciler := &AtlasSearchIndexConfigReconciler{
 			Log: zaptest.NewLogger(t).Sugar(),
@@ -411,10 +379,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to terminate when failed to set finalizer", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -448,10 +414,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to ready when setting finalizer", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -479,10 +443,8 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to ready when finalizer is already unset", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testSearchIndexConfig",
-				Namespace: "mongodb-atlas-system",
-			},
+			Name:      "testSearchIndexConfig",
+			Namespace: "mongodb-atlas-system",
 		}
 		reconciler := &AtlasSearchIndexConfigReconciler{
 			Log: zaptest.NewLogger(t).Sugar(),
@@ -502,11 +464,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to terminate when failed to unset finalizer", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "testSearchIndexConfig",
-				Namespace:  "mongodb-atlas-system",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "testSearchIndexConfig",
+			Namespace:  "mongodb-atlas-system",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))
@@ -540,11 +500,9 @@ func TestAtlasSearchIndexConfigReconciler_Reconcile(t *testing.T) {
 
 	t.Run("should transition to ready when unsetting finalizer", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "testSearchIndexConfig",
-				Namespace:  "mongodb-atlas-system",
-				Finalizers: []string{customresource.FinalizerLabel},
-			},
+			Name:       "testSearchIndexConfig",
+			Namespace:  "mongodb-atlas-system",
+			Finalizers: []string{customresource.FinalizerLabel},
 		}
 		testScheme := runtime.NewScheme()
 		assert.NoError(t, akov2.AddToScheme(testScheme))

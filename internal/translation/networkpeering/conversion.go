@@ -193,41 +193,35 @@ func fromAtlasConnectionNoStatus(conn *admin.BaseNetworkPeeringConnectionSetting
 	case provider.ProviderAWS:
 		return &NetworkPeer{
 			ContainerID: conn.GetContainerId(),
-			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-				ID:       conn.GetId(),
-				Provider: conn.GetProviderName(),
-				AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-					AccepterRegionName:  conn.GetAccepterRegionName(),
-					AWSAccountID:        conn.GetAwsAccountId(),
-					RouteTableCIDRBlock: conn.GetRouteTableCidrBlock(),
-					VpcID:               conn.GetVpcId(),
-				},
+			ID:          conn.GetId(),
+			Provider:    conn.GetProviderName(),
+			AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+				AccepterRegionName:  conn.GetAccepterRegionName(),
+				AWSAccountID:        conn.GetAwsAccountId(),
+				RouteTableCIDRBlock: conn.GetRouteTableCidrBlock(),
+				VpcID:               conn.GetVpcId(),
 			},
 		}, nil
 	case provider.ProviderGCP:
 		return &NetworkPeer{
 			ContainerID: conn.GetContainerId(),
-			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-				ID:       conn.GetId(),
-				Provider: conn.GetProviderName(),
-				GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
-					GCPProjectID: conn.GetGcpProjectId(),
-					NetworkName:  conn.GetNetworkName(),
-				},
+			ID:          conn.GetId(),
+			Provider:    conn.GetProviderName(),
+			GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
+				GCPProjectID: conn.GetGcpProjectId(),
+				NetworkName:  conn.GetNetworkName(),
 			},
 		}, nil
 	case provider.ProviderAzure:
 		return &NetworkPeer{
 			ContainerID: conn.GetContainerId(),
-			AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-				ID:       conn.GetId(),
-				Provider: conn.GetProviderName(),
-				AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
-					AzureDirectoryID:    conn.GetAzureDirectoryId(),
-					AzureSubscriptionID: conn.GetAzureSubscriptionId(),
-					ResourceGroupName:   conn.GetResourceGroupName(),
-					VNetName:            conn.GetVnetName(),
-				},
+			ID:          conn.GetId(),
+			Provider:    conn.GetProviderName(),
+			AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
+				AzureDirectoryID:    conn.GetAzureDirectoryId(),
+				AzureSubscriptionID: conn.GetAzureSubscriptionId(),
+				ResourceGroupName:   conn.GetResourceGroupName(),
+				VNetName:            conn.GetVnetName(),
 			},
 		}, nil
 	default:
