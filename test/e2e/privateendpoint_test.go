@@ -21,7 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -205,9 +204,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 				return model.DataProvider(ctx, "aws-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			&akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "aws-pe-1",
-				},
+				Name: "aws-pe-1",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					Provider: "AWS",
 				},
@@ -220,9 +217,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 				return model.DataProvider(ctx, "azure-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			&akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "azure-pe-1",
-				},
+				Name: "azure-pe-1",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					Provider: "AZURE",
 				},
@@ -235,9 +230,7 @@ var _ = Describe("Private Endpoints", Label("private-endpoint"), FlakeAttempts(3
 				return model.DataProvider(ctx, "gcp-pe-1", model.NewEmptyAtlasKeyType().UseDefaultFullAccess(), 40000, []func(*model.TestDataProvider){}).WithProject(data.DefaultProject())
 			},
 			&akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "gcp-pe-1",
-				},
+				Name: "gcp-pe-1",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					Provider: "GCP",
 				},
@@ -439,10 +432,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 			//nolint:dupl
 			By("Migrating AWS private endpoint", func() {
 				awsPE = &akov2.AtlasPrivateEndpoint{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pe-aws-" + testData.Resources.TestID,
-						Namespace: testData.Resources.Namespace,
-					},
+					Name:      "pe-aws-" + testData.Resources.TestID,
+					Namespace: testData.Resources.Namespace,
 					Spec: akov2.AtlasPrivateEndpointSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ProjectRef: &common.ResourceRefNamespaced{
@@ -478,10 +469,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 
 			By("Migrating AZURE private endpoint", func() {
 				azurePE = &akov2.AtlasPrivateEndpoint{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pe-azure-" + testData.Resources.TestID,
-						Namespace: testData.Resources.Namespace,
-					},
+					Name:      "pe-azure-" + testData.Resources.TestID,
+					Namespace: testData.Resources.Namespace,
 					Spec: akov2.AtlasPrivateEndpointSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ProjectRef: &common.ResourceRefNamespaced{
@@ -529,10 +518,8 @@ var _ = Describe("Migrate private endpoints from sub-resources to separate custo
 				}
 
 				gcpPE = &akov2.AtlasPrivateEndpoint{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pe-gcp-" + testData.Resources.TestID,
-						Namespace: testData.Resources.Namespace,
-					},
+					Name:      "pe-gcp-" + testData.Resources.TestID,
+					Namespace: testData.Resources.Namespace,
 					Spec: akov2.AtlasPrivateEndpointSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ProjectRef: &common.ResourceRefNamespaced{
@@ -667,10 +654,8 @@ var _ = Describe("Independent resource should no conflict with sub-resource", La
 			Expect(err).ToNot(HaveOccurred())
 
 			awsPE = &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pe-aws-" + testData.Resources.TestID,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      "pe-aws-" + testData.Resources.TestID,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{

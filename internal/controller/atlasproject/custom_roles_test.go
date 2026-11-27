@@ -26,7 +26,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
@@ -494,9 +493,7 @@ func TestCustomRolesNonGreedyBehaviour(t *testing.T) {
 
 func newCustomRolesTestProject(customRoles []string) *akov2.AtlasProject {
 	return &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{},
-		},
+		Annotations: map[string]string{},
 		Spec: akov2.AtlasProjectSpec{
 			Name:        "test-project",
 			CustomRoles: synthesizeCustomRoles(customRoles),

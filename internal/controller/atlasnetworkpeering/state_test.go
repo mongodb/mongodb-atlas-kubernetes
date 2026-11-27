@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	akomock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -81,14 +80,12 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should skip reconciliation",
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-peering",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-					},
-					Finalizers: []string{customresource.FinalizerLabel},
+				Name:      "network-peering",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 				},
+				Finalizers: []string{customresource.FinalizerLabel},
 			},
 			wantResult:     ctrl.Result{},
 			wantFinalizers: []string{customresource.FinalizerLabel},
@@ -97,12 +94,10 @@ func TestHandleCustomResource(t *testing.T) {
 			title:     "should fail to validate resource",
 			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-peering",
-					Namespace: "default",
-					Labels: map[string]string{
-						customresource.ResourceVersion: "wrong",
-					},
+				Name:      "network-peering",
+				Namespace: "default",
+				Labels: map[string]string{
+					customresource.ResourceVersion: "wrong",
 				},
 			},
 			wantConditions: []api.Condition{
@@ -115,10 +110,8 @@ func TestHandleCustomResource(t *testing.T) {
 		{
 			title: "should fail when not supported",
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-peering",
-					Namespace: "default",
-				},
+				Name:      "network-peering",
+				Namespace: "default",
 			},
 			provider: &atlasmock.TestProvider{
 				IsSupportedFunc: func() bool {
@@ -137,10 +130,8 @@ func TestHandleCustomResource(t *testing.T) {
 			title:     "should fail to resolve credentials and remove finalizer",
 			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-peering",
-					Namespace: "default",
-				},
+				Name:      "network-peering",
+				Namespace: "default",
 				Spec: akov2.AtlasNetworkPeeringSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -166,10 +157,8 @@ func TestHandleCustomResource(t *testing.T) {
 			title:     "should fail to create sdk",
 			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-peering",
-					Namespace: "default",
-				},
+				Name:      "network-peering",
+				Namespace: "default",
 				Spec: akov2.AtlasNetworkPeeringSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -197,11 +186,9 @@ func TestHandleCustomResource(t *testing.T) {
 			title:     "should fail to resolve project and remove finalizers",
 			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "network-peering",
-					Namespace:  "default",
-					Finalizers: []string{customresource.FinalizerLabel},
-				},
+				Name:       "network-peering",
+				Namespace:  "default",
+				Finalizers: []string{customresource.FinalizerLabel},
 				Spec: akov2.AtlasNetworkPeeringSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -238,12 +225,10 @@ func TestHandleCustomResource(t *testing.T) {
 			title:     "should handle network peering but fail to find container id from kube",
 			wantError: true,
 			networkPeering: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "network-peering",
-					Namespace:         "default",
-					Finalizers:        []string{customresource.FinalizerLabel},
-					DeletionTimestamp: &deletionTime,
-				},
+				Name:              "network-peering",
+				Namespace:         "default",
+				Finalizers:        []string{customresource.FinalizerLabel},
+				DeletionTimestamp: &deletionTime,
 				Spec: akov2.AtlasNetworkPeeringSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{
@@ -290,10 +275,8 @@ func TestHandleCustomResource(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.title, func(t *testing.T) {
 			project := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 			}
 			testScheme := runtime.NewScheme()
 			require.NoError(t, akov2.AddToScheme(testScheme))
@@ -303,10 +286,8 @@ func TestHandleCustomResource(t *testing.T) {
 				WithObjects(project,
 					tc.networkPeering,
 					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "my-secret",
-							Namespace: "default",
-						},
+						Name:      "my-secret",
+						Namespace: "default",
 						Data: map[string][]byte{
 							"orgId":         []byte("orgId"),
 							"publicApiKey":  []byte("publicApiKey"),
@@ -354,15 +335,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Create(mock.Anything, testProjectID, testContainerID, mock.Anything).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "10.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "10.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "CREATING",
@@ -427,15 +406,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "10.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "10.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -473,15 +450,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "10.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "10.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "NOT YET AVAILABLE",
@@ -521,15 +496,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "10.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "10.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID:  testContainerID,
 							Status:       "OOPs!",
@@ -571,15 +544,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -588,15 +559,13 @@ func TestHandle(t *testing.T) {
 					)
 					nps.EXPECT().Update(mock.Anything, testProjectID, testPeeringID, testContainerID, mock.Anything).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "10.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "10.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "UPDATING",
@@ -636,15 +605,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -688,15 +655,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -706,15 +671,13 @@ func TestHandle(t *testing.T) {
 					nps.EXPECT().Delete(mock.Anything, testProjectID, testPeeringID).Return(nil)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "DELETING",
@@ -757,15 +720,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -809,15 +770,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -862,15 +821,13 @@ func TestHandle(t *testing.T) {
 					nps := akomock.NewNetworkPeeringServiceMock(t)
 					nps.EXPECT().Get(mock.Anything, testProjectID, testPeeringID).Return(
 						&networkpeering.NetworkPeer{
-							AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-								ID:       testPeeringID,
-								Provider: "AWS",
-								AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-									AccepterRegionName:  "us-east-1",
-									AWSAccountID:        "some-aws-id",
-									RouteTableCIDRBlock: "11.0.0.0/8",
-									VpcID:               "vpc-id-test",
-								},
+							ID:       testPeeringID,
+							Provider: "AWS",
+							AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+								AccepterRegionName:  "us-east-1",
+								AWSAccountID:        "some-aws-id",
+								RouteTableCIDRBlock: "11.0.0.0/8",
+								VpcID:               "vpc-id-test",
 							},
 							ContainerID: testContainerID,
 							Status:      "AVAILABLE",
@@ -944,27 +901,23 @@ func getConditions(networkContainer *akov2.AtlasNetworkPeering) []api.Condition 
 
 func testReconciler(k8sClient client.Client, provider atlas.Provider, logger *zap.Logger) *AtlasNetworkPeeringReconciler {
 	return &AtlasNetworkPeeringReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client: k8sClient,
-			Log:    logger.Sugar(),
-			GlobalSecretRef: client.ObjectKey{
-				Namespace: "default",
-				Name:      "secret",
-			},
-			AtlasProvider: provider,
+		Client: k8sClient,
+		Log:    logger.Sugar(),
+		GlobalSecretRef: client.ObjectKey{
+			Namespace: "default",
+			Name:      "secret",
 		},
+		AtlasProvider: provider,
 		EventRecorder: record.NewFakeRecorder(10),
 	}
 }
 
 func testContainer() *akov2.AtlasNetworkContainer {
 	return &akov2.AtlasNetworkContainer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testContainerName,
-			Namespace: "default",
-			Annotations: map[string]string{
-				customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
-			},
+		Name:      testContainerName,
+		Namespace: "default",
+		Annotations: map[string]string{
+			customresource.ReconciliationPolicyAnnotation: customresource.ReconciliationPolicySkip,
 		},
 		Spec: akov2.AtlasNetworkContainerSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
@@ -988,14 +941,10 @@ func testContainer() *akov2.AtlasNetworkContainer {
 
 func testAtlasContainer() *networkcontainer.NetworkContainer {
 	return &networkcontainer.NetworkContainer{
-		NetworkContainerConfig: networkcontainer.NetworkContainerConfig{
-			Provider: "AWS",
-			AtlasNetworkContainerConfig: akov2.AtlasNetworkContainerConfig{
-				Region:    "US_EAST_1",
-				CIDRBlock: "10.0.0.0/18",
-			},
-		},
-		ID: testContainerID,
+		Provider:  "AWS",
+		Region:    "US_EAST_1",
+		CIDRBlock: "10.0.0.0/18",
+		ID:        testContainerID,
 	}
 }
 
@@ -1011,10 +960,8 @@ func cleanConditions(inputs []api.Condition) []api.Condition {
 
 func testNetworkPeering() *akov2.AtlasNetworkPeering {
 	return &akov2.AtlasNetworkPeering{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-peering",
-			Namespace: "default",
-		},
+		Name:      "test-peering",
+		Namespace: "default",
 		Spec: akov2.AtlasNetworkPeeringSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ExternalProjectRef: &akov2.ExternalProjectReference{

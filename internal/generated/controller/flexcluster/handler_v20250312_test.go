@@ -40,7 +40,6 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
-	reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/experimental/controller/flexcluster"
@@ -1123,14 +1122,10 @@ func createTestScheme(t *testing.T) *runtime.Scheme {
 // defaultTestGroup creates a basic Group for testing
 func defaultTestGroup(name, namespace string, id *string) *akov2generated.Group {
 	return &akov2generated.Group{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Group",
-			APIVersion: "atlas.generated.mongodb.com/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Kind:       "Group",
+		APIVersion: "atlas.generated.mongodb.com/v1",
+		Name:       name,
+		Namespace:  namespace,
 		Status: akov2generated.GroupStatus{
 			V20250312: &akov2generated.GroupStatusV20250312{
 				Id: id,
@@ -1142,10 +1137,8 @@ func defaultTestGroup(name, namespace string, id *string) *akov2generated.Group 
 // defaultTestFlexCluster creates a basic FlexCluster for testing
 func defaultTestFlexCluster(name, namespace string) *akov2generated.FlexCluster {
 	return &akov2generated.FlexCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: akov2generated.FlexClusterSpec{
 			V20250312: &akov2generated.FlexClusterSpecV20250312{
 				Entry: &akov2generated.FlexClusterSpecV20250312Entry{
@@ -1168,9 +1161,9 @@ func withFlexGVK(flexCluster *akov2generated.FlexCluster, kind string, apiVersio
 
 func reenqueueResult(state constate.ResourceState, msg string) constate.Result {
 	return constate.Result{
-		Result:    reconcile.Result{RequeueAfter: constate.DefaultRequeueTime},
-		NextState: state,
-		StateMsg:  msg,
+		RequeueAfter: constate.DefaultRequeueTime,
+		NextState:    state,
+		StateMsg:     msg,
 	}
 }
 

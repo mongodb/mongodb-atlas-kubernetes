@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -55,7 +54,7 @@ func TestAtlasProjectByConnectionSecretIndexer(t *testing.T) {
 		{
 			name: "should return project namespace if name is set only",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "projectNamespace"},
+				Name: "projectName", Namespace: "projectNamespace",
 				Spec: akov2.AtlasProjectSpec{
 					ConnectionSecret: &common.ResourceRefNamespaced{Name: "someSecret"},
 				},
@@ -65,7 +64,7 @@ func TestAtlasProjectByConnectionSecretIndexer(t *testing.T) {
 		{
 			name: "should return secret namespace and name if set",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "projectNamespace"},
+				Name: "projectName", Namespace: "projectNamespace",
 				Spec: akov2.AtlasProjectSpec{
 					ConnectionSecret: &common.ResourceRefNamespaced{Name: "someSecret", Namespace: "secretNamespace"},
 				},
@@ -75,7 +74,7 @@ func TestAtlasProjectByConnectionSecretIndexer(t *testing.T) {
 		{
 			name: "should also return secrets in encryption at rest",
 			object: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{Name: "projectName", Namespace: "projectNamespace"},
+				Name: "projectName", Namespace: "projectNamespace",
 				Spec: akov2.AtlasProjectSpec{
 					ConnectionSecret: &common.ResourceRefNamespaced{Name: "ConnectionSecret", Namespace: "secretNamespace"},
 					AlertConfigurations: []akov2.AlertConfiguration{

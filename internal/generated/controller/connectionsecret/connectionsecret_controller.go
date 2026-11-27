@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -223,7 +222,7 @@ func (r *ConnectionSecretReconciler) generateConnectionSecretRequests(users []ge
 	reqs := make([]reconcile.Request, 0, len(users))
 	for _, u := range users {
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: types.NamespacedName{Namespace: u.Namespace, Name: u.Name},
+			Namespace: u.Namespace, Name: u.Name,
 		})
 	}
 	return reqs
@@ -363,14 +362,10 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 	name := K8sConnectionSecretName(ids.ProjectName, ids.TargetName, ids.DatabaseUsername, connectionTarget.GetConnectionTargetType())
 
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Kind:       "Secret",
+		APIVersion: "v1",
+		Name:       name,
+		Namespace:  namespace,
 	}
 
 	// Fills the secret.stringData with the information stored in ConnectionSecretData
@@ -405,10 +400,8 @@ func (r *ConnectionSecretReconciler) ensureSecret(
 func (r *ConnectionSecretReconciler) handleDelete(ctx context.Context, req ctrl.Request, ids *ConnectionSecretIdentifiers) (ctrl.Result, error) {
 	name := K8sConnectionSecretName(ids.ProjectName, ids.TargetName, ids.DatabaseUsername, ids.ConnectionType)
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: req.Namespace,
-		},
+		Name:      name,
+		Namespace: req.Namespace,
 	}
 
 	// delete secret in k8s

@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -122,7 +121,7 @@ func (r *AtlasIPAccessListReconciler) ipAccessListForProjectMapFunc() handler.Ma
 
 		requests := make([]reconcile.Request, 0, len(list.Items))
 		for _, item := range list.Items {
-			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{Name: item.Name, Namespace: item.Namespace}})
+			requests = append(requests, reconcile.Request{Name: item.Name, Namespace: item.Namespace})
 		}
 
 		return requests
@@ -141,12 +140,10 @@ func (r *AtlasIPAccessListReconciler) ipAccessListForCredentialMapFunc() handler
 
 func NewAtlasIPAccessListReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, independentSyncPeriod time.Duration, logger *zap.Logger, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasIPAccessListReconciler {
 	return &AtlasIPAccessListReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("AtlasIPAccessList").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
+		Client:                   c.GetClient(),
+		Log:                      logger.Named("controllers").Named("AtlasIPAccessList").Sugar(),
+		GlobalSecretRef:          globalSecretRef,
+		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasIPAccessList"),
 		GlobalPredicates:         predicates,

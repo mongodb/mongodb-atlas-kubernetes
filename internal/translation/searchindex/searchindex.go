@@ -102,22 +102,18 @@ func fromAtlas(index admin.SearchIndexResponse) (*SearchIndex, error) {
 	}
 
 	return &SearchIndex{
-		SearchIndex: akov2.SearchIndex{
-			Name:           pointer.GetOrDefault(index.Name, ""),
-			DBName:         pointer.GetOrDefault(index.Database, ""),
-			CollectionName: pointer.GetOrDefault(index.CollectionName, ""),
-			Type:           pointer.GetOrDefault(index.Type, ""),
-			Search:         search,
-			VectorSearch:   vectorSearch,
-		},
-		AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-			Analyzer:       index.LatestDefinition.Analyzer,
-			Analyzers:      analyzers,
-			SearchAnalyzer: index.LatestDefinition.SearchAnalyzer,
-			StoredSource:   storedSource,
-		},
-		ID:     index.IndexID,
-		Status: index.Status,
+		Name:           pointer.GetOrDefault(index.Name, ""),
+		DBName:         pointer.GetOrDefault(index.Database, ""),
+		CollectionName: pointer.GetOrDefault(index.CollectionName, ""),
+		Type:           pointer.GetOrDefault(index.Type, ""),
+		Search:         search,
+		VectorSearch:   vectorSearch,
+		Analyzer:       index.LatestDefinition.Analyzer,
+		Analyzers:      analyzers,
+		SearchAnalyzer: index.LatestDefinition.SearchAnalyzer,
+		StoredSource:   storedSource,
+		ID:             index.IndexID,
+		Status:         index.Status,
 	}, errors.Join(errs...)
 }
 

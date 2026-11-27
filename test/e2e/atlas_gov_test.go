@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -97,12 +96,10 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 	It("Manage all supported Atlas for Government features", Label("focus-atlas-gov-supported"), func(ctx SpecContext) {
 		By("Preparing API Key for integrations", func() {
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pager-duty-service-key",
-					Namespace: testData.Resources.Namespace,
-					Labels: map[string]string{
-						secretservice.TypeLabelKey: secretservice.CredLabelVal,
-					},
+				Name:      "pager-duty-service-key",
+				Namespace: testData.Resources.Namespace,
+				Labels: map[string]string{
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				},
 				StringData: map[string]string{"password": os.Getenv("PAGER_DUTY_SERVICE_KEY")},
 			}
@@ -111,10 +108,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Creating a project to be managed by the operator", func() {
 			akoProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      projectName,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      projectName,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    projectName,
 					RegionUsageRestrictions: "NONE",
@@ -207,10 +202,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			}
 
 			akoTeam := &akov2.AtlasTeam{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-team", projectName),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-team", projectName),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.TeamSpec{
 					Name:      fmt.Sprintf("%s-team", projectName),
 					Usernames: usernames,
@@ -309,16 +302,12 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			secret := &corev1.Secret{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "aws-secret",
-					Namespace: testData.Resources.Namespace,
-					Labels: map[string]string{
-						secretservice.TypeLabelKey: secretservice.CredLabelVal,
-					},
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Name:       "aws-secret",
+				Namespace:  testData.Resources.Namespace,
+				Labels: map[string]string{
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				},
 				Data: map[string][]byte{
 					"CustomerMasterKeyID": []byte(customerMasterKeyID),
@@ -412,10 +401,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Creating a Cluster", func() {
 			akoBackupPolicy := &akov2.AtlasBackupPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-policy", clusterName),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-policy", clusterName),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasBackupPolicySpec{
 					Items: []akov2.AtlasBackupPolicyItem{
 						{
@@ -430,10 +417,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Create(ctx, akoBackupPolicy))
 
 			akoBackupSchedule := &akov2.AtlasBackupSchedule{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-schedule", clusterName),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-schedule", clusterName),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasBackupScheduleSpec{
 					PolicyRef: common.ResourceRefNamespaced{
 						Name:      fmt.Sprintf("%s-policy", clusterName),
@@ -452,10 +437,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 			Expect(testData.K8SClient.Create(ctx, akoBackupSchedule))
 
 			akoDeployment := &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      clusterName,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      clusterName,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -544,21 +527,17 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Creating a DatabaseUser", func() {
 			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-dbuser-pass", projectName),
-					Namespace: testData.Resources.Namespace,
-					Labels: map[string]string{
-						secretservice.TypeLabelKey: secretservice.CredLabelVal,
-					},
+				Name:      fmt.Sprintf("%s-dbuser-pass", projectName),
+				Namespace: testData.Resources.Namespace,
+				Labels: map[string]string{
+					secretservice.TypeLabelKey: secretservice.CredLabelVal,
 				},
 				StringData: map[string]string{"password": "myHardPass2MyDB"},
 			}
 			Expect(testData.K8SClient.Create(ctx, secret)).To(Succeed())
 			akoDBUser := &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-dbuser", projectName),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-dbuser", projectName),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -610,10 +589,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 	It("Fail to manage when there are non supported features for Atlas for Government", Label("focus-atlas-gov-unsupported"), func() {
 		By("Creating a project to be managed by the operator", func() {
 			akoProject := &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      projectName,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      projectName,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasProjectSpec{
 					Name:                    projectName,
 					RegionUsageRestrictions: "GOV_REGIONS_ONLY",
@@ -639,10 +616,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Creating a Flex Cluster", func() {
 			akoDeployment := &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      clusterName,
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      clusterName,
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -681,10 +656,8 @@ var _ = Describe("Atlas for Government", Label("atlas-gov"), func() {
 
 		By("Creating a Data Federation", func() {
 			akoDataFederation := &akov2.AtlasDataFederation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-data-federation", projectName),
-					Namespace: testData.Resources.Namespace,
-				},
+				Name:      fmt.Sprintf("%s-data-federation", projectName),
+				Namespace: testData.Resources.Namespace,
 				Spec: akov2.DataFederationSpec{
 					Project: common.ResourceRefNamespaced{
 						Name:      projectName,

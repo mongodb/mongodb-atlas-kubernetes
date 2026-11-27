@@ -50,10 +50,9 @@ func (h *Handlerintegrations) getDependents(ctx context.Context, parent *akov2ge
 		return nil, fmt.Errorf("failed to list Child objects: %w", err)
 	}
 	for _, item := range childList.Items {
-		dependents = append(dependents, reconcile.Request{NamespacedName: types.NamespacedName{
+		dependents = append(dependents, reconcile.Request{
 			Name:      item.Name,
-			Namespace: item.Namespace,
-		}})
+			Namespace: item.Namespace})
 	}
 
 	return dependents, nil

@@ -1,6 +1,6 @@
 module tools/githubjobs
 
-go 1.26.11
+go 1.27.4
 
 require (
 	github.com/google/go-github/v57 v57.0.0

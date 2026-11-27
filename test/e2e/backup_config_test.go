@@ -21,7 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -107,10 +106,8 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 
 	By("Configure backup schedule and policy for the deployment", func() {
 		bkpPolicy := &akov2.AtlasBackupPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: data.Project.Namespace,
-				Name:      fmt.Sprintf("%s-bkp-policy", data.Project.Name),
-			},
+			Namespace: data.Project.Namespace,
+			Name:      fmt.Sprintf("%s-bkp-policy", data.Project.Name),
 			Spec: akov2.AtlasBackupPolicySpec{
 				Items: []akov2.AtlasBackupPolicyItem{
 					{
@@ -149,10 +146,8 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		Expect(data.K8SClient.Create(data.Context, bkpPolicy)).To(Succeed())
 
 		bkpSchedule := &akov2.AtlasBackupSchedule{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: data.Project.Namespace,
-				Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
-			},
+			Namespace: data.Project.Namespace,
+			Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
 			Spec: akov2.AtlasBackupScheduleSpec{
 				PolicyRef: common.ResourceRefNamespaced{
 					Namespace: data.Project.Namespace,
@@ -194,10 +189,8 @@ func backupConfigFlow(data *model.TestDataProvider, bucket string) {
 		Expect(exportBucket).ShouldNot(BeNil())
 
 		backupSchedule := &akov2.AtlasBackupSchedule{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: data.Project.Namespace,
-				Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
-			},
+			Namespace: data.Project.Namespace,
+			Name:      fmt.Sprintf("%s-bkp-schedule", data.Project.Name),
 		}
 		Expect(data.K8SClient.Get(data.Context, client.ObjectKeyFromObject(backupSchedule), backupSchedule)).To(Succeed())
 

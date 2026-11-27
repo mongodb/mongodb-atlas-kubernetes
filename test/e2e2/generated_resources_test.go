@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -74,9 +73,8 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("gen-res-ns-%s", rand.String(6)),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: fmt.Sprintf("gen-res-ns-%s", rand.String(6))}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 		Expect(resources.CopyCredentialsToNamespace(
@@ -186,10 +184,8 @@ var _ = Describe("Generated Resources Integration", Ordered, Label("generated-re
 
 				By("Create IPAccessListEntry and wait for it to be Ready", func() {
 					testIAL = &generatedv1.IPAccessListEntry{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      ipalEntryName,
-							Namespace: testNamespace.Name,
-						},
+						Name:      ipalEntryName,
+						Namespace: testNamespace.Name,
 						Spec: generatedv1.IPAccessListEntrySpec{
 							V20250312: &generatedv1.IPAccessListEntrySpecV20250312{
 								GroupRef: &k8s.LocalReference{Name: testGroup.GetName()},

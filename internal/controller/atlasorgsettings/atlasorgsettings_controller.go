@@ -60,12 +60,10 @@ func NewAtlasOrgSettingsReconciler(
 	reapplySupport bool,
 ) *constate.Reconciler[akov2.AtlasOrgSettings] {
 	orgSettingsHandler := &AtlasOrgSettingsHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			AtlasProvider:   atlasProvider,
-			Log:             logger.Named("controllers").Named("AtlasOrgSettings").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-		},
+		Client:          c.GetClient(),
+		AtlasProvider:   atlasProvider,
+		Log:             logger.Named("controllers").Named("AtlasOrgSettings").Sugar(),
+		GlobalSecretRef: globalSecretRef,
 		serviceBuilder: func(clientSet *atlas.ClientSet) atlasorgsettings.AtlasOrgSettingsService {
 			return atlasorgsettings.NewAtlasOrgSettingsService(clientSet.SdkClient20250312.OrganizationsAPI)
 		},

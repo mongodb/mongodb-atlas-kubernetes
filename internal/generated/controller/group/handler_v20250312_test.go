@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -63,7 +62,7 @@ func TestHandlerv20250312_HandleDeletionRequested(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			grp := &akov2generated.Group{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-group", Namespace: "default"},
+				Name: "test-group", Namespace: "default",
 			}
 			scheme := runtime.NewScheme()
 			require.NoError(t, akov2generated.AddToScheme(scheme))
@@ -99,7 +98,7 @@ func TestHandlerv20250312_HandleDeletionRequested(t *testing.T) {
 
 func dependentCluster(groupName string) *akov2generated.Cluster {
 	return &akov2generated.Cluster{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+		Name: "test-cluster", Namespace: "default",
 		Spec: akov2generated.ClusterSpec{
 			V20250312: &akov2generated.ClusterSpecV20250312{
 				GroupRef: &crd2gok8s.LocalReference{Name: groupName},

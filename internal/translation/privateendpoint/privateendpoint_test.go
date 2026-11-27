@@ -91,29 +91,25 @@ func TestListPrivateEndpoints(t *testing.T) {
 			},
 			expectedPEs: []EndpointService{
 				&AWSService{
-					CommonEndpointService: CommonEndpointService{
-						ID:            "pe-service-ID-1",
-						CloudRegion:   "US_EAST_1",
-						ServiceStatus: "AVAILABLE",
-						Interfaces: EndpointInterfaces{
-							&AWSInterface{
-								CommonEndpointInterface{
-									ID:              "vpcpe-123456",
-									InterfaceStatus: "AVAILABLE",
-								},
+					ID:            "pe-service-ID-1",
+					CloudRegion:   "US_EAST_1",
+					ServiceStatus: "AVAILABLE",
+					Interfaces: EndpointInterfaces{
+						&AWSInterface{
+							CommonEndpointInterface{
+								ID:              "vpcpe-123456",
+								InterfaceStatus: "AVAILABLE",
 							},
 						},
 					},
 					ServiceName: "aws/pe-service/name",
 				},
 				&AWSService{
-					CommonEndpointService: CommonEndpointService{
-						ID:            "pe-service-ID-2",
-						CloudRegion:   "US_EAST_2",
-						ServiceStatus: "AVAILABLE",
-						Interfaces:    EndpointInterfaces{},
-					},
-					ServiceName: "aws/pe-service/name",
+					ID:            "pe-service-ID-2",
+					CloudRegion:   "US_EAST_2",
+					ServiceStatus: "AVAILABLE",
+					Interfaces:    EndpointInterfaces{},
+					ServiceName:   "aws/pe-service/name",
 				},
 			},
 		},
@@ -210,19 +206,15 @@ func TestGetPrivateEndpoint(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AzureService{
-				CommonEndpointService: CommonEndpointService{
-					ID:            "pe-service-ID",
-					CloudRegion:   "GERMANY_NORTH",
-					ServiceStatus: "AVAILABLE",
-					Interfaces: EndpointInterfaces{
-						&AzureInterface{
-							CommonEndpointInterface: CommonEndpointInterface{
-								ID:              "long-azure-resource-ID",
-								InterfaceStatus: "AVAILABLE",
-							},
-							IP:             "10.0.0.4",
-							ConnectionName: "atlas-resource-name",
-						},
+				ID:            "pe-service-ID",
+				CloudRegion:   "GERMANY_NORTH",
+				ServiceStatus: "AVAILABLE",
+				Interfaces: EndpointInterfaces{
+					&AzureInterface{
+						ID:              "long-azure-resource-ID",
+						InterfaceStatus: "AVAILABLE",
+						IP:              "10.0.0.4",
+						ConnectionName:  "atlas-resource-name",
 					},
 				},
 				ServiceName: "pls_name",
@@ -266,32 +258,28 @@ func TestGetPrivateEndpoint(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &GCPService{
-				CommonEndpointService: CommonEndpointService{
-					ID:            "pe-service-ID",
-					CloudRegion:   "EUROPE_WEST_3",
-					ServiceStatus: "AVAILABLE",
-					Interfaces: EndpointInterfaces{
-						&GCPInterface{
-							CommonEndpointInterface: CommonEndpointInterface{
-								ID:              "group-name",
-								InterfaceStatus: "AVAILABLE",
+				ID:            "pe-service-ID",
+				CloudRegion:   "EUROPE_WEST_3",
+				ServiceStatus: "AVAILABLE",
+				Interfaces: EndpointInterfaces{
+					&GCPInterface{
+						ID:              "group-name",
+						InterfaceStatus: "AVAILABLE",
+						Endpoints: []GCPInterfaceEndpoint{
+							{
+								Name:   "group-name-pe-1",
+								IP:     "10.0.0.1",
+								Status: "AVAILABLE",
 							},
-							Endpoints: []GCPInterfaceEndpoint{
-								{
-									Name:   "group-name-pe-1",
-									IP:     "10.0.0.1",
-									Status: "AVAILABLE",
-								},
-								{
-									Name:   "group-name-pe-2",
-									IP:     "10.0.0.3",
-									Status: "AVAILABLE",
-								},
-								{
-									Name:   "group-name-pe-3",
-									IP:     "10.0.0.3",
-									Status: "AVAILABLE",
-								},
+							{
+								Name:   "group-name-pe-2",
+								IP:     "10.0.0.3",
+								Status: "AVAILABLE",
+							},
+							{
+								Name:   "group-name-pe-3",
+								IP:     "10.0.0.3",
+								Status: "AVAILABLE",
 							},
 						},
 					},
@@ -337,9 +325,7 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 	}{
 		"failed to create the service": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					CloudRegion: "US_EAST_1",
-				},
+				CloudRegion: "US_EAST_1",
 			},
 			mockCreateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return nil, &http.Response{}, errors.New("atlas failed to create")
@@ -348,9 +334,7 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 		},
 		"create private endpoint service": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					CloudRegion: "US_EAST_1",
-				},
+				CloudRegion: "US_EAST_1",
 			},
 			mockCreateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
 				return &admin.EndpointService{
@@ -361,12 +345,10 @@ func TestCreatePrivateEndpointService(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					ID:            "pe-service-ID",
-					CloudRegion:   "US_EAST_1",
-					ServiceStatus: "INITIALIZING",
-					Interfaces:    EndpointInterfaces{},
-				},
+				ID:            "pe-service-ID",
+				CloudRegion:   "US_EAST_1",
+				ServiceStatus: "INITIALIZING",
+				Interfaces:    EndpointInterfaces{},
 			},
 		},
 	}
@@ -473,11 +455,9 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 		"create AZURE private endpoint": {
 			provider: "AZURE",
 			endpointInterface: &AzureInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID:              "long-azure-resource-ID",
-					InterfaceStatus: "INITIALIZING",
-				},
-				IP: "10.0.0.2",
+				ID:              "long-azure-resource-ID",
+				InterfaceStatus: "INITIALIZING",
+				IP:              "10.0.0.2",
 			},
 			mockCreateReturnFunc: func() (*admin.PrivateLinkEndpoint, *http.Response, error) {
 				return &admin.PrivateLinkEndpoint{
@@ -489,21 +469,17 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AzureInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID:              "long-azure-resource-ID",
-					InterfaceStatus: "INITIALIZING",
-				},
-				IP:             "10.0.0.2",
-				ConnectionName: "atlas-resource-name",
+				ID:              "long-azure-resource-ID",
+				InterfaceStatus: "INITIALIZING",
+				IP:              "10.0.0.2",
+				ConnectionName:  "atlas-resource-name",
 			},
 		},
 		"create GCP private endpoint": {
 			provider:     "GCP",
 			gcpProjectID: "customer-project-ID",
 			endpointInterface: &GCPInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID: "group-name",
-				},
+				ID: "group-name",
 				Endpoints: []GCPInterfaceEndpoint{
 					{
 						Name: "group-name-pe-1",
@@ -544,10 +520,8 @@ func TestCreatePrivateEndpointInterface(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &GCPInterface{
-				CommonEndpointInterface: CommonEndpointInterface{
-					ID:              "group-name",
-					InterfaceStatus: "INITIALIZING",
-				},
+				ID:              "group-name",
+				InterfaceStatus: "INITIALIZING",
 				Endpoints: []GCPInterfaceEndpoint{
 					{
 						Name:   "group-name-pe-1",
@@ -636,10 +610,8 @@ func TestUpdatePrivateEndpointService(t *testing.T) {
 	}{
 		"failed to update the service": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					ID:          "pe-service-ID",
-					CloudRegion: "US_EAST_1",
-				},
+				ID:               "pe-service-ID",
+				CloudRegion:      "US_EAST_1",
 				SupportedRegions: []string{"US_WEST_1"},
 			},
 			mockUpdateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
@@ -649,10 +621,8 @@ func TestUpdatePrivateEndpointService(t *testing.T) {
 		},
 		"update AWS supported regions": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					ID:          "pe-service-ID",
-					CloudRegion: "US_EAST_1",
-				},
+				ID:               "pe-service-ID",
+				CloudRegion:      "US_EAST_1",
 				SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
 			},
 			mockUpdateReturnFunc: func() (*admin.EndpointService, *http.Response, error) {
@@ -665,11 +635,9 @@ func TestUpdatePrivateEndpointService(t *testing.T) {
 				}, &http.Response{}, nil
 			},
 			expectedPE: &AWSService{
-				CommonEndpointService: CommonEndpointService{
-					ID:            "pe-service-ID",
-					CloudRegion:   "US_EAST_1",
-					ServiceStatus: "AVAILABLE",
-				},
+				ID:               "pe-service-ID",
+				CloudRegion:      "US_EAST_1",
+				ServiceStatus:    "AVAILABLE",
 				SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
 			},
 		},
@@ -701,7 +669,7 @@ func TestServiceCreateToAtlas(t *testing.T) {
 	}{
 		"AWS without cross-region": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{CloudRegion: "US_EAST_1"},
+				CloudRegion: "US_EAST_1",
 			},
 			expected: &admin.CloudProviderEndpointServiceRequest{
 				ProviderName: "AWS",
@@ -710,8 +678,8 @@ func TestServiceCreateToAtlas(t *testing.T) {
 		},
 		"AWS with cross-region": {
 			service: &AWSService{
-				CommonEndpointService: CommonEndpointService{CloudRegion: "US_EAST_1"},
-				SupportedRegions:      []string{"US_WEST_1", "EU_WEST_1"},
+				CloudRegion:      "US_EAST_1",
+				SupportedRegions: []string{"US_WEST_1", "EU_WEST_1"},
 			},
 			expected: &admin.CloudProviderEndpointServiceRequest{
 				ProviderName:           "AWS",
@@ -721,7 +689,7 @@ func TestServiceCreateToAtlas(t *testing.T) {
 		},
 		"GCP without port mapping": {
 			service: &GCPService{
-				CommonEndpointService: CommonEndpointService{CloudRegion: "EUROPE_WEST_3"},
+				CloudRegion: "EUROPE_WEST_3",
 			},
 			expected: &admin.CloudProviderEndpointServiceRequest{
 				ProviderName: "GCP",
@@ -730,8 +698,8 @@ func TestServiceCreateToAtlas(t *testing.T) {
 		},
 		"GCP with port mapping": {
 			service: &GCPService{
-				CommonEndpointService: CommonEndpointService{CloudRegion: "EUROPE_WEST_3"},
-				PortMappingEnabled:    true,
+				CloudRegion:        "EUROPE_WEST_3",
+				PortMappingEnabled: true,
 			},
 			expected: &admin.CloudProviderEndpointServiceRequest{
 				ProviderName:       "GCP",

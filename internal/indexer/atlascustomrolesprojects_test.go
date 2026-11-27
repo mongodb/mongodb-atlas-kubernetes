@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -41,8 +40,8 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 			object: &akov2.AtlasStreamInstance{},
 			expectedLogs: []observer.LoggedEntry{
 				{
-					Context: []zapcore.Field{},
-					Entry:   zapcore.Entry{LoggerName: AtlasCustomRoleByProject, Level: zap.ErrorLevel, Message: "expected a project.ProjectReferrerObject but got *v1.AtlasStreamInstance"},
+					Context:    []zapcore.Field{},
+					LoggerName: AtlasCustomRoleByProject, Level: zap.ErrorLevel, Message: "expected a project.ProjectReferrerObject but got *v1.AtlasStreamInstance",
 				},
 			},
 		},
@@ -87,10 +86,8 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		},
 		"should return project with the same namespace as a custom role": {
 			object: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testRole",
-					Namespace: "testNamespace",
-				},
+				Name:      "testRole",
+				Namespace: "testNamespace",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -104,10 +101,8 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		},
 		"should return project reference with database customRole namespace": {
 			object: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "customRole",
-					Namespace: "ns",
-				},
+				Name:      "customRole",
+				Namespace: "ns",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{
@@ -121,10 +116,8 @@ func TestAtlasCustomRoleByProjectsIndexer(t *testing.T) {
 		},
 		"should return project reference": {
 			object: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "customRole",
-					Namespace: "nsCustomRole",
-				},
+				Name:      "customRole",
+				Namespace: "nsCustomRole",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{

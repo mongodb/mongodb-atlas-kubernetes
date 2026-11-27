@@ -56,9 +56,7 @@ var _ = Describe("AtlasOrgSettings", Label("atlas-org-settings"), func() {
 		actions.ProjectCreationFlow(testData)
 
 		orgSettings := akov2.AtlasOrgSettings{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: utils.RandomName("org-settings-strict"),
-			},
+			Name: utils.RandomName("org-settings-strict"),
 			Spec: akov2.AtlasOrgSettingsSpec{
 				OrgID:                                  "",
 				ApiAccessListRequired:                  new(true),

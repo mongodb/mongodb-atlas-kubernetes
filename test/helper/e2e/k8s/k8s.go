@@ -28,7 +28,6 @@ import (
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8scfg "sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -195,9 +194,7 @@ func DeleteDeployment(ctx context.Context, k8sClient client.Client, ns, name str
 
 func CreateNamespace(ctx context.Context, k8sClient client.Client, ns string) error {
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ns,
-		},
+		Name: ns,
 	}
 	err := k8sClient.Create(ctx, namespace)
 	if err != nil {
@@ -210,9 +207,7 @@ func CreateNamespace(ctx context.Context, k8sClient client.Client, ns string) er
 
 func CreateRandomNamespace(ctx context.Context, k8sClient client.Client, generateName string) (*corev1.Namespace, error) {
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: generateName,
-		},
+		GenerateName: generateName,
 	}
 	err := k8sClient.Create(ctx, namespace)
 	if err != nil {
@@ -230,10 +225,8 @@ func CreateRandomUserSecret(ctx context.Context, k8sClient client.Client, name, 
 
 func CreateUserSecret(ctx context.Context, k8sClient client.Client, secret, name, ns string) error {
 	secretObj := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
+		Name:      name,
+		Namespace: ns,
 		StringData: map[string]string{
 			"password": secret,
 		},
@@ -254,12 +247,10 @@ func CreateDefaultSecret(ctx context.Context, k8sClient client.Client, name, ns 
 
 func CreateSecret(ctx context.Context, k8sClient client.Client, publicKey, privateKey, name, ns string) error {
 	secretservice := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      name,
+		Namespace: ns,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		StringData: map[string]string{"orgId": os.Getenv("MCLI_ORG_ID"), "publicApiKey": publicKey, "privateApiKey": privateKey},
 	}
@@ -317,10 +308,8 @@ func CreateCertificateX509(ctx context.Context, k8sClient client.Client, name, n
 	}
 
 	certificateSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
+		Name:      name,
+		Namespace: ns,
 		Data: map[string][]byte{
 			filepath.Base(config.PEMCertFileName): rawCert,
 		},

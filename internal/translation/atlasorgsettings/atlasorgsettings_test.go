@@ -46,19 +46,17 @@ func TestNewFromAKO(t *testing.T) {
 				StreamsCrossGroupEnabled:               new(true),
 			},
 			expected: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID: "test-org-id",
-					ConnectionSecretRef: &api.LocalObjectReference{
-						Name: "test-secret",
-					},
-					ApiAccessListRequired:                  new(true),
-					GenAIFeaturesEnabled:                   new(false),
-					MaxServiceAccountSecretValidityInHours: new(24),
-					MultiFactorAuthRequired:                new(true),
-					RestrictEmployeeAccess:                 new(false),
-					SecurityContact:                        new("security@example.com"),
-					StreamsCrossGroupEnabled:               new(true),
+				OrgID: "test-org-id",
+				ConnectionSecretRef: &api.LocalObjectReference{
+					Name: "test-secret",
 				},
+				ApiAccessListRequired:                  new(true),
+				GenAIFeaturesEnabled:                   new(false),
+				MaxServiceAccountSecretValidityInHours: new(24),
+				MultiFactorAuthRequired:                new(true),
+				RestrictEmployeeAccess:                 new(false),
+				SecurityContact:                        new("security@example.com"),
+				StreamsCrossGroupEnabled:               new(true),
 			},
 		},
 		{
@@ -67,9 +65,7 @@ func TestNewFromAKO(t *testing.T) {
 				OrgID: "minimal-org-id",
 			},
 			expected: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID: "minimal-org-id",
-				},
+				OrgID: "minimal-org-id",
 			},
 		},
 		{
@@ -109,17 +105,15 @@ func TestNewFromAtlas(t *testing.T) {
 				StreamsCrossGroupEnabled:               new(true),
 			},
 			expected: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  "test-org-id",
-					ConnectionSecretRef:                    nil,
-					ApiAccessListRequired:                  new(true),
-					GenAIFeaturesEnabled:                   new(false),
-					MaxServiceAccountSecretValidityInHours: new(48),
-					MultiFactorAuthRequired:                new(true),
-					RestrictEmployeeAccess:                 new(false),
-					SecurityContact:                        new("security@example.com"),
-					StreamsCrossGroupEnabled:               new(true),
-				},
+				OrgID:                                  "test-org-id",
+				ConnectionSecretRef:                    nil,
+				ApiAccessListRequired:                  new(true),
+				GenAIFeaturesEnabled:                   new(false),
+				MaxServiceAccountSecretValidityInHours: new(48),
+				MultiFactorAuthRequired:                new(true),
+				RestrictEmployeeAccess:                 new(false),
+				SecurityContact:                        new("security@example.com"),
+				StreamsCrossGroupEnabled:               new(true),
 			},
 		},
 		{
@@ -135,17 +129,15 @@ func TestNewFromAtlas(t *testing.T) {
 				StreamsCrossGroupEnabled:               new(false),
 			},
 			expected: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  "test-org-id-2",
-					ConnectionSecretRef:                    nil,
-					ApiAccessListRequired:                  new(false),
-					GenAIFeaturesEnabled:                   nil,
-					MaxServiceAccountSecretValidityInHours: new(0),
-					MultiFactorAuthRequired:                nil,
-					RestrictEmployeeAccess:                 new(true),
-					SecurityContact:                        nil,
-					StreamsCrossGroupEnabled:               new(false),
-				},
+				OrgID:                                  "test-org-id-2",
+				ConnectionSecretRef:                    nil,
+				ApiAccessListRequired:                  new(false),
+				GenAIFeaturesEnabled:                   nil,
+				MaxServiceAccountSecretValidityInHours: new(0),
+				MultiFactorAuthRequired:                nil,
+				RestrictEmployeeAccess:                 new(true),
+				SecurityContact:                        nil,
+				StreamsCrossGroupEnabled:               new(false),
 			},
 		},
 		{
@@ -161,17 +153,15 @@ func TestNewFromAtlas(t *testing.T) {
 				ApiAccessListRequired: new(true),
 			},
 			expected: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  "",
-					ConnectionSecretRef:                    nil,
-					ApiAccessListRequired:                  new(true),
-					GenAIFeaturesEnabled:                   nil,
-					MaxServiceAccountSecretValidityInHours: nil,
-					MultiFactorAuthRequired:                nil,
-					RestrictEmployeeAccess:                 nil,
-					SecurityContact:                        nil,
-					StreamsCrossGroupEnabled:               nil,
-				},
+				OrgID:                                  "",
+				ConnectionSecretRef:                    nil,
+				ApiAccessListRequired:                  new(true),
+				GenAIFeaturesEnabled:                   nil,
+				MaxServiceAccountSecretValidityInHours: nil,
+				MultiFactorAuthRequired:                nil,
+				RestrictEmployeeAccess:                 nil,
+				SecurityContact:                        nil,
+				StreamsCrossGroupEnabled:               nil,
 			},
 		},
 	}
@@ -193,19 +183,17 @@ func TestToAtlas(t *testing.T) {
 		{
 			name: "complete org settings to atlas",
 			orgSettings: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID: "test-org-id",
-					ConnectionSecretRef: &api.LocalObjectReference{
-						Name: "test-secret",
-					},
-					ApiAccessListRequired:                  new(true),
-					GenAIFeaturesEnabled:                   new(false),
-					MaxServiceAccountSecretValidityInHours: new(24),
-					MultiFactorAuthRequired:                new(true),
-					RestrictEmployeeAccess:                 new(false),
-					SecurityContact:                        new("security@example.com"),
-					StreamsCrossGroupEnabled:               new(true),
+				OrgID: "test-org-id",
+				ConnectionSecretRef: &api.LocalObjectReference{
+					Name: "test-secret",
 				},
+				ApiAccessListRequired:                  new(true),
+				GenAIFeaturesEnabled:                   new(false),
+				MaxServiceAccountSecretValidityInHours: new(24),
+				MultiFactorAuthRequired:                new(true),
+				RestrictEmployeeAccess:                 new(false),
+				SecurityContact:                        new("security@example.com"),
+				StreamsCrossGroupEnabled:               new(true),
 			},
 			expected: &admin.OrganizationSettings{
 				ApiAccessListRequired:                  new(true),
@@ -219,16 +207,14 @@ func TestToAtlas(t *testing.T) {
 		{
 			name: "org settings with some nil values",
 			orgSettings: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  "test-org-id",
-					ApiAccessListRequired:                  nil,
-					GenAIFeaturesEnabled:                   new(true),
-					MaxServiceAccountSecretValidityInHours: nil,
-					MultiFactorAuthRequired:                new(false),
-					RestrictEmployeeAccess:                 nil,
-					SecurityContact:                        new("admin@example.com"),
-					StreamsCrossGroupEnabled:               new(false),
-				},
+				OrgID:                                  "test-org-id",
+				ApiAccessListRequired:                  nil,
+				GenAIFeaturesEnabled:                   new(true),
+				MaxServiceAccountSecretValidityInHours: nil,
+				MultiFactorAuthRequired:                new(false),
+				RestrictEmployeeAccess:                 nil,
+				SecurityContact:                        new("admin@example.com"),
+				StreamsCrossGroupEnabled:               new(false),
 			},
 			expected: &admin.OrganizationSettings{
 				ApiAccessListRequired:                  nil,
@@ -242,16 +228,14 @@ func TestToAtlas(t *testing.T) {
 		{
 			name: "org settings with all nil values",
 			orgSettings: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					OrgID:                                  "test-org-id",
-					ApiAccessListRequired:                  nil,
-					GenAIFeaturesEnabled:                   nil,
-					MaxServiceAccountSecretValidityInHours: nil,
-					MultiFactorAuthRequired:                nil,
-					RestrictEmployeeAccess:                 nil,
-					SecurityContact:                        nil,
-					StreamsCrossGroupEnabled:               nil,
-				},
+				OrgID:                                  "test-org-id",
+				ApiAccessListRequired:                  nil,
+				GenAIFeaturesEnabled:                   nil,
+				MaxServiceAccountSecretValidityInHours: nil,
+				MultiFactorAuthRequired:                nil,
+				RestrictEmployeeAccess:                 nil,
+				SecurityContact:                        nil,
+				StreamsCrossGroupEnabled:               nil,
 			},
 			expected: &admin.OrganizationSettings{
 				ApiAccessListRequired:                  nil,
@@ -295,15 +279,13 @@ func TestAtlasOrgSettings_Equal(t *testing.T) {
 	// Helper function to create a complete AtlasOrgSettings instance
 	createCompleteSettings := func() *AtlasOrgSettings {
 		return &AtlasOrgSettings{
-			AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-				ApiAccessListRequired:                  new(true),
-				GenAIFeaturesEnabled:                   new(false),
-				MaxServiceAccountSecretValidityInHours: new(24),
-				MultiFactorAuthRequired:                new(true),
-				RestrictEmployeeAccess:                 new(false),
-				SecurityContact:                        new("security@example.com"),
-				StreamsCrossGroupEnabled:               new(true),
-			},
+			ApiAccessListRequired:                  new(true),
+			GenAIFeaturesEnabled:                   new(false),
+			MaxServiceAccountSecretValidityInHours: new(24),
+			MultiFactorAuthRequired:                new(true),
+			RestrictEmployeeAccess:                 new(false),
+			SecurityContact:                        new("security@example.com"),
+			StreamsCrossGroupEnabled:               new(true),
 		}
 	}
 
@@ -538,26 +520,22 @@ func TestAtlasOrgSettings_Equal(t *testing.T) {
 		{
 			name: "both objects with all nil fields should not be equal",
 			a: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					ApiAccessListRequired:                  nil,
-					GenAIFeaturesEnabled:                   nil,
-					MaxServiceAccountSecretValidityInHours: nil,
-					MultiFactorAuthRequired:                nil,
-					RestrictEmployeeAccess:                 nil,
-					SecurityContact:                        nil,
-					StreamsCrossGroupEnabled:               nil,
-				},
+				ApiAccessListRequired:                  nil,
+				GenAIFeaturesEnabled:                   nil,
+				MaxServiceAccountSecretValidityInHours: nil,
+				MultiFactorAuthRequired:                nil,
+				RestrictEmployeeAccess:                 nil,
+				SecurityContact:                        nil,
+				StreamsCrossGroupEnabled:               nil,
 			},
 			other: &AtlasOrgSettings{
-				AtlasOrgSettingsSpec: akov2.AtlasOrgSettingsSpec{
-					ApiAccessListRequired:                  nil,
-					GenAIFeaturesEnabled:                   nil,
-					MaxServiceAccountSecretValidityInHours: nil,
-					MultiFactorAuthRequired:                nil,
-					RestrictEmployeeAccess:                 nil,
-					SecurityContact:                        nil,
-					StreamsCrossGroupEnabled:               nil,
-				},
+				ApiAccessListRequired:                  nil,
+				GenAIFeaturesEnabled:                   nil,
+				MaxServiceAccountSecretValidityInHours: nil,
+				MultiFactorAuthRequired:                nil,
+				RestrictEmployeeAccess:                 nil,
+				SecurityContact:                        nil,
+				StreamsCrossGroupEnabled:               nil,
 			},
 			expected: false,
 		},

@@ -47,23 +47,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -105,23 +99,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -162,23 +150,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -219,24 +201,18 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				StoredSource: &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
-				Analyzer:     new("testAnalyzer"),
-			},
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			StoredSource:   &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
+			Analyzer:       new("testAnalyzer"),
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -270,25 +246,19 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
-			ID:     new("testID"),
-			Status: nil,
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
+			ID:             new("testID"),
+			Status:         nil,
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -328,25 +298,19 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
-			ID:     new("testID"),
-			Status: nil,
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
+			ID:             new("testID"),
+			Status:         nil,
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -385,25 +349,19 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		assert.Nil(t, corev1.AddToScheme(sch))
 
 		indexToTest := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "test",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           "search",
-			},
-			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-				Analyzer: new("testAnalyzer"),
-			},
-			ID:     nil,
-			Status: nil,
+			Name:           "test",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           "search",
+			Analyzer:       new("testAnalyzer"),
+			ID:             nil,
+			Status:         nil,
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -478,11 +436,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -504,21 +460,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-			},
+			Name:                       "testIndex",
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
 			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: &akov2.Mappings{
-						Dynamic: jsonMustEncode(true),
-					},
+			Name: "testIndex",
+			Search: &akov2.Search{
+				Synonyms: nil,
+				Mappings: &akov2.Mappings{
+					Dynamic: jsonMustEncode(true),
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
@@ -539,11 +491,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		}
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -565,21 +515,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			searchService: fakeAtlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-			},
+			Name:                       "testIndex",
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
 			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: &akov2.Mappings{
-						Dynamic: jsonMustEncode(true),
-					},
+			Name: "testIndex",
+			Search: &akov2.Search{
+				Synonyms: nil,
+				Mappings: &akov2.Mappings{
+					Dynamic: jsonMustEncode(true),
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
@@ -605,11 +551,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -631,21 +575,17 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			searchService: atlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-			},
+			Name:                       "testIndex",
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
 			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: &akov2.Mappings{
-						Dynamic: jsonMustEncode(true),
-					},
+			Name: "testIndex",
+			Search: &akov2.Search{
+				Synonyms: nil,
+				Mappings: &akov2.Mappings{
+					Dynamic: jsonMustEncode(true),
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
@@ -662,11 +602,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		atlasSearch := searchindex.NewSearchIndexes(mockSearchAPI)
 
 		testCluster := &akov2.AtlasDeployment{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testDeployment",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testDeployment",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasDeploymentSpec{
 				DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 					Name: "testDeploymentName",
@@ -688,22 +626,18 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 			searchService: atlasSearch,
 		}
 		idxInAtlas := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-			},
+			Name:                       "testIndex",
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
 			ID:                         new("testID"),
 			Status:                     nil,
 		}
 		idxInAKO := &searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name: "testIndex",
-				Search: &akov2.Search{
-					Synonyms: nil,
-					Mappings: &akov2.Mappings{
-						Dynamic: jsonMustEncode(true),
-						Fields:  &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
-					},
+			Name: "testIndex",
+			Search: &akov2.Search{
+				Synonyms: nil,
+				Mappings: &akov2.Mappings{
+					Dynamic: jsonMustEncode(true),
+					Fields:  &apiextensions.JSON{Raw: []byte{'i', 'n', 'v', 'a', 'l', 'i', 'd', 'j', 's', 'o', 'n'}},
 				},
 			},
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
@@ -733,11 +667,9 @@ func Test_searchIndexReconcileRequest(t *testing.T) {
 		} {
 			t.Run(tc.title, func(t *testing.T) {
 				testCluster := &akov2.AtlasDeployment{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testDeployment",
-						Namespace: "testNamespace",
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "testDeployment",
+					Namespace: "testNamespace",
 					Spec: akov2.AtlasDeploymentSpec{
 						DeploymentSpec: &akov2.AdvancedDeploymentSpec{
 							Name: "testDeploymentName",

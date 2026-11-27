@@ -42,7 +42,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	atlasmock "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
@@ -65,12 +64,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 		"user spec is invalid": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "invalid-version",
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Labels: map[string]string{
+					"mongodb.com/atlas-resource-version": "invalid-version",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
@@ -90,12 +87,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 		"user spec is mismatch": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "1000.0.1",
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Labels: map[string]string{
+					"mongodb.com/atlas-resource-version": "1000.0.1",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
@@ -114,12 +109,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 		},
 		"resource is not supported": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "2.4.1",
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Labels: map[string]string{
+					"mongodb.com/atlas-resource-version": "2.4.1",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
@@ -145,10 +138,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 		},
 		"manage user with independent configuration": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{
@@ -163,12 +154,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -216,12 +205,10 @@ func TestHandleDatabaseUser(t *testing.T) {
 		},
 		"manage user with linked configuration": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Labels: map[string]string{
-						"mongodb.com/atlas-resource-version": "2.4.1",
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Labels: map[string]string{
+					"mongodb.com/atlas-resource-version": "2.4.1",
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
@@ -238,22 +225,18 @@ func TestHandleDatabaseUser(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
 				},
 			},
 			atlasProject: &akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-project",
-					Namespace: "default",
-				},
+				Name:      "my-project",
+				Namespace: "default",
 				Spec: akov2.AtlasProjectSpec{
 					Name: "my-project",
 				},
@@ -288,10 +271,8 @@ func TestHandleDatabaseUser(t *testing.T) {
 				k8sClient.WithObjects(tt.dbUserSecret)
 			}
 			k8sClient.WithObjects(&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret",
-					Namespace: "default",
-				},
+				Name:      "secret",
+				Namespace: "default",
 				Data: map[string][]byte{
 					"orgId":         []byte("orgId"),
 					"publicApiKey":  []byte("publicApiKey"),
@@ -301,15 +282,13 @@ func TestHandleDatabaseUser(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient.Build(),
-					Log:    logger,
-					GlobalSecretRef: client.ObjectKey{
-						Namespace: "default",
-						Name:      "secret",
-					},
-					AtlasProvider: tt.atlasProvider,
+				Client: k8sClient.Build(),
+				Log:    logger,
+				GlobalSecretRef: client.ObjectKey{
+					Namespace: "default",
+					Name:      "secret",
 				},
+				AtlasProvider: tt.atlasProvider,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -353,10 +332,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		"failed to get user in atlas": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -369,12 +346,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -398,10 +373,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"failed to check user is expired": { //nolint:dupl
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -415,12 +388,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -444,10 +415,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"user is expired": { //nolint:dupl
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -461,12 +430,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -490,10 +457,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"failed to validate scope": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -512,12 +477,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -546,10 +509,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"deployment scope is invalid": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -568,12 +529,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -602,10 +561,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"create an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -615,12 +572,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -645,10 +600,8 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"update an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -661,12 +614,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -706,12 +657,10 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"delete an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "user1",
-					Namespace:         "default",
-					Finalizers:        []string{"mongodbatlas/finalizer"},
-					DeletionTimestamp: &deletionTime,
-				},
+				Name:              "user1",
+				Namespace:         "default",
+				Finalizers:        []string{"mongodbatlas/finalizer"},
+				DeletionTimestamp: &deletionTime,
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -724,12 +673,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -761,12 +708,10 @@ func TestDbuLifeCycle(t *testing.T) {
 		},
 		"unmanage an user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "user1",
-					Namespace:         "default",
-					Finalizers:        []string{"mongodbatlas/finalizer"},
-					DeletionTimestamp: &deletionTime,
-				},
+				Name:              "user1",
+				Namespace:         "default",
+				Finalizers:        []string{"mongodbatlas/finalizer"},
+				DeletionTimestamp: &deletionTime,
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -779,12 +724,10 @@ func TestDbuLifeCycle(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -820,10 +763,8 @@ func TestDbuLifeCycle(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient.Build(),
-					Log:    logger,
-				},
+				Client: k8sClient.Build(),
+				Log:    logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -861,10 +802,8 @@ func TestCreate(t *testing.T) {
 		"failed to read user password": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -884,10 +823,8 @@ func TestCreate(t *testing.T) {
 		"failed to convert to internal user": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -897,12 +834,10 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -920,10 +855,8 @@ func TestCreate(t *testing.T) {
 		"failed to create user": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -936,12 +869,10 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -962,10 +893,8 @@ func TestCreate(t *testing.T) {
 		},
 		"renamed user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user-renamed",
 					PasswordSecret: &common.ResourceRef{
@@ -979,12 +908,10 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1006,10 +933,8 @@ func TestCreate(t *testing.T) {
 		},
 		"create user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1022,12 +947,10 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1064,10 +987,8 @@ func TestCreate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient.Build(),
-					Log:    logger,
-				},
+				Client: k8sClient.Build(),
+				Log:    logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -1107,10 +1028,8 @@ func TestUpdate(t *testing.T) {
 		"failed to read user password": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1133,10 +1052,8 @@ func TestUpdate(t *testing.T) {
 		"failed to convert to internal user": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1146,12 +1063,10 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1171,10 +1086,8 @@ func TestUpdate(t *testing.T) {
 		},
 		"user hasn't change": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1187,12 +1100,10 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1227,10 +1138,8 @@ func TestUpdate(t *testing.T) {
 		"failed to update user": {
 			wantErr: true,
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1243,12 +1152,10 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1281,10 +1188,8 @@ func TestUpdate(t *testing.T) {
 		},
 		"update user": {
 			dbUserInAKO: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1297,12 +1202,10 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			dbUserSecret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1351,10 +1254,8 @@ func TestUpdate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient.Build(),
-					Log:    logger,
-				},
+				Client: k8sClient.Build(),
+				Log:    logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -1391,10 +1292,8 @@ func TestDelete(t *testing.T) {
 	}{
 		"don't delete resource on atlas when deletion protection is enabled": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1411,12 +1310,10 @@ func TestDelete(t *testing.T) {
 		},
 		"don't delete resource on atlas when is annotated to keep resource": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-					Annotations: map[string]string{
-						customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
-					},
+				Name:      "user1",
+				Namespace: "default",
+				Annotations: map[string]string{
+					customresource.ResourcePolicyAnnotation: customresource.ResourcePolicyKeep,
 				},
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
@@ -1435,10 +1332,8 @@ func TestDelete(t *testing.T) {
 		"failed to delete resource": {
 			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username:     "user1",
 					DatabaseName: "admin",
@@ -1463,10 +1358,8 @@ func TestDelete(t *testing.T) {
 		},
 		"user was already deleted": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username:     "user1",
 					DatabaseName: "admin",
@@ -1488,10 +1381,8 @@ func TestDelete(t *testing.T) {
 		},
 		"delete user": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username:     "user1",
 					DatabaseName: "admin",
@@ -1525,10 +1416,8 @@ func TestDelete(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client:                   k8sClient,
+				Log:                      logger,
 				ObjectDeletionProtection: tt.deletionProtection,
 			}
 			ctx := &workflow.Context{
@@ -1566,10 +1455,8 @@ func TestReadiness(t *testing.T) {
 		"failed to list cluster names": {
 			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1593,10 +1480,8 @@ func TestReadiness(t *testing.T) {
 		"failed to check deployment status": {
 			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1627,10 +1512,8 @@ func TestReadiness(t *testing.T) {
 		},
 		"deployments are in progress": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1663,10 +1546,8 @@ func TestReadiness(t *testing.T) {
 		"failed to create connection secrets": {
 			wantErr: true,
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1699,10 +1580,8 @@ func TestReadiness(t *testing.T) {
 		},
 		"resource is ready": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					Username: "user1",
 					PasswordSecret: &common.ResourceRef{
@@ -1747,10 +1626,8 @@ func TestReadiness(t *testing.T) {
 				Build()
 			logger := zaptest.NewLogger(t).Sugar()
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient,
-					Log:    logger,
-				},
+				Client: k8sClient,
+				Log:    logger,
 			}
 			ctx := &workflow.Context{
 				Context: context.Background(),
@@ -1786,19 +1663,15 @@ func TestReadPassword(t *testing.T) {
 	}{
 		"return empty if password secret is unset": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
-				Spec: akov2.AtlasDatabaseUserSpec{},
+				Name:      "user1",
+				Namespace: "default",
+				Spec:      akov2.AtlasDatabaseUserSpec{},
 			},
 		},
 		"read password from secret": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					PasswordSecret: &common.ResourceRef{
 						Name: "user-pass",
@@ -1806,12 +1679,10 @@ func TestReadPassword(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": []byte("Passw0rd!"),
@@ -1822,10 +1693,8 @@ func TestReadPassword(t *testing.T) {
 		},
 		"err when secret is not found": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					PasswordSecret: &common.ResourceRef{
 						Name: "user-pass",
@@ -1836,10 +1705,8 @@ func TestReadPassword(t *testing.T) {
 		},
 		"error when password is not present in the secret": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					PasswordSecret: &common.ResourceRef{
 						Name: "user-pass",
@@ -1847,12 +1714,10 @@ func TestReadPassword(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"no-password": []byte("Passw0rd!"),
@@ -1862,10 +1727,8 @@ func TestReadPassword(t *testing.T) {
 		},
 		"error when password is empty in the secret": {
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user1",
-					Namespace: "default",
-				},
+				Name:      "user1",
+				Namespace: "default",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					PasswordSecret: &common.ResourceRef{
 						Name: "user-pass",
@@ -1873,12 +1736,10 @@ func TestReadPassword(t *testing.T) {
 				},
 			},
 			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-pass",
-					Namespace: "default",
-					Labels: map[string]string{
-						"atlas.mongodb.com/type": "credentials",
-					},
+				Name:      "user-pass",
+				Namespace: "default",
+				Labels: map[string]string{
+					"atlas.mongodb.com/type": "credentials",
 				},
 				Data: map[string][]byte{
 					"password": {},
@@ -1900,9 +1761,7 @@ func TestReadPassword(t *testing.T) {
 			}
 
 			r := AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Client: k8sClient.Build(),
-				},
+				Client: k8sClient.Build(),
 			}
 
 			pass, passVersion, err := r.readPassword(context.Background(), tt.dbUser)
@@ -2077,9 +1936,7 @@ func TestRemoveOldUser(t *testing.T) {
 			dbUserService.EXPECT().Delete(context.Background(), "admin", "project-id", "old-name").
 				RunAndReturn(tt.call)
 			r := &AtlasDatabaseUserReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{
-					Log: zaptest.NewLogger(t).Sugar(),
-				},
+				Log: zaptest.NewLogger(t).Sugar(),
 			}
 
 			user := &akov2.AtlasDatabaseUser{

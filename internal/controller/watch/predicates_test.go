@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
@@ -46,18 +45,18 @@ func TestSelectNamespacesPredicate(t *testing.T) {
 		},
 		"should return true when matching namespace": {
 			namespaces:   []string{"test"},
-			createEvent:  event.CreateEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			updateEvent:  event.UpdateEvent{ObjectNew: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			deleteEvent:  event.DeleteEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			genericEvent: event.GenericEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
+			createEvent:  event.CreateEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			updateEvent:  event.UpdateEvent{ObjectNew: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			deleteEvent:  event.DeleteEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			genericEvent: event.GenericEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
 			expect:       true,
 		},
 		"should return false when not matching namespace": {
 			namespaces:   []string{"other"},
-			createEvent:  event.CreateEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			updateEvent:  event.UpdateEvent{ObjectNew: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			deleteEvent:  event.DeleteEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
-			genericEvent: event.GenericEvent{Object: &akov2.AtlasProject{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"}}},
+			createEvent:  event.CreateEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			updateEvent:  event.UpdateEvent{ObjectNew: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			deleteEvent:  event.DeleteEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
+			genericEvent: event.GenericEvent{Object: &akov2.AtlasProject{Name: "test", Namespace: "test"}},
 			expect:       false,
 		},
 	}
@@ -211,11 +210,9 @@ type optionFunc func(*akov2.AtlasProject) *akov2.AtlasProject
 
 func sampleObj(opts ...optionFunc) *akov2.AtlasProject {
 	p := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "project",
-			Namespace:   "ns",
-			Annotations: map[string]string{},
-		},
+		Name:        "project",
+		Namespace:   "ns",
+		Annotations: map[string]string{},
 		Spec: akov2.AtlasProjectSpec{
 			Name: "atlas-project",
 		},

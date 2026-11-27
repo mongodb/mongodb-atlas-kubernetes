@@ -145,9 +145,9 @@ func (h *Handlerv20250312) HandleCreating(ctx context.Context, ipaccesslistentry
 	// HandleCreated fires and sets up the expiry polling loop.
 	if hasDeleteAfterDate(ipaccesslistentry) {
 		return constate.Result{
-			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
-			NextState: constate.StateCreated,
-			StateMsg:  "IP access list entry is active.",
+			RequeueAfter: requeueAfterExpiry(ipaccesslistentry),
+			NextState:    constate.StateCreated,
+			StateMsg:     "IP access list entry is active.",
 		}, nil
 	}
 
@@ -191,9 +191,9 @@ func (h *Handlerv20250312) HandleUpdating(ctx context.Context, ipaccesslistentry
 
 	if hasDeleteAfterDate(ipaccesslistentry) {
 		return constate.Result{
-			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
-			NextState: constate.StateUpdated,
-			StateMsg:  "IP access list entry is active.",
+			RequeueAfter: requeueAfterExpiry(ipaccesslistentry),
+			NextState:    constate.StateUpdated,
+			StateMsg:     "IP access list entry is active.",
 		}, nil
 	}
 
@@ -286,9 +286,9 @@ func (h *Handlerv20250312) handleSteadyState(ctx context.Context, currentState c
 		// date has passed would produce EXPIRATION_DATE_IN_PAST errors. Just schedule
 		// a requeue so we poll Atlas again soon.
 		return constate.Result{
-			Result:    reconcile.Result{RequeueAfter: requeueAfterExpiry(ipaccesslistentry)},
-			NextState: currentState,
-			StateMsg:  "IP access list entry is active.",
+			RequeueAfter: requeueAfterExpiry(ipaccesslistentry),
+			NextState:    currentState,
+			StateMsg:     "IP access list entry is active.",
 		}, nil
 	}
 
@@ -546,9 +546,9 @@ func checkExpiry(ipaccesslistentry *akov2generated.IPAccessListEntry) bool {
 // while still allowing the controller to notice if the resource is updated.
 func expiredResult(currentState constate.ResourceState) constate.Result {
 	return constate.Result{
-		Result:    reconcile.Result{RequeueAfter: 24 * time.Hour},
-		NextState: currentState,
-		StateMsg:  expiredStateMsg,
+		RequeueAfter: 24 * time.Hour,
+		NextState:    currentState,
+		StateMsg:     expiredStateMsg,
 	}
 }
 

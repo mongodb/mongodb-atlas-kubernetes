@@ -140,11 +140,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should cleanup indexes with empty IDs when IDLE", func(t *testing.T) {
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},
@@ -246,11 +244,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},
@@ -319,15 +315,11 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			GetIndexFunc: func(_ context.Context, _, _, _, indexID string) (*searchindex.SearchIndex, error) {
 				if indexID == "123" {
 					return &searchindex.SearchIndex{
-						SearchIndex: akov2.SearchIndex{
-							Name: "Index1",
-							Type: IndexTypeSearch,
-						},
-						AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{
-							Analyzer: new("testAnalyzer"),
-						},
-						ID:     new("123"),
-						Status: new(IndexStatusActive),
+						Name:     "Index1",
+						Type:     IndexTypeSearch,
+						Analyzer: new("testAnalyzer"),
+						ID:       new("123"),
+						Status:   new(IndexStatusActive),
 					}, nil
 				}
 				return nil, fmt.Errorf("unexpected")
@@ -335,10 +327,8 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 			CreateIndexFunc: func(_ context.Context, _, _ string, idx *searchindex.SearchIndex) (*searchindex.SearchIndex, error) {
 				if idx.Name == "Index1" {
 					return &searchindex.SearchIndex{
-						SearchIndex: akov2.SearchIndex{
-							Name: "Index1",
-							Type: IndexTypeSearch,
-						},
+						Name:   "Index1",
+						Type:   IndexTypeSearch,
 						ID:     new("123"),
 						Status: new("NOT STARTED"),
 					}, nil
@@ -351,11 +341,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},
@@ -469,14 +457,12 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should proceed with the index Type Search: UPDATE INDEX", func(t *testing.T) {
 		sampleIndex := searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "testName",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           IndexTypeSearch,
-			},
-			ID:     new("testID"),
-			Status: new(IndexStatusActive),
+			Name:           "testName",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           IndexTypeSearch,
+			ID:             new("testID"),
+			Status:         new(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
@@ -488,11 +474,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},
@@ -567,14 +551,12 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 
 	t.Run("Should proceed with the index Type Search: UPDATE INDEX (vector)", func(t *testing.T) {
 		sampleIndex := searchindex.SearchIndex{
-			SearchIndex: akov2.SearchIndex{
-				Name:           "testName",
-				DBName:         "testDB",
-				CollectionName: "testCollection",
-				Type:           IndexTypeVector,
-			},
-			ID:     new("testID"),
-			Status: new(IndexStatusActive),
+			Name:           "testName",
+			DBName:         "testDB",
+			CollectionName: "testCollection",
+			Type:           IndexTypeVector,
+			ID:             new("testID"),
+			Status:         new(IndexStatusActive),
 		}
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
@@ -586,11 +568,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		}
 
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},
@@ -667,14 +647,12 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		fakeAtlasSearch := &searchfake.FakeAtlasSearch{
 			GetIndexFunc: func(_ context.Context, _, _, _, _ string) (*searchindex.SearchIndex, error) {
 				return &searchindex.SearchIndex{
-					SearchIndex: akov2.SearchIndex{
-						Name:           "testName",
-						DBName:         "testDB",
-						CollectionName: "testCollection",
-						Type:           IndexTypeVector,
-					},
-					ID:     new("testID"),
-					Status: new(IndexStatusActive),
+					Name:           "testName",
+					DBName:         "testDB",
+					CollectionName: "testCollection",
+					Type:           IndexTypeVector,
+					ID:             new("testID"),
+					Status:         new(IndexStatusActive),
 				}, nil
 			},
 			DeleteIndexFunc: func(_ context.Context, _, _, _ string) error {
@@ -710,11 +688,9 @@ func Test_SearchIndexesReconcile(t *testing.T) {
 		// 	Return(nil, &http.Response{StatusCode: http.StatusAccepted}, nil)
 
 		searchIndexConfig := &akov2.AtlasSearchIndexConfig{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testConfig",
-				Namespace: "testNamespace",
-			},
+			TypeMeta:  metav1.TypeMeta{},
+			Name:      "testConfig",
+			Namespace: "testNamespace",
 			Spec: akov2.AtlasSearchIndexConfigSpec{
 				Analyzer: new("testAnalyzer"),
 			},

@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -778,12 +777,10 @@ var _ = Describe("AtlasProject", Label("int", "AtlasProject"), func() {
 
 func buildConnectionSecret(name string) corev1.Secret {
 	return corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace.Name,
-			Labels: map[string]string{
-				"atlas.mongodb.com/type": "credentials",
-			},
+		Name:      name,
+		Namespace: namespace.Name,
+		Labels: map[string]string{
+			"atlas.mongodb.com/type": "credentials",
 		},
 		StringData: secretData(),
 	}

@@ -89,15 +89,13 @@ func TestNetworkPeeringCreate(t *testing.T) {
 				nil,
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
-				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-					ID:       testPeerID,
-					Provider: string(provider.ProviderAWS),
-					AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
-						AccepterRegionName:  "US_EAST_1",
-						AWSAccountID:        testAWSSubscriptionID,
-						RouteTableCIDRBlock: "10.0.0.0/18",
-						VpcID:               testVpcID,
-					},
+				ID:       testPeerID,
+				Provider: string(provider.ProviderAWS),
+				AWSConfiguration: &akov2.AWSNetworkPeeringConfiguration{
+					AccepterRegionName:  "US_EAST_1",
+					AWSAccountID:        testAWSSubscriptionID,
+					RouteTableCIDRBlock: "10.0.0.0/18",
+					VpcID:               testVpcID,
 				},
 				ContainerID: testContainerID,
 			},
@@ -197,15 +195,13 @@ func TestNetworkPeeringGet(t *testing.T) {
 				nil,
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
-				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-					ID:       testPeerID,
-					Provider: string(provider.ProviderAzure),
-					AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
-						AzureDirectoryID:    testAzureDirectoryID,
-						AzureSubscriptionID: testAzureSubcriptionID,
-						ResourceGroupName:   testAzureResourceGroup,
-						VNetName:            testVnet,
-					},
+				ID:       testPeerID,
+				Provider: string(provider.ProviderAzure),
+				AzureConfiguration: &akov2.AzureNetworkPeeringConfiguration{
+					AzureDirectoryID:    testAzureDirectoryID,
+					AzureSubscriptionID: testAzureSubcriptionID,
+					ResourceGroupName:   testAzureResourceGroup,
+					VNetName:            testVnet,
 				},
 				ContainerID: testContainerID,
 			},
@@ -288,13 +284,11 @@ func TestNetworkPeeringUpdate(t *testing.T) {
 				nil,
 			),
 			expectedPeer: &networkpeering.NetworkPeer{
-				AtlasNetworkPeeringConfig: akov2.AtlasNetworkPeeringConfig{
-					ID:       testPeerID,
-					Provider: string(provider.ProviderGCP),
-					GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
-						GCPProjectID: testGCPProjectID,
-						NetworkName:  testNetworkName,
-					},
+				ID:       testPeerID,
+				Provider: string(provider.ProviderGCP),
+				GCPConfiguration: &akov2.GCPNetworkPeeringConfiguration{
+					GCPProjectID: testGCPProjectID,
+					NetworkName:  testNetworkName,
 				},
 				ContainerID: testContainerID,
 			},

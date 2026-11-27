@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -64,9 +63,8 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 	_ = BeforeEach(func() {
 		resourcePrefix = utils.RandomName("flex-to-dedicated")
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: resourcePrefix + "-ns",
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: resourcePrefix + "-ns"}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
@@ -84,10 +82,8 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 	It("Should upgrade a Flex cluster to a Dedicated cluster", func() {
 		By("Create Atlas Project", func() {
 			project := akov2.AtlasProject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      resourcePrefix + "-project",
-					Namespace: testNamespace.Name,
-				},
+				Name:      resourcePrefix + "-project",
+				Namespace: testNamespace.Name,
 				Spec: akov2.AtlasProjectSpec{
 					Name: resourcePrefix + "-project",
 				},
@@ -104,10 +100,8 @@ var _ = Describe("Flex to Dedicated Upgrade", Ordered, Label("flex-to-dedicated"
 
 		By("Create a Flex cluster", func() {
 			flexCluster := akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      resourcePrefix + "-cluster",
-					Namespace: testNamespace.Name,
-				},
+				Name:      resourcePrefix + "-cluster",
+				Namespace: testNamespace.Name,
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &akov2common.ResourceRefNamespaced{

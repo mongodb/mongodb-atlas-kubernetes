@@ -21,7 +21,6 @@ import (
 	"github.com/crd2go/crd2go/k8s"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,17 +50,13 @@ func TestGetDependencies(t *testing.T) {
 			name: "resolves parent when ParentRef is set",
 			existingObjects: []client.Object{
 				&v1.Parent{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-parent",
-						Namespace: "default",
-					},
+					Name:      "my-parent",
+					Namespace: "default",
 				},
 			},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "default",
-				},
+				Name:      "my-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -76,10 +71,8 @@ func TestGetDependencies(t *testing.T) {
 			name:            "returns error when parent not found",
 			existingObjects: []client.Object{},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "default",
-				},
+				Name:      "my-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "nonexistent-parent"},
@@ -94,10 +87,8 @@ func TestGetDependencies(t *testing.T) {
 			name:            "returns empty deps when no ParentRef",
 			existingObjects: []client.Object{},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "default",
-				},
+				Name:      "my-child",
+				Namespace: "default",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentId: new("direct-parent-id"),
@@ -111,11 +102,9 @@ func TestGetDependencies(t *testing.T) {
 			name:            "returns empty deps when V20250312 spec is nil",
 			existingObjects: []client.Object{},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "default",
-				},
-				Spec: v1.ChildSpec{},
+				Name:      "my-child",
+				Namespace: "default",
+				Spec:      v1.ChildSpec{},
 			},
 			wantDepsCount: 0,
 			wantErr:       false,
@@ -124,17 +113,13 @@ func TestGetDependencies(t *testing.T) {
 			name: "looks up parent in same namespace",
 			existingObjects: []client.Object{
 				&v1.Parent{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-parent",
-						Namespace: "production",
-					},
+					Name:      "my-parent",
+					Namespace: "production",
 				},
 			},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "production",
-				},
+				Name:      "my-child",
+				Namespace: "production",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -149,17 +134,13 @@ func TestGetDependencies(t *testing.T) {
 			name: "fails when parent exists in different namespace",
 			existingObjects: []client.Object{
 				&v1.Parent{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-parent",
-						Namespace: "default",
-					},
+					Name:      "my-parent",
+					Namespace: "default",
 				},
 			},
 			child: &v1.Child{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-child",
-					Namespace: "production",
-				},
+				Name:      "my-child",
+				Namespace: "production",
 				Spec: v1.ChildSpec{
 					V20250312: &v1.V20250312{
 						ParentRef: &k8s.LocalReference{Name: "my-parent"},

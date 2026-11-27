@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -338,10 +337,8 @@ func newProjectsMapFunc[T any](indexName string, kubeClient client.Client, logge
 			requests = append(
 				requests,
 				reconcile.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      item.Name,
-						Namespace: item.Namespace,
-					},
+					Name:      item.Name,
+					Namespace: item.Namespace,
 				},
 			)
 		}

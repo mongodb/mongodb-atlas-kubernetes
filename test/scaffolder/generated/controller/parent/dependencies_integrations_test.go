@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,10 +50,8 @@ func TestGetDependents(t *testing.T) {
 			name: "returns children that reference the parent",
 			children: []client.Object{
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-1",
-						Namespace: "default",
-					},
+					Name:      "child-1",
+					Namespace: "default",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -62,10 +59,8 @@ func TestGetDependents(t *testing.T) {
 					},
 				},
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-2",
-						Namespace: "default",
-					},
+					Name:      "child-2",
+					Namespace: "default",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -73,10 +68,8 @@ func TestGetDependents(t *testing.T) {
 					},
 				},
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-other",
-						Namespace: "default",
-					},
+					Name:      "child-other",
+					Namespace: "default",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "other-parent"},
@@ -85,10 +78,8 @@ func TestGetDependents(t *testing.T) {
 				},
 			},
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-parent",
-					Namespace: "default",
-				},
+				Name:      "my-parent",
+				Namespace: "default",
 			},
 			wantRequestsCount: 2,
 			wantRequestNames:  []string{"child-1", "child-2"},
@@ -97,10 +88,8 @@ func TestGetDependents(t *testing.T) {
 			name: "returns empty when no children reference the parent",
 			children: []client.Object{
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-other",
-						Namespace: "default",
-					},
+					Name:      "child-other",
+					Namespace: "default",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "other-parent"},
@@ -109,10 +98,8 @@ func TestGetDependents(t *testing.T) {
 				},
 			},
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "lonely-parent",
-					Namespace: "default",
-				},
+				Name:      "lonely-parent",
+				Namespace: "default",
 			},
 			wantRequestsCount: 0,
 			wantRequestNames:  nil,
@@ -121,10 +108,8 @@ func TestGetDependents(t *testing.T) {
 			name: "only returns children in the same namespace",
 			children: []client.Object{
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-same-ns",
-						Namespace: "default",
-					},
+					Name:      "child-same-ns",
+					Namespace: "default",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -132,10 +117,8 @@ func TestGetDependents(t *testing.T) {
 					},
 				},
 				&v1.Child{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child-diff-ns",
-						Namespace: "production",
-					},
+					Name:      "child-diff-ns",
+					Namespace: "production",
 					Spec: v1.ChildSpec{
 						V20250312: &v1.V20250312{
 							ParentRef: &k8s.LocalReference{Name: "my-parent"},
@@ -144,10 +127,8 @@ func TestGetDependents(t *testing.T) {
 				},
 			},
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-parent",
-					Namespace: "default",
-				},
+				Name:      "my-parent",
+				Namespace: "default",
 			},
 			wantRequestsCount: 1,
 			wantRequestNames:  []string{"child-same-ns"},

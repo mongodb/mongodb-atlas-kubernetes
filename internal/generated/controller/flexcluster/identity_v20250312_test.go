@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	v20250312sdk "go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -92,14 +91,10 @@ func identityTestFlexCluster(specName string) *akov2generated.FlexCluster {
 	recordedID := identityClusterID
 
 	return &akov2generated.FlexCluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "FlexCluster",
-			APIVersion: "atlas.generated.mongodb.com/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      identityClusterName,
-			Namespace: identityNamespace,
-		},
+		Kind:       "FlexCluster",
+		APIVersion: "atlas.generated.mongodb.com/v1",
+		Name:       identityClusterName,
+		Namespace:  identityNamespace,
 		Spec: akov2generated.FlexClusterSpec{
 			V20250312: &akov2generated.FlexClusterSpecV20250312{
 				GroupId: &groupID,

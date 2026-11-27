@@ -69,12 +69,10 @@ func NewAtlasThirdPartyIntegrationsReconciler(
 	reapplySupport bool,
 ) *constate.Reconciler[akov2.AtlasThirdPartyIntegration] {
 	intHandler := &AtlasThirdPartyIntegrationHandler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			AtlasProvider:   atlasProvider,
-			Log:             logger.Named("controllers").Named("AtlasThirdPartyIntegration").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-		},
+		Client:             c.GetClient(),
+		AtlasProvider:      atlasProvider,
+		Log:                logger.Named("controllers").Named("AtlasThirdPartyIntegration").Sugar(),
+		GlobalSecretRef:    globalSecretRef,
 		deletionProtection: deletionProtection,
 		serviceBuilder:     thirdpartyintegration.NewThirdPartyIntegrationServiceFromClientSet,
 	}

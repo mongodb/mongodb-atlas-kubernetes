@@ -61,7 +61,7 @@ func (sr *searchIndexReconcileRequest) Handle(spec *akov2.SearchIndex, previous 
 	if spec != nil {
 		sr.ctx.Log.Debugf("restoring index %q from spec", spec.Name)
 		internalState := &searchindex.SearchIndex{
-			SearchIndex:                akov2.SearchIndex{Name: spec.Name},
+			Name:                       spec.Name,
 			AtlasSearchIndexConfigSpec: akov2.AtlasSearchIndexConfigSpec{},
 			ID:                         nil,
 			Status:                     nil,

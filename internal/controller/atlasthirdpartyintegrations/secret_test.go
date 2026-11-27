@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -56,8 +55,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "datadog-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("datadog")},
+				Name: "datadog-secret",
+				Data: map[string][]byte{"secret": ([]byte)("datadog")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("datadog")},
 		},
@@ -74,8 +73,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "msteams-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("msteams")},
+				Name: "msteams-secret",
+				Data: map[string][]byte{"secret": ([]byte)("msteams")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("msteams")},
 		},
@@ -92,8 +91,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "new-relic-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("new-relic")},
+				Name: "new-relic-secret",
+				Data: map[string][]byte{"secret": ([]byte)("new-relic")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("new-relic")},
 		},
@@ -111,8 +110,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "ops-genie-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("ops-genie")},
+				Name: "ops-genie-secret",
+				Data: map[string][]byte{"secret": ([]byte)("ops-genie")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("ops-genie")},
 		},
@@ -130,8 +129,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "pager-duty-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("pager-duty")},
+				Name: "pager-duty-secret",
+				Data: map[string][]byte{"secret": ([]byte)("pager-duty")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("pager-duty")},
 		},
@@ -150,8 +149,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "prometheus-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("prometheus")},
+				Name: "prometheus-secret",
+				Data: map[string][]byte{"secret": ([]byte)("prometheus")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("prometheus")},
 		},
@@ -170,8 +169,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "slack-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("slack-secret")},
+				Name: "slack-secret",
+				Data: map[string][]byte{"secret": ([]byte)("slack-secret")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("slack-secret")},
 		},
@@ -189,8 +188,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "victor-ops-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("victor-ops")},
+				Name: "victor-ops-secret",
+				Data: map[string][]byte{"secret": ([]byte)("victor-ops")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("victor-ops")},
 		},
@@ -207,8 +206,8 @@ func TestFetchIntegrationSecrets(t *testing.T) {
 				},
 			},
 			secret: &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "webhook-secret"},
-				Data:       map[string][]byte{"secret": ([]byte)("webhook")},
+				Name: "webhook-secret",
+				Data: map[string][]byte{"secret": ([]byte)("webhook")},
 			},
 			want: map[string][]byte{"secret": ([]byte)("webhook")},
 		},

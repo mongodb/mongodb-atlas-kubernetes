@@ -24,7 +24,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -170,20 +169,18 @@ func (r *ServiceAccountTokenReconciler) createToken(
 	}
 
 	tokenSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tokenSecretName,
-			Namespace: credentialSecret.Namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "v1",
-					Kind:       "Secret",
-					Name:       credentialSecret.Name,
-					UID:        credentialSecret.UID,
-					Controller: new(true),
-				},
+		Name:      tokenSecretName,
+		Namespace: credentialSecret.Namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
+		},
+		OwnerReferences: []metav1.OwnerReference{
+			{
+				APIVersion: "v1",
+				Kind:       "Secret",
+				Name:       credentialSecret.Name,
+				UID:        credentialSecret.UID,
+				Controller: new(true),
 			},
 		},
 		Data: map[string][]byte{
@@ -254,10 +251,8 @@ func MapAccessTokenSecretToOwner(_ context.Context, obj client.Object) []reconci
 	for _, owner := range obj.GetOwnerReferences() {
 		if owner.APIVersion == "v1" && owner.Kind == "Secret" {
 			return []reconcile.Request{{
-				NamespacedName: types.NamespacedName{
-					Namespace: obj.GetNamespace(),
-					Name:      owner.Name,
-				},
+				Namespace: obj.GetNamespace(),
+				Name:      owner.Name,
 			}}
 		}
 	}

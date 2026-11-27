@@ -29,7 +29,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -1216,10 +1215,8 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 	Describe("Create default deployment with backups enabled", Label("focus-basic-backups"), func() {
 		BeforeEach(func() {
 			backupPolicyDefault = &akov2.AtlasBackupPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "policy-1",
-					Namespace: namespace.Name,
-				},
+				Name:      "policy-1",
+				Namespace: namespace.Name,
 				Spec: akov2.AtlasBackupPolicySpec{
 					Items: []akov2.AtlasBackupPolicyItem{
 						{
@@ -1234,10 +1231,8 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 			}
 
 			backupScheduleDefault = &akov2.AtlasBackupSchedule{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "schedule-1",
-					Namespace: namespace.Name,
-				},
+				Name:      "schedule-1",
+				Namespace: namespace.Name,
 				Spec: akov2.AtlasBackupScheduleSpec{
 					AutoExportEnabled: false,
 					PolicyRef: common.ResourceRefNamespaced{
@@ -1344,10 +1339,8 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 
 			By("Adding BackupSchedule with Snapshot distribution", func() {
 				backupPolicyDefault = &akov2.AtlasBackupPolicy{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "policy-1",
-						Namespace: namespace.Name,
-					},
+					Name:      "policy-1",
+					Namespace: namespace.Name,
 					Spec: akov2.AtlasBackupPolicySpec{
 						Items: []akov2.AtlasBackupPolicyItem{
 							{
@@ -1361,10 +1354,8 @@ var _ = Describe("AtlasDeployment", Ordered, Label("int", "AtlasDeployment", "fo
 					Status: status.BackupPolicyStatus{},
 				}
 				backupScheduleDefault = &akov2.AtlasBackupSchedule{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      bScheduleName,
-						Namespace: namespace.Name,
-					},
+					Name:      bScheduleName,
+					Namespace: namespace.Name,
 					Spec: akov2.AtlasBackupScheduleSpec{
 						AutoExportEnabled: false,
 						PolicyRef: common.ResourceRefNamespaced{
@@ -1720,12 +1711,10 @@ func deleteFlexInstance(projectID string, deploymentName string) error {
 
 func createConnectionSecret() *corev1.Secret {
 	connectionSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConnectionSecretName,
-			Namespace: namespace.Name,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      ConnectionSecretName,
+		Namespace: namespace.Name,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		StringData: secretData(),
 	}

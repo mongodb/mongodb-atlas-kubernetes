@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/atlas-sdk/v20250312028/admin"
 	"go.mongodb.org/atlas-sdk/v20250312028/mockadmin"
 	"go.uber.org/zap/zaptest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
@@ -62,10 +61,8 @@ func TestGetEndpointsNotInAtlas(t *testing.T) {
 	assert.Equalf(t, 3, itemCounts[0]+itemCounts[1], "item counts should sum up to the actual value of spec endpoints")
 
 	atlasPEs = append(atlasPEs, atlasPE{
-		EndpointService: admin.EndpointService{
-			CloudProvider: string(provider.ProviderAWS),
-			RegionName:    admin.PtrString(region1),
-		},
+		CloudProvider: string(provider.ProviderAWS),
+		RegionName:    admin.PtrString(region1),
 	})
 
 	uniqueItems, _ = getEndpointsNotInAtlas(specPEs, atlasPEs)
@@ -92,16 +89,12 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 			},
 			atlasPEs: []atlasPE{
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east1"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east1"),
 				},
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east2"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east2"),
 				},
 			},
 			expectedItems: []atlasPE{},
@@ -119,16 +112,12 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 			},
 			atlasPEs: []atlasPE{
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east1"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east1"),
 				},
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_west1"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_west1"),
 				},
 			},
 			expectedItems: []atlasPE{},
@@ -142,16 +131,12 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 			},
 			atlasPEs: []atlasPE{
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east1"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east1"),
 				},
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east2"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east2"),
 				},
 			},
 			lastPEs: map[string]akov2.PrivateEndpoint{
@@ -166,10 +151,8 @@ func TestGetEndpointsNotInSpec(t *testing.T) {
 			},
 			expectedItems: []atlasPE{
 				{
-					EndpointService: admin.EndpointService{
-						CloudProvider: string(provider.ProviderAWS),
-						RegionName:    new("us_east2"),
-					},
+					CloudProvider: string(provider.ProviderAWS),
+					RegionName:    new("us_east2"),
 				},
 			},
 		},
@@ -380,9 +363,7 @@ func TestPrivateEndpointsNonGreedyBehaviour(t *testing.T) {
 
 func newTestPEProject(peIDs []string) *akov2.AtlasProject {
 	return &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{},
-		},
+		Annotations: map[string]string{},
 		Spec: akov2.AtlasProjectSpec{
 			Name:             "test-project",
 			PrivateEndpoints: synthesizePEs(peIDs),

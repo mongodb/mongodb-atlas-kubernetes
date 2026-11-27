@@ -25,9 +25,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -79,10 +77,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference",
 			object: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "ns",
-				},
+				Name:      "user",
+				Namespace: "ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -96,10 +92,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference on a deployment",
 			object: &akov2.AtlasDeployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deployment",
-					Namespace: "ns",
-				},
+				Name:      "deployment",
+				Namespace: "ns",
 				Spec: akov2.AtlasDeploymentSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -113,10 +107,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference on a custom role",
 			object: &akov2.AtlasCustomRole{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "custom-role",
-					Namespace: "ns",
-				},
+				Name:      "custom-role",
+				Namespace: "ns",
 				Spec: akov2.AtlasCustomRoleSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -130,10 +122,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference on a private endpoint",
 			object: &akov2.AtlasPrivateEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "private-endpoint",
-					Namespace: "ns",
-				},
+				Name:      "private-endpoint",
+				Namespace: "ns",
 				Spec: akov2.AtlasPrivateEndpointSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -147,10 +137,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference on a network container",
 			object: &akov2.AtlasNetworkContainer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "ns",
-				},
+				Name:      "user",
+				Namespace: "ns",
 				Spec: akov2.AtlasNetworkContainerSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -164,10 +152,8 @@ func TestLocalCredentialsIndexer(t *testing.T) {
 		{
 			name: "should return keys when there is a reference on a network peering",
 			object: &akov2.AtlasNetworkPeering{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: "ns",
-				},
+				Name:      "user",
+				Namespace: "ns",
 				Spec: akov2.AtlasNetworkPeeringSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ConnectionSecret: &api.LocalObjectReference{Name: "secret-ref"},
@@ -231,10 +217,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input:    newTestSecret("matching-user-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasDatabaseUser{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-user",
-						Namespace: "ns",
-					},
+					Name:      "matching-user",
+					Namespace: "ns",
 					Spec: akov2.AtlasDatabaseUserSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -245,10 +229,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-user",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 		{
@@ -267,10 +250,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input: newTestSecret("matching-deployment-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasDeployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-deployment",
-						Namespace: "ns",
-					},
+					Name:      "matching-deployment",
+					Namespace: "ns",
 					Spec: akov2.AtlasDeploymentSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -281,10 +262,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-deployment",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 		{
@@ -303,10 +283,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input: newTestSecret("matching-custom-role-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-custom-role",
-						Namespace: "ns",
-					},
+					Name:      "matching-custom-role",
+					Namespace: "ns",
 					Spec: akov2.AtlasCustomRoleSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -317,10 +295,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-custom-role",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 		{
@@ -339,10 +316,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input: newTestSecret("matching-private-endpoint-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasPrivateEndpoint{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-private-endpoint",
-						Namespace: "ns",
-					},
+					Name:      "matching-private-endpoint",
+					Namespace: "ns",
 					Spec: akov2.AtlasPrivateEndpointSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -353,10 +328,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-private-endpoint",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 		{
@@ -375,10 +349,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input: newTestSecret("matching-container-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasNetworkContainer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-container",
-						Namespace: "ns",
-					},
+					Name:      "matching-container",
+					Namespace: "ns",
 					Spec: akov2.AtlasNetworkContainerSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -389,10 +361,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-container",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 		{
@@ -411,10 +382,8 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 			input: newTestSecret("matching-peering-secret-ref"),
 			objects: []client.Object{
 				&akov2.AtlasNetworkPeering{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "matching-peering",
-						Namespace: "ns",
-					},
+					Name:      "matching-peering",
+					Namespace: "ns",
 					Spec: akov2.AtlasNetworkPeeringSpec{
 						ProjectDualReference: akov2.ProjectDualReference{
 							ConnectionSecret: &api.LocalObjectReference{
@@ -425,10 +394,9 @@ func TestCredentialsIndexMapperFunc(t *testing.T) {
 				},
 			},
 			want: []reconcile.Request{
-				{NamespacedName: types.NamespacedName{
+				{
 					Name:      "matching-peering",
-					Namespace: "ns",
-				}},
+					Namespace: "ns"},
 			},
 		},
 	} {
@@ -467,10 +435,8 @@ func TestCredentialsIndexMapperFuncRace(t *testing.T) {
 	objs := make([]client.Object, 10)
 	for i := range objs {
 		objs[i] = &akov2.AtlasDatabaseUser{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", testUsername, i),
-				Namespace: "ns",
-			},
+			Name:      fmt.Sprintf("%s-%d", testUsername, i),
+			Namespace: "ns",
 			Spec: akov2.AtlasDatabaseUserSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ConnectionSecret: &api.LocalObjectReference{
@@ -511,10 +477,8 @@ func TestCredentialsIndexMapperFuncRace(t *testing.T) {
 
 func newTestSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "ns",
-		},
+		Name:      name,
+		Namespace: "ns",
 	}
 }
 

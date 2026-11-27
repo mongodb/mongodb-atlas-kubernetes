@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,26 +91,22 @@ func sampleDeployments() []string {
 func matchingSecrets() []client.Object {
 	return []client.Object{
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "secret1",
-				Namespace: testNamespace,
-				Labels: map[string]string{
-					secretservice.ClusterLabelKey: "cluster1",
-					secretservice.ProjectLabelKey: testProjectID,
-					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-				},
+			Name:      "secret1",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				secretservice.ClusterLabelKey: "cluster1",
+				secretservice.ProjectLabelKey: testProjectID,
+				secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 			},
 		},
 
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "secret2",
-				Namespace: testNamespace,
-				Labels: map[string]string{
-					secretservice.ClusterLabelKey: "serverless2",
-					secretservice.ProjectLabelKey: testProjectID,
-					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-				},
+			Name:      "secret2",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				secretservice.ClusterLabelKey: "serverless2",
+				secretservice.ProjectLabelKey: testProjectID,
+				secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 			},
 		},
 	}
@@ -120,26 +115,22 @@ func matchingSecrets() []client.Object {
 func nonMatchingSecrets() []client.Object {
 	return []client.Object{
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "secret3",
-				Namespace: testNamespace,
-				Labels: map[string]string{
-					secretservice.ClusterLabelKey: "cluster3",
-					secretservice.ProjectLabelKey: testProjectID,
-					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-				},
+			Name:      "secret3",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				secretservice.ClusterLabelKey: "cluster3",
+				secretservice.ProjectLabelKey: testProjectID,
+				secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 			},
 		},
 
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "secret4",
-				Namespace: testNamespace,
-				Labels: map[string]string{
-					secretservice.ClusterLabelKey: "serverless4",
-					secretservice.ProjectLabelKey: testProjectID,
-					secretservice.TypeLabelKey:    secretservice.CredLabelVal,
-				},
+			Name:      "secret4",
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				secretservice.ClusterLabelKey: "serverless4",
+				secretservice.ProjectLabelKey: testProjectID,
+				secretservice.TypeLabelKey:    secretservice.CredLabelVal,
 			},
 		},
 	}

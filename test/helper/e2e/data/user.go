@@ -15,8 +15,6 @@
 package data
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	akov2 "github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/common"
@@ -33,9 +31,7 @@ const (
 
 func BasicUser(crName, atlasUserName string, add ...func(user *akov2.AtlasDatabaseUser)) *akov2.AtlasDatabaseUser {
 	user := &akov2.AtlasDatabaseUser{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crName,
-		},
+		Name: crName,
 		Spec: akov2.AtlasDatabaseUserSpec{
 			ProjectDualReference: akov2.ProjectDualReference{
 				ProjectRef: &common.ResourceRefNamespaced{

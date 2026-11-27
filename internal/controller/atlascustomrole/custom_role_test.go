@@ -39,7 +39,6 @@ import (
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api/v1/status"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/customresource"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/workflow"
 	mocks "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/mocks/translation"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/translation"
@@ -77,10 +76,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testRole",
-						Namespace: "testRoleNamespace",
-					},
+					Name:      "testRole",
+					Namespace: "testRoleNamespace",
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -113,10 +110,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testRole",
-							Namespace: "testRoleNamespace",
-						},
+						Name:      "testRole",
+						Namespace: "testRoleNamespace",
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name: "TestRoleName",
@@ -267,10 +262,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testRole",
-						Namespace: "testRoleNamespace",
-					},
+					Name:      "testRole",
+					Namespace: "testRoleNamespace",
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -303,10 +296,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testRole",
-							Namespace: "testRoleNamespace",
-						},
+						Name:      "testRole",
+						Namespace: "testRoleNamespace",
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name: "TestRoleName",
@@ -484,11 +475,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "testRole",
-						Namespace:         "testRoleNamespace",
-						DeletionTimestamp: new(metav1.NewTime(time.Now())),
-					},
+					Name:              "testRole",
+					Namespace:         "testRoleNamespace",
+					DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -521,10 +510,8 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testRole",
-							Namespace: "testRoleNamespace",
-						},
+						Name:      "testRole",
+						Namespace: "testRoleNamespace",
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name: "TestRoleName",
@@ -575,11 +562,9 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              "testRole",
-						Namespace:         "testNamespace",
-						DeletionTimestamp: new(metav1.NewTime(time.Now())),
-					},
+					Name:              "testRole",
+					Namespace:         "testNamespace",
+					DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -612,12 +597,10 @@ func Test_roleController_Reconcile(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:              "testRole",
-							Namespace:         "testNamespace",
-							DeletionTimestamp: new(metav1.NewTime(time.Now())),
-							Finalizers:        []string{customresource.FinalizerLabel},
-						},
+						Name:              "testRole",
+						Namespace:         "testNamespace",
+						DeletionTimestamp: new(metav1.NewTime(time.Now())),
+						Finalizers:        []string{customresource.FinalizerLabel},
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name: "TestRoleName",
@@ -675,9 +658,7 @@ func Test_roleController_Reconcile(t *testing.T) {
 					return s
 				},
 				role: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						DeletionTimestamp: new(metav1.NewTime(time.Now())),
-					},
+					DeletionTimestamp: new(metav1.NewTime(time.Now())),
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name: "TestRoleName",
@@ -775,10 +756,8 @@ func Test_handleCustomRole(t *testing.T) {
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testRole",
-						Namespace: "testNamespace",
-					},
+					Name:      "testRole",
+					Namespace: "testNamespace",
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name:           "testRole",
@@ -795,10 +774,8 @@ func Test_handleCustomRole(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testRole",
-							Namespace: "testNamespace",
-						},
+						Name:      "testRole",
+						Namespace: "testNamespace",
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name:           "testRole",
@@ -852,10 +829,8 @@ func Test_handleCustomRole(t *testing.T) {
 					Context: context.Background(),
 				},
 				akoCustomRole: &akov2.AtlasCustomRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "testRole",
-						Namespace: "testNamespace",
-					},
+					Name:      "testRole",
+					Namespace: "testNamespace",
 					Spec: akov2.AtlasCustomRoleSpec{
 						Role: akov2.CustomRole{
 							Name:           "testRole",
@@ -873,10 +848,8 @@ func Test_handleCustomRole(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasProject{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testProject",
-							Namespace: "testNamespace",
-						},
+						Name:      "testProject",
+						Namespace: "testNamespace",
 						Spec: akov2.AtlasProjectSpec{
 							Name: "testProject",
 						},
@@ -885,10 +858,8 @@ func Test_handleCustomRole(t *testing.T) {
 						},
 					},
 					&akov2.AtlasCustomRole{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testRole",
-							Namespace: "testNamespace",
-						},
+						Name:      "testRole",
+						Namespace: "testNamespace",
 						Spec: akov2.AtlasCustomRoleSpec{
 							Role: akov2.CustomRole{
 								Name:           "testRole",
@@ -953,10 +924,8 @@ func Test_handleCustomRole(t *testing.T) {
 				},
 				k8sObjects: []client.Object{
 					&akov2.AtlasProject{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "testProject",
-							Namespace: "testNamespace",
-						},
+						Name:      "testProject",
+						Namespace: "testNamespace",
 						Spec: akov2.AtlasProjectSpec{
 							Name: "testProject",
 						},
@@ -1015,7 +984,7 @@ func Test_handleCustomRole(t *testing.T) {
 				Build()
 			service := customroles.NewCustomRoles(tt.args.ctx.SdkClientSet.SdkClient20250312.CustomDatabaseRolesAPI)
 			r := AtlasCustomRoleReconciler{
-				AtlasReconciler: reconciler.AtlasReconciler{Client: k8sClient},
+				Client: k8sClient,
 			}
 			prj, err := solveProjectID(t, &r, tt.args)
 			if tt.solveError == nil {

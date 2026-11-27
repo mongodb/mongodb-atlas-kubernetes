@@ -24,7 +24,6 @@ import (
 	v20250312022 "go.mongodb.org/atlas-sdk/v20250312028/admin"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -85,12 +84,10 @@ func createServiceAccountCredentialSecret(
 	orgID string,
 ) *corev1.Secret {
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels: map[string]string{
-				secretservice.TypeLabelKey: secretservice.CredLabelVal,
-			},
+		Name:      name,
+		Namespace: namespace,
+		Labels: map[string]string{
+			secretservice.TypeLabelKey: secretservice.CredLabelVal,
 		},
 		Data: map[string][]byte{
 			"orgId":        []byte(orgID),
@@ -141,9 +138,8 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 	})
 
 	_ = BeforeEach(func() {
-		testNamespace = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
-			Name: utils.RandomName("sa-ctlr-ns"),
-		}}
+		testNamespace = &corev1.Namespace{
+			Name: utils.RandomName("sa-ctlr-ns")}
 		Expect(kubeClient.Create(ctx, testNamespace)).To(Succeed())
 		Expect(ako.Running()).To(BeTrue(), "Operator must be running")
 	})
@@ -186,12 +182,10 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 	It("does not create a token for an API key credential secret", func() {
 		apiKeySecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "api-key-credentials",
-				Namespace: testNamespace.Name,
-				Labels: map[string]string{
-					secretservice.TypeLabelKey: secretservice.CredLabelVal,
-				},
+			Name:      "api-key-credentials",
+			Namespace: testNamespace.Name,
+			Labels: map[string]string{
+				secretservice.TypeLabelKey: secretservice.CredLabelVal,
 			},
 			Data: map[string][]byte{
 				"orgId":         []byte("test-org-id"),
@@ -300,10 +294,8 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 		By("Creating the AtlasProject referencing the SA credential secret")
 		atlasProject := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-project",
-				Namespace: testNamespace.Name,
-			},
+			Name:      "test-project",
+			Namespace: testNamespace.Name,
 			Spec: akov2.AtlasProjectSpec{
 				Name:                      resourcePrefix,
 				RegionUsageRestrictions:   "NONE",
@@ -360,10 +352,8 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 		By("Creating the AtlasProject")
 		atlasProject := &akov2.AtlasProject{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-project",
-				Namespace: testNamespace.Name,
-			},
+			Name:      "test-project",
+			Namespace: testNamespace.Name,
 			Spec: akov2.AtlasProjectSpec{
 				Name:                      resourcePrefix,
 				RegionUsageRestrictions:   "NONE",
@@ -394,10 +384,8 @@ var _ = Describe("Service Account Controller", Ordered, Label("service-account")
 
 		By("Creating the AtlasDeployment (flex) referencing the project")
 		flexDeployment := &akov2.AtlasDeployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "flex",
-				Namespace: testNamespace.Name,
-			},
+			Name:      "flex",
+			Namespace: testNamespace.Name,
 			Spec: akov2.AtlasDeploymentSpec{
 				ProjectDualReference: akov2.ProjectDualReference{
 					ProjectRef: &common.ResourceRefNamespaced{

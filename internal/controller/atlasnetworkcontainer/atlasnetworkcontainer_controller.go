@@ -114,12 +114,10 @@ func (r *AtlasNetworkContainerReconciler) networkContainerForCredentialMapFunc()
 
 func NewAtlasNetworkContainerReconciler(c cluster.Cluster, predicates []predicate.Predicate, atlasProvider atlas.Provider, deletionProtection bool, logger *zap.Logger, independentSyncPeriod time.Duration, globalSecretRef client.ObjectKey, maxConcurrentReconciles int) *AtlasNetworkContainerReconciler {
 	return &AtlasNetworkContainerReconciler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			Client:          c.GetClient(),
-			Log:             logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
-			GlobalSecretRef: globalSecretRef,
-			AtlasProvider:   atlasProvider,
-		},
+		Client:                   c.GetClient(),
+		Log:                      logger.Named("controllers").Named("AtlasNetworkContainer").Sugar(),
+		GlobalSecretRef:          globalSecretRef,
+		AtlasProvider:            atlasProvider,
 		Scheme:                   c.GetScheme(),
 		EventRecorder:            c.GetEventRecorderFor("AtlasNetworkContainer"),
 		GlobalPredicates:         predicates,

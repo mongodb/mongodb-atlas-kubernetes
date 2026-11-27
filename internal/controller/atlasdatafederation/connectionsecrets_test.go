@@ -81,7 +81,7 @@ func TestAddCredentialsToConnectionURL(t *testing.T) {
 // cluster. externalProjectRef is a supported feature, so this needs no attacker.
 func TestDbUserBelongsToProjectWithExternalProjectRef(t *testing.T) {
 	project := &akov2.AtlasProject{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-project", Namespace: "my-ns"},
+		Name: "my-project", Namespace: "my-ns",
 	}
 
 	for _, tc := range []struct {
@@ -92,7 +92,7 @@ func TestDbUserBelongsToProjectWithExternalProjectRef(t *testing.T) {
 		{
 			name: "external project reference does not belong to any kube project",
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Name: "user", Namespace: "my-ns"},
+				Name: "user", Namespace: "my-ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ExternalProjectRef: &akov2.ExternalProjectReference{ID: "5f4c1b2a3d4e5f6a7b8c9d0e"},
@@ -104,7 +104,7 @@ func TestDbUserBelongsToProjectWithExternalProjectRef(t *testing.T) {
 		{
 			name: "kube reference in the same namespace belongs to the project",
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Name: "user", Namespace: "my-ns"},
+				Name: "user", Namespace: "my-ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{Name: "my-project"},
@@ -116,7 +116,7 @@ func TestDbUserBelongsToProjectWithExternalProjectRef(t *testing.T) {
 		{
 			name: "kube reference to another namespace does not belong to the project",
 			dbUser: &akov2.AtlasDatabaseUser{
-				ObjectMeta: metav1.ObjectMeta{Name: "user", Namespace: "my-ns"},
+				Name: "user", Namespace: "my-ns",
 				Spec: akov2.AtlasDatabaseUserSpec{
 					ProjectDualReference: akov2.ProjectDualReference{
 						ProjectRef: &common.ResourceRefNamespaced{Name: "my-project", Namespace: "other-ns"},

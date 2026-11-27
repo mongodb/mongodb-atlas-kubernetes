@@ -81,12 +81,10 @@ func NewIPAccessListEntryReconciler(
 	}
 	// Create main handler dispatcher
 	ipaccesslistentryHandler := &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   atlasProvider,
-			Client:          c.GetClient(),
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Named("controllers").Named("AtlasIPAccessListEntry").Sugar(),
-		},
+		AtlasProvider:      atlasProvider,
+		Client:             c.GetClient(),
+		GlobalSecretRef:    globalSecretRef,
+		Log:                logger.Named("controllers").Named("AtlasIPAccessListEntry").Sugar(),
 		deletionProtection: deletionProtection,
 		handlerv20250312:   handlerv20250312Func,
 		predicates:         predicates,

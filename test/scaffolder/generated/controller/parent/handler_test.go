@@ -32,14 +32,12 @@ import (
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/atlas"
-	"github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/controller/reconciler"
 	crds "github.com/mongodb/mongodb-atlas-kubernetes/v2/internal/generated/crds"
 	indexer "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/indexers"
 	v1 "github.com/mongodb/mongodb-atlas-kubernetes/v2/test/scaffolder/generated/types/v1"
@@ -85,10 +83,8 @@ func newSchemeWithCoreV1(t *testing.T) *runtime.Scheme {
 
 func newCredentialSecret(name string) *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-		},
+		Name:      name,
+		Namespace: "default",
 		Data: map[string][]byte{
 			"orgId":         []byte("test-org"),
 			"publicApiKey":  []byte("test-public-key"),
@@ -106,12 +102,10 @@ func buildTestHandler(
 ) *Handler {
 	logger := zap.NewNop()
 	return &Handler{
-		AtlasReconciler: reconciler.AtlasReconciler{
-			AtlasProvider:   provider,
-			Client:          kubeClient,
-			GlobalSecretRef: globalSecretRef,
-			Log:             logger.Sugar(),
-		},
+		AtlasProvider:       provider,
+		Client:              kubeClient,
+		GlobalSecretRef:     globalSecretRef,
+		Log:                 logger.Sugar(),
 		deletionProtection:  false,
 		translators:         translators,
 		handlerintegrations: handlerintegrationsFunc,
@@ -136,7 +130,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 		{
 			name: "selects integrations handler when Integrations spec is set",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+				Name: "test-parent", Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{Name: new("test-integration")},
@@ -151,8 +145,8 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 		{
 			name: "returns error when no spec version is set",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
-				Spec:       v1.ParentSpec{},
+				Name: "test-parent", Namespace: "default",
+				Spec: v1.ParentSpec{},
 			},
 			translators: map[string]crapi.Translator{
 				"integrations": &mockTranslator{},
@@ -163,7 +157,7 @@ func TestGetHandlerForResource_Parent(t *testing.T) {
 		{
 			name: "returns error when translator not found for version",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+				Name: "test-parent", Namespace: "default",
 				Spec: v1.ParentSpec{
 					Integrations: &[]v1.Integrations{
 						{Name: new("test-integration")},
@@ -230,8 +224,8 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 		{
 			name: "uses global secret when no connectionSecretRef",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
-				Spec:       v1.ParentSpec{},
+				Name: "test-parent", Namespace: "default",
+				Spec: v1.ParentSpec{},
 			},
 			objects:  []client.Object{globalSecret},
 			provider: &mockProvider{clientSet: expectedClientSet},
@@ -240,7 +234,7 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 		{
 			name: "uses per-resource secret when connectionSecretRef is set",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+				Name: "test-parent", Namespace: "default",
 				Spec: v1.ParentSpec{
 					ConnectionSecretRef: &k8s.LocalReference{Name: "resource-secret"},
 				},
@@ -252,7 +246,7 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 		{
 			name: "returns error when secret not found",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+				Name: "test-parent", Namespace: "default",
 				Spec: v1.ParentSpec{
 					ConnectionSecretRef: &k8s.LocalReference{Name: "nonexistent-secret"},
 				},
@@ -265,8 +259,8 @@ func TestGetSDKClientSet_Parent(t *testing.T) {
 		{
 			name: "returns error when provider fails",
 			parent: &v1.Parent{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
-				Spec:       v1.ParentSpec{},
+				Name: "test-parent", Namespace: "default",
+				Spec: v1.ParentSpec{},
 			},
 			objects: []client.Object{globalSecret},
 			provider: &mockProvider{
@@ -309,7 +303,7 @@ func TestHandlerStateTransitions_Parent(t *testing.T) {
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+		Name: "test-parent", Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{Name: new("test-integration")},
@@ -371,8 +365,8 @@ func TestHandlerStateTransitions_Parent_NoVersion(t *testing.T) {
 	globalSecretRef := client.ObjectKey{Name: "global-secret", Namespace: "default"}
 
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
-		Spec:       v1.ParentSpec{},
+		Name: "test-parent", Namespace: "default",
+		Spec: v1.ParentSpec{},
 	}
 
 	fakeClient := fake.NewClientBuilder().
@@ -433,7 +427,7 @@ func TestHandlerStateTransitions_Parent_DependencyError(t *testing.T) {
 	idx := indexer.NewChildByParentIndexer(logger)
 
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+		Name: "test-parent", Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{Name: new("test-integration")},
@@ -520,7 +514,7 @@ func TestHandlerWithRealTranslator_Parent(t *testing.T) {
 	idx := indexer.NewChildByParentIndexer(logger)
 
 	parent := &v1.Parent{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-parent", Namespace: "default"},
+		Name: "test-parent", Namespace: "default",
 		Spec: v1.ParentSpec{
 			Integrations: &[]v1.Integrations{
 				{Name: new("test-integration")},

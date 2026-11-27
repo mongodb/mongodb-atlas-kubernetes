@@ -282,10 +282,8 @@ func (c *AtlasDataFederation) UpdateStatus(conditions []api.Condition, options .
 
 func NewDataFederationInstance(projectName, instanceName, namespace string) *AtlasDataFederation {
 	return &AtlasDataFederation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instanceName,
-			Namespace: namespace,
-		},
+		Name:      instanceName,
+		Namespace: namespace,
 		Spec: DataFederationSpec{
 			Project: common.ResourceRefNamespaced{
 				Name:      projectName,

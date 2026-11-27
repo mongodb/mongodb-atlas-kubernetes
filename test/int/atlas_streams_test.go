@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/mongodb/mongodb-atlas-kubernetes/v2/api"
@@ -104,10 +103,8 @@ YJZC5C0=
 
 			By("Adding a sample connection", func() {
 				sampleConnection = &akov2.AtlasStreamConnection{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "sample-connection",
-						Namespace: testNamespace.Name,
-					},
+					Name:      "sample-connection",
+					Namespace: testNamespace.Name,
 					Spec: akov2.AtlasStreamConnectionSpec{
 						Name:           "sample_stream_solar",
 						ConnectionType: "Sample",
@@ -120,12 +117,10 @@ YJZC5C0=
 
 			By("Adding a Kafka connection", func() {
 				kafkaUserPassSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      kafkaUserPassSecretName,
-						Namespace: testNamespace.Name,
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
+					Name:      kafkaUserPassSecretName,
+					Namespace: testNamespace.Name,
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 					StringData: map[string]string{
 						"username": "kafka_user",
@@ -135,12 +130,10 @@ YJZC5C0=
 				Expect(k8sClient.Create(ctx, kafkaUserPassSecret)).To(Succeed())
 
 				kafkaCertificateSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      kafkaCertificateSecretName,
-						Namespace: testNamespace.Name,
-						Labels: map[string]string{
-							"atlas.mongodb.com/type": "credentials",
-						},
+					Name:      kafkaCertificateSecretName,
+					Namespace: testNamespace.Name,
+					Labels: map[string]string{
+						"atlas.mongodb.com/type": "credentials",
 					},
 					StringData: map[string]string{
 						"certificate": certificate,
@@ -149,10 +142,8 @@ YJZC5C0=
 				Expect(k8sClient.Create(ctx, kafkaCertificateSecret)).To(Succeed())
 
 				kafkaConnection = &akov2.AtlasStreamConnection{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "kafka-connection",
-						Namespace: testNamespace.Name,
-					},
+					Name:      "kafka-connection",
+					Namespace: testNamespace.Name,
 					Spec: akov2.AtlasStreamConnectionSpec{
 						Name:           "kafka-config",
 						ConnectionType: "Kafka",
@@ -181,10 +172,8 @@ YJZC5C0=
 
 			By("Creating an instance", func() {
 				streamInstance := &akov2.AtlasStreamInstance{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: testNamespace.Name,
-					},
+					Name:      resourceName,
+					Namespace: testNamespace.Name,
 					Spec: akov2.AtlasStreamInstanceSpec{
 						Name: resourceName,
 						Config: akov2.Config{
