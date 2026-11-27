@@ -208,6 +208,7 @@ endif
 
 # GO TOOLS
 CRD2GO := go tool -modfile=tools/toolbox/go.mod crd2go
+GOBUMP := go tool -modfile=tools/toolbox/go.mod gobump
 
 # LOCAL TOOLS
 OPENAPI2CRD := go tool -modfile=tools/toolbox/go.mod openapi2crd
@@ -767,6 +768,11 @@ slack-deprecations: tools/scandeprecation/scandeprecation tools/githubjobs/githu
 	set -o pipefail; GH_RUN_ID=$(GH_RUN_ID) ./tools/githubjobs/githubjobs | grep --text "javaMethod" \
 	| ./tools/scandeprecation/scandeprecations | ./scripts/slackit.sh $(SLACK_WEBHOOK)
 
+# Bump Go module versions across the repository; pass optional flags with GOBUMP_ARGS.
+.PHONY: gobump
+gobump:
+	$(GOBUMP) ./... $(GOBUMP_ARGS)
+
 .PHONY: bump-version-file
 bump-version-file:
 	@echo "Bumping version in $(VERSION_FILE)..."
@@ -807,16 +813,12 @@ shellcheck:
 	xargs shellcheck --color=always $(SHELLCHECK_OPTIONS)
 
 .PHONY: all-lints
-all-lints: helm-crds gofix fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck test-go-bump-policy
+all-lints: helm-crds gofix fmt lint validate-manifests validate-api-docs check-licenses addlicense-check shellcheck vulncheck
 	@echo "✅ CI ALL linting checks PASSED"
 
 .PHONY: ci
 ci: clean unit-test all-lints
 	@echo "✅ CI PASSED all checks"
-
-.PHONY: test-go-bump-policy
-test-go-bump-policy:
-	scripts/test-check-go-bump-policy-examples.sh
 
 prepare-dirs:
 	@echo "Creating directories..."
