@@ -19,7 +19,7 @@ The operator is distributed on OpenShift via [OLM](https://olm.operatorframework
 | `config/release/prod/prod_patch.json` | Prod-specific patches. |
 | `bundle/` | Generated output directory. Contains `manifests/` (CSV + CRDs) and `metadata/` (annotations). Created by `make bundle`, not checked in. |
 | `bundle.Dockerfile` | Generated Dockerfile for building the bundle image. Created by `make bundle`, not checked in. |
-| `version.json` | Source of truth for versioning. Contains `current` (the released version) and `next` (the upcoming version). |
+| `clbot latest` / `clbot version` | `clbot latest` reports the current released version; `clbot version` calculates the next version from Git tags and changelog markers. |
 
 ## How `make bundle` works
 
@@ -62,20 +62,7 @@ The `ENV` variable (default: `dev`) selects which Kustomize overlay set is used 
 
 ## Versioning
 
-Versions are managed in `version.json`:
-
-```json
-{
-  "current": "2.13.1",
-  "next": "2.13.2"
-}
-```
-
-- `current` — the last released version. Used in the CSV `replaces` field for OLM upgrade chains.
-- `next` — the upcoming version. Used when `USE_NEXT_VERSION` is set.
-- `make bump-version-file` — advances `current` to `next` and increments the minor version of `next`.
-
-The effective `VERSION` defaults to `current` (plus `-dirty` if the working tree has uncommitted changes). Override with `VERSION=x.y.z make bundle`.
+`clbot latest` reports the current released version from the latest Git tag; this version is used in the CSV `replaces` field for OLM upgrade chains. `clbot version` calculates the next version from the included changelog markers. The effective `VERSION` defaults to the current version (plus `-dirty` if the working tree has uncommitted changes); `VERSION` remains overridable with `VERSION=x.y.z make bundle`.
 
 ## Deploying a bundle locally
 

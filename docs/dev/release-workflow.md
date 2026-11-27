@@ -13,7 +13,7 @@ This document describes the release workflow steps, highlights operations with e
 1. **Release PR Creation** ⚠️
    - Creates branch `new-release/v{VERSION}` and pushes to GitHub
    - Creates draft PR
-   - Updates `version.json` and `helm-charts/` on branch
+   - Updates `helm-charts/` on the branch
 
 2. **Git Tag Creation** ⚠️
    - Creates and pushes tag `v{VERSION}` to GitHub

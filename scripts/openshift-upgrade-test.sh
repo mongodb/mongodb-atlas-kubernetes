@@ -20,7 +20,6 @@ set -eou pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Get the repository root directory (parent of scripts directory)
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-VERSION_FILE="${REPO_ROOT}/version.json"
 
 # This test is designed to be launched from "mongodb-atlas-kubernetes/scripts" catalog
 #
@@ -45,12 +44,8 @@ CATALOG_RELEASE_DIR="${CATALOG_RELEASE_DIR:-./openshift/atlas-catalog-release}"
 
 if [ -z "${CURRENT_VERSION+x}" ]; then
   # opm doesn't allow 'v' prefix for versions
-  if [ ! -f "${VERSION_FILE}" ]; then
-    echo "Error: version.json not found at ${VERSION_FILE}"
-    exit 1
-  fi
-  CURRENT_VERSION=$(jq -r .current "${VERSION_FILE}")
-	echo "CURRENT_VERSION is not set. Setting to default: ${CURRENT_VERSION}"
+  CURRENT_VERSION=$(cd "${REPO_ROOT}" && make -s clbot && ./bin/clbot latest)
+	 echo "CURRENT_VERSION is not set. Setting to default: ${CURRENT_VERSION}"
 fi
 
 OPERATOR_NAME="mongodb-atlas-kubernetes-operator-prerelease"

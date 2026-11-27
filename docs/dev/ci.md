@@ -142,7 +142,7 @@ The release workflow performs the following automated steps:
 - Generates SBOMs for both `linux-amd64` and `linux-arm64` platforms
 - Creates SDLC compliance reports
 - Generates deployment configurations (bundle, helm charts)
-- Bumps the `version.json` file automatically (sets `current` to the released version and `next` to the next minor version)
+- Calculates the next version from Git tags and changelog markers; release does not bump a version file
 - Triggers the Helm charts sync workflow to update the [helm-charts repository](https://github.com/mongodb/helm-charts)
 - Creates a release PR with all artifacts
 - Creates a Git tag of the form `v<version>`

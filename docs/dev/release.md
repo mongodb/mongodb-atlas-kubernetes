@@ -31,15 +31,9 @@ The Kubernetes Version testing matrix is automatically checked via CI, Every wee
 
 Before starting a release, verify that the [Check Kubernetes Versions workflow](.github/workflows/check-kubernetes-versions.yaml) ran successfully recently to ensure versions are up to date.
 
-## A Note on Versioning with `version.json`
+## Versioning
 
-The `version.json` file is the definitive **source of truth** for managing software versions in this project.
-
-* **Source of Truth**: The file contains two primary fields: **`current`**, which reflects the latest stable version that has been released, and **`next`**, which designates the version targeted for the upcoming release.
-
-* **Automatic Updates for next Releases**: After a successful release, the CI pipeline will **automatically** update `version.json`. The `current` field is set to the version that was just released, and the `next` field is incremented to the next minor version (e.g., `2.11.0` would become `2.12.0`, or `2.11.4` would become `2.12.0`).
-
-* **Manual Updates for Patch Releases**: Creating a **patch release** (e.g., `v2.10.1`) is a deliberate exception to the automated process. To prepare for a patch, you must **manually** update the `next` field to the exact patch version via a Pull Request (PR). This manual step ensures the release workflow targets the specific patch instead of accidentally creating the next minor release. In case of modifying the `version.json`, you should trigger the `Test` workflow with the `promote image` option set to `true` so that it builds a new image with the updated version from `version.json` file BEFORE triggering a `Release image` workflow.
+`clbot latest` reports the current released version from the latest Git tag. `clbot version` calculates the next version from the changelog markers included since that tag, according to the marker policy. The release workflow adds a Git tag; it does not bump a version file. Use changelog markers to indicate the intended version change, including patch releases.
 
 ## Release Notes
 
@@ -65,7 +59,7 @@ You will be prompted to enter:
 | `image_sha`    | The 7-character Git commit SHA used for the promoted image, or `'latest'` for the most recent       | No       | `latest`      | `3e79a3f`                             |
 | `release_type` | Either `pre-release` or `official-release`. Official releases post to official registries           | No       | `pre-release` | `official-release`                    |
 
-The input `version` is a **safety check** to ensure the intent is to release the same version that was already tagged in the image already tested and ready for release. The workflow will fail if the input does not match the expected version from `version.json`.
+The input `version` is a **safety check** to ensure the intent is to release the same version that was already tagged in the image already tested and ready for release. The workflow will fail if the input does not match the expected version calculated by `clbot version`.
 
 The input `authors` must be filled out every time you trigger the release workflow. The `image_sha` is optional and defaults to `latest` if left empty.
 
@@ -267,12 +261,12 @@ And use the URL there to set `OPENSHIFT_UPGRADE_SERVER_API` so that openshift up
 
 ### Major version issues when executing the "Create Release Branch" workflow
 
-The release creation will fail if the major version of the release you're creating is incompatible with the `current` version defined in the `version.json` file. This file acts as the single source of truth for the codebase's version, which helps prevent mistakes.
+The release creation will fail if the major version of the release you're creating is incompatible with the current released version reported by `clbot latest`. Run `check-major-version` to check the requested release version against the latest Git tag.
 
 This check allows us to:
 
-1.  **Prevent Mismatches**: It stops the workflow if the version being released (e.g., `v3.0.0`) has a different major version than what the codebase expects (e.g., `current` is `v2.11.0`).
+1.  **Prevent Mismatches**: It stops the workflow if the version being released (e.g., `v3.0.0`) has a different major version than the current version reported by `clbot latest` (e.g., `v2.11.0`).
 2.  **Avoid Incorrect Patching**: It stops you from accidentally trying to release a patch for an older major version (e.g., `v1.2.3`) when the codebase has already moved on to a new major version.
 3.  **Skip Tests**: Certain tests that are expected to fail, like Helm upgrades, they should be skipped.
 
-If the "Create Release Branch" job fails with an error like `Bad major version for X... expected Y...`, you should review the `current` field in `version.json`. Ensure it correctly reflects the codebase's state and is compatible with the version you intend to release.
+If the "Create Release Branch" job fails with an error like `Bad major version for X... expected Y...`, check the latest tag with `clbot latest` and run `check-major-version` to verify that the intended release version is compatible.
